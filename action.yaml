@@ -1,0 +1,13 @@
+name: Upload Charm Docs
+description: Upload charm documentation to charmhub
+author: David Andersson
+inputs:
+  create_new_topic:
+    description: |
+      Whether to create a new topic and commit it back to the repository if the
+      docs key in metadata.yaml either does not exist or is empty. Defaults to
+      not creating a new topic in which case an error is returned.
+    default: false
+runs:
+  using: docker
+  image: Dockerfile
