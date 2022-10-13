@@ -4,6 +4,7 @@
 """Interface for Discourse interactions."""
 
 import pydiscourse
+import pytest
 
 
 class DiscourseError(Exception):
@@ -32,7 +33,7 @@ class Discourse:
 
     tags = ("docs",)
 
-    def __init__(self, host: str, api_username: str, api_key: str, category: str) -> None:
+    def __init__(self, host: str, api_username: str, api_key: str, category: int) -> None:
         """Constructor."""
         self.client = pydiscourse.DiscourseClient(
             host=f"http://{host}", api_username=api_username, api_key=api_key
@@ -53,6 +54,7 @@ class Discourse:
             Whether the credentials have write permissions to the topic.
 
         """
+        pytest.set_trace()
 
     def check_topic_read_permission(self, url: str) -> bool:
         """
@@ -68,6 +70,7 @@ class Discourse:
             Whether the credentials have read permissions to the topic.
 
         """
+        pytest.set_trace()
 
     def get_topic(self, url: str) -> str:
         """
@@ -83,6 +86,7 @@ class Discourse:
             The content of the first post in the topic.
 
         """
+        pytest.set_trace()
 
     def create_topic(self, title: str, content: str) -> str:
         """
@@ -99,6 +103,7 @@ class Discourse:
             The URL to the topic.
 
         """
+        pytest.set_trace()
         self.client.create_post(
             title=title, category_id=self.category, tags=self.tags, content=content
         )
@@ -114,8 +119,9 @@ class Discourse:
             url: The URL to the topic.
 
         """
+        pytest.set_trace()
 
-    def update_topic(self, content: str) -> None:
+    def update_topic(self, url: str, content: str) -> None:
         """
         Update the first post of a topic.
 
@@ -123,6 +129,8 @@ class Discourse:
         to update the first post in the topic and TopicNotFoundError if the topic is not found.
 
         Args:
+            url: The URL to the topic.
             content: The content for the first post in the topic.
 
         """
+        pytest.set_trace()
