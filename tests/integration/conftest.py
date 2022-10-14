@@ -144,16 +144,22 @@ async def discourse_admin_credentials(ops_test: OpsTest, discourse_unit_name: st
     )
 
 
+# Making this depend on discourse_admin_credentials to ensure an admin user gets created
 @pytest_asyncio.fixture(scope="module")
-async def discourse_user_credentials(ops_test: OpsTest, discourse_unit_name: str):
+async def discourse_user_credentials(
+    ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
+):
     """Get the user credentials for discourse."""
     return await create_discourse_account(
         ops_test=ops_test, unit=discourse_unit_name, email="user@foo.internal", admin=False
     )
 
 
+# Making this depend on discourse_admin_credentials to ensure an admin user gets created
 @pytest_asyncio.fixture(scope="module")
-async def discourse_alternate_user_credentials(ops_test: OpsTest, discourse_unit_name: str):
+async def discourse_alternate_user_credentials(
+    ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
+):
     """Get the alternate user credentials for discourse."""
     return await create_discourse_account(
         ops_test=ops_test,
@@ -208,7 +214,7 @@ async def discourse_alternate_user_api_key(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_category(
+async def discourse_category_id(
     discourse_master_api_key,
     discourse_hostname: str,
 ):
@@ -220,3 +226,19 @@ async def discourse_category(
     )
     category = client.create_category(name="docs", color="FFFFFF")
     return category["category"]["id"]
+
+
+@pytest_asyncio.fixture(scope="module", autouse=True)
+async def discourse_enable_tags(
+    discourse_master_api_key,
+    discourse_hostname: str,
+):
+    """Enable tags on discourse.."""
+    headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
+    data = {"tagging_enabled": "true"}
+    response = requests.put(
+        f"http://{discourse_hostname}/admin/site_settings/tagging_enabled",
+        headers=headers,
+        data=data,
+    )
+    assert response.status_code == 200, f"Enabling taging failed, {response.content=}"

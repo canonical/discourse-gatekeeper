@@ -3,6 +3,8 @@
 
 """Interface for Discourse interactions."""
 
+from urllib import parse
+
 import pydiscourse
 import pytest
 
@@ -33,12 +35,22 @@ class Discourse:
 
     tags = ("docs",)
 
-    def __init__(self, host: str, api_username: str, api_key: str, category: int) -> None:
-        """Constructor."""
+    def __init__(self, base_path: str, api_username: str, api_key: str, category_id: int) -> None:
+        """
+        Constructor.
+
+        Args:
+            base_path: The HTTP protocol and hostname for discourse (e.g., https://discourse).
+            api_username: The username to use for API requests.
+            api_key: The API key for requests.
+            category_id: The category identify to put the topics into.
+
+        """
         self.client = pydiscourse.DiscourseClient(
-            host=f"http://{host}", api_username=api_username, api_key=api_key
+            host=base_path, api_username=api_username, api_key=api_key
         )
-        self.category = category
+        self.category = category_id
+        self.base_path = base_path
 
     def check_topic_write_permission(self, url: str) -> bool:
         """
@@ -86,7 +98,12 @@ class Discourse:
             The content of the first post in the topic.
 
         """
-        pytest.set_trace()
+        topic_id = parse.urlparse(url=url).path.split("/")[-1]
+        topic_posts = self.client.topic_posts(topic_id=topic_id)
+        post = next(
+            filter(lambda post: post["post_number"] == 1, topic_posts["post_stream"]["posts"])
+        )
+        return post["cooked"].removeprefix("<p>").removesuffix("</p>")
 
     def create_topic(self, title: str, content: str) -> str:
         """
@@ -103,10 +120,10 @@ class Discourse:
             The URL to the topic.
 
         """
-        pytest.set_trace()
-        self.client.create_post(
+        post = self.client.create_post(
             title=title, category_id=self.category, tags=self.tags, content=content
         )
+        return f"{self.base_path}/t/{post['topic_slug']}/{post['topic_id']}"
 
     def unlist_topic(self, url: str) -> None:
         """

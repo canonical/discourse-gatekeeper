@@ -10,8 +10,8 @@ inputs:
     default: false
   discourse_host:
     description: The discourse host name.
-  discourse_category:
-    description: The category to use on discourse.
+  discourse_category_id:
+    description: The category identifier to use on discourse for all topics.
 runs:
   using: docker
   image: Dockerfile
