@@ -15,7 +15,7 @@ async def test_create_get_update_unlist_topic(
     discourse_user_api_key: str,
     discourse_hostname: str,
     discourse_user_credentials: types.Credentials,
-    discourse_category: int,
+    discourse_category_id: int,
 ):
     """
     arrange: given running discourse server
@@ -23,10 +23,10 @@ async def test_create_get_update_unlist_topic(
     assert: then all the sequential actions succeed and the topic is unlisted in the end.
     """
     discourse = Discourse(
-        host=discourse_hostname,
+        base_path=f"http://{discourse_hostname}",
         api_username=discourse_user_credentials.username,
         api_key=discourse_user_api_key,
-        category=discourse_category,
+        category_id=discourse_category_id,
     )
 
     # Create topic
@@ -37,6 +37,8 @@ async def test_create_get_update_unlist_topic(
     returned_content = discourse.get_topic(url=url)
 
     assert returned_content == content_1
+    # TODO: check that post is in the right category
+    # TODO: check that post is tagged with docs
 
     # Check permissions
     assert discourse.check_topic_read_permission(url=url)
