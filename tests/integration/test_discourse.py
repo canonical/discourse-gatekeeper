@@ -3,6 +3,9 @@
 
 """Integration tests for discourse."""
 
+from urllib import parse
+
+import pydiscourse
 import pytest
 
 from src.discourse import Discourse, TopicNotFoundError
@@ -16,6 +19,7 @@ async def test_create_get_update_unlist_topic(
     discourse_hostname: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
+    discourse_client: pydiscourse.DiscourseClient,
 ):
     """
     arrange: given running discourse server
@@ -37,8 +41,12 @@ async def test_create_get_update_unlist_topic(
     returned_content = discourse.get_topic(url=url)
 
     assert returned_content == content_1
-    # TODO: check that post is in the right category
-    # TODO: check that post is tagged with docs
+    # Check that the category is correct
+    url_path_components = parse.urlparse(url=url).path.split("/")
+    slug = url_path_components[-2]
+    topic_id = url_path_components[-1]
+    topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    assert topic["category_id"] == discourse_category_id
 
     # Check permissions
     assert discourse.check_topic_read_permission(url=url)
