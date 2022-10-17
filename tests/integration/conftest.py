@@ -214,17 +214,19 @@ async def discourse_alternate_user_api_key(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_category_id(
-    discourse_master_api_key,
-    discourse_hostname: str,
-):
+async def discourse_client(discourse_master_api_key, discourse_hostname: str):
     """Create the category for topics."""
-    client = pydiscourse.DiscourseClient(
+    return pydiscourse.DiscourseClient(
         host=f"http://{discourse_hostname}",
         api_username="system",
         api_key=discourse_master_api_key,
     )
-    category = client.create_category(name="docs", color="FFFFFF")
+
+
+@pytest_asyncio.fixture(scope="module")
+async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
+    """Create the category for topics."""
+    category = discourse_client.create_category(name="docs", color="FFFFFF")
     return category["category"]["id"]
 
 

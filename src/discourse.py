@@ -3,10 +3,25 @@
 
 """Interface for Discourse interactions."""
 
+import typing
 from urllib import parse
 
 import pydiscourse
 import pytest
+
+
+class DiscourseTopicInfo(typing.NamedTuple):
+    """
+    Information about a discourse topic.
+
+    Attrs:
+        slug: The slug for the topic.
+        id: The identifier for the topic.
+
+    """
+
+    slug: str
+    id_: str
 
 
 class DiscourseError(Exception):
@@ -52,6 +67,36 @@ class Discourse:
         self.category = category_id
         self.base_path = base_path
 
+    @staticmethod
+    def _get_topic_info_from_url(url: str) -> DiscourseTopicInfo:
+        """
+        Get the topic information from the url to the topic.
+
+        Args:
+            url: The URL to the topic.
+
+        Returns:
+            The topic information.
+
+        """
+        path_components = parse.urlparse(url=url).path.split("/")
+        return DiscourseTopicInfo(slug=path_components[-2], id_=path_components[-1])
+
+    def _get_topic_first_post(self, url: str) -> dict:
+        """
+        Get the first post from a topic based on the URL to the topic.
+
+        Args:
+            usl: The URL ot the topic.
+
+        Returns:
+            The first post from the topic.
+
+        """
+        topic_info = self._get_topic_info_from_url(url=url)
+        topic = self.client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+        return next(filter(lambda post: post["post_number"] == 1, topic["post_stream"]["posts"]))
+
     def check_topic_write_permission(self, url: str) -> bool:
         """
         Check whether the credentials have write permission on a topic.
@@ -66,7 +111,8 @@ class Discourse:
             Whether the credentials have write permissions to the topic.
 
         """
-        pytest.set_trace()
+        first_post = self._get_topic_first_post(url=url)
+        return first_post["can_edit"]
 
     def check_topic_read_permission(self, url: str) -> bool:
         """
@@ -82,7 +128,8 @@ class Discourse:
             Whether the credentials have read permissions to the topic.
 
         """
-        pytest.set_trace()
+        first_post = self._get_topic_first_post(url=url)
+        return first_post["read"]
 
     def get_topic(self, url: str) -> str:
         """
@@ -98,12 +145,8 @@ class Discourse:
             The content of the first post in the topic.
 
         """
-        topic_id = parse.urlparse(url=url).path.split("/")[-1]
-        topic_posts = self.client.topic_posts(topic_id=topic_id)
-        post = next(
-            filter(lambda post: post["post_number"] == 1, topic_posts["post_stream"]["posts"])
-        )
-        return post["cooked"].removeprefix("<p>").removesuffix("</p>")
+        first_post = self._get_topic_first_post(url=url)
+        return first_post["cooked"].removeprefix("<p>").removesuffix("</p>")
 
     def create_topic(self, title: str, content: str) -> str:
         """
@@ -150,4 +193,7 @@ class Discourse:
             content: The content for the first post in the topic.
 
         """
-        pytest.set_trace()
+        first_post = self._get_topic_first_post(url=url)
+        self.client.update_post(
+            post_id=first_post["id"], content=content, edit_reason="Charm documentation updated"
+        )
