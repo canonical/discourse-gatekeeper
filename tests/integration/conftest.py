@@ -102,8 +102,10 @@ async def discourse(ops_test: OpsTest, discourse_hostname: str):
         ops_test.model.deploy(postgres_charm_name),
         ops_test.model.deploy(redis_charm_name),
     )
+    # Using permissive throttle level to speed up tests
     discourse_app = await ops_test.model.deploy(
-        discourse_charm_name, config={"external_hostname": discourse_hostname}
+        discourse_charm_name,
+        config={"external_hostname": discourse_hostname, "throttle_level": "permissive"},
     )
 
     await ops_test.model.wait_for_idle()
@@ -235,7 +237,7 @@ async def discourse_enable_tags(
     discourse_master_api_key,
     discourse_hostname: str,
 ):
-    """Enable tags on discourse.."""
+    """Enable tags on discourse."""
     headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
     data = {"tagging_enabled": "true"}
     response = requests.put(
@@ -244,3 +246,33 @@ async def discourse_enable_tags(
         data=data,
     )
     assert response.status_code == 200, f"Enabling taging failed, {response.content=}"
+
+
+@pytest_asyncio.fixture(scope="module", autouse=True)
+async def discourse_remove_rate_limits(
+    discourse_master_api_key,
+    discourse_hostname: str,
+):
+    """Disables rate limits on discourse."""
+    headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
+
+    settings = {
+        "unique_posts_mins": "0",
+        "rate_limit_create_post": "0",
+        "rate_limit_new_user_create_topic": "0",
+        "rate_limit_new_user_create_post": "0",
+        "max_topics_per_day": "1000",
+        "max_edits_per_day": "1000",
+        "max_topics_in_first_day": "1000",
+        "max_post_deletions_per_minute": "1000",
+        "max_post_deletions_per_day": "1000",
+    }
+    for setting, value in settings.items():
+        response = requests.put(
+            f"http://{discourse_hostname}/admin/site_settings/{setting}",
+            headers=headers,
+            data={setting: value},
+        )
+        assert (
+            response.status_code == 200
+        ), f"Setting {setting} to {value} failed, {response.content=}"
