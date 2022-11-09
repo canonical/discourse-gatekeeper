@@ -1,10 +1,10 @@
-name: Tests
+name: Integration Tests
 
 on:
   pull_request:
 
 jobs:
-  unit-tests:
+  integration-tests:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@v1.0.0
     secrets: inherit
     with:
