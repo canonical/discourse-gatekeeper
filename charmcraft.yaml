@@ -1,0 +1,4 @@
+bases:
+  - build-on:
+    - name: "ubuntu"
+      channel: "22.04"
