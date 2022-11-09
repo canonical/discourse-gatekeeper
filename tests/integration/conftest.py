@@ -68,21 +68,21 @@ async def create_discourse_account(
 
 
 def create_user_api_key(
-    discourse_hostname: str, master_api_key: str, user_credentials: types.Credentials
+    discourse_hostname: str, main_api_key: str, user_credentials: types.Credentials
 ) -> str:
     """
     Create an API key for a user.
 
     Args:
         discourse_hostname: The hostname that discourse is running under.
-        master_api_key: The system master API key for the discourse server.
+        main_api_key: The system main API key for the discourse server.
         user_credentials: The crednetials of the user to create an API key for.
 
     Returns:
         The API key for the user.
 
     """
-    headers = {"Api-Key": master_api_key, "Api-Username": "system"}
+    headers = {"Api-Key": main_api_key, "Api-Username": "system"}
     data = {"key[description]": "Test key", "key[username]": user_credentials.username}
     response = requests.post(
         f"http://{discourse_hostname}/admin/api/keys", headers=headers, data=data, timeout=60
@@ -179,7 +179,7 @@ async def discourse_alternate_user_credentials(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_master_api_key(ops_test: OpsTest, discourse_unit_name: str):
+async def discourse_main_api_key(ops_test: OpsTest, discourse_unit_name: str):
     """Get the user api key for discourse."""
     return_code, stdout, stderr = await ops_test.juju(
         "exec",
@@ -187,48 +187,48 @@ async def discourse_master_api_key(ops_test: OpsTest, discourse_unit_name: str):
         discourse_unit_name,
         "--",
         "cd /srv/discourse/app && ./bin/bundle exec rake "
-        "api_key:create_master['master API key for testing'] RAILS_ENV=production",
+        "api_key:create_master['main API key for testing'] RAILS_ENV=production",
     )
-    assert return_code == 0, f"discourse master API key creation failed, {stderr=}"
+    assert return_code == 0, f"discourse main API key creation failed, {stderr=}"
 
     return stdout.strip()
 
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_user_api_key(
-    discourse_master_api_key: str,
+    discourse_main_api_key: str,
     discourse_user_credentials: types.Credentials,
     discourse_hostname: str,
 ):
     """Get the user api key for discourse."""
     return create_user_api_key(
         discourse_hostname=discourse_hostname,
-        master_api_key=discourse_master_api_key,
+        main_api_key=discourse_main_api_key,
         user_credentials=discourse_user_credentials,
     )
 
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_alternate_user_api_key(
-    discourse_master_api_key: str,
+    discourse_main_api_key: str,
     discourse_alternate_user_credentials: types.Credentials,
     discourse_hostname: str,
 ):
     """Get the alternate user api key for discourse."""
     return create_user_api_key(
         discourse_hostname=discourse_hostname,
-        master_api_key=discourse_master_api_key,
+        main_api_key=discourse_main_api_key,
         user_credentials=discourse_alternate_user_credentials,
     )
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_client(discourse_master_api_key, discourse_hostname: str):
+async def discourse_client(discourse_main_api_key, discourse_hostname: str):
     """Create the category for topics."""
     return pydiscourse.DiscourseClient(
         host=f"http://{discourse_hostname}",
         api_username="system",
-        api_key=discourse_master_api_key,
+        api_key=discourse_main_api_key,
     )
 
 
@@ -241,11 +241,11 @@ async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def discourse_enable_tags(
-    discourse_master_api_key,
+    discourse_main_api_key,
     discourse_hostname: str,
 ):
     """Enable tags on discourse."""
-    headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
+    headers = {"Api-Key": discourse_main_api_key, "Api-Username": "system"}
     data = {"tagging_enabled": "true"}
     response = requests.put(
         f"http://{discourse_hostname}/admin/site_settings/tagging_enabled",
@@ -257,9 +257,9 @@ async def discourse_enable_tags(
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
-async def discourse_remove_rate_limits(discourse_master_api_key, discourse_hostname: str):
+async def discourse_remove_rate_limits(discourse_main_api_key, discourse_hostname: str):
     """Disables rate limits on discourse."""
-    headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
+    headers = {"Api-Key": discourse_main_api_key, "Api-Username": "system"}
 
     settings = {
         "unique_posts_mins": "0",
