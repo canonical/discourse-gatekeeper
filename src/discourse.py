@@ -45,8 +45,8 @@ class _ValidationResultInvalid(typing.NamedTuple):
 
     """
 
-    value: typing.Literal[False]
     message: str
+    value: typing.Literal[False] = False
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
@@ -68,7 +68,7 @@ class Discourse:
             base_path: The HTTP protocol and hostname for discourse (e.g., https://discourse).
             api_username: The username to use for API requests.
             api_key: The API key for requests.
-            category_id: The category identify to put the topics into.
+            category_id: The category identifier to put the topics into.
 
         """
         self.client = pydiscourse.DiscourseClient(
@@ -97,9 +97,8 @@ class Discourse:
         """
         if not url.startswith(self._base_path):
             return _ValidationResultInvalid(
-                False,
                 "The base path is different to the expected base path, "
-                f"expected: {self._base_path}, {url=}",
+                f"expected: {self._base_path}, {url=}"
             )
 
         parsed_url = parse.urlparse(url=url)
@@ -108,29 +107,26 @@ class Discourse:
 
         if not len(path_components) == 3:
             return _ValidationResultInvalid(
-                False,
                 "Unexpected number of path components, "
-                f"expected: 3, got: {len(path_components)}, {url=}",
+                f"expected: 3, got: {len(path_components)}, {url=}"
             )
 
         if not path_components[0] == "t":
             return _ValidationResultInvalid(
-                False,
                 "Unexpected first path component, "
-                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}",
+                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}"
             )
 
         if not path_components[1]:
             return _ValidationResultInvalid(
-                False,
-                f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}",
+                f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}"
             )
 
         if not path_components[2].isnumeric():
             return _ValidationResultInvalid(
-                False,
-                f"unexpected third path component topic id, "
-                f"expected: an integer, got: {path_components[2]!r}, {url=}",
+                "unexpected third path component topic id, "
+                "expected: a string that can be converted to an integer, "
+                f"got: {path_components[2]!r}, {url=}"
             )
 
         return _ValidationResultValid()
