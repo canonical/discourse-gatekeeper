@@ -31,7 +31,7 @@ async def create_discourse_account(
     """
     Create an account on discourse.
 
-    Assume that the model already contains a discourse unit unit.
+    Assume that the model already contains a discourse unit.
 
     Args:
         ops_test: Used for interactions with the model.
@@ -257,10 +257,7 @@ async def discourse_enable_tags(
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
-async def discourse_remove_rate_limits(
-    discourse_master_api_key,
-    discourse_hostname: str,
-):
+async def discourse_remove_rate_limits(discourse_master_api_key, discourse_hostname: str):
     """Disables rate limits on discourse."""
     headers = {"Api-Key": discourse_master_api_key, "Api-Username": "system"}
 

@@ -30,7 +30,7 @@ from src.discourse import Discourse, DiscourseError
             "http://discourse/t/slug",
             False,
             ("unexpected", "number", "path", "components", "3", "got", "2"),
-            id="1 components missing",
+            id="1 component missing",
         ),
         pytest.param(
             "http://discourse/t/slug/1/a",

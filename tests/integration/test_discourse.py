@@ -74,7 +74,7 @@ async def test_create_retrieve_update_delete_topic(
         discourse.retrieve_topic(url=url)
 
 
-# Keep the API key parameter to ensure that the API key is created just that the wrone one is being
+# Keep the API key parameter to ensure that the API key is created just that the wrong one is being
 # used
 # pylint: disable=unused-argument
 @pytest.mark.asyncio
