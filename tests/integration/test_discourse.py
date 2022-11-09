@@ -23,8 +23,8 @@ async def test_create_retrieve_update_delete_topic(
 ):
     """
     arrange: given running discourse server
-    act: when a topic is created, checked for permissions, retrieved, updated and deleteed
-    assert: then all the sequential actions succeed and the topic is deleteed in the end.
+    act: when a topic is created, checked for permissions, retrieved, updated and deleted
+    assert: then all the sequential actions succeed and the topic is deleted in the end.
     """
     discourse = Discourse(
         base_path=f"http://{discourse_hostname}",
@@ -34,7 +34,7 @@ async def test_create_retrieve_update_delete_topic(
     )
 
     # Create topic
-    title = f"title 1 padding so it is long enough test_crud_topic"
+    title = "title 1 padding so it is long enough test_crud_topic"
     content_1 = "content 1 padding so it is long enough test_crud_topic"
 
     url = discourse.create_topic(title=title, content=content_1)
@@ -76,6 +76,7 @@ async def test_create_retrieve_update_delete_topic(
 
 # Keep the API key parameter to ensure that the API key is created just that the wrone one is being
 # used
+# pylint: disable=unused-argument
 @pytest.mark.asyncio
 async def test_create_topic_auth_error(
     discourse_user_api_key: str,
@@ -96,7 +97,7 @@ async def test_create_topic_auth_error(
     )
 
     # Create topic
-    title = f"title 1 padding so it is long enough test_create_topic_auth_error"
+    title = "title 1 padding so it is long enough test_create_topic_auth_error"
     content_1 = "content 1 padding so it is long enough test_create_topic_auth_error"
 
     with pytest.raises(DiscourseError):
@@ -122,7 +123,7 @@ async def test_retrieve_topic_auth_error(
         category_id=discourse_category_id,
     )
 
-    title = f"title 1 padding so it is long enough test_retrieve_topic_auth_error"
+    title = "title 1 padding so it is long enough test_retrieve_topic_auth_error"
     content_1 = "content 1 padding so it is long enough test_retrieve_topic_auth_error"
 
     url = discourse.create_topic(title=title, content=content_1)
@@ -158,7 +159,7 @@ async def test_update_topic_auth_error(
     )
 
     # Create topic
-    title = f"title 1 padding so it is long enough test_update_topic_auth_error"
+    title = "title 1 padding so it is long enough test_update_topic_auth_error"
     content_1 = "content 1 padding so it is long enough test_update_topic_auth_error"
 
     url = discourse.create_topic(title=title, content=content_1)
@@ -184,7 +185,7 @@ async def test_delete_topic_auth_error(
 ):
     """
     arrange: given running discourse server
-    act: when a topic is created and then deleteed with an incorrect API key
+    act: when a topic is created and then deleted with an incorrect API key
     assert: then DiscourseError is raised.
     """
     discourse = Discourse(
@@ -195,7 +196,7 @@ async def test_delete_topic_auth_error(
     )
 
     # Create topic
-    title = f"title 1 padding so it is long enough test_delete_topic_auth_error"
+    title = "title 1 padding so it is long enough test_delete_topic_auth_error"
     content_1 = "content 1 padding so it is long enough test_delete_topic_auth_error"
 
     url = discourse.create_topic(title=title, content=content_1)
@@ -211,6 +212,8 @@ async def test_delete_topic_auth_error(
         unauth_discourse.delete_topic(url=url)
 
 
+# The test cannot be simplified and all argument are needed
+# pylint: disable=too-many-arguments
 @pytest.mark.asyncio
 async def test_read_write_permission(
     discourse_user_api_key: str,
@@ -233,7 +236,7 @@ async def test_read_write_permission(
     )
 
     # Create topic
-    title = f"title 1 padding so it is long enough test_read_write_permission"
+    title = "title 1 padding so it is long enough test_read_write_permission"
     content_1 = "content 1 padding so it is long enough test_read_write_permission"
 
     url = discourse.create_topic(title=title, content=content_1)

@@ -3,16 +3,18 @@
 
 """Fixtures for integration tests."""
 
+# pylint: disable=redefined-outer-name
+
 import asyncio
 import re
 import secrets
 
-from ops.model import ActiveStatus, Application
 import pydiscourse
 import pytest
 import pytest_asyncio
-from pytest_operator.plugin import OpsTest
 import requests
+from ops.model import ActiveStatus, Application
+from pytest_operator.plugin import OpsTest
 
 from . import types
 
@@ -29,7 +31,7 @@ async def create_discourse_account(
     """
     Create an account on discourse.
 
-    Assume that the model already countains a discourse unit unit.
+    Assume that the model already contains a discourse unit unit.
 
     Args:
         ops_test: Used for interactions with the model.
@@ -60,7 +62,7 @@ async def create_discourse_account(
         username_match is not None
     ), f"failed to get username for account with email {email}, {stdout=}, {stderr=}"
     username = username_match.group(1)
-    assert type(username) == str
+    assert isinstance(username, str)
 
     return types.Credentials(email=email, username=username, password=password)
 
@@ -83,7 +85,7 @@ def create_user_api_key(
     headers = {"Api-Key": master_api_key, "Api-Username": "system"}
     data = {"key[description]": "Test key", "key[username]": user_credentials.username}
     response = requests.post(
-        f"http://{discourse_hostname}/admin/api/keys", headers=headers, data=data
+        f"http://{discourse_hostname}/admin/api/keys", headers=headers, data=data, timeout=60
     )
     assert (
         response.status_code == 200
@@ -98,6 +100,7 @@ async def discourse(ops_test: OpsTest, discourse_hostname: str):
     postgres_charm_name = "postgresql-k8s"
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
+    assert ops_test.model is not None
     await asyncio.gather(
         ops_test.model.deploy(postgres_charm_name),
         ops_test.model.deploy(redis_charm_name),
@@ -113,7 +116,9 @@ async def discourse(ops_test: OpsTest, discourse_hostname: str):
     await ops_test.model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
     await ops_test.model.relate(discourse_charm_name, redis_charm_name)
 
-    await ops_test.model.wait_for_idle(status=ActiveStatus.name)
+    # mypy seems to have trouble with this line;
+    # "error: Cannot determine type of "name"  [has-type]"
+    await ops_test.model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
     # Need to wait for the waiting status to be resolved
 
@@ -147,6 +152,7 @@ async def discourse_admin_credentials(ops_test: OpsTest, discourse_unit_name: st
 
 
 # Making this depend on discourse_admin_credentials to ensure an admin user gets created
+# pylint: disable=unused-argument
 @pytest_asyncio.fixture(scope="module")
 async def discourse_user_credentials(
     ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
@@ -158,6 +164,7 @@ async def discourse_user_credentials(
 
 
 # Making this depend on discourse_admin_credentials to ensure an admin user gets created
+# pylint: disable=unused-argument
 @pytest_asyncio.fixture(scope="module")
 async def discourse_alternate_user_credentials(
     ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
@@ -244,6 +251,7 @@ async def discourse_enable_tags(
         f"http://{discourse_hostname}/admin/site_settings/tagging_enabled",
         headers=headers,
         data=data,
+        timeout=60,
     )
     assert response.status_code == 200, f"Enabling taging failed, {response.content=}"
 
@@ -272,6 +280,7 @@ async def discourse_remove_rate_limits(
             f"http://{discourse_hostname}/admin/site_settings/{setting}",
             headers=headers,
             data={setting: value},
+            timeout=60,
         )
         assert (
             response.status_code == 200

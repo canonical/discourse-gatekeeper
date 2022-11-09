@@ -5,7 +5,6 @@
 
 import pytest
 
-
 from src.discourse import Discourse, DiscourseError
 
 
@@ -124,6 +123,7 @@ def test_topic_url_valid(
 
     assert result.value == expected_result, "unexpected validation result"
     if not expected_result:
+        assert isinstance(result.message, str)
         assert topic_url in result.message
         for expected_message_content in expected_message_contents:
             assert (
