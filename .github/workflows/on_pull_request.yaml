@@ -1,9 +1,9 @@
-name: Test
+# name: Test
 
-on:
-  pull_request:
+# on:
+#   pull_request:
 
-jobs:
-  tests:
-    name: Run Tests
-    uses: ./.github/workflows/ci.yaml
+# jobs:
+#   tests:
+#     name: Run Tests
+#     uses: ./.github/workflows/ci.yaml
