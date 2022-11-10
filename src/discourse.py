@@ -9,6 +9,8 @@ from urllib import parse
 import pydiscourse
 import pydiscourse.exceptions
 
+from .exceptions import DiscourseError
+
 
 class _DiscourseTopicInfo(typing.NamedTuple):
     """Information about a discourse topic.
@@ -50,10 +52,6 @@ class _ValidationResultInvalid(typing.NamedTuple):
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
-
-
-class DiscourseError(Exception):
-    """Parent exception for all Discourse errors."""
 
 
 class Discourse:

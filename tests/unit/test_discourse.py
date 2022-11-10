@@ -5,7 +5,8 @@
 
 import pytest
 
-from src.discourse import Discourse, DiscourseError
+from src.discourse import Discourse
+from src.exceptions import DiscourseError
 
 
 @pytest.mark.parametrize(
