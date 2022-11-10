@@ -7,3 +7,5 @@ jobs:
   integration-tests:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@v2.0.0
     secrets: inherit
+    with:
+      pre-run-script: tests/integration/pre_run.sh
