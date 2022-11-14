@@ -8,10 +8,17 @@ inputs:
       docs key in metadata.yaml either does not exist or is empty. Defaults to
       not creating a new topic in which case an error is returned.
     default: false
+    required: false
+    type: boolean
   discourse_host:
     description: The discourse host name.
+    required: true
+    type: string
   discourse_category_id:
     description: The category identifier to use on discourse for all topics.
+    default: 41
+    required: false
+    type: integer
 runs:
   using: docker
   image: Dockerfile

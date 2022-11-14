@@ -3,13 +3,14 @@
 
 """Interface for Discourse interactions."""
 
+import os
 import typing
 from urllib import parse
 
 import pydiscourse
 import pydiscourse.exceptions
 
-from .exceptions import DiscourseError
+from .exceptions import DiscourseError, InputError
 
 
 class _DiscourseTopicInfo(typing.NamedTuple):
@@ -327,3 +328,53 @@ class Discourse:
             raise DiscourseError(
                 f"Error updating the topic, {url=!r}, {content=!r}"
             ) from discourse_error
+
+
+def create_discourse(hostname: str, category_id: int) -> Discourse:
+    """Create discourse client.
+
+    Raises InputError if the DISCOURSE_API_USERNAME and DISCOURSE_API_KEY environment variables are
+    not defined, if the protocol has been included in the hostname, the hostname is not a string or
+    the category_id is not an integer.
+
+    Args:
+        hostname: The Discourse server hostname.
+
+    Returns:
+        A discourse client that is connected to the server.
+
+    """
+    if not isinstance(hostname, str):
+        raise InputError(f"Invalid discourse_host input, it must be a string, got {hostname=!r}")
+    if not hostname:
+        raise InputError(f"Invalid discourse_host input, it must be non-empty, got {hostname=!r}")
+    hostname = hostname.lower()
+    if hostname.startswith("http://") or hostname.startswith("https://"):
+        raise InputError(
+            f"Invalid discourse_host input, it should not include the protocol, got {hostname=!r}"
+        )
+
+    if not isinstance(category_id, int):
+        raise InputError(
+            f"Invalid discourse_category_id input, it must be an integer, got {category_id=!r}"
+        )
+
+    api_username = os.getenv("DISCOURSE_API_USERNAME")
+    if api_username is None:
+        raise InputError(
+            "The DISCOURSE_API_USERNAME is missing but is required to be able to interact with "
+            "the documentation server"
+        )
+    api_key = os.getenv("DISCOURSE_API_KEY")
+    if api_key is None:
+        raise InputError(
+            "The DISCOURSE_API_KEY is missing but is required to be able to interact with "
+            "the documentation server"
+        )
+
+    return Discourse(
+        base_path=f"https://{hostname}",
+        api_username=api_username,
+        api_key=api_key,
+        category_id=category_id,
+    )

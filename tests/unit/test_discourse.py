@@ -8,8 +8,8 @@ from unittest import mock
 import pydiscourse.exceptions
 import pytest
 
-from src.discourse import Discourse
-from src.exceptions import DiscourseError
+from src.discourse import Discourse, create_discourse
+from src.exceptions import DiscourseError, InputError
 
 
 @pytest.mark.parametrize(
@@ -574,3 +574,108 @@ def test_function_discourse_error(
     exc_message = str(exc_info.value).lower()
     for expected_message_content in expected_message_contents:
         assert expected_message_content in exc_message
+
+
+@pytest.mark.parametrize(
+    "hostname, category_id, environment, expected_message_contents",
+    [
+        pytest.param(
+            "",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "empty", f"{''!r}"),
+            id="hostname empty",
+        ),
+        pytest.param(
+            True,
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "string", f"{True!r}"),
+            id="hostname is not string",
+        ),
+        pytest.param(
+            "http://discourse",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "http://discourse"),
+            id="hostname has http",
+        ),
+        pytest.param(
+            "https://discourse",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "https://discourse"),
+            id="hostname has https",
+        ),
+        pytest.param(
+            "HTTP://discourse",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "http://discourse"),
+            id="hostname has HTTP",
+        ),
+        pytest.param(
+            "HTTPS://discourse",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_host", "https://discourse"),
+            id="hostname has HTTPS",
+        ),
+        pytest.param(
+            "discourse",
+            None,
+            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
+            ("invalid", "discourse_category_id", "integer", f"{None!r}"),
+            id="category_id None",
+        ),
+        pytest.param(
+            "discourse",
+            1,
+            {"DISCOURSE_API_KEY": "key 1"},
+            ("DISCOURSE_API_USERNAME", "missing"),
+            id="DISCOURSE_API_USERNAME missing",
+        ),
+        pytest.param(
+            "discourse",
+            1,
+            {"DISCOURSE_API_USERNAME": "user 1"},
+            ("DISCOURSE_API_KEY", "missing"),
+            id="DISCOURSE_API_KEY missing",
+        ),
+    ],
+)
+def test_create_discourse_error(
+    hostname,
+    category_id,
+    environment: dict[str, str],
+    expected_message_contents: tuple[str, ...],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """
+    arrange: given hostname and environment that is not as required
+    act: when create_discourse is called with the hostname
+    assert: then InputError is raised.
+    """
+    for name, value in environment.items():
+        monkeypatch.setenv(name=name, value=value)
+
+    with pytest.raises(InputError) as exc_info:
+        create_discourse(hostname=hostname, category_id=category_id)
+
+    exc_message = str(exc_info.value).lower()
+    for expected_message_content in expected_message_contents:
+        assert expected_message_content.lower() in exc_message
+
+
+def test_create_discourse(monkeypatch: pytest.MonkeyPatch):
+    """
+    arrange: given hostname and environment
+    act: when create_discourse is called with the hostname
+    assert: then a Discourse instance is returned.
+    """
+    monkeypatch.setenv(name="DISCOURSE_API_USERNAME", value="user 1")
+    monkeypatch.setenv(name="DISCOURSE_API_KEY", value="key 1")
+
+    discourse = create_discourse(hostname="discourse", category_id=1)
+
+    assert isinstance(discourse, Discourse)
