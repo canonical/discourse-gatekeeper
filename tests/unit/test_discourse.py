@@ -5,10 +5,10 @@
 
 from unittest import mock
 
+import pydiscourse.exceptions
 import pytest
 
 from src.discourse import Discourse, DiscourseError
-import pydiscourse.exceptions
 
 
 @pytest.mark.parametrize(

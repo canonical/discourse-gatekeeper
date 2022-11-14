@@ -50,7 +50,7 @@ class _ValidationResultInvalid(typing.NamedTuple):
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
-KeyType = typing.TypeVar("KeyType")
+KeyT = typing.TypeVar("KeyT")
 
 
 class DiscourseError(Exception):
@@ -183,15 +183,15 @@ class Discourse:
         return first_post
 
     @staticmethod
-    def _get_post_value(post: dict, key: str, expected_type: typing.Type[KeyType]) -> KeyType:
+    def _get_post_value(post: dict, key: str, expected_type: typing.Type[KeyT]) -> KeyT:
         """Get a value by key from the first post checking the value is the correct type.
 
         Raises DiscourseError if the key is missing or is not of the correct type.
 
         Args:
-            expected_type: The expected type of the value.
-            key: The key to the value.
             post: The first post to retrieve the value from.
+            key: The key to the value.
+            expected_type: The expected type of the value.
 
         Returns:
             The value pointed to by the key.
@@ -199,7 +199,8 @@ class Discourse:
         """
         try:
             value = post[key]
-            assert isinstance(value, expected_type)
+            # It is ok for optimised code to ignore this
+            assert isinstance(value, expected_type)  # nosec
             return value
         except (TypeError, KeyError, AssertionError) as exc:
             raise DiscourseError(
@@ -316,9 +317,9 @@ class Discourse:
         """
         first_post = self._retrieve_topic_first_post(url=url)
 
-        id_ = self._get_post_value(post=first_post, key="id", expected_type=int)
+        post_id = self._get_post_value(post=first_post, key="id", expected_type=int)
         try:
-            self._client.update_post(post_id=id_, content=content, edit_reason=edit_reason)
+            self._client.update_post(post_id=post_id, content=content, edit_reason=edit_reason)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
                 f"Error updating the topic, {url=!r}, {content=!r}"
