@@ -9,3 +9,10 @@ jobs:
     secrets: inherit
     with:
       pre-run-script: tests/integration/pre_run.sh
+  self-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Self test
+        id: selftest
+        uses: canonical/upload-charm-docs@${{ github.ref_name }}
