@@ -162,7 +162,7 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path):
         returns url
     act: when retrieve_or_create_index is called with that directory and with create_if_not_exists
         True
-    assert: then create topic is called with the titleised charm name and with placeholder contant
+    assert: then create topic is called with the titleised charm name and with placeholder content
         and the url returned by the client and placeholder content is returned.
     """
     metadata_yaml_path = tmp_path / "metadata.yaml"

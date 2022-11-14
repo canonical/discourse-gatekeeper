@@ -62,7 +62,7 @@ class Discourse:
     tags = ("docs",)
 
     def __init__(self, base_path: str, api_username: str, api_key: str, category_id: int) -> None:
-        """Constructor.
+        """Construct.
 
         Args:
             base_path: The HTTP protocol and hostname for discourse (e.g., https://discourse).

@@ -9,11 +9,11 @@ class BaseException(Exception):
 
 
 class InputError(BaseException):
-    """A problem with the user input occured."""
+    """A problem with the user input occurred."""
 
 
 class ServerError(BaseException):
-    """A problem with the server storing the documentation occured."""
+    """A problem with the server storing the documentation occurred."""
 
 
 class DiscourseError(BaseException):
