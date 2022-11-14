@@ -152,11 +152,9 @@ async def discourse_admin_credentials(ops_test: OpsTest, discourse_unit_name: st
 
 
 # Making this depend on discourse_admin_credentials to ensure an admin user gets created
-# pylint: disable=unused-argument
+@pytest.mark.usefixtures("discourse_admin_credentials")
 @pytest_asyncio.fixture(scope="module")
-async def discourse_user_credentials(
-    ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
-):
+async def discourse_user_credentials(ops_test: OpsTest, discourse_unit_name: str):
     """Get the user credentials for discourse."""
     return await create_discourse_account(
         ops_test=ops_test, unit=discourse_unit_name, email="user@foo.internal", admin=False
@@ -164,11 +162,9 @@ async def discourse_user_credentials(
 
 
 # Making this depend on discourse_admin_credentials to ensure an admin user gets created
-# pylint: disable=unused-argument
+@pytest.mark.usefixtures("discourse_admin_credentials")
 @pytest_asyncio.fixture(scope="module")
-async def discourse_alternate_user_credentials(
-    ops_test: OpsTest, discourse_unit_name: str, discourse_admin_credentials: types.Credentials
-):
+async def discourse_alternate_user_credentials(ops_test: OpsTest, discourse_unit_name: str):
     """Get the alternate user credentials for discourse."""
     return await create_discourse_account(
         ops_test=ops_test,

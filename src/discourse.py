@@ -50,6 +50,7 @@ class _ValidationResultInvalid(typing.NamedTuple):
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
+KeyType = typing.TypeVar("KeyType")
 
 
 class DiscourseError(Exception):
@@ -71,7 +72,7 @@ class Discourse:
             category_id: The category identifier to put the topics into.
 
         """
-        self.client = pydiscourse.DiscourseClient(
+        self._client = pydiscourse.DiscourseClient(
             host=base_path, api_username=api_username, api_key=api_key
         )
         self._category_id = category_id
@@ -164,17 +165,46 @@ class Discourse:
         """
         topic_info = self._retrieve_topic_info_from_url(url=url)
         try:
-            topic = self.client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+            topic = self._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError from discourse_error
+            raise DiscourseError(f"Error retrieving topic, {url=!r}") from discourse_error
 
-        first_post = next(
-            filter(lambda post: post["post_number"] == 1, topic["post_stream"]["posts"])
-        )
-        # Check for deleted topic
-        if first_post["user_deleted"]:
-            raise DiscourseError(f"topic has been deleted, {url=}")
+        try:
+            first_post = next(
+                filter(lambda post: post["post_number"] == 1, topic["post_stream"]["posts"])
+            )
+            # Check for deleted topic
+            if first_post["user_deleted"]:
+                raise DiscourseError(f"topic has been deleted, {url=}")
+        except (TypeError, KeyError, StopIteration) as exc:
+            raise DiscourseError(
+                f"The documentation server returned unexpected data, {topic=!r}"
+            ) from exc
         return first_post
+
+    @staticmethod
+    def _get_post_value(post: dict, key: str, expected_type: typing.Type[KeyType]) -> KeyType:
+        """Get a value by key from the first post checking the value is the correct type.
+
+        Raises DiscourseError if the key is missing or is not of the correct type.
+
+        Args:
+            expected_type: The expected type of the value.
+            key: The key to the value.
+            post: The first post to retrieve the value from.
+
+        Returns:
+            The value pointed to by the key.
+
+        """
+        try:
+            value = post[key]
+            assert isinstance(value, expected_type)
+            return value
+        except (TypeError, KeyError, AssertionError) as exc:
+            raise DiscourseError(
+                f"The documentation server returned unexpected data, {post=!r}"
+            ) from exc
 
     def check_topic_write_permission(self, url: str) -> bool:
         """Check whether the credentials have write permission on a topic.
@@ -190,7 +220,7 @@ class Discourse:
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
-        return first_post["can_edit"]
+        return self._get_post_value(post=first_post, key="can_edit", expected_type=bool)
 
     def check_topic_read_permission(self, url: str) -> bool:
         """Check whether the credentials have read permission on a topic.
@@ -226,7 +256,7 @@ class Discourse:
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
-        return first_post["cooked"]
+        return self._get_post_value(post=first_post, key="cooked", expected_type=str)
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
@@ -242,13 +272,17 @@ class Discourse:
 
         """
         try:
-            post = self.client.create_post(
+            post = self._client.create_post(
                 title=title, category_id=self._category_id, tags=self.tags, content=content
             )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError from discourse_error
+            raise DiscourseError(
+                f"Error creating the topic, {title=!r}, {content=!r}"
+            ) from discourse_error
 
-        return f"{self._base_path}/t/{post['topic_slug']}/{post['topic_id']}"
+        topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
+        topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
+        return f"{self._base_path}/t/{topic_slug}/{topic_id}"
 
     def delete_topic(self, url: str) -> None:
         """Delete a topic.
@@ -262,11 +296,13 @@ class Discourse:
         """
         topic_info = self._retrieve_topic_info_from_url(url=url)
         try:
-            self.client.delete_topic(topic_id=topic_info.id_)
+            self._client.delete_topic(topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError from discourse_error
+            raise DiscourseError(f"Error deleting the topic, {url=!r}") from discourse_error
 
-    def update_topic(self, url: str, content: str) -> None:
+    def update_topic(
+        self, url: str, content: str, edit_reason: str = "Charm documentation updated"
+    ) -> None:
         """Update the first post of a topic.
 
         Raises DiscourseError if authentication fails, if the server refuses to update the first
@@ -275,14 +311,15 @@ class Discourse:
         Args:
             url: The URL to the topic.
             content: The content for the first post in the topic.
+            edit_reason: The reason the edit was made
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
+
+        id_ = self._get_post_value(post=first_post, key="id", expected_type=int)
         try:
-            self.client.update_post(
-                post_id=first_post["id"],
-                content=content,
-                edit_reason="Charm documentation updated",
-            )
+            self._client.update_post(post_id=id_, content=content, edit_reason=edit_reason)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError from discourse_error
+            raise DiscourseError(
+                f"Error updating the topic, {url=!r}, {content=!r}"
+            ) from discourse_error

@@ -78,10 +78,9 @@ async def test_create_retrieve_update_delete_topic(
 
 # Keep the API key parameter to ensure that the API key is created just that the wrong one is being
 # used
-# pylint: disable=unused-argument
+@pytest.mark.usefixtures("discourse_user_api_key")
 @pytest.mark.asyncio
 async def test_create_topic_auth_error(
-    discourse_user_api_key: str,
     discourse_hostname: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
