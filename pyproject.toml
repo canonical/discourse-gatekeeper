@@ -11,10 +11,8 @@ skips = ["*/*test.py", "*/test_*.py"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 100
 show_missing = true
-# Exclude discourse client from unit test coverage as it is covered by integration tests
-omit = ["src/discourse.py"]
 
 
 [tool.pytest.ini_options]
