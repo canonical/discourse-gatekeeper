@@ -112,16 +112,16 @@ from src.discourse import Discourse, DiscourseError
     ],
 )
 def test_topic_url_valid(
-    topic_url: str, expected_result: bool, expected_message_contents: tuple[str, ...]
+    topic_url: str,
+    expected_result: bool,
+    expected_message_contents: tuple[str, ...],
+    discourse: Discourse,
 ):
     """
     arrange: given a topic url, expected result and expected message contents
     act: when the topic url is passed to topic_url_valid
     assert: then the expected result and message with the expected contents are returned.
     """
-    base_path = "http://discourse"
-    discourse = Discourse(base_path=base_path, api_username="", api_key="", category_id=0)
-
     result = discourse.topic_url_valid(url=topic_url)
 
     assert result.value == expected_result, "unexpected validation result"
@@ -144,14 +144,12 @@ def test_topic_url_valid(
         pytest.param("update_topic", ("content 1",), id="update_topic"),
     ],
 )
-def test_function_call_invalid_url(function_: str, additional_args: tuple):
+def test_function_call_invalid_url(function_: str, additional_args: tuple, discourse: Discourse):
     """
     arrange: given an invalid topic url, name of a function and any additional arguments
     act: when the function is called with the url and any additional arguments
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
-
     with pytest.raises(DiscourseError) as exc_info:
         getattr(discourse, function_)("", *additional_args)
     assert "base path" in str(exc_info.value)
@@ -160,7 +158,7 @@ def test_function_call_invalid_url(function_: str, additional_args: tuple):
 @pytest.mark.parametrize(
     "function_, topic_data",
     [
-        pytest.param("check_topic_write_permission", None, id="check_topic_write_permission none"),
+        pytest.param("check_topic_write_permission", None, id="check_topic_write_permission None"),
         pytest.param(
             "check_topic_write_permission", "topic", id="check_topic_write_permission string"
         ),
@@ -173,42 +171,43 @@ def test_function_call_invalid_url(function_: str, additional_args: tuple):
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {}},
-            id="check_topic_write_permission posts missing",
+            id="check_topic_write_permission post_stream posts missing",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": None}},
-            id="check_topic_write_permission posts None",
+            id="check_topic_write_permission post_stream posts None",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": []}},
-            id="check_topic_write_permission posts empty",
+            id="check_topic_write_permission post_stream posts empty",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": [None]}},
-            id="check_topic_write_permission posts contains None",
+            id="check_topic_write_permission post_stream posts contains None",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": [{}]}},
-            id="check_topic_write_permission posts post empty",
+            id="check_topic_write_permission post_stream posts post empty",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": [{"post_number": 2}]}},
-            id="check_topic_write_permission posts post post_number does not include 1",
+            id="check_topic_write_permission post_stream posts post post_number "
+            "does not include 1",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": [{"post_number": 1}]}},
-            id="check_topic_write_permission posts post user_deleted missing",
+            id="check_topic_write_permission post_stream posts post user_deleted missing",
         ),
         pytest.param(
             "check_topic_write_permission",
             {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False}]}},
-            id="check_topic_write_permission posts post can_edit missing",
+            id="check_topic_write_permission post_stream posts post can_edit missing",
         ),
         pytest.param(
             "check_topic_write_permission",
@@ -217,13 +216,13 @@ def test_function_call_invalid_url(function_: str, additional_args: tuple):
                     "posts": [{"post_number": 1, "user_deleted": False, "can_edit": "false"}]
                 }
             },
-            id="check_topic_write_permission posts post can_edit not boolean",
+            id="check_topic_write_permission post_stream posts post can_edit not boolean",
         ),
-        pytest.param("check_topic_read_permission", None, id="check_topic_read_permission none"),
+        pytest.param("check_topic_read_permission", None, id="check_topic_read_permission None"),
         pytest.param(
             "retrieve_topic",
             {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False}]}},
-            id="retrieve_topic posts post cooked missing",
+            id="retrieve_topic post_stream posts post cooked missing",
         ),
         pytest.param(
             "retrieve_topic",
@@ -232,31 +231,59 @@ def test_function_call_invalid_url(function_: str, additional_args: tuple):
                     "posts": [{"post_number": 1, "user_deleted": False, "cooked": None}]
                 }
             },
-            id="retrieve_topic posts post cooked not string",
+            id="retrieve_topic post_stream posts post cooked not string",
         ),
     ],
 )
 def test_check_retrieve_topic_malformed(
-    monkeypatch: pytest.MonkeyPatch, function_: str, topic_data
+    monkeypatch: pytest.MonkeyPatch,
+    function_: str,
+    topic_data,
+    discourse: Discourse,
+    base_path: str,
 ):
     """
     arrange: given a mocked discourse client that returns given data for a topic
     act: when given function is called
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.topic.return_value = topic_data
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
     with pytest.raises(DiscourseError) as exc_info:
-        getattr(discourse, function_)(url="http://discourse/t/slug/1")
+        getattr(discourse, function_)(url=f"{base_path}/t/slug/1")
 
     exc_str = str(exc_info.value).lower()
     assert "server" in exc_str
     assert "returned" in exc_str
     assert "unexpected" in exc_str
     assert "data" in exc_str
+
+
+def test_retrieve_topic_topic_deleted(
+    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
+):
+    """
+    arrange: given a mocked discourse client that returns a deleted topic
+    act: when retrieve_topic is called
+    assert: then DiscourseError is raised.
+    """
+    mocked_client = mock.MagicMock()
+    mocked_client.topic.return_value = {
+        "post_stream": {"posts": [{"post_number": 1, "user_deleted": True}]}
+    }
+    monkeypatch.setattr(discourse, "_client", mocked_client)
+
+    url = f"{base_path}/t/slug/1"
+    with pytest.raises(DiscourseError) as exc_info:
+        discourse.retrieve_topic(url=url)
+
+    exc_str = str(exc_info.value).lower()
+    assert "topic" in exc_str
+    assert "deleted" in exc_str
+    assert "url" in exc_str
+    assert url in exc_str
 
 
 @pytest.mark.parametrize(
@@ -270,7 +297,7 @@ def test_check_retrieve_topic_malformed(
                 }
             },
             False,
-            id="check_topic_write_permission posts post can_edit False",
+            id="check_topic_write_permission post_stream posts post can_edit False",
         ),
         pytest.param(
             "check_topic_write_permission",
@@ -280,7 +307,7 @@ def test_check_retrieve_topic_malformed(
                 }
             },
             True,
-            id="check_topic_write_permission posts post can_edit True",
+            id="check_topic_write_permission post_stream posts post can_edit True",
         ),
         pytest.param(
             "check_topic_write_permission",
@@ -293,7 +320,8 @@ def test_check_retrieve_topic_malformed(
                 }
             },
             False,
-            id="check_topic_write_permission posts multiple post first has post_number == 1",
+            id="check_topic_write_permission post_stream posts multiple post first has "
+            "post_number == 1",
         ),
         pytest.param(
             "check_topic_write_permission",
@@ -306,13 +334,14 @@ def test_check_retrieve_topic_malformed(
                 }
             },
             False,
-            id="check_topic_write_permission posts multiple post second has post_number == 1",
+            id="check_topic_write_permission post_stream posts multiple post second has "
+            "post_number == 1",
         ),
         pytest.param(
             "check_topic_read_permission",
             {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False}]}},
             True,
-            id="check_topic_read_permission ",
+            id="check_topic_read_permission",
         ),
         pytest.param(
             "retrieve_topic",
@@ -326,20 +355,26 @@ def test_check_retrieve_topic_malformed(
         ),
     ],
 )
+# All arguments needed to be able to parametrize tests
+# pylint: disable=too-many-arguments
 def test_check_retrieve_success(
-    monkeypatch: pytest.MonkeyPatch, function_: str, topic_data, expected_return_value
+    monkeypatch: pytest.MonkeyPatch,
+    function_: str,
+    topic_data,
+    expected_return_value,
+    discourse: Discourse,
+    base_path: str,
 ):
     """
     arrange: given a mocked discourse client that returns given data for a topic
     act: when given function is called
     assert: then the expected value is returned.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.topic.return_value = topic_data
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    return_value = getattr(discourse, function_)(url="http://discourse/t/slug/1")
+    return_value = getattr(discourse, function_)(url=f"{base_path}/t/slug/1")
 
     assert return_value == expected_return_value
 
@@ -354,13 +389,14 @@ def test_check_retrieve_success(
         pytest.param({"topic_slug": "slug", "topic_id": "1"}, id="topic_id not int"),
     ],
 )
-def test_create_topic_post_malformed(monkeypatch: pytest.MonkeyPatch, post_data):
+def test_create_topic_post_malformed(
+    monkeypatch: pytest.MonkeyPatch, post_data, discourse: Discourse
+):
     """
     arrange: given a mocked discourse client that returns given data for a post
     act: when given create_topic is called
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.create_post.return_value = post_data
     monkeypatch.setattr(discourse, "_client", mocked_client)
@@ -375,14 +411,12 @@ def test_create_topic_post_malformed(monkeypatch: pytest.MonkeyPatch, post_data)
     assert "data" in exc_str
 
 
-def test_create_topic(monkeypatch: pytest.MonkeyPatch):
+def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
     """
     arrange: given a mocked discourse client that returns valid data for a post
     act: when given create_topic is called
     assert: then the url to the topic is returned.
     """
-    base_path = base_path = "http://discourse"
-    discourse = Discourse(base_path=base_path, api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     topic_slug = "slug"
     topic_id = 1
@@ -408,19 +442,21 @@ def test_create_topic(monkeypatch: pytest.MonkeyPatch):
         ),
     ],
 )
-def test_update_topic_malformed(monkeypatch: pytest.MonkeyPatch, topic_data):
+def test_update_topic_malformed(
+    monkeypatch: pytest.MonkeyPatch, topic_data, discourse: Discourse, base_path: str
+):
     """
-    arrange: given a mocked discourse client that returns given data for a topic
-    act: when given update_topic is called
+    arrange: given a mocked discourse client that returns given data for a topic bafter it is
+        updated
+    act: when update_topic is called
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.topic.return_value = topic_data
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
     with pytest.raises(DiscourseError) as exc_info:
-        discourse.update_topic(url="http://discourse/t/slug/1", content="content 1")
+        discourse.update_topic(url=f"{base_path}/t/slug/1", content="content 1")
 
     exc_str = str(exc_info.value).lower()
     assert "server" in exc_str
@@ -429,13 +465,14 @@ def test_update_topic_malformed(monkeypatch: pytest.MonkeyPatch, topic_data):
     assert "data" in exc_str
 
 
-def test_update_topic_discourse_error(monkeypatch: pytest.MonkeyPatch):
+def test_update_topic_discourse_error(
+    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
+):
     """
     arrange: given mocked discourse client that raises an error
     act: when the given update_topic is called
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.topic.return_value = {
         "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
@@ -443,7 +480,7 @@ def test_update_topic_discourse_error(monkeypatch: pytest.MonkeyPatch):
     mocked_client.update_post.side_effect = pydiscourse.exceptions.DiscourseError
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    url = "http://discourse/t/slug/1"
+    url = f"{base_path}/t/slug/1"
     content = "content 1"
     with pytest.raises(DiscourseError) as exc_info:
         discourse.update_topic(url=url, content=content)
@@ -456,20 +493,19 @@ def test_update_topic_discourse_error(monkeypatch: pytest.MonkeyPatch):
     assert content in exc_message
 
 
-def test_update_topic(monkeypatch: pytest.MonkeyPatch):
+def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str):
     """
     arrange: given a mocked discourse client that returns valid data for a topic
     act: when given update_topic is called
     assert: then nothing is returned.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     mocked_client.topic.return_value = {
         "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    discourse.update_topic(url="http://discourse/t/slug/1", content="content 1")
+    discourse.update_topic(url=f"{base_path}/t/slug/1", content="content 1")
 
 
 @pytest.mark.parametrize(
@@ -512,19 +548,21 @@ def test_update_topic(monkeypatch: pytest.MonkeyPatch):
         ),
     ],
 )
+# All arguments needed to be able to parametrize tests
+# pylint: disable=too-many-arguments
 def test_function_discourse_error(
     monkeypatch: pytest.MonkeyPatch,
     client_function: str,
     function_: str,
     kwargs: dict,
     expected_message_contents: tuple[str, ...],
+    discourse: Discourse,
 ):
     """
     arrange: given mocked discourse client that raises an error
     act: when the given function is called
     assert: then DiscourseError is raised.
     """
-    discourse = Discourse(base_path="http://discourse", api_username="", api_key="", category_id=0)
     mocked_client = mock.MagicMock()
     getattr(mocked_client, client_function).side_effect = pydiscourse.exceptions.DiscourseError
     monkeypatch.setattr(discourse, "_client", mocked_client)

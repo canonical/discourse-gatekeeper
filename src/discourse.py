@@ -173,13 +173,18 @@ class Discourse:
             first_post = next(
                 filter(lambda post: post["post_number"] == 1, topic["post_stream"]["posts"])
             )
-            # Check for deleted topic
-            if first_post["user_deleted"]:
-                raise DiscourseError(f"topic has been deleted, {url=}")
         except (TypeError, KeyError, StopIteration) as exc:
             raise DiscourseError(
                 f"The documentation server returned unexpected data, {topic=!r}"
             ) from exc
+
+        # Check for deleted topic
+        user_deleted = self._get_post_value(
+            post=first_post, key="user_deleted", expected_type=bool
+        )
+        if user_deleted:
+            raise DiscourseError(f"topic has been deleted, {url=}")
+
         return first_post
 
     @staticmethod
@@ -312,7 +317,7 @@ class Discourse:
         Args:
             url: The URL to the topic.
             content: The content for the first post in the topic.
-            edit_reason: The reason the edit was made
+            edit_reason: The reason the edit was made.
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
