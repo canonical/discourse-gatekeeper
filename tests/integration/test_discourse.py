@@ -40,7 +40,7 @@ async def test_create_retrieve_update_delete_topic(
     url = discourse.create_topic(title=title, content=content_1)
     returned_content = discourse.retrieve_topic(url=url)
 
-    assert returned_content == content_1, "post was created with the wrong content"
+    assert content_1 in returned_content, "post was created with the wrong content"
     # Check that the category is correct
     url_path_components = parse.urlparse(url=url).path.split("/")
     slug = url_path_components[-2]
@@ -61,7 +61,9 @@ async def test_create_retrieve_update_delete_topic(
     discourse.update_topic(url=url, content=content_2)
     returned_content = discourse.retrieve_topic(url=url)
 
-    assert returned_content == content_2, "content was not updated"
+    assert (
+        content_2 in returned_content and content_1 not in returned_content
+    ), "content was not updated"
 
     # Delete topic
     discourse.delete_topic(url=url)

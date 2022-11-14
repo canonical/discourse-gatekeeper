@@ -226,7 +226,7 @@ class Discourse:
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
-        return first_post["cooked"].removeprefix("<p>").removesuffix("</p>")
+        return first_post["cooked"]
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
