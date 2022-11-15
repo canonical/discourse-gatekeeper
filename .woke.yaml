@@ -1,0 +1,4 @@
+rules:
+  # Ignore "master" - discourse uses this as the rake action to generate the
+  # main API key for server interactions.
+  - name: master

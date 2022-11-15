@@ -11,7 +11,7 @@ skips = ["*/*test.py", "*/test_*.py"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 100
 show_missing = true
 
 
@@ -39,9 +39,12 @@ select = ["E", "W", "F", "C", "N", "R", "D", "H"]
 # Ignore D107 Missing docstring in __init__
 ignore = ["W503", "E501", "D107"]
 # D100, D101, D102, D103: Ignore missing docstrings in tests
-per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
+per-file-ignores = ["tests/*:D100,D101,D102,D103,D104,D205,D212,D415"]
 docstring-convention = "google"
 # Check for properly formatted copyright header in each file
 copyright-check = "True"
 copyright-author = "Canonical Ltd."
 copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
+
+[tool.mypy]
+ignore_missing_imports = true
