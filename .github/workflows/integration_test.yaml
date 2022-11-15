@@ -16,3 +16,6 @@ jobs:
       - name: Self test
         id: selftest
         uses: ./
+        with:
+          create_new_topic: true
+          discourse_host: discourse.charmhub.io
