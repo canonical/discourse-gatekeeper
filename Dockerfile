@@ -1,4 +1,4 @@
-FROM 3.10-slim AS builder
+FROM python:3.10-slim AS builder
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /usr/src/app
 
-FROM 3.10-slim
+FROM python:3.10-slim
 COPY --from=builder /usr/src/app /usr/src/app
 WORKDIR /usr/src/app
 ENV PYTHONPATH /usr/src/app
