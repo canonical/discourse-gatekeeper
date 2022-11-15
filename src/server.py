@@ -34,7 +34,7 @@ def retrieve_or_create_index(
     """
     metadata_yaml_path = local_base_path / "metadata.yaml"
     if not metadata_yaml_path.is_file():
-        raise InputError("Could not fine metadata.yaml file")
+        raise InputError("Could not find metadata.yaml file")
 
     with metadata_yaml_path.open(encoding="utf-8") as metadata_yaml_file:
         try:
