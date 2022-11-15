@@ -16,7 +16,9 @@ jobs:
       - name: Self test
         id: selftest
         uses: ./
-        secrets: inherit
+        env:
+          DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
         with:
           create_new_topic: true
           discourse_host: discourse.charmhub.io
