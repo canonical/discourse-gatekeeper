@@ -1,4 +1,4 @@
-FROM python:3.10-slim AS builder
+FROM python:3.10-slim
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
