@@ -5,6 +5,7 @@
 
 """Main execution for the action."""
 
+import json
 import os
 import pathlib
 
@@ -15,9 +16,9 @@ from src.server import retrieve_or_create_index
 def main():
     """Execute the action."""
     # Read input
-    create_new_topic = os.environ["INPUT_CREATE_NEW_TOPIC"] == "true"
-    discourse_host = os.environ["INPUT_DISCOURSE_HOST"]
-    discourse_category_id = int(os.environ["INPUT_DISCOURSE_CATEGORY_ID"])
+    create_new_topic = os.getenv("INPUT_CREATE_NEW_TOPIC") == "true"
+    discourse_host = os.getenv("INPUT_DISCOURSE_HOST")
+    discourse_category_id = int(os.getenv("INPUT_DISCOURSE_CATEGORY_ID"))
     print(create_new_topic)
     print(discourse_host)
     print(discourse_category_id)
@@ -30,6 +31,11 @@ def main():
         server_client=discourse,
     )
     print(page)
+
+    # Write output
+    github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
+    with github_output.open("w", encoding="utf-8") as github_output_file:
+        github_output_file.write(json.dumps({"index": page.url}))
 
 
 if __name__ == "__main__":

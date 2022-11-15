@@ -17,7 +17,7 @@ jobs:
         run: |
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
       - name: Self test
-        id: selftest
+        id: selfTest
         uses: ./
         env:
           DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
@@ -25,3 +25,6 @@ jobs:
         with:
           create_new_topic: true
           discourse_host: discourse.charmhub.io
+      - name: Clean up
+        run: |
+          echo ${{ steps.selfTest.outputs.created_pages }}

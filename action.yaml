@@ -19,6 +19,13 @@ inputs:
     default: 41
     required: false
     type: integer
+outputs:
+  created_pages:
+    description: |
+      A JSON map with the pages that have been created where the key is the
+      local path and the value is the URL to the created page.
+    type: string
+    required: true
 runs:
   using: docker
   image: Dockerfile
