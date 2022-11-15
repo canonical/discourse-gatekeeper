@@ -16,6 +16,7 @@ jobs:
       - name: Self test
         id: selftest
         uses: ./
+        secrets: inherit
         with:
           create_new_topic: true
           discourse_host: discourse.charmhub.io

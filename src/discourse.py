@@ -362,14 +362,14 @@ def create_discourse(hostname: str, category_id: int) -> Discourse:
     api_username = os.getenv("DISCOURSE_API_USERNAME")
     if api_username is None:
         raise InputError(
-            "The DISCOURSE_API_USERNAME is missing but is required to be able to interact with "
-            "the documentation server"
+            "The DISCOURSE_API_USERNAME environment variable is missing but is required to be able "
+            "to interact with the documentation server"
         )
     api_key = os.getenv("DISCOURSE_API_KEY")
     if api_key is None:
         raise InputError(
-            "The DISCOURSE_API_KEY is missing but is required to be able to interact with "
-            "the documentation server"
+            "The DISCOURSE_API_KEY environment variable is missing but is required to be able to "
+            "interact with the documentation server"
         )
 
     return Discourse(
