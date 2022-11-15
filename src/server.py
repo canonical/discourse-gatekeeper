@@ -12,6 +12,27 @@ from .exceptions import InputError, DiscourseError, ServerError
 from .types_ import Page
 
 
+def _get_metadata(local_base_path: Path) -> dict:
+    """Check for and read the metadata.
+
+    Args:
+        local_base_path: The base path to look for the metadata.yaml file in.
+
+    Returns:
+        The contents of the metadata.yaml file.
+
+    """
+    metadata_yaml_path = local_base_path / "metadata.yaml"
+    if not metadata_yaml_path.is_file():
+        raise InputError("Could not find metadata.yaml file")
+
+    with metadata_yaml_path.open(encoding="utf-8") as metadata_yaml_file:
+        try:
+            return yaml.safe_load(metadata_yaml_file)
+        except yaml.error.YAMLError as exc:
+            raise InputError("Malformed metadata.yaml file") from exc
+
+
 def retrieve_or_create_index(
     create_if_not_exists: bool, local_base_path: Path, server_client: Discourse
 ) -> Page:
@@ -32,15 +53,7 @@ def retrieve_or_create_index(
         The index page.
 
     """
-    metadata_yaml_path = local_base_path / "metadata.yaml"
-    if not metadata_yaml_path.is_file():
-        raise InputError("Could not find metadata.yaml file")
-
-    with metadata_yaml_path.open(encoding="utf-8") as metadata_yaml_file:
-        try:
-            metadata = yaml.safe_load(metadata_yaml_file)
-        except yaml.error.YAMLError as exc:
-            raise InputError("Malformed metadata.yaml file") from exc
+    metadata = _get_metadata(local_base_path=local_base_path)
 
     # Check docs key
     docs_key = "docs"

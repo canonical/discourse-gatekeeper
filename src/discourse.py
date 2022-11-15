@@ -56,10 +56,6 @@ _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
 KeyT = typing.TypeVar("KeyT")
 
 
-class DiscourseError(Exception):
-    """Parent exception for all Discourse errors."""
-
-
 class Discourse:
     """Interact with a discourse server."""
 
