@@ -35,7 +35,7 @@ def main():
     # Write output
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
     with github_output.open("w", encoding="utf-8") as github_output_file:
-        github_output_file.write(json.dumps({"index": page.url}))
+        github_output_file.write(f"created_pages={json.dumps({'index': page.url})}")
 
 
 if __name__ == "__main__":
