@@ -25,24 +25,22 @@ def assert_string_contains_substrings(substrings: tuple[str, ...], string: str) 
         assert substring in string
 
 
-def test_retrieve_or_create_index_metadata_yaml_missing(tmp_path: Path):
+def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     """
     arrange: given empty directory
-    act: when retrieve_or_create_index is called with that directory
+    act: when _get_metadata is called with that directory
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        server.retrieve_or_create_index(
-            create_if_not_exists=False, local_base_path=tmp_path, server_client=mock.MagicMock()
-        )
+        server._get_metadata(local_base_path=tmp_path)
 
     assert_string_contains_substrings(("metadata.yaml",), str(exc_info.value).lower())
 
 
-def test_retrieve_or_create_index_metadata_yaml_malformed(tmp_path: Path):
+def test__get_metadata_metadata_yaml_malformed(tmp_path: Path):
     """
     arrange: given directory with metadata.yaml that is malformed
-    act: when retrieve_or_create_index is called with that directory
+    act: when _get_metadata is called with that directory
     assert: then InputError is raised.
     """
     metadata_yaml_path = tmp_path / "metadata.yaml"
@@ -50,9 +48,7 @@ def test_retrieve_or_create_index_metadata_yaml_malformed(tmp_path: Path):
         metadata_yaml_file.write("malformed: yaml:")
 
     with pytest.raises(InputError) as exc_info:
-        server.retrieve_or_create_index(
-            create_if_not_exists=False, local_base_path=tmp_path, server_client=mock.MagicMock()
-        )
+        server._get_metadata(local_base_path=tmp_path)
 
     assert_string_contains_substrings(("malformed", "metadata.yaml"), str(exc_info.value).lower())
 
