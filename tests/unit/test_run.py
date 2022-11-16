@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Unit tests for src module."""
+"""Unit tests for run module."""
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
@@ -15,7 +15,7 @@ from src import discourse, run
 from src.exceptions import DiscourseError, InputError, ServerError
 
 
-def assert_string_contains_substrings(substrings: tuple[str, ...], string: str) -> None:
+def assert_substrings_in_string(substrings: tuple[str, ...], string: str) -> None:
     """Assert that a string contains substrings.
 
     Args:
@@ -36,11 +36,11 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     with pytest.raises(InputError) as exc_info:
         run._get_metadata(base_path=tmp_path)
 
-    assert_string_contains_substrings(("metadata.yaml",), str(exc_info.value).lower())
+    assert "metadata.yaml" in str(exc_info.value).lower()
 
 
 @pytest.mark.parametrize(
-    "metadata_yaml_content, expected_contents",
+    "metadata_yaml_content, expected_error_msg_contents",
     [
         pytest.param("", ("empty", "metadata.yaml"), id="malformed"),
         pytest.param("malformed: yaml:", ("malformed", "metadata.yaml"), id="malformed"),
@@ -48,11 +48,11 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     ],
 )
 def test__get_metadata_metadata_yaml_malformed(
-    metadata_yaml_content: str, expected_contents: tuple[str, ...], tmp_path: Path
+    metadata_yaml_content: str, expected_error_msg_contents: tuple[str, ...], tmp_path: Path
 ):
     """
     arrange: given directory with metadata.yaml that is malformed
-    act: when _get_metadata is called with that directory
+    act: when _get_metadata is called with the directory
     assert: then InputError is raised.
     """
     metadata_yaml = tmp_path / "metadata.yaml"
@@ -61,13 +61,13 @@ def test__get_metadata_metadata_yaml_malformed(
     with pytest.raises(InputError) as exc_info:
         run._get_metadata(base_path=tmp_path)
 
-    assert_string_contains_substrings(expected_contents, str(exc_info.value).lower())
+    assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
 def test__get_metadata_metadata(tmp_path: Path):
     """
     arrange: given directory with metadata.yaml with valid mapping yaml
-    act: when _get_metadata is called with that directory
+    act: when _get_metadata is called with the directory
     assert: then file contents are returned as a dictionary.
     """
     metadata_yaml = tmp_path / "metadata.yaml"
@@ -79,7 +79,7 @@ def test__get_metadata_metadata(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "metadata, expected_content",
+    "metadata, expected_error_msg_content",
     [
         pytest.param({}, "not defined", id="empty"),
         pytest.param({"key": "value"}, "not defined", id="docs not defined"),
@@ -87,7 +87,7 @@ def test__get_metadata_metadata(tmp_path: Path):
         pytest.param({"docs": 5}, "not a string", id="not string"),
     ],
 )
-def test__get_key_docs_missing_malformed(metadata: dict, expected_content: str):
+def test__get_key_docs_missing_malformed(metadata: dict, expected_error_msg_content: str):
     """
     arrange: given malformed metadata
     act: when _get_key is called with the metadata
@@ -96,8 +96,8 @@ def test__get_key_docs_missing_malformed(metadata: dict, expected_content: str):
     with pytest.raises(InputError) as exc_info:
         run._get_key(metadata=metadata, key="docs")
 
-    assert_string_contains_substrings(
-        ("'docs'", expected_content, "metadata.yaml", f"{metadata=!r}"),
+    assert_substrings_in_string(
+        ("'docs'", expected_error_msg_content, "metadata.yaml", f"{metadata=!r}"),
         str(exc_info.value).lower(),
     )
 
@@ -111,7 +111,7 @@ def test__get_key():
     docs_key = "docs"
     docs_value = "url 1"
 
-    returned_value = run._get_key(metadata={docs_key: docs_value}, key="docs")
+    returned_value = run._get_key(metadata={docs_key: docs_value}, key=docs_key)
 
     assert returned_value == docs_value
 
@@ -125,7 +125,7 @@ def test__read_docs_index_docs_folder_missing(tmp_path: Path):
     with pytest.raises(InputError) as exc_info:
         run._read_docs_index(base_path=tmp_path)
 
-    assert_string_contains_substrings(
+    assert_substrings_in_string(
         ("not", "find", "directory", str(tmp_path / "docs")), str(exc_info.value).lower()
     )
 
@@ -142,12 +142,12 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     with pytest.raises(InputError) as exc_info:
         run._read_docs_index(base_path=tmp_path)
 
-    assert_string_contains_substrings(
+    assert_substrings_in_string(
         ("not", "find", "file", str(docs_folder / "index.md")), str(exc_info.value).lower()
     )
 
 
-def test__read_docs_index_index_file(index_file: str, tmp_path: Path):
+def test__read_docs_index_index_file(index_file_content: str, tmp_path: Path):
     """
     arrange: given directory with the docs folder and index file
     act: when _read_docs_index is called with the directory
@@ -155,11 +155,11 @@ def test__read_docs_index_index_file(index_file: str, tmp_path: Path):
     """
     returned_content = run._read_docs_index(base_path=tmp_path)
 
-    assert returned_content == index_file
+    assert returned_content == index_file_content
 
 
 @pytest.mark.parametrize(
-    "metadata_yaml_content, create_if_not_exists, expected_contents",
+    "metadata_yaml_content, create_if_not_exists, expected_error_msg_contents",
     [
         pytest.param("", True, ("empty",), id="empty file"),
         pytest.param(
@@ -186,7 +186,7 @@ def test__read_docs_index_index_file(index_file: str, tmp_path: Path):
 def test_retrieve_or_create_index_input_error(
     metadata_yaml_content: str,
     create_if_not_exists: bool,
-    expected_contents: tuple[str, ...],
+    expected_error_msg_contents: tuple[str, ...],
     tmp_path: Path,
 ):
     """
@@ -204,14 +204,14 @@ def test_retrieve_or_create_index_input_error(
             server_client=mock.MagicMock(),
         )
 
-    assert_string_contains_substrings(
-        expected_contents,
+    assert_substrings_in_string(
+        expected_error_msg_contents,
         str(exc_info.value).lower(),
     )
 
 
 # Need the index file to exist
-@pytest.mark.usefixtures("index_file")
+@pytest.mark.usefixtures("index_file_content")
 def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path: Path):
     """
     arrange: given directory with metadata.yaml without docs defined and discourse client that
@@ -230,12 +230,10 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
             create_if_not_exists=True, base_path=tmp_path, server_client=mocked_server_client
         )
 
-    assert_string_contains_substrings(
-        ("index page", "creation", "failed"), str(exc_info.value).lower()
-    )
+    assert_substrings_in_string(("index page", "creation", "failed"), str(exc_info.value).lower())
 
 
-def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_file: str):
+def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_file_content: str):
     """
     arrange: given directory with metadata.yaml without docs defined, discourse client that returns
         url and index file that has been created
@@ -255,12 +253,12 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_fil
     )
 
     assert returned_page.url == url
-    assert index_file in returned_page.content.lower()
+    assert index_file_content in returned_page.content.lower()
 
     mocked_server_client.create_topic.assert_called_once()
     call_kwargs = mocked_server_client.create_topic.call_args.kwargs
     assert "title" in call_kwargs and "Charm Name" in call_kwargs["title"]
-    assert "content" in call_kwargs and index_file in call_kwargs["content"]
+    assert "content" in call_kwargs and index_file_content in call_kwargs["content"]
 
 
 def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_path: Path):
@@ -282,9 +280,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_pat
             server_client=mocked_server_client,
         )
 
-    assert_string_contains_substrings(
-        ("index page", "retrieval", "failed"), str(exc_info.value).lower()
-    )
+    assert_substrings_in_string(("index page", "retrieval", "failed"), str(exc_info.value).lower())
 
 
 def test_retrieve_or_create_index_metadata_yaml_retrieve(tmp_path: Path):
