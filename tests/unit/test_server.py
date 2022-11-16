@@ -117,6 +117,48 @@ def test__get_key():
     assert returned_value == docs_value
 
 
+def test__read_index_docs_docs_folder_missing(tmp_path: Path):
+    """
+    arrange: given empty directory
+    act: when _read_index_docs is called with the directory
+    assert: then InputError is raised.
+    """
+    with pytest.raises(InputError) as exc_info:
+        server._read_index_docs(local_base_path=tmp_path)
+
+    assert_string_contains_substrings(
+        ("not", "find", "directory", str(tmp_path / "docs")), str(exc_info.value).lower()
+    )
+
+
+def test__read_index_docs_index_file_missing(tmp_path: Path):
+    """
+    arrange: given directory with the docs folder
+    act: when _read_index_docs is called with the directory
+    assert: then InputError is raised.
+    """
+    docs_folder = tmp_path / "docs"
+    docs_folder.mkdir()
+
+    with pytest.raises(InputError) as exc_info:
+        server._read_index_docs(local_base_path=tmp_path)
+
+    assert_string_contains_substrings(
+        ("not", "find", "file", str(docs_folder / "index.md")), str(exc_info.value).lower()
+    )
+
+
+def test__read_index_docs_index_file(index_file: str, tmp_path: Path):
+    """
+    arrange: given directory with the docs folder and index file
+    act: when _read_index_docs is called with the directory
+    assert: then the index file content is returned.
+    """
+    returned_content = server._read_index_docs(local_base_path=tmp_path)
+
+    assert returned_content == index_file
+
+
 @pytest.mark.parametrize(
     "metadata_yaml_contents, create_if_not_exists, expected_contents",
     [
@@ -170,6 +212,8 @@ def test_retrieve_or_create_index_input_error(
     )
 
 
+# Need the index file to exist
+@pytest.mark.usefixtures("index_file")
 def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path: Path):
     """
     arrange: given directory with metadata.yaml without docs defined and discourse client that
@@ -194,10 +238,10 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
     )
 
 
-def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path):
+def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_file: str):
     """
-    arrange: given directory with metadata.yaml without docs defined and discourse client that
-        returns url
+    arrange: given directory with metadata.yaml without docs defined, discourse client that returns
+        url and index file that has been created
     act: when retrieve_or_create_index is called with that directory and with create_if_not_exists
         True
     assert: then create topic is called with the titleised charm name and with placeholder content
@@ -215,12 +259,12 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path):
     )
 
     assert returned_page.url == url
-    assert "placeholder" in returned_page.content.lower()
+    assert index_file in returned_page.content.lower()
 
     mocked_server_client.create_topic.assert_called_once()
     call_kwargs = mocked_server_client.create_topic.call_args.kwargs
     assert "title" in call_kwargs and "Charm Name" in call_kwargs["title"]
-    assert "content" in call_kwargs and "placeholder" in call_kwargs["content"]
+    assert "content" in call_kwargs and index_file in call_kwargs["content"]
 
 
 def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_path: Path):

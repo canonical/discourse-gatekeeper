@@ -4,7 +4,6 @@
 """Interactions with the documentation server."""
 
 from pathlib import Path
-import typing
 
 import yaml
 
@@ -25,15 +24,14 @@ def _get_metadata(local_base_path: Path) -> dict:
         The contents of the metadata.yaml file.
 
     """
-    metadata_yaml_path = local_base_path / "metadata.yaml"
-    if not metadata_yaml_path.is_file():
+    metadata_yaml = local_base_path / "metadata.yaml"
+    if not metadata_yaml.is_file():
         raise InputError("Could not find metadata.yaml file")
 
-    with metadata_yaml_path.open(encoding="utf-8") as metadata_yaml_file:
-        try:
-            metadata = yaml.safe_load(metadata_yaml_file)
-        except yaml.error.YAMLError as exc:
-            raise InputError("Malformed metadata.yaml file") from exc
+    try:
+        metadata = yaml.safe_load(metadata_yaml.read_text())
+    except yaml.error.YAMLError as exc:
+        raise InputError("Malformed metadata.yaml file") from exc
 
     if not metadata:
         raise InputError("metadata.yaml file is empty")
@@ -64,6 +62,32 @@ def _get_key(metadata: dict, key: str) -> str:
     return docs_value
 
 
+def _read_index_docs(local_base_path: Path) -> str:
+    """Read the content of the index file.
+
+    Raises InputError if the file does not exist.
+
+    Args:
+        local_base_path: The starting path to look for the index content.
+
+    Returns:
+        The content of the index file.
+
+    """
+    if not (docs_folder := local_base_path / "docs").is_dir():
+        raise InputError(
+            f"Could not find directory '{docs_folder}' which is where documentation is expected "
+            "to be stored"
+        )
+    if not (index_file := docs_folder / "index.md").is_file():
+        raise InputError(
+            f"Could not find file '{index_file}' which is where the documentation index file is "
+            "expected"
+        )
+
+    return index_file.read_text()
+
+
 def retrieve_or_create_index(
     create_if_not_exists: bool, local_base_path: Path, server_client: Discourse
 ) -> Page:
@@ -86,15 +110,12 @@ def retrieve_or_create_index(
     """
     metadata = _get_metadata(local_base_path=local_base_path)
 
-    # Check docs key
     docs_key = "docs"
     if docs_key not in metadata and create_if_not_exists:
-        # Check name key
-        name_key = "name"
-        name_value = _get_key(metadata=metadata, key=name_key)
+        name_value = _get_key(metadata=metadata, key="name")
+        content = _read_index_docs(local_base_path=local_base_path)
 
         try:
-            content = "placeholder content until it is created"
             index_url = server_client.create_topic(
                 title=f"{name_value.replace('-', ' ').title()} Documentation Overview",
                 content=content,

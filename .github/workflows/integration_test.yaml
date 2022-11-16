@@ -16,6 +16,8 @@ jobs:
       - name: Prepare for action to run
         run: |
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+          mkdir docs
+          echo placeholder content for testing {{ job.container.id }} > docs/index.md
       - name: Self test
         id: selfTest
         uses: ./
