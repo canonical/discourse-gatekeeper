@@ -36,6 +36,9 @@ def main():
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
     with github_output.open("w", encoding="utf-8") as github_output_file:
         github_output_file.write(f"created_pages={json.dumps({'index': page.url})}")
+        github_output_file.write(
+            f"discourse_config={json.dumps({'hostname': discourse_host, 'category_id': discourse_category_id})}"
+        )
 
 
 if __name__ == "__main__":

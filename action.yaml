@@ -24,6 +24,10 @@ outputs:
     description: |
       A JSON map with the pages that have been created where the key is the
       local path and the value is the URL to the created page.
+  discourse_config:
+    description: |
+      The configuration used by the action to interact with the discourse
+      server.
 runs:
   using: docker
   image: Dockerfile
