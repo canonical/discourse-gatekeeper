@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Interactions with the documentation server."""
+"""Execute the uploading of documentation."""
 
 from pathlib import Path
 
@@ -12,31 +12,34 @@ from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Page
 
 
-def _get_metadata(local_base_path: Path) -> dict:
+def _get_metadata(base_path: Path) -> dict:
     """Check for and read the metadata.
 
     Raises InputError if the metadata.yaml file does not exists or is malformed.
 
     Args:
-        local_base_path: The base path to look for the metadata.yaml file in.
+        base_path: The base path to look for the metadata.yaml file in.
 
     Returns:
         The contents of the metadata.yaml file.
 
     """
-    metadata_yaml = local_base_path / "metadata.yaml"
+    metadata_yaml = base_path / "metadata.yaml"
     if not metadata_yaml.is_file():
-        raise InputError("Could not find metadata.yaml file")
+        raise InputError(f"Could not find metadata.yaml file, looked in folder: {base_path}")
 
     try:
         metadata = yaml.safe_load(metadata_yaml.read_text())
     except yaml.error.YAMLError as exc:
-        raise InputError("Malformed metadata.yaml file") from exc
+        raise InputError(f"Malformed metadata.yaml file, read file: {metadata_yaml}") from exc
 
     if not metadata:
-        raise InputError("metadata.yaml file is empty")
+        raise InputError(f"metadata.yaml file is empty, read file: {metadata_yaml}")
     if not isinstance(metadata, dict):
-        raise InputError("metadata.yaml file does not contain a mapping at the root")
+        raise InputError(
+            "metadata.yaml file does not contain a mapping at the root, "
+            f"read file: {metadata_yaml}, content: {metadata!r}"
+        )
 
     return metadata
 
@@ -62,19 +65,19 @@ def _get_key(metadata: dict, key: str) -> str:
     return docs_value
 
 
-def _read_index_docs(local_base_path: Path) -> str:
+def _read_docs_index(base_path: Path) -> str:
     """Read the content of the index file.
 
     Raises InputError if the file does not exist.
 
     Args:
-        local_base_path: The starting path to look for the index content.
+        base_path: The starting path to look for the index content.
 
     Returns:
         The content of the index file.
 
     """
-    if not (docs_folder := local_base_path / "docs").is_dir():
+    if not (docs_folder := base_path / "docs").is_dir():
         raise InputError(
             f"Could not find directory '{docs_folder}' which is where documentation is expected "
             "to be stored"
@@ -82,38 +85,36 @@ def _read_index_docs(local_base_path: Path) -> str:
     if not (index_file := docs_folder / "index.md").is_file():
         raise InputError(
             f"Could not find file '{index_file}' which is where the documentation index file is "
-            "expected"
+            "expected to be stored"
         )
 
     return index_file.read_text()
 
 
 def retrieve_or_create_index(
-    create_if_not_exists: bool, local_base_path: Path, server_client: Discourse
+    create_if_not_exists: bool, base_path: Path, server_client: Discourse
 ) -> Page:
     """Retrieve the index page defined in the metadata.yaml file or create it if it doesn't exist.
 
-    Raises InputError if the metadata.yaml file does not exists or is malformed or if docs key does
-    not exists, is empty or not a string and create_if_not_exists is False. Raises InputError if
-    create_if_not_exists is True and the name key does not exists or is empty or not a string in
-    metadata.yaml. Raises ServerError if interactions with the documentation server (retrieving or
-    creating the index page) occurs.
+    Raises InputError if create_if_not_exists is False and the docs key is not defined in the
+    metadata.yaml file. Raises ServerError if interactions with the documentation server
+    (retrieving or creating the index page) occurs.
 
     Args:
         create_if_not_exists: Whether to create the index page if it does not exist.
-        local_base_path: The base path to look for the metadata.yaml file in.
+        base_path: The base path to look for the metadata.yaml file in.
         server_client: A client to the documentation server.
 
     Returns:
         The index page.
 
     """
-    metadata = _get_metadata(local_base_path=local_base_path)
+    metadata = _get_metadata(base_path=base_path)
 
     docs_key = "docs"
     if docs_key not in metadata and create_if_not_exists:
         name_value = _get_key(metadata=metadata, key="name")
-        content = _read_index_docs(local_base_path=local_base_path)
+        content = _read_docs_index(base_path=base_path)
 
         try:
             index_url = server_client.create_topic(

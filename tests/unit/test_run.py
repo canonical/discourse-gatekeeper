@@ -34,7 +34,7 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        run._get_metadata(local_base_path=tmp_path)
+        run._get_metadata(base_path=tmp_path)
 
     assert_string_contains_substrings(("metadata.yaml",), str(exc_info.value).lower())
 
@@ -59,7 +59,7 @@ def test__get_metadata_metadata_yaml_malformed(
     metadata_yaml.write_text(metadata_yaml_content, encoding="utf-8")
 
     with pytest.raises(InputError) as exc_info:
-        run._get_metadata(local_base_path=tmp_path)
+        run._get_metadata(base_path=tmp_path)
 
     assert_string_contains_substrings(expected_contents, str(exc_info.value).lower())
 
@@ -73,7 +73,7 @@ def test__get_metadata_metadata(tmp_path: Path):
     metadata_yaml = tmp_path / "metadata.yaml"
     metadata_yaml.write_text("key: value", encoding="utf-8")
 
-    metadata = run._get_metadata(local_base_path=tmp_path)
+    metadata = run._get_metadata(base_path=tmp_path)
 
     assert metadata == {"key": "value"}
 
@@ -116,44 +116,44 @@ def test__get_key():
     assert returned_value == docs_value
 
 
-def test__read_index_docs_docs_folder_missing(tmp_path: Path):
+def test__read_docs_index_docs_folder_missing(tmp_path: Path):
     """
     arrange: given empty directory
-    act: when _read_index_docs is called with the directory
+    act: when _read_docs_index is called with the directory
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        run._read_index_docs(local_base_path=tmp_path)
+        run._read_docs_index(base_path=tmp_path)
 
     assert_string_contains_substrings(
         ("not", "find", "directory", str(tmp_path / "docs")), str(exc_info.value).lower()
     )
 
 
-def test__read_index_docs_index_file_missing(tmp_path: Path):
+def test__read_docs_index_index_file_missing(tmp_path: Path):
     """
     arrange: given directory with the docs folder
-    act: when _read_index_docs is called with the directory
+    act: when _read_docs_index is called with the directory
     assert: then InputError is raised.
     """
     docs_folder = tmp_path / "docs"
     docs_folder.mkdir()
 
     with pytest.raises(InputError) as exc_info:
-        run._read_index_docs(local_base_path=tmp_path)
+        run._read_docs_index(base_path=tmp_path)
 
     assert_string_contains_substrings(
         ("not", "find", "file", str(docs_folder / "index.md")), str(exc_info.value).lower()
     )
 
 
-def test__read_index_docs_index_file(index_file: str, tmp_path: Path):
+def test__read_docs_index_index_file(index_file: str, tmp_path: Path):
     """
     arrange: given directory with the docs folder and index file
-    act: when _read_index_docs is called with the directory
+    act: when _read_docs_index is called with the directory
     assert: then the index file content is returned.
     """
-    returned_content = run._read_index_docs(local_base_path=tmp_path)
+    returned_content = run._read_docs_index(base_path=tmp_path)
 
     assert returned_content == index_file
 
@@ -200,7 +200,7 @@ def test_retrieve_or_create_index_input_error(
     with pytest.raises(InputError) as exc_info:
         run.retrieve_or_create_index(
             create_if_not_exists=create_if_not_exists,
-            local_base_path=tmp_path,
+            base_path=tmp_path,
             server_client=mock.MagicMock(),
         )
 
@@ -227,7 +227,7 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
 
     with pytest.raises(ServerError) as exc_info:
         run.retrieve_or_create_index(
-            create_if_not_exists=True, local_base_path=tmp_path, server_client=mocked_server_client
+            create_if_not_exists=True, base_path=tmp_path, server_client=mocked_server_client
         )
 
     assert_string_contains_substrings(
@@ -251,7 +251,7 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_fil
     mocked_server_client.create_topic.return_value = url
 
     returned_page = run.retrieve_or_create_index(
-        create_if_not_exists=True, local_base_path=tmp_path, server_client=mocked_server_client
+        create_if_not_exists=True, base_path=tmp_path, server_client=mocked_server_client
     )
 
     assert returned_page.url == url
@@ -278,7 +278,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_pat
     with pytest.raises(ServerError) as exc_info:
         run.retrieve_or_create_index(
             create_if_not_exists=False,
-            local_base_path=tmp_path,
+            base_path=tmp_path,
             server_client=mocked_server_client,
         )
 
@@ -304,7 +304,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve(tmp_path: Path):
 
     returned_page = run.retrieve_or_create_index(
         create_if_not_exists=False,
-        local_base_path=tmp_path,
+        base_path=tmp_path,
         server_client=mocked_server_client,
     )
 
