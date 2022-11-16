@@ -15,9 +15,18 @@ jobs:
       - uses: actions/checkout@v3
       - name: Prepare for action to run
         run: |
+          # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+          # Create documentation index file
           mkdir docs
-          echo "placeholder content for testing, repository: ${{ github.repository }}, branch: ${{ github.head_ref }}, commit sha: ${{ github.sha }}, some uuid: $(uuidgen)" > docs/index.md
+          # need some values in the content that change on every commit as discourse looks for file
+          # similarity
+          echo "placeholder content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > docs/index.md
       - name: Self test
         id: selfTest
         uses: ./

@@ -11,7 +11,7 @@ import pathlib
 from functools import partial
 
 from src.discourse import create_discourse
-from src.server import retrieve_or_create_index
+from src.run import retrieve_or_create_index
 
 
 def main():

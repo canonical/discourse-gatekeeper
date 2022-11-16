@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, server
+from src import discourse, run
 from src.exceptions import DiscourseError, InputError, ServerError
 
 
@@ -34,7 +34,7 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        server._get_metadata(local_base_path=tmp_path)
+        run._get_metadata(local_base_path=tmp_path)
 
     assert_string_contains_substrings(("metadata.yaml",), str(exc_info.value).lower())
 
@@ -59,7 +59,7 @@ def test__get_metadata_metadata_yaml_malformed(
     metadata_yaml.write_text(metadata_yaml_content, encoding="utf-8")
 
     with pytest.raises(InputError) as exc_info:
-        server._get_metadata(local_base_path=tmp_path)
+        run._get_metadata(local_base_path=tmp_path)
 
     assert_string_contains_substrings(expected_contents, str(exc_info.value).lower())
 
@@ -73,7 +73,7 @@ def test__get_metadata_metadata(tmp_path: Path):
     metadata_yaml = tmp_path / "metadata.yaml"
     metadata_yaml.write_text("key: value", encoding="utf-8")
 
-    metadata = server._get_metadata(local_base_path=tmp_path)
+    metadata = run._get_metadata(local_base_path=tmp_path)
 
     assert metadata == {"key": "value"}
 
@@ -94,7 +94,7 @@ def test__get_key_docs_missing_malformed(metadata: dict, expected_content: str):
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        server._get_key(metadata=metadata, key="docs")
+        run._get_key(metadata=metadata, key="docs")
 
     assert_string_contains_substrings(
         ("'docs'", expected_content, "metadata.yaml", f"{metadata=!r}"),
@@ -111,7 +111,7 @@ def test__get_key():
     docs_key = "docs"
     docs_value = "url 1"
 
-    returned_value = server._get_key(metadata={docs_key: docs_value}, key="docs")
+    returned_value = run._get_key(metadata={docs_key: docs_value}, key="docs")
 
     assert returned_value == docs_value
 
@@ -123,7 +123,7 @@ def test__read_index_docs_docs_folder_missing(tmp_path: Path):
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        server._read_index_docs(local_base_path=tmp_path)
+        run._read_index_docs(local_base_path=tmp_path)
 
     assert_string_contains_substrings(
         ("not", "find", "directory", str(tmp_path / "docs")), str(exc_info.value).lower()
@@ -140,7 +140,7 @@ def test__read_index_docs_index_file_missing(tmp_path: Path):
     docs_folder.mkdir()
 
     with pytest.raises(InputError) as exc_info:
-        server._read_index_docs(local_base_path=tmp_path)
+        run._read_index_docs(local_base_path=tmp_path)
 
     assert_string_contains_substrings(
         ("not", "find", "file", str(docs_folder / "index.md")), str(exc_info.value).lower()
@@ -153,7 +153,7 @@ def test__read_index_docs_index_file(index_file: str, tmp_path: Path):
     act: when _read_index_docs is called with the directory
     assert: then the index file content is returned.
     """
-    returned_content = server._read_index_docs(local_base_path=tmp_path)
+    returned_content = run._read_index_docs(local_base_path=tmp_path)
 
     assert returned_content == index_file
 
@@ -198,7 +198,7 @@ def test_retrieve_or_create_index_input_error(
     metadata_yaml.write_text(metadata_yaml_content, encoding="utf-8")
 
     with pytest.raises(InputError) as exc_info:
-        server.retrieve_or_create_index(
+        run.retrieve_or_create_index(
             create_if_not_exists=create_if_not_exists,
             local_base_path=tmp_path,
             server_client=mock.MagicMock(),
@@ -226,7 +226,7 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
     mocked_server_client.create_topic.side_effect = DiscourseError
 
     with pytest.raises(ServerError) as exc_info:
-        server.retrieve_or_create_index(
+        run.retrieve_or_create_index(
             create_if_not_exists=True, local_base_path=tmp_path, server_client=mocked_server_client
         )
 
@@ -250,7 +250,7 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_fil
     url = "http://server/index-page"
     mocked_server_client.create_topic.return_value = url
 
-    returned_page = server.retrieve_or_create_index(
+    returned_page = run.retrieve_or_create_index(
         create_if_not_exists=True, local_base_path=tmp_path, server_client=mocked_server_client
     )
 
@@ -276,7 +276,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_pat
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
 
     with pytest.raises(ServerError) as exc_info:
-        server.retrieve_or_create_index(
+        run.retrieve_or_create_index(
             create_if_not_exists=False,
             local_base_path=tmp_path,
             server_client=mocked_server_client,
@@ -302,7 +302,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve(tmp_path: Path):
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = content
 
-    returned_page = server.retrieve_or_create_index(
+    returned_page = run.retrieve_or_create_index(
         create_if_not_exists=False,
         local_base_path=tmp_path,
         server_client=mocked_server_client,
