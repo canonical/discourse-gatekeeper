@@ -20,9 +20,6 @@ def main():
     create_new_topic = os.getenv("INPUT_CREATE_NEW_TOPIC") == "true"
     discourse_host = os.getenv("INPUT_DISCOURSE_HOST")
     discourse_category_id = int(os.getenv("INPUT_DISCOURSE_CATEGORY_ID"))
-    print(create_new_topic)
-    print(discourse_host)
-    print(discourse_category_id)
 
     # Execute action
     discourse = create_discourse(hostname=discourse_host, category_id=discourse_category_id)

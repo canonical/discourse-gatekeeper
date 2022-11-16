@@ -17,7 +17,7 @@ jobs:
         run: |
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
           mkdir docs
-          echo "placeholder content for testing, repository: ${{ github.repository }}, branch: ${{ github.head_ref }}, commit: ${{ github.sha }}, commit message: ${{ github.event.commit.message }}, some uuid: $(uuidgen)" > docs/index.md
+          echo "placeholder content for testing, repository: ${{ github.repository }}, branch: ${{ github.head_ref }}, commit sha: ${{ github.sha }}, commit details: $(git log -1), some uuid: $(uuidgen)" > docs/index.md
       - name: Self test
         id: selfTest
         uses: ./
@@ -27,13 +27,13 @@ jobs:
         with:
           create_new_topic: true
           discourse_host: discourse.charmhub.io
+      - name: Show created pages
+        run: echo '${{ steps.selfTest.outputs.created_pages }}'
       - name: Clean up
         env:
           DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
           DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
         run: |
-          echo '${{ steps.selfTest.outputs.created_pages }}'
-          echo '${{ steps.selfTest.outputs.discourse_config }}'
           sudo apt update && sudo apt install python3-pip
           pip3 install -r requirements.txt
           ./discourse_cleanup.py '${{ steps.selfTest.outputs.created_pages }}' '${{ steps.selfTest.outputs.discourse_config }}'
