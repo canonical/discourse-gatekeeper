@@ -32,11 +32,13 @@ def main():
     # Write output
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
     compact_json = partial(json.dumps, separators=(",", ":"))
+    created_pages = compact_json({"index": page.url})
+    discourse_config = compact_json(
+        {"hostname": discourse_host, "category_id": discourse_category_id}
+    )
     with github_output.open("w", encoding="utf-8") as github_output_file:
-        github_output_file.write(f"created_pages={compact_json({'index': page.url})}\n")
-        github_output_file.write(
-            f"discourse_config={compact_json({'hostname': discourse_host, 'category_id': discourse_category_id})}\n"
-        )
+        github_output_file.write(f"created_pages={created_pages}\n")
+        github_output_file.write(f"discourse_config={discourse_config}\n")
 
 
 if __name__ == "__main__":

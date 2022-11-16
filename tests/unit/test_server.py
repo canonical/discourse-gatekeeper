@@ -3,6 +3,9 @@
 
 """Unit tests for src module."""
 
+# Need access to protected functions for testing
+# pylint: disable=protected-access
+
 from pathlib import Path
 from unittest import mock
 
@@ -45,7 +48,7 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     ],
 )
 def test__get_metadata_metadata_yaml_malformed(
-    metadata_yaml_content: str, expected_contents: str, tmp_path: Path
+    metadata_yaml_content: str, expected_contents: tuple[str, ...], tmp_path: Path
 ):
     """
     arrange: given directory with metadata.yaml that is malformed
