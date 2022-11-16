@@ -263,8 +263,11 @@ class Discourse:
             The content of the first post in the topic.
 
         """
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        # Check for any read issues
+        if not self.check_topic_read_permission(url=url):
+            raise DiscourseError(f"Error retrieving the topic, could not read the topic, {url=!r}")
 
+        topic_info = self._retrieve_topic_info_from_url(url=url)
         headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
         response = requests.get(
             f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60

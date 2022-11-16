@@ -544,6 +544,30 @@ def test_function_discourse_error(
         assert expected_message_content in exc_message
 
 
+def test_retrieve_topic_read_error(
+    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
+):
+    """
+    arrange: given mocked check_topic_read_permission that returns False
+    act: when retrieve_topic is called
+    assert: then DiscourseError is raised.
+    """
+    mocked_check_topic_read_permission = mock.MagicMock(spec=Discourse.check_topic_read_permission)
+    mocked_check_topic_read_permission.return_value = False
+    monkeypatch.setattr(
+        discourse, "check_topic_read_permission", mocked_check_topic_read_permission
+    )
+
+    url = f"{base_path}/t/slug/1"
+    with pytest.raises(DiscourseError) as exc_info:
+        discourse.retrieve_topic(url=url)
+
+    exc_message = str(exc_info.value).lower()
+    assert "retrieving" in exc_message
+    assert "url" in exc_message
+    assert url in exc_message
+
+
 def test_retrieve_topic_http_error(
     monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
 ):
@@ -552,6 +576,11 @@ def test_retrieve_topic_http_error(
     act: when retrieve_topic is called
     assert: then DiscourseError is raised.
     """
+    mocked_check_topic_read_permission = mock.MagicMock(spec=Discourse.check_topic_read_permission)
+    mocked_check_topic_read_permission.return_value = True
+    monkeypatch.setattr(
+        discourse, "check_topic_read_permission", mocked_check_topic_read_permission
+    )
     mocked_get = mock.MagicMock(spec=requests.get)
     mocked_response = mock.MagicMock(spec=requests.Response)
     mocked_get.return_value = mocked_response
@@ -574,6 +603,11 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
     act: when retrieve_topic is called
     assert: then the content is returned.
     """
+    mocked_check_topic_read_permission = mock.MagicMock(spec=Discourse.check_topic_read_permission)
+    mocked_check_topic_read_permission.return_value = True
+    monkeypatch.setattr(
+        discourse, "check_topic_read_permission", mocked_check_topic_read_permission
+    )
     mocked_get = mock.MagicMock(spec=requests.get)
     mocked_response = mock.MagicMock(spec=requests.Response)
     mocked_get.return_value = mocked_response
