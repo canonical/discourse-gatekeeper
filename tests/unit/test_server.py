@@ -3,7 +3,6 @@
 
 """Unit tests for src module."""
 
-import json
 from pathlib import Path
 from unittest import mock
 
@@ -104,7 +103,7 @@ def test__get_key():
     """
     arrange: given metadata with docs key
     act: when _get_key is called with the metadata
-    assert: then teh docs value is returned.
+    assert: then the docs value is returned.
     """
     docs_key = "docs"
     docs_value = "url 1"

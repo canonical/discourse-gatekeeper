@@ -5,10 +5,10 @@
 
 """Main execution for the action."""
 
-from functools import partial
 import json
 import os
 import pathlib
+from functools import partial
 
 from src.discourse import create_discourse
 from src.server import retrieve_or_create_index

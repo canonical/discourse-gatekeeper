@@ -4,17 +4,17 @@
 """Exceptions for uploading docs to charmhub."""
 
 
-class BaseException(Exception):
+class BaseError(Exception):
     """All raised exceptions inherit from this one."""
 
 
-class InputError(BaseException):
+class InputError(BaseError):
     """A problem with the user input occurred."""
 
 
-class ServerError(BaseException):
+class ServerError(BaseError):
     """A problem with the server storing the documentation occurred."""
 
 
-class DiscourseError(BaseException):
+class DiscourseError(BaseError):
     """Parent exception for all Discourse errors."""
