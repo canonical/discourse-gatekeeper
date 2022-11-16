@@ -28,7 +28,6 @@ def main():
         local_base_path=pathlib.Path(),
         server_client=discourse,
     )
-    print(page)
 
     # Write output
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
