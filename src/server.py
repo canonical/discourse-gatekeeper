@@ -31,23 +31,37 @@ def _get_metadata(local_base_path: Path) -> dict:
 
     with metadata_yaml_path.open(encoding="utf-8") as metadata_yaml_file:
         try:
-            return yaml.safe_load(metadata_yaml_file)
+            metadata = yaml.safe_load(metadata_yaml_file)
         except yaml.error.YAMLError as exc:
             raise InputError("Malformed metadata.yaml file") from exc
 
+    if not metadata:
+        raise InputError("metadata.yaml file is empty")
+    if not isinstance(metadata, dict):
+        raise InputError("metadata.yaml file does not contain a mapping at the root")
 
-def _get_docs(metadata: dict) -> str:
-    """Check and return the docs value from the metadata.
+    return metadata
 
-    Raises InputError if docs key does not exists, is empty or not a string.
+
+def _get_key(metadata: dict, key: str) -> str:
+    """Check and return the key value from the metadata.
+
+    Raises InputError if key does not exists, is empty or not a string.
 
     Args:
-        metadata: The metadata to retrieve the docs key from.
+        metadata: The metadata to retrieve the key from.
 
     Returns:
-        The value of the docs key.
+        The value of the key.
 
     """
+    if key not in metadata:
+        raise InputError(f"{key!r} not defined in metadata.yaml, {metadata=!r}")
+    if not isinstance(docs_value := metadata[key], str):
+        raise InputError(f"{key!r} is not a string in metadata.yaml, {metadata=!r}")
+    if not docs_value:
+        raise InputError(f"{key!r} is empty in metadata.yaml, {metadata=!r}")
+    return docs_value
 
 
 def retrieve_or_create_index(
@@ -74,45 +88,29 @@ def retrieve_or_create_index(
 
     # Check docs key
     docs_key = "docs"
-    docs_not_defined = (
-        not metadata
-        or docs_key not in metadata
-        or not metadata[docs_key]
-        or not isinstance(metadata[docs_key], str)
-    )
-    if docs_not_defined and not create_if_not_exists:
-        raise InputError(
-            f"The {docs_key} key is not defined, empty or not a string in the metadata.yaml file "
-            f"and creation of the index page has been disabled, {metadata=!r}"
-        )
-
-    if docs_not_defined:
+    if docs_key not in metadata and create_if_not_exists:
         # Check name key
         name_key = "name"
-        if (
-            not metadata
-            or name_key not in metadata
-            or not metadata[name_key]
-            or not isinstance(metadata[name_key], str)
-        ):
-            raise InputError(
-                f"The {name_key} key is not defined, empty or not a string in the metadata.yaml file, "
-                f"{metadata=!r}"
-            )
+        name_value = _get_key(metadata=metadata, key=name_key)
 
         try:
             content = "placeholder content until it is created"
-            url = server_client.create_topic(
-                title=f"{metadata['name'].replace('-', ' ').title()} Documentation Overview",
+            index_url = server_client.create_topic(
+                title=f"{name_value.replace('-', ' ').title()} Documentation Overview",
                 content=content,
             )
         except DiscourseError as exc:
             raise ServerError("Index page creation failed") from exc
+    elif docs_key not in metadata and not create_if_not_exists:
+        raise InputError(
+            f"'{docs_key!r}' not defined in metadata.yaml and 'create_if_not_exists' false, "
+            f"{metadata=!r}"
+        )
     else:
-        url = metadata[docs_key]
+        index_url = _get_key(metadata=metadata, key=docs_key)
         try:
-            content = server_client.retrieve_topic(url=url)
+            content = server_client.retrieve_topic(url=index_url)
         except DiscourseError as exc:
             raise ServerError("Index page retrieval failed") from exc
 
-    return Page(url=url, content=content)
+    return Page(url=index_url, content=content)

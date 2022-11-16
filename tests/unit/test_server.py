@@ -38,7 +38,17 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     assert_string_contains_substrings(("metadata.yaml",), str(exc_info.value).lower())
 
 
-def test__get_metadata_metadata_yaml_malformed(tmp_path: Path):
+@pytest.mark.parametrize(
+    "metadata_yaml_content, expected_contents",
+    [
+        pytest.param("", ("empty", "metadata.yaml"), id="malformed"),
+        pytest.param("malformed: yaml:", ("malformed", "metadata.yaml"), id="malformed"),
+        pytest.param("value 1", ("not", "mapping", "metadata.yaml"), id="not dict"),
+    ],
+)
+def test__get_metadata_metadata_yaml_malformed(
+    metadata_yaml_content: str, expected_contents: str, tmp_path: Path
+):
     """
     arrange: given directory with metadata.yaml that is malformed
     act: when _get_metadata is called with that directory
@@ -46,12 +56,27 @@ def test__get_metadata_metadata_yaml_malformed(tmp_path: Path):
     """
     metadata_yaml_path = tmp_path / "metadata.yaml"
     with metadata_yaml_path.open("w", encoding="utf-8") as metadata_yaml_file:
-        metadata_yaml_file.write("malformed: yaml:")
+        metadata_yaml_file.write(metadata_yaml_content)
 
     with pytest.raises(InputError) as exc_info:
         server._get_metadata(local_base_path=tmp_path)
 
-    assert_string_contains_substrings(("malformed", "metadata.yaml"), str(exc_info.value).lower())
+    assert_string_contains_substrings(expected_contents, str(exc_info.value).lower())
+
+
+def test__get_metadata_metadata(tmp_path: Path):
+    """
+    arrange: given directory with metadata.yaml with valid mapping yaml
+    act: when _get_metadata is called with that directory
+    assert: then file contents are returned as a dictionary.
+    """
+    metadata_yaml_path = tmp_path / "metadata.yaml"
+    with metadata_yaml_path.open("w", encoding="utf-8") as metadata_yaml_file:
+        metadata_yaml_file.write("key: value")
+
+    metadata = server._get_metadata(local_base_path=tmp_path)
+
+    assert metadata == {"key": "value"}
 
 
 @pytest.mark.parametrize(
@@ -63,38 +88,69 @@ def test__get_metadata_metadata_yaml_malformed(tmp_path: Path):
         pytest.param({"docs": 5}, "not a string", id="not string"),
     ],
 )
-def test__get_docs_docs_missing_malformed(metadata: dict, expected_content: str):
+def test__get_key_docs_missing_malformed(metadata: dict, expected_content: str):
     """
     arrange: given malformed metadata
-    act: when _get_docs is called with the metadata
+    act: when _get_key is called with the metadata
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        server._get_docs(metadata=metadata)
+        server._get_key(metadata=metadata, key="docs")
 
     assert_string_contains_substrings(
-        ("docs key", expected_content, "metadata.yaml", f"{metadata=!r}"),
+        ("'docs'", expected_content, "metadata.yaml", f"{metadata=!r}"),
         str(exc_info.value).lower(),
     )
 
 
+def test__get_key():
+    """
+    arrange: given metadata with docs key
+    act: when _get_key is called with the metadata
+    assert: then teh docs value is returned.
+    """
+    docs_key = "docs"
+    docs_value = "url 1"
+
+    returned_value = server._get_key(metadata={docs_key: docs_value}, key="docs")
+
+    assert returned_value == docs_value
+
+
 @pytest.mark.parametrize(
-    "metadata_yaml_contents",
+    "metadata_yaml_contents, create_if_not_exists, expected_contents",
     [
-        pytest.param("", id="empty file"),
-        pytest.param("key: value", id="name not defined"),
-        pytest.param("name:", id="name empty"),
-        pytest.param("name: 5", id="name not string"),
+        pytest.param("", True, ("empty",), id="empty file"),
+        pytest.param(
+            "key: value",
+            True,
+            (
+                "'name'",
+                "not",
+                "defined",
+            ),
+            id="create_if_not_exists True name not defined",
+        ),
+        pytest.param(
+            "key: value",
+            False,
+            ("'docs'", "not defined", "'create_if_not_exists'", "false"),
+            id="create_if_not_exists False docs not defined",
+        ),
+        pytest.param(
+            "docs: ''", False, ("'docs'", "empty"), id="create_if_not_exists False docs malformed"
+        ),
     ],
 )
-def test_retrieve_or_create_index_metadata_yaml_create_name_missing_malformed(
-    tmp_path: Path, metadata_yaml_contents: str
+def test_retrieve_or_create_index_input_error(
+    metadata_yaml_contents: str,
+    create_if_not_exists: bool,
+    expected_contents: tuple[str, ...],
+    tmp_path: Path,
 ):
     """
-    arrange: given directory with metadata.yaml with the given contents that does not have the docs
-        key defined
-    act: when retrieve_or_create_index is called with that directory and with create_if_not_exists
-        True
+    arrange: given directory with metadata.yaml with the given contents and create_if_not_exists
+    act: when retrieve_or_create_index is called with that directory and create_if_not_exists
     assert: then InputError is raised.
     """
     metadata_yaml_path = tmp_path / "metadata.yaml"
@@ -103,11 +159,13 @@ def test_retrieve_or_create_index_metadata_yaml_create_name_missing_malformed(
 
     with pytest.raises(InputError) as exc_info:
         server.retrieve_or_create_index(
-            create_if_not_exists=True, local_base_path=tmp_path, server_client=mock.MagicMock()
+            create_if_not_exists=create_if_not_exists,
+            local_base_path=tmp_path,
+            server_client=mock.MagicMock(),
         )
 
     assert_string_contains_substrings(
-        ("name key", "not defined", "empty", "not a string", "metadata.yaml"),
+        expected_contents,
         str(exc_info.value).lower(),
     )
 
