@@ -9,6 +9,7 @@ from urllib import parse
 
 import pydiscourse
 import pydiscourse.exceptions
+import requests
 
 from .exceptions import DiscourseError, InputError
 
@@ -76,6 +77,8 @@ class Discourse:
         )
         self._category_id = category_id
         self._base_path = base_path
+        self._api_username = api_username
+        self._api_key = api_key
 
     def topic_url_valid(self, url: str) -> _ValidationResult:
         """Check whether a url to a topic is valid. Assume the url is well formatted.
@@ -260,8 +263,18 @@ class Discourse:
             The content of the first post in the topic.
 
         """
-        first_post = self._retrieve_topic_first_post(url=url)
-        return self._get_post_value(post=first_post, key="cooked", expected_type=str)
+        topic_info = self._retrieve_topic_info_from_url(url=url)
+
+        headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
+        response = requests.get(
+            f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
+        )
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
+
+        return response.content.decode("utf-8")
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
