@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 from .discourse import Discourse
-from .exceptions import InputError, DiscourseError, ServerError
+from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Page
 
 

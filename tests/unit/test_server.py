@@ -4,14 +4,13 @@
 """Unit tests for src module."""
 
 import json
-from unittest import mock
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
-from src import server
-from src import discourse
-from src.exceptions import InputError, DiscourseError, ServerError
+from src import discourse, server
+from src.exceptions import DiscourseError, InputError, ServerError
 
 
 def assert_string_contains_substrings(substrings: tuple[str, ...], string: str) -> None:
