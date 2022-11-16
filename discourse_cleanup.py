@@ -26,7 +26,7 @@ def main():
     discourse_config = json.loads(args.discourse_config)
 
     discourse = create_discourse(**discourse_config)
-    for url in created_pages:
+    for url in created_pages.values():
         discourse.delete_topic(url=url)
 
 

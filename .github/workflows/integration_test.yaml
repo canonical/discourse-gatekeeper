@@ -32,8 +32,8 @@ jobs:
           DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
           DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
         run: |
-          echo ${{ steps.selfTest.outputs.created_pages }}
-          echo ${{ steps.selfTest.outputs.discourse_config }}
+          echo '${{ steps.selfTest.outputs.created_pages }}'
+          echo '${{ steps.selfTest.outputs.discourse_config }}'
           sudo apt update && sudo apt install python3-pip
           pip3 install -r requirements.txt
           ./discourse_cleanup.py '${{ steps.selfTest.outputs.created_pages }}' '${{ steps.selfTest.outputs.discourse_config }}'
