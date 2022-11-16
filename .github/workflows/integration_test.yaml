@@ -17,7 +17,7 @@ jobs:
         run: |
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
           mkdir docs
-          echo "placeholder content for testing, repository: ${{ github.repository }}, branch: ${{ github.head_ref }}, commit: ${{ github.sha }}, some uuid: $(uuidgen)"" > docs/index.md
+          echo "placeholder content for testing, repository: ${{ github.repository }}, branch: ${{ github.head_ref }}, commit: ${{ github.sha }}, some uuid: $(uuidgen)" > docs/index.md
       - name: Self test
         id: selfTest
         uses: ./
