@@ -17,15 +17,9 @@ def main():
         prog="DiscourseCleanup",
         description="Delete posts created on discourse during an action execution.",
     )
+    parser.add_argument("created_pages", help="The pages that were created during execution")
     parser.add_argument(
-        "created_pages",
-        help="The pages that were created during execution",
-        required=True,
-    )
-    parser.add_argument(
-        "discourse_config",
-        help="The discourse configuration used to create the pages",
-        required=True,
+        "discourse_config", help="The discourse configuration used to create the pages"
     )
     args = parser.parse_args()
     created_pages = json.loads(args.created_pages)
