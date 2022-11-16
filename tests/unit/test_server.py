@@ -3,6 +3,7 @@
 
 """Unit tests for src module."""
 
+import json
 from unittest import mock
 from pathlib import Path
 
@@ -54,42 +55,25 @@ def test__get_metadata_metadata_yaml_malformed(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "metadata_yaml_contents",
+    "metadata, expected_content",
     [
-        pytest.param("", id="empty file"),
-        pytest.param("key: value", id="docs not defined"),
-        pytest.param("docs:", id="docs empty"),
-        pytest.param("docs: 5", id="docs not string"),
+        pytest.param({}, "not defined", id="empty"),
+        pytest.param({"key": "value"}, "not defined", id="docs not defined"),
+        pytest.param({"docs": ""}, "empty", id="docs empty"),
+        pytest.param({"docs": 5}, "not a string", id="not string"),
     ],
 )
-def test_retrieve_or_create_index_metadata_yaml_docs_missing_malformed(
-    tmp_path: Path, metadata_yaml_contents: str
-):
+def test__get_docs_docs_missing_malformed(metadata: dict, expected_content: str):
     """
-    arrange: given directory with metadata.yaml with the given contents
-    act: when retrieve_or_create_index is called with that directory and with create_if_not_exists
-        False
+    arrange: given malformed metadata
+    act: when _get_docs is called with the metadata
     assert: then InputError is raised.
     """
-    metadata_yaml_path = tmp_path / "metadata.yaml"
-    with metadata_yaml_path.open("w", encoding="utf-8") as metadata_yaml_file:
-        metadata_yaml_file.write(metadata_yaml_contents)
-
     with pytest.raises(InputError) as exc_info:
-        server.retrieve_or_create_index(
-            create_if_not_exists=False, local_base_path=tmp_path, server_client=mock.MagicMock()
-        )
+        server._get_docs(metadata=metadata)
 
     assert_string_contains_substrings(
-        (
-            "docs key",
-            "not defined",
-            "empty",
-            "not a string",
-            "metadata.yaml",
-            "creation",
-            "disabled",
-        ),
+        ("docs key", expected_content, "metadata.yaml", f"{metadata=!r}"),
         str(exc_info.value).lower(),
     )
 

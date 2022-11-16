@@ -4,6 +4,7 @@
 """Interactions with the documentation server."""
 
 from pathlib import Path
+import typing
 
 import yaml
 
@@ -14,6 +15,8 @@ from .types_ import Page
 
 def _get_metadata(local_base_path: Path) -> dict:
     """Check for and read the metadata.
+
+    Raises InputError if the metadata.yaml file does not exists or is malformed.
 
     Args:
         local_base_path: The base path to look for the metadata.yaml file in.
@@ -31,6 +34,20 @@ def _get_metadata(local_base_path: Path) -> dict:
             return yaml.safe_load(metadata_yaml_file)
         except yaml.error.YAMLError as exc:
             raise InputError("Malformed metadata.yaml file") from exc
+
+
+def _get_docs(metadata: dict) -> str:
+    """Check and return the docs value from the metadata.
+
+    Raises InputError if docs key does not exists, is empty or not a string.
+
+    Args:
+        metadata: The metadata to retrieve the docs key from.
+
+    Returns:
+        The value of the docs key.
+
+    """
 
 
 def retrieve_or_create_index(
