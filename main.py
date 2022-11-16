@@ -24,9 +24,7 @@ def main():
     # Execute action
     discourse = create_discourse(hostname=discourse_host, category_id=discourse_category_id)
     page = retrieve_or_create_index(
-        create_if_not_exists=create_new_topic,
-        local_base_path=pathlib.Path(),
-        server_client=discourse,
+        create_if_not_exists=create_new_topic, base_path=pathlib.Path(), server_client=discourse
     )
 
     # Write output
