@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from src.discourse import Discourse
+from src import run
 
 
 @pytest.fixture(scope="module")
@@ -27,9 +28,9 @@ def discourse(base_path: str):
 @pytest.fixture()
 def index_file_content(tmp_path: Path):
     """Create index file."""
-    docs_folder = tmp_path / "docs"
+    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER
     docs_folder.mkdir()
-    index_file = docs_folder / "index.md"
+    index_file = docs_folder / run.DOCUMENTATION_INDEX_FILE
     content = "content 1"
     index_file.write_text(content, encoding="utf-8")
     return content

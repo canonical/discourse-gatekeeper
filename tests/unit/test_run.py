@@ -36,15 +36,15 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     with pytest.raises(InputError) as exc_info:
         run._get_metadata(base_path=tmp_path)
 
-    assert "metadata.yaml" in str(exc_info.value).lower()
+    assert run.METADATA_FILE in str(exc_info.value).lower()
 
 
 @pytest.mark.parametrize(
     "metadata_yaml_content, expected_error_msg_contents",
     [
-        pytest.param("", ("empty", "metadata.yaml"), id="malformed"),
-        pytest.param("malformed: yaml:", ("malformed", "metadata.yaml"), id="malformed"),
-        pytest.param("value 1", ("not", "mapping", "metadata.yaml"), id="not dict"),
+        pytest.param("", ("empty", run.METADATA_FILE), id="malformed"),
+        pytest.param("malformed: yaml:", ("malformed", run.METADATA_FILE), id="malformed"),
+        pytest.param("value 1", ("not", "mapping", run.METADATA_FILE), id="not dict"),
     ],
 )
 def test__get_metadata_metadata_yaml_malformed(
@@ -55,7 +55,7 @@ def test__get_metadata_metadata_yaml_malformed(
     act: when _get_metadata is called with the directory
     assert: then InputError is raised.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
+    metadata_yaml = tmp_path / run.METADATA_FILE
     metadata_yaml.write_text(metadata_yaml_content, encoding="utf-8")
 
     with pytest.raises(InputError) as exc_info:
@@ -70,7 +70,7 @@ def test__get_metadata_metadata(tmp_path: Path):
     act: when _get_metadata is called with the directory
     assert: then file contents are returned as a dictionary.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
+    metadata_yaml = tmp_path / run.METADATA_FILE
     metadata_yaml.write_text("key: value", encoding="utf-8")
 
     metadata = run._get_metadata(base_path=tmp_path)
@@ -83,8 +83,8 @@ def test__get_metadata_metadata(tmp_path: Path):
     [
         pytest.param({}, "not defined", id="empty"),
         pytest.param({"key": "value"}, "not defined", id="docs not defined"),
-        pytest.param({"docs": ""}, "empty", id="docs empty"),
-        pytest.param({"docs": 5}, "not a string", id="not string"),
+        pytest.param({run.METADATA_DOCS_KEY: ""}, "empty", id="docs empty"),
+        pytest.param({run.METADATA_DOCS_KEY: 5}, "not a string", id="not string"),
     ],
 )
 def test__get_key_docs_missing_malformed(metadata: dict, expected_error_msg_content: str):
@@ -94,10 +94,15 @@ def test__get_key_docs_missing_malformed(metadata: dict, expected_error_msg_cont
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        run._get_key(metadata=metadata, key="docs")
+        run._get_key(metadata=metadata, key=run.METADATA_DOCS_KEY)
 
     assert_substrings_in_string(
-        ("'docs'", expected_error_msg_content, "metadata.yaml", f"{metadata=!r}"),
+        (
+            f"'{run.METADATA_DOCS_KEY}'",
+            expected_error_msg_content,
+            run.METADATA_FILE,
+            f"{metadata=!r}",
+        ),
         str(exc_info.value).lower(),
     )
 
@@ -108,7 +113,7 @@ def test__get_key():
     act: when _get_key is called with the metadata
     assert: then the docs value is returned.
     """
-    docs_key = "docs"
+    docs_key = run.METADATA_DOCS_KEY
     docs_value = "url 1"
 
     returned_value = run._get_key(metadata={docs_key: docs_value}, key=docs_key)
@@ -126,7 +131,8 @@ def test__read_docs_index_docs_folder_missing(tmp_path: Path):
         run._read_docs_index(base_path=tmp_path)
 
     assert_substrings_in_string(
-        ("not", "find", "directory", str(tmp_path / "docs")), str(exc_info.value).lower()
+        ("not", "find", "directory", str(tmp_path / run.DOCUMENTATION_FOLDER)),
+        str(exc_info.value).lower(),
     )
 
 
@@ -136,14 +142,15 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then InputError is raised.
     """
-    docs_folder = tmp_path / "docs"
+    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER
     docs_folder.mkdir()
 
     with pytest.raises(InputError) as exc_info:
         run._read_docs_index(base_path=tmp_path)
 
     assert_substrings_in_string(
-        ("not", "find", "file", str(docs_folder / "index.md")), str(exc_info.value).lower()
+        ("not", "find", "file", str(docs_folder / run.DOCUMENTATION_INDEX_FILE)),
+        str(exc_info.value).lower(),
     )
 
 
@@ -175,11 +182,14 @@ def test__read_docs_index_index_file(index_file_content: str, tmp_path: Path):
         pytest.param(
             "key: value",
             False,
-            ("'docs'", "not defined", "'create_if_not_exists'", "false"),
+            (f"'{run.METADATA_DOCS_KEY}'", "not defined", "'create_if_not_exists'", "false"),
             id="create_if_not_exists False docs not defined",
         ),
         pytest.param(
-            "docs: ''", False, ("'docs'", "empty"), id="create_if_not_exists False docs malformed"
+            f"{run.METADATA_DOCS_KEY}: ''",
+            False,
+            (f"'{run.METADATA_DOCS_KEY}'", "empty"),
+            id="create_if_not_exists False docs malformed",
         ),
     ],
 )
@@ -194,7 +204,7 @@ def test_retrieve_or_create_index_input_error(
     act: when retrieve_or_create_index is called with that directory and create_if_not_exists
     assert: then InputError is raised.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
+    metadata_yaml = tmp_path / run.METADATA_FILE
     metadata_yaml.write_text(metadata_yaml_content, encoding="utf-8")
 
     with pytest.raises(InputError) as exc_info:
@@ -204,10 +214,7 @@ def test_retrieve_or_create_index_input_error(
             server_client=mock.MagicMock(),
         )
 
-    assert_substrings_in_string(
-        expected_error_msg_contents,
-        str(exc_info.value).lower(),
-    )
+    assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
 # Need the index file to exist
@@ -220,8 +227,8 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
         True
     assert: then ServerError is raised.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
-    metadata_yaml.write_text("name: charm-name", encoding="utf-8")
+    metadata_yaml = tmp_path / run.METADATA_FILE
+    metadata_yaml.write_text(f"{run.METADATA_NAME_KEY}: charm-name", encoding="utf-8")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.create_topic.side_effect = DiscourseError
 
@@ -242,8 +249,8 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_fil
     assert: then create topic is called with the titleised charm name and with placeholder content
         and the url returned by the client and placeholder content is returned.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
-    metadata_yaml.write_text("name: charm-name", encoding="utf-8")
+    metadata_yaml = tmp_path / run.METADATA_FILE
+    metadata_yaml.write_text(f"{run.METADATA_NAME_KEY}: charm-name", encoding="utf-8")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     url = "http://server/index-page"
     mocked_server_client.create_topic.return_value = url
@@ -268,8 +275,10 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_pat
     act: when retrieve_or_create_index is called with that directory
     assert: then ServerError is raised.
     """
-    metadata_yaml = tmp_path / "metadata.yaml"
-    metadata_yaml.write_text("docs: http://server/index-page", encoding="utf-8")
+    metadata_yaml = tmp_path / run.METADATA_FILE
+    metadata_yaml.write_text(
+        f"{run.METADATA_DOCS_KEY}: http://server/index-page", encoding="utf-8"
+    )
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
 
@@ -293,8 +302,8 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve(tmp_path: Path):
     """
     url = "http://server/index-page"
     content = "content 1"
-    metadata_yaml = tmp_path / "metadata.yaml"
-    metadata_yaml.write_text(f"docs: {url}", encoding="utf-8")
+    metadata_yaml = tmp_path / run.METADATA_FILE
+    metadata_yaml.write_text(f"{run.METADATA_DOCS_KEY}: {url}", encoding="utf-8")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = content
 

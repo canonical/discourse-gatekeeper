@@ -12,6 +12,13 @@ from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Page
 
 
+METADATA_FILE = "metadata.yaml"
+METADATA_DOCS_KEY = "docs"
+METADATA_NAME_KEY = "name"
+DOCUMENTATION_FOLDER = "docs"
+DOCUMENTATION_INDEX_FILE = "index.md"
+
+
 def _get_metadata(base_path: Path) -> dict:
     """Check for and read the metadata.
 
@@ -24,7 +31,7 @@ def _get_metadata(base_path: Path) -> dict:
         The contents of the metadata.yaml file.
 
     """
-    metadata_yaml = base_path / "metadata.yaml"
+    metadata_yaml = base_path / METADATA_FILE
     if not metadata_yaml.is_file():
         raise InputError(f"Could not find metadata.yaml file, looked in folder: {base_path}")
 
@@ -77,12 +84,12 @@ def _read_docs_index(base_path: Path) -> str:
         The content of the index file.
 
     """
-    if not (docs_folder := base_path / "docs").is_dir():
+    if not (docs_folder := base_path / DOCUMENTATION_FOLDER).is_dir():
         raise InputError(
             f"Could not find directory '{docs_folder}' which is where documentation is expected "
             "to be stored"
         )
-    if not (index_file := docs_folder / "index.md").is_file():
+    if not (index_file := docs_folder / DOCUMENTATION_INDEX_FILE).is_file():
         raise InputError(
             f"Could not find file '{index_file}' which is where the documentation index file is "
             "expected to be stored"
@@ -111,9 +118,9 @@ def retrieve_or_create_index(
     """
     metadata = _get_metadata(base_path=base_path)
 
-    docs_key = "docs"
+    docs_key = METADATA_DOCS_KEY
     if docs_key not in metadata and create_if_not_exists:
-        name_value = _get_key(metadata=metadata, key="name")
+        name_value = _get_key(metadata=metadata, key=METADATA_NAME_KEY)
         content = _read_docs_index(base_path=base_path)
 
         try:
