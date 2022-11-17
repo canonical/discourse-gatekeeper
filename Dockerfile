@@ -1,14 +1,11 @@
-FROM python:3-slim AS builder
-COPY . /app
-WORKDIR /app
+FROM python:3.10-slim
 
-# We are installing a dependency here directly into our app source dir
-RUN pip install --no-cache-dir requests
+RUN mkdir /usr/src/app
+WORKDIR /usr/src/app
+COPY requirements.txt /usr/src/app
+RUN pip install --no-cache-dir -r requirements.txt
 
-# A distroless container image with Python and some basics like SSL certificates
-# https://github.com/GoogleContainerTools/distroless
-FROM gcr.io/distroless/python3-debian10
-COPY --from=builder /app /app
-WORKDIR /app
-ENV PYTHONPATH /app
-CMD ["/app/main.py"]
+COPY . /usr/src/app
+
+ENV PYTHONPATH /usr/src/app
+CMD ["/usr/src/app/main.py"]

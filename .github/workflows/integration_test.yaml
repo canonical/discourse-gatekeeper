@@ -9,3 +9,36 @@ jobs:
     secrets: inherit
     with:
       pre-run-script: tests/integration/pre_run.sh
+  self-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Prepare for action to run
+        run: |
+          # Create metadata.yaml file
+          echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+          # Create documentation index file
+          mkdir docs
+          # need some values in the content that change on every commit as discourse looks for file
+          # similarity
+          echo "placeholder content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > docs/index.md
+      - name: Self test
+        id: selfTest
+        uses: ./
+        with:
+          create_new_topic: true
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      - name: Show created pages
+        run: echo '${{ steps.selfTest.outputs.created_pages }}'
+      - name: Clean up
+        run: |
+          sudo apt update && sudo apt install python3-pip
+          pip3 install -r requirements.txt
+          ./discourse_cleanup.py '${{ steps.selfTest.outputs.created_pages }}' '${{ steps.selfTest.outputs.discourse_config }}'

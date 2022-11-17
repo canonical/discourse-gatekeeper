@@ -8,7 +8,8 @@ from urllib import parse
 import pydiscourse
 import pytest
 
-from src.discourse import Discourse, DiscourseError
+from src.discourse import Discourse
+from src.exceptions import DiscourseError
 
 from . import types
 

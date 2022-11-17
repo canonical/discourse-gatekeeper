@@ -1,0 +1,7 @@
+# Ignore everything
+*
+
+# Allow specific files and directories
+!/main.py
+!/requirements.txt
+!/src

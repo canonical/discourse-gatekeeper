@@ -9,6 +9,8 @@ from urllib import parse
 import pydiscourse
 import pydiscourse.exceptions
 
+from .exceptions import DiscourseError, InputError
+
 
 class _DiscourseTopicInfo(typing.NamedTuple):
     """Information about a discourse topic.
@@ -53,17 +55,13 @@ _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
 KeyT = typing.TypeVar("KeyT")
 
 
-class DiscourseError(Exception):
-    """Parent exception for all Discourse errors."""
-
-
 class Discourse:
     """Interact with a discourse server."""
 
     tags = ("docs",)
 
     def __init__(self, base_path: str, api_username: str, api_key: str, category_id: int) -> None:
-        """Constructor.
+        """Construct.
 
         Args:
             base_path: The HTTP protocol and hostname for discourse (e.g., https://discourse).
@@ -329,3 +327,72 @@ class Discourse:
             raise DiscourseError(
                 f"Error updating the topic, {url=!r}, {content=!r}"
             ) from discourse_error
+
+
+def create_discourse(
+    hostname: typing.Any, category_id: typing.Any, api_username: typing.Any, api_key: typing.Any
+) -> Discourse:
+    """Create discourse client.
+
+    Raises InputError if the api_username and api_key arguments are not strings or empty, if the
+    protocol has been included in the hostname, the hostname is not a string or the category_id is
+    not an integer or a string that can be converted to an integer.
+
+    Args:
+        hostname: The Discourse server hostname.
+        category_id: The category to use for topics.
+        api_username: The discourse API username to use for interactions with the server.
+        api_key: The discourse API key to use for interactions with the server.
+
+    Returns:
+        A discourse client that is connected to the server.
+
+    """
+    if not isinstance(hostname, str):
+        raise InputError(f"Invalid 'discourse_host' input, it must be a string, got {hostname=!r}")
+    if not hostname:
+        raise InputError(
+            f"Invalid 'discourse_host' input, it must be non-empty, got {hostname=!r}"
+        )
+    hostname = hostname.lower()
+    if hostname.startswith("http://") or hostname.startswith("https://"):
+        raise InputError(
+            f"Invalid 'discourse_host' input, it should not include the protocol, got {hostname=!r}"
+        )
+
+    if not isinstance(category_id, int) and not (
+        isinstance(category_id, str) and category_id.isdigit()
+    ):
+        raise InputError(
+            "Invalid 'discourse_category_id' input, it must be an integer or a string that can be "
+            f"converted to an integer, got {category_id=!r}"
+        )
+    if isinstance(category_id, str):
+        category_id_int = int(category_id)
+    else:
+        category_id_int = category_id
+
+    if not isinstance(api_username, str):
+        raise InputError(
+            f"Invalid 'discourse_api_username' input, it must be a string, got {api_username=!r}"
+        )
+    if not api_username:
+        raise InputError(
+            f"Invalid 'discourse_api_username' input, it must be non-empty, got {api_username=!r}"
+        )
+
+    if not isinstance(api_key, str):
+        raise InputError(
+            f"Invalid 'discourse_api_key' input, it must be a string, got {api_key=!r}"
+        )
+    if not api_key:
+        raise InputError(
+            f"Invalid 'discourse_api_key' input, it must be non-empty, got {api_key=!r}"
+        )
+
+    return Discourse(
+        base_path=f"https://{hostname}",
+        api_username=api_username,
+        api_key=api_key,
+        category_id=category_id_int,
+    )

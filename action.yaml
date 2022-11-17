@@ -8,10 +8,36 @@ inputs:
       docs key in metadata.yaml either does not exist or is empty. Defaults to
       not creating a new topic in which case an error is returned.
     default: false
+    required: false
+    type: boolean
   discourse_host:
     description: The discourse host name.
+    required: true
+    type: string
+  discourse_api_username:
+    description: |
+      The discourse API username to use for interactions with the server.
+    required: true
+    type: string
+  discourse_api_key:
+    description: |
+      The discourse API key to use for interactions with the server.
+    required: true
+    type: string
   discourse_category_id:
     description: The category identifier to use on discourse for all topics.
+    default: 41
+    required: false
+    type: integer
+outputs:
+  created_pages:
+    description: |
+      A JSON map with the pages that have been created where the key is the
+      local path and the value is the URL to the created page.
+  discourse_config:
+    description: |
+      The configuration used by the action to interact with the discourse
+      server.
 runs:
   using: docker
   image: Dockerfile
