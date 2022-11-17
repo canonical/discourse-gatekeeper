@@ -30,18 +30,14 @@ jobs:
       - name: Self test
         id: selfTest
         uses: ./
-        env:
-          DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
-          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
         with:
           create_new_topic: true
           discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show created pages
         run: echo '${{ steps.selfTest.outputs.created_pages }}'
       - name: Clean up
-        env:
-          DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
-          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
         run: |
           sudo apt update && sudo apt install python3-pip
           pip3 install -r requirements.txt

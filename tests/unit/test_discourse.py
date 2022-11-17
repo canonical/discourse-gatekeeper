@@ -15,7 +15,7 @@ from src.exceptions import DiscourseError, InputError
 
 
 @pytest.mark.parametrize(
-    "topic_url, expected_result, expected_message_contents",
+    "topic_url, expected_result, expected_error_msg_contents",
     [
         pytest.param(
             "", False, ("different", "base path", "expected", "http://discourse"), id="empty"
@@ -117,7 +117,7 @@ from src.exceptions import DiscourseError, InputError
 def test_topic_url_valid(
     topic_url: str,
     expected_result: bool,
-    expected_message_contents: tuple[str, ...],
+    expected_error_msg_contents: tuple[str, ...],
     discourse: Discourse,
 ):
     """
@@ -131,7 +131,7 @@ def test_topic_url_valid(
     if not expected_result:
         assert isinstance(result.message, str)
         assert topic_url in result.message
-        for expected_message_content in expected_message_contents:
+        for expected_message_content in expected_error_msg_contents:
             assert (
                 expected_message_content in result.message.lower()
             ), "information missing from message"
@@ -485,7 +485,7 @@ def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, bas
 
 
 @pytest.mark.parametrize(
-    "client_function, function_, kwargs, expected_message_contents",
+    "client_function, function_, kwargs, expected_error_msg_contents",
     [
         pytest.param(
             "topic",
@@ -524,7 +524,7 @@ def test_function_discourse_error(
     client_function: str,
     function_: str,
     kwargs: dict,
-    expected_message_contents: tuple[str, ...],
+    expected_error_msg_contents: tuple[str, ...],
     discourse: Discourse,
 ):
     """
@@ -540,7 +540,7 @@ def test_function_discourse_error(
         getattr(discourse, function_)(**kwargs)
 
     exc_message = str(exc_info.value).lower()
-    for expected_message_content in expected_message_contents:
+    for expected_message_content in expected_error_msg_contents:
         assert expected_message_content in exc_message
 
 
@@ -622,105 +622,133 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
 
 
 @pytest.mark.parametrize(
-    "hostname, category_id, environment, expected_message_contents",
+    "kwargs, expected_error_msg_contents",
     [
         pytest.param(
-            "",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "empty", f"{''!r}"),
-            id="hostname empty",
-        ),
-        pytest.param(
-            True,
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "string", f"{True!r}"),
+            {"hostname": None, "category_id": 1, "api_username": "user 1", "api_key": "key 1"},
+            ("invalid", "'discourse_host'", "string", f"{None!r}"),
             id="hostname is not string",
         ),
         pytest.param(
-            "http://discourse",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "http://discourse"),
+            {"hostname": "", "category_id": 1, "api_username": "user 1", "api_key": "key 1"},
+            ("invalid", "'discourse_host'", "empty", f"{''!r}"),
+            id="hostname empty",
+        ),
+        pytest.param(
+            {
+                "hostname": "http://discourse",
+                "category_id": 1,
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            ("invalid", "'discourse_host'", "http://discourse"),
             id="hostname has http",
         ),
         pytest.param(
-            "https://discourse",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "https://discourse"),
-            id="hostname has https",
-        ),
-        pytest.param(
-            "HTTP://discourse",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "http://discourse"),
+            {
+                "hostname": "HTTP://discourse",
+                "category_id": 1,
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            ("invalid", "'discourse_host'", "HTTP://discourse"),
             id="hostname has HTTP",
         ),
         pytest.param(
-            "HTTPS://discourse",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_host", "https://discourse"),
-            id="hostname has HTTPS",
+            {
+                "hostname": "https://discourse",
+                "category_id": 1,
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            ("invalid", "'discourse_host'", "https://discourse"),
+            id="hostname has https",
         ),
         pytest.param(
-            "discourse",
-            None,
-            {"DISCOURSE_API_USERNAME": "user 1", "DISCOURSE_API_KEY": "key 1"},
-            ("invalid", "discourse_category_id", "integer", f"{None!r}"),
+            {
+                "hostname": "discourse",
+                "category_id": None,
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            ("invalid", "'discourse_category_id'", "integer", f"{None!r}"),
             id="category_id None",
         ),
         pytest.param(
-            "discourse",
-            1,
-            {"DISCOURSE_API_KEY": "key 1"},
-            ("DISCOURSE_API_USERNAME", "missing"),
-            id="DISCOURSE_API_USERNAME missing",
+            {
+                "hostname": "discourse",
+                "category_id": "not an integer",
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            ("invalid", "'discourse_category_id'", "integer", f"{'not an integer'!r}"),
+            id="category_id str that is not convertible to int",
         ),
         pytest.param(
-            "discourse",
-            1,
-            {"DISCOURSE_API_USERNAME": "user 1"},
-            ("DISCOURSE_API_KEY", "missing"),
-            id="DISCOURSE_API_KEY missing",
+            {"hostname": "discourse", "category_id": 1, "api_username": None, "api_key": "key 1"},
+            ("invalid", "'discourse_api_username'", "string", f"{None!r}"),
+            id="api_username None",
+        ),
+        pytest.param(
+            {"hostname": "discourse", "category_id": 1, "api_username": "", "api_key": "key 1"},
+            ("empty", "'discourse_api_username'", f"{''!r}"),
+            id="api_username empty",
+        ),
+        pytest.param(
+            {"hostname": "discourse", "category_id": 1, "api_username": "user 1", "api_key": None},
+            ("invalid", "'discourse_api_key'", "string", f"{None!r}"),
+            id="api_key None",
+        ),
+        pytest.param(
+            {"hostname": "discourse", "category_id": 1, "api_username": "user 1", "api_key": ""},
+            ("empty", "'discourse_api_key'", f"{''!r}"),
+            id="api_key empty",
         ),
     ],
 )
-def test_create_discourse_error(
-    hostname,
-    category_id,
-    environment: dict[str, str],
-    expected_message_contents: tuple[str, ...],
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_create_discourse_error(kwargs: dict, expected_error_msg_contents: tuple[str, ...]):
     """
-    arrange: given hostname and environment that is not as required
-    act: when create_discourse is called with the hostname
+    arrange: given invalid kwargs
+    act: when create_discourse is called with the kwargs
     assert: then InputError is raised.
     """
-    for name, value in environment.items():
-        monkeypatch.setenv(name=name, value=value)
-
     with pytest.raises(InputError) as exc_info:
-        create_discourse(hostname=hostname, category_id=category_id)
+        create_discourse(**kwargs)
 
     exc_message = str(exc_info.value).lower()
-    for expected_message_content in expected_message_contents:
+    for expected_message_content in expected_error_msg_contents:
         assert expected_message_content.lower() in exc_message
 
 
-def test_create_discourse(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        pytest.param(
+            {
+                "hostname": "discourse",
+                "category_id": 1,
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            id="category_id int",
+        ),
+        pytest.param(
+            {
+                "hostname": "discourse",
+                "category_id": "1",
+                "api_username": "user 1",
+                "api_key": "key 1",
+            },
+            id="category_id string that is convertible to an integer",
+        ),
+    ],
+)
+def test_create_discourse(kwargs: dict):
     """
-    arrange: given hostname and environment
-    act: when create_discourse is called with the hostname
+    arrange: given kwargs
+    act: when create_discourse is called with the kwargs
     assert: then a Discourse instance is returned.
     """
-    monkeypatch.setenv(name="DISCOURSE_API_USERNAME", value="user 1")
-    monkeypatch.setenv(name="DISCOURSE_API_KEY", value="key 1")
-
-    discourse = create_discourse(hostname="discourse", category_id=1)
+    discourse = create_discourse(**kwargs)
 
     assert isinstance(discourse, Discourse)
