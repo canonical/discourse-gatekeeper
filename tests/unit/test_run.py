@@ -15,15 +15,15 @@ from src import discourse, run
 from src.exceptions import DiscourseError, InputError, ServerError
 
 
-def create_metadata_yaml(content: str, base_path: Path) -> None:
+def create_metadata_yaml(content: str, path: Path) -> None:
     """Create the metadata file.
 
     Args:
         content: The text to be written to the file.
-        base_path: The directory to create the file in.
+        path: The directory to create the file in.
 
     """
-    metadata_yaml = base_path / run.METADATA_FILENAME
+    metadata_yaml = path / run.METADATA_FILENAME
     metadata_yaml.write_text(content, encoding="utf-8")
 
 
@@ -46,7 +46,7 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     assert: then InputError is raised.
     """
     with pytest.raises(InputError) as exc_info:
-        run._get_metadata(base_path=tmp_path)
+        run._get_metadata(path=tmp_path)
 
     assert run.METADATA_FILENAME in str(exc_info.value).lower()
 
@@ -67,10 +67,10 @@ def test__get_metadata_metadata_yaml_malformed(
     act: when _get_metadata is called with the directory
     assert: then InputError is raised.
     """
-    create_metadata_yaml(content=metadata_yaml_content, base_path=tmp_path)
+    create_metadata_yaml(content=metadata_yaml_content, path=tmp_path)
 
     with pytest.raises(InputError) as exc_info:
-        run._get_metadata(base_path=tmp_path)
+        run._get_metadata(path=tmp_path)
 
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
@@ -81,9 +81,9 @@ def test__get_metadata_metadata(tmp_path: Path):
     act: when _get_metadata is called with the directory
     assert: then file contents are returned as a dictionary.
     """
-    create_metadata_yaml(content="key: value", base_path=tmp_path)
+    create_metadata_yaml(content="key: value", path=tmp_path)
 
-    metadata = run._get_metadata(base_path=tmp_path)
+    metadata = run._get_metadata(path=tmp_path)
 
     assert metadata == {"key": "value"}
 
@@ -214,7 +214,7 @@ def test_retrieve_or_create_index_input_error(
     act: when retrieve_or_create_index is called with that directory and create_if_not_exists
     assert: then InputError is raised.
     """
-    create_metadata_yaml(content=metadata_yaml_content, base_path=tmp_path)
+    create_metadata_yaml(content=metadata_yaml_content, path=tmp_path)
 
     with pytest.raises(InputError) as exc_info:
         run.retrieve_or_create_index(
@@ -236,7 +236,7 @@ def test_retrieve_or_create_index_metadata_yaml_create_discourse_error(tmp_path:
         True
     assert: then ServerError is raised.
     """
-    create_metadata_yaml(content=f"{run.METADATA_NAME_KEY}: charm-name", base_path=tmp_path)
+    create_metadata_yaml(content=f"{run.METADATA_NAME_KEY}: charm-name", path=tmp_path)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.create_topic.side_effect = DiscourseError
 
@@ -257,7 +257,7 @@ def test_retrieve_or_create_index_metadata_yaml_create(tmp_path: Path, index_fil
     assert: then create topic is called with the titleised charm name and with placeholder content
         and the url returned by the client and placeholder content is returned.
     """
-    create_metadata_yaml(content=f"{run.METADATA_NAME_KEY}: charm-name", base_path=tmp_path)
+    create_metadata_yaml(content=f"{run.METADATA_NAME_KEY}: charm-name", path=tmp_path)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     url = "http://server/index-page"
     mocked_server_client.create_topic.return_value = url
@@ -283,7 +283,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve_discourse_error(tmp_pat
     assert: then ServerError is raised.
     """
     create_metadata_yaml(
-        content=f"{run.METADATA_DOCS_KEY}: http://server/index-page", base_path=tmp_path
+        content=f"{run.METADATA_DOCS_KEY}: http://server/index-page", path=tmp_path
     )
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
@@ -308,7 +308,7 @@ def test_retrieve_or_create_index_metadata_yaml_retrieve(tmp_path: Path):
     """
     url = "http://server/index-page"
     content = "content 1"
-    create_metadata_yaml(content=f"{run.METADATA_DOCS_KEY}: {url}", base_path=tmp_path)
+    create_metadata_yaml(content=f"{run.METADATA_DOCS_KEY}: {url}", path=tmp_path)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = content
 

@@ -18,21 +18,21 @@ DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
 
 
-def _get_metadata(base_path: Path) -> dict:
+def _get_metadata(path: Path) -> dict:
     """Check for and read the metadata.
 
     Raises InputError if the metadata file does not exists or is malformed.
 
     Args:
-        base_path: The base path to look for the metadata file in.
+        path: The base path to look for the metadata file in.
 
     Returns:
         The contents of the metadata file.
 
     """
-    metadata_yaml = base_path / METADATA_FILENAME
+    metadata_yaml = path / METADATA_FILENAME
     if not metadata_yaml.is_file():
-        raise InputError(f"Could not find {METADATA_FILENAME} file, looked in folder: {base_path}")
+        raise InputError(f"Could not find {METADATA_FILENAME} file, looked in folder: {path}")
 
     try:
         metadata = yaml.safe_load(metadata_yaml.read_text())
@@ -125,7 +125,7 @@ def retrieve_or_create_index(
         The index page.
 
     """
-    metadata = _get_metadata(base_path=base_path)
+    metadata = _get_metadata(path=base_path)
 
     if METADATA_DOCS_KEY not in metadata and not create_if_not_exists:
         raise InputError(
