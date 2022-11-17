@@ -141,7 +141,7 @@ def test__read_docs_index_docs_folder_missing(tmp_path: Path):
         run._read_docs_index(base_path=tmp_path)
 
     assert_substrings_in_string(
-        ("not", "find", "directory", str(tmp_path / run.DOCUMENTATION_FOLDER)),
+        ("not", "find", "directory", str(tmp_path / run.DOCUMENTATION_FOLDER_NAME)),
         str(exc_info.value).lower(),
     )
 
@@ -152,7 +152,7 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then InputError is raised.
     """
-    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER
+    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER_NAME
     docs_folder.mkdir()
 
     with pytest.raises(InputError) as exc_info:

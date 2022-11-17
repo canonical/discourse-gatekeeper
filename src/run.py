@@ -14,7 +14,7 @@ from .types_ import Page
 METADATA_FILENAME = "metadata.yaml"
 METADATA_DOCS_KEY = "docs"
 METADATA_NAME_KEY = "name"
-DOCUMENTATION_FOLDER = "docs"
+DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
 
 
@@ -85,7 +85,7 @@ def _read_docs_index(base_path: Path) -> str:
         The content of the index file.
 
     """
-    if not (docs_folder := base_path / DOCUMENTATION_FOLDER).is_dir():
+    if not (docs_folder := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
         raise InputError(
             f"Could not find directory '{docs_folder}' which is where documentation is expected "
             "to be stored"

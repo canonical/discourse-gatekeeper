@@ -28,7 +28,7 @@ def discourse(base_path: str):
 @pytest.fixture()
 def index_file_content(tmp_path: Path):
     """Create index file."""
-    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER
+    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER_NAME
     docs_folder.mkdir()
     index_file = docs_folder / run.DOCUMENTATION_INDEX_FILENAME
     content = "content 1"
