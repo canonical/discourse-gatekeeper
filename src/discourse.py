@@ -3,7 +3,6 @@
 
 """Interface for Discourse interactions."""
 
-import os
 import typing
 from urllib import parse
 

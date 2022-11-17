@@ -129,8 +129,8 @@ def retrieve_or_create_index(
 
     if METADATA_DOCS_KEY not in metadata and not create_if_not_exists:
         raise InputError(
-            f"'{METADATA_DOCS_KEY!r}' not defined in {METADATA_FILENAME} and 'create_if_not_exists' "
-            f"false, {metadata=!r}"
+            f"'{METADATA_DOCS_KEY!r}' not defined in {METADATA_FILENAME} and "
+            f"'create_if_not_exists' false, {metadata=!r}"
         )
 
     # The charm does not have any documentation on the server, creating the index page using the
