@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from src.discourse import Discourse
 from src import run
+from src.discourse import Discourse
 
 
 @pytest.fixture(scope="module")

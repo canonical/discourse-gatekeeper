@@ -11,7 +11,6 @@ from .discourse import Discourse
 from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Page
 
-
 METADATA_FILE = "metadata.yaml"
 METADATA_DOCS_KEY = "docs"
 METADATA_NAME_KEY = "name"

@@ -14,6 +14,16 @@ inputs:
     description: The discourse host name.
     required: true
     type: string
+  discourse_api_username:
+    description: |
+      The discourse API username to use for interactions with the server.
+    required: true
+    type: string
+  discourse_api_key:
+    description: |
+      The discourse API key to use for interactions with the server.
+    required: true
+    type: string
   discourse_category_id:
     description: The category identifier to use on discourse for all topics.
     default: 41
