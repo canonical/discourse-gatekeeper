@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Unit tests for run module."""
+"""Unit tests for navigation table module."""
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
