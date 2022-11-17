@@ -23,7 +23,7 @@ def create_metadata_yaml(content: str, base_path: Path) -> None:
         base_path: The directory to create the file in.
 
     """
-    metadata_yaml = base_path / run.METADATA_FILE
+    metadata_yaml = base_path / run.METADATA_FILENAME
     metadata_yaml.write_text(content, encoding="utf-8")
 
 
@@ -48,15 +48,15 @@ def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
     with pytest.raises(InputError) as exc_info:
         run._get_metadata(base_path=tmp_path)
 
-    assert run.METADATA_FILE in str(exc_info.value).lower()
+    assert run.METADATA_FILENAME in str(exc_info.value).lower()
 
 
 @pytest.mark.parametrize(
     "metadata_yaml_content, expected_error_msg_contents",
     [
-        pytest.param("", ("empty", run.METADATA_FILE), id="malformed"),
-        pytest.param("malformed: yaml:", ("malformed", run.METADATA_FILE), id="malformed"),
-        pytest.param("value 1", ("not", "mapping", run.METADATA_FILE), id="not dict"),
+        pytest.param("", ("empty", run.METADATA_FILENAME), id="malformed"),
+        pytest.param("malformed: yaml:", ("malformed", run.METADATA_FILENAME), id="malformed"),
+        pytest.param("value 1", ("not", "mapping", run.METADATA_FILENAME), id="not dict"),
     ],
 )
 def test__get_metadata_metadata_yaml_malformed(
@@ -110,7 +110,7 @@ def test__get_key_docs_missing_malformed(metadata: dict, expected_error_msg_cont
         (
             f"'{run.METADATA_DOCS_KEY}'",
             expected_error_msg_content,
-            run.METADATA_FILE,
+            run.METADATA_FILENAME,
             f"{metadata=!r}",
         ),
         str(exc_info.value).lower(),
@@ -159,7 +159,7 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
         run._read_docs_index(base_path=tmp_path)
 
     assert_substrings_in_string(
-        ("not", "find", "file", str(docs_folder / run.DOCUMENTATION_INDEX_FILE)),
+        ("not", "find", "file", str(docs_folder / run.DOCUMENTATION_INDEX_FILENAME)),
         str(exc_info.value).lower(),
     )
 

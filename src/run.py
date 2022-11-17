@@ -11,11 +11,11 @@ from .discourse import Discourse
 from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Page
 
-METADATA_FILE = "metadata.yaml"
+METADATA_FILENAME = "metadata.yaml"
 METADATA_DOCS_KEY = "docs"
 METADATA_NAME_KEY = "name"
 DOCUMENTATION_FOLDER = "docs"
-DOCUMENTATION_INDEX_FILE = "index.md"
+DOCUMENTATION_INDEX_FILENAME = "index.md"
 
 
 def _get_metadata(base_path: Path) -> dict:
@@ -30,20 +30,22 @@ def _get_metadata(base_path: Path) -> dict:
         The contents of the metadata file.
 
     """
-    metadata_yaml = base_path / METADATA_FILE
+    metadata_yaml = base_path / METADATA_FILENAME
     if not metadata_yaml.is_file():
-        raise InputError(f"Could not find {METADATA_FILE} file, looked in folder: {base_path}")
+        raise InputError(f"Could not find {METADATA_FILENAME} file, looked in folder: {base_path}")
 
     try:
         metadata = yaml.safe_load(metadata_yaml.read_text())
     except yaml.error.YAMLError as exc:
-        raise InputError(f"Malformed {METADATA_FILE} file, read file: {metadata_yaml}") from exc
+        raise InputError(
+            f"Malformed {METADATA_FILENAME} file, read file: {metadata_yaml}"
+        ) from exc
 
     if not metadata:
-        raise InputError(f"{METADATA_FILE} file is empty, read file: {metadata_yaml}")
+        raise InputError(f"{METADATA_FILENAME} file is empty, read file: {metadata_yaml}")
     if not isinstance(metadata, dict):
         raise InputError(
-            f"{METADATA_FILE} file does not contain a mapping at the root, "
+            f"{METADATA_FILENAME} file does not contain a mapping at the root, "
             f"read file: {metadata_yaml}, content: {metadata!r}"
         )
 
@@ -63,11 +65,11 @@ def _get_key(metadata: dict, key: str) -> str:
 
     """
     if key not in metadata:
-        raise InputError(f"{key!r} not defined in {METADATA_FILE}, {metadata=!r}")
+        raise InputError(f"{key!r} not defined in {METADATA_FILENAME}, {metadata=!r}")
     if not isinstance(docs_value := metadata[key], str):
-        raise InputError(f"{key!r} is not a string in {METADATA_FILE}, {metadata=!r}")
+        raise InputError(f"{key!r} is not a string in {METADATA_FILENAME}, {metadata=!r}")
     if not docs_value:
-        raise InputError(f"{key!r} is empty in {METADATA_FILE}, {metadata=!r}")
+        raise InputError(f"{key!r} is empty in {METADATA_FILENAME}, {metadata=!r}")
     return docs_value
 
 
@@ -88,7 +90,7 @@ def _read_docs_index(base_path: Path) -> str:
             f"Could not find directory '{docs_folder}' which is where documentation is expected "
             "to be stored"
         )
-    if not (index_file := docs_folder / DOCUMENTATION_INDEX_FILE).is_file():
+    if not (index_file := docs_folder / DOCUMENTATION_INDEX_FILENAME).is_file():
         raise InputError(
             f"Could not find file '{index_file}' which is where the documentation index file is "
             "expected to be stored"
@@ -127,7 +129,7 @@ def retrieve_or_create_index(
 
     if METADATA_DOCS_KEY not in metadata and not create_if_not_exists:
         raise InputError(
-            f"'{METADATA_DOCS_KEY!r}' not defined in {METADATA_FILE} and 'create_if_not_exists' "
+            f"'{METADATA_DOCS_KEY!r}' not defined in {METADATA_FILENAME} and 'create_if_not_exists' "
             f"false, {metadata=!r}"
         )
 

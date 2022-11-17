@@ -30,7 +30,7 @@ def index_file_content(tmp_path: Path):
     """Create index file."""
     docs_folder = tmp_path / run.DOCUMENTATION_FOLDER
     docs_folder.mkdir()
-    index_file = docs_folder / run.DOCUMENTATION_INDEX_FILE
+    index_file = docs_folder / run.DOCUMENTATION_INDEX_FILENAME
     content = "content 1"
     index_file.write_text(content, encoding="utf-8")
     return content
