@@ -7,7 +7,7 @@ from pathlib import Path
 import typing
 
 
-class File(typing.NamedTuple):
+class PathInfo(typing.NamedTuple):
     """Represents a file or directory in the docs directory.
 
     Attrs:
@@ -23,7 +23,70 @@ class File(typing.NamedTuple):
     navlink_title: str
 
 
-def read(docs_path: Path) -> list[File]:
+def _get_directories_files(docs_path: Path) -> typing.Generator[Path, None, None]:
+    """Get all the directories and documentation files recursively in the docs folder.
+
+    Args:
+        docs_path: The path to the docs folder containing all the documentation.
+
+    Returns:
+        Iterator with all the directories and documentation files in the docs folder.
+    """
+
+
+def _calculate_level(path: Path, docs_path: Path) -> int:
+    """Calculate the level of a path.
+
+    Args:
+        path: The path to calculate the level for.
+        docs_path: The path to the docs folder.
+
+    Returns:
+        The number of sub-directories from the path to the docs directory including the docs
+        directory.
+    """
+
+
+def _calculate_table_path(path: Path, docs_path: Path) -> int:
+    """Calculate the table path of a path.
+
+    Args:
+        path: The path to calculate the table path for.
+        docs_path: The path to the docs folder.
+
+    Returns:
+        The relative path to the docs directory, replacing / with -, removing the extension and
+        converting to lower case.
+    """
+
+
+def _calculate_navlink_title(path: Path, docs_path: Path) -> int:
+    """Calculate the navlink title of a path.
+
+    Args:
+        path: The path to calculate the navlink title for.
+        docs_path: The path to the docs folder.
+
+    Returns:
+        The first heading, first line if there is no heading or the file/ directory name excluding
+        the extension with - replaced by space and titlelized if the file is empty or it is a
+        directory.
+    """
+
+
+def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
+    """Get the information for a path.
+
+    Args:
+        path: The path to calculate the information for.
+        docs_path: The path to the docs folder.
+
+    Returns:
+        The information for the path.
+    """
+
+
+def read(docs_path: Path) -> list[PathInfo]:
     """Read the docs directory and return information about each directory and documentation file.
 
     Algorithm:
