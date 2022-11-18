@@ -12,6 +12,8 @@ import requests
 
 from .exceptions import DiscourseError, InputError
 
+from .exceptions import DiscourseError, InputError
+
 
 class _DiscourseTopicInfo(typing.NamedTuple):
     """Information about a discourse topic.
