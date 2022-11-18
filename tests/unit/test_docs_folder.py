@@ -51,6 +51,26 @@ from src import docs_folder
             (("dir1",), ("dir1", "file1.md")),
             id="file in directory",
         ),
+        pytest.param(
+            (("dir1",), ("dir2",)),
+            (
+                ("file1.md",),
+                ("dir1", "dir1file1.md"),
+                ("dir1", "dir1file2.md"),
+                ("dir2", "dir2file1.md"),
+                ("dir2", "dir2file2.md"),
+            ),
+            (
+                ("dir1",),
+                ("dir1", "dir1file1.md"),
+                ("dir1", "dir1file2.md"),
+                ("dir2",),
+                ("dir2", "dir2file1.md"),
+                ("dir2", "dir2file2.md"),
+                ("file1.md",),
+            ),
+            id="multiple files in multiple directories",
+        ),
     ],
 )
 def test__get_directories_files(
@@ -71,6 +91,6 @@ def test__get_directories_files(
 
     returned_paths = docs_folder._get_directories_files(docs_path=tmp_path)
 
-    assert {path.relative_to(tmp_path) for path in returned_paths} == {
+    assert [path.relative_to(tmp_path) for path in returned_paths] == [
         Path(*expected_path) for expected_path in expected_paths
-    }
+    ]
