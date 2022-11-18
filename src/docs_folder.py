@@ -32,7 +32,7 @@ def _get_directories_files(docs_path: Path) -> typing.Iterator[Path]:
     Returns:
         Iterator with all the directories and documentation files in the docs folder.
     """
-    return (path for path in docs_path.rglob("*") if path.is_dir() or path.suffix == ".md")
+    return (path for path in docs_path.rglob("*") if path.is_dir() or path.suffix.lower() == ".md")
 
 
 def _calculate_level(path: Path, docs_path: Path) -> int:

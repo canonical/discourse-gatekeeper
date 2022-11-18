@@ -26,6 +26,9 @@ from src import docs_folder
             id="nested directory",
         ),
         pytest.param((), (("file1.md",),), (("file1.md",),), id="single file"),
+        pytest.param(
+            (), (("file1.MD",),), (("file1.MD",),), id="single file upper case extension"
+        ),
         pytest.param((), (("file1.txt",),), (), id="single file not documentation"),
         pytest.param(
             (("dir1",),),
