@@ -18,7 +18,36 @@ from src import docs_folder
     [
         pytest.param((), (), (), id="empty"),
         pytest.param((("dir1",),), (), (("dir1",),), id="single directory"),
+        pytest.param((("dir1",), ("dir2",)), (), (("dir1",), ("dir2",)), id="multiple directory"),
+        pytest.param(
+            (("dir1",), ("dir1", "subdir1")),
+            (),
+            (("dir1",), ("dir1", "subdir1")),
+            id="nested directory",
+        ),
         pytest.param((), (("file1.md",),), (("file1.md",),), id="single file"),
+        pytest.param((), (("file1.txt",),), (), id="single file not documentation"),
+        pytest.param(
+            (("dir1",),),
+            (("dir1", "file1.md"),),
+            (("dir1",), ("dir1", "file1.md")),
+            id="single file in directory",
+        ),
+        pytest.param(
+            (), (("file1.md",), ("file2.md",)), (("file1.md",), ("file2.md",)), id="multiple files"
+        ),
+        pytest.param(
+            (("dir1",),),
+            (("file1.md",),),
+            (("dir1",), ("file1.md",)),
+            id="single directory and single file",
+        ),
+        pytest.param(
+            (("dir1",),),
+            (("dir1", "file1.md"),),
+            (("dir1",), ("dir1", "file1.md")),
+            id="file in directory",
+        ),
     ],
 )
 def test__get_directories_files(
@@ -39,6 +68,6 @@ def test__get_directories_files(
 
     returned_paths = docs_folder._get_directories_files(docs_path=tmp_path)
 
-    assert [tmp_path.relative_to(path) for path in returned_paths] == [
+    assert {path.relative_to(tmp_path) for path in returned_paths} == {
         Path(*expected_path) for expected_path in expected_paths
-    ]
+    }

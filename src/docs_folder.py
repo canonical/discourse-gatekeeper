@@ -23,7 +23,7 @@ class PathInfo(typing.NamedTuple):
     navlink_title: str
 
 
-def _get_directories_files(docs_path: Path) -> typing.Generator[Path, None, None]:
+def _get_directories_files(docs_path: Path) -> typing.Iterator[Path]:
     """Get all the directories and documentation files recursively in the docs folder.
 
     Args:
@@ -32,6 +32,7 @@ def _get_directories_files(docs_path: Path) -> typing.Generator[Path, None, None
     Returns:
         Iterator with all the directories and documentation files in the docs folder.
     """
+    return (path for path in docs_path.rglob("*") if path.is_dir() or path.suffix == ".md")
 
 
 def _calculate_level(path: Path, docs_path: Path) -> int:
