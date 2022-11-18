@@ -24,13 +24,13 @@ class PathInfo(typing.NamedTuple):
 
 
 def _get_directories_files(docs_path: Path) -> typing.Iterator[Path]:
-    """Get all the directories and documentation files recursively in the docs folder.
+    """Get all the directories and documentation files recursively in the docs directory.
 
     Args:
-        docs_path: The path to the docs folder containing all the documentation.
+        docs_path: The path to the docs directory containing all the documentation.
 
     Returns:
-        Iterator with all the directories and documentation files in the docs folder.
+        Iterator with all the directories and documentation files in the docs directory.
     """
     return (path for path in docs_path.rglob("*") if path.is_dir() or path.suffix.lower() == ".md")
 

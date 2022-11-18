@@ -78,13 +78,14 @@ def _filter_line(line: str) -> bool:
 def _line_to_row(line: str) -> TableRow:
     """Parse a markdown table line.
 
-    Raises NavigationTableParseError if no match is found for the line.
-
     Args:
         line: The line to process.
 
     Returns:
         The parsed row.
+
+    Raises:
+        NavigationTableParseError: if no match is found for the line.
     """
     match = _ROW_PATTERN.match(line)
 
