@@ -127,3 +127,46 @@ def test__calculate_level(
     returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
 
     assert returned_level == expected_level
+
+
+@pytest.mark.parametrize(
+    "directories, file, expected_table_path",
+    [
+        pytest.param((), "file1.md", "file1", id="file in docs"),
+        pytest.param((), "FILE1.md", "file1", id="file upper case in docs"),
+        pytest.param(("dir1",), None, "dir1", id="directory in docs"),
+        pytest.param(("dir1",), "file1.md", "dir1-file1", id="directory file in docs"),
+        pytest.param(("dir1", "dir2"), None, "dir1-dir2", id="multiple directory in docs"),
+        pytest.param(
+            ("dir1", "dir2"), "file1.md", "dir1-dir2-file1", id="multiple directory file in docs"
+        ),
+        pytest.param(
+            ("dir1", "dir2", "dir3"), None, "dir1-dir2-dir3", id="many directory in docs"
+        ),
+        pytest.param(
+            ("dir1", "dir2", "dir3"),
+            "file1.md",
+            "dir1-dir2-dir3-file1",
+            id="many directory file in docs",
+        ),
+    ],
+)
+def test__calculate_table_path(
+    directories: tuple[str, ...], file: str | None, expected_table_path: str, tmp_path: Path
+):
+    """
+    arrange: given directories and file to create
+    act: when _calculate_table_path is called with the docs folder and the created directory and file
+    assert: then the expected table path is returned.
+    """
+    path = tmp_path
+    for directory in directories:
+        path /= directory
+        path.mkdir()
+    if file is not None:
+        path /= file
+        path.touch()
+
+    returned_level = docs_folder._calculate_table_path(path=path, docs_path=tmp_path)
+
+    assert returned_level == expected_table_path

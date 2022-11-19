@@ -62,6 +62,11 @@ def _calculate_table_path(path: Path, docs_path: Path) -> int:
         The relative path to the docs directory, replacing / with -, removing the extension and
         converting to lower case.
     """
+    return (
+        "-".join(str(part) for part in path.relative_to(docs_path).parts)
+        .removesuffix(path.suffix)
+        .lower()
+    )
 
 
 def _calculate_navlink_title(path: Path, docs_path: Path) -> int:
