@@ -181,3 +181,66 @@ def test__calculate_table_path(
     returned_level = docs_folder._calculate_table_path(path=path, docs_path=tmp_path)
 
     assert returned_level == expected_table_path
+
+
+@pytest.mark.parametrize(
+    "directories, file, content, expected_navlink_title",
+    [
+        pytest.param(("dir1",), None, None, "Dir1", id="directory in docs"),
+        pytest.param(("dir1", "dir2"), None, None, "Dir2", id="nested directory in docs"),
+        pytest.param(("the-dir-1",), None, None, "The Dir 1", id="directory in docs with -"),
+        pytest.param((), "file1.md", None, "File1", id="file in docs empty"),
+        pytest.param(("dir1",), "file1.md", None, "File1", id="file in subdirectory empty"),
+        pytest.param((), "the-file-1.md", None, "The File 1", id="file including - in docs empty"),
+        pytest.param((), "file1.md", "", "File1", id="file in docs empty string"),
+        pytest.param((), "file1.md", "line 1", "line 1", id="file in docs single line no title"),
+        pytest.param(
+            (),
+            "file1.md",
+            "line 1\nline 2",
+            "line 1",
+            id="file in docs multiple line no title",
+        ),
+        pytest.param((), "file1.md", "# line 1", "line 1", id="file in docs title on first line"),
+        pytest.param(
+            (),
+            "file1.md",
+            "# line 1\nline 2",
+            "line 1",
+            id="file in docs title on first line with more lines",
+        ),
+        pytest.param(
+            (),
+            "file1.md",
+            "line 1\n# line 2",
+            "line 2",
+            id="file in docs title on second line",
+        ),
+        pytest.param(
+            (),
+            "file1.md",
+            "line 1\n# line 2\nline 3",
+            "line 2",
+            id="file in docs title on second line with more lines",
+        ),
+    ],
+)
+def test__calculate_navlink_title(
+    directories: tuple[str, ...],
+    file: str | None,
+    content: str | None,
+    expected_navlink_title: str,
+    tmp_path: Path,
+):
+    """
+    arrange: given directories and file to create and contents of the file
+    act: when _calculate_navlink_title is called with the docs folder and the created directory and file
+    assert: then the expected navlink title is returned.
+    """
+    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
+    if file is not None and content is not None:
+        path.write_text(content, encoding="utf-8")
+
+    returned_navlink_title = docs_folder._calculate_navlink_title(path=path, docs_path=tmp_path)
+
+    assert returned_navlink_title == expected_navlink_title

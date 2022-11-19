@@ -81,6 +81,20 @@ def _calculate_navlink_title(path: Path, docs_path: Path) -> int:
         the extension with - replaced by space and titlelized if the file is empty or it is a
         directory.
     """
+    # Check for file with content
+    if path.is_file() and path.stat().st_size:
+        content_lines = path.read_text(encoding="utf-8").splitlines()
+        heading_start = "# "
+        try:
+            return next(
+                line.removeprefix(heading_start)
+                for line in content_lines
+                if line.startswith(heading_start)
+            )
+        except StopIteration:
+            return content_lines[0]
+
+    return path.stem.replace("-", " ").title()
 
 
 def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
