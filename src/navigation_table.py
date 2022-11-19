@@ -3,11 +3,10 @@
 
 """Class for parsing and rendering a navigation table."""
 
-import typing
 import re
+import typing
 
 from .exceptions import NavigationTableParseError
-
 
 _WHITESPACE = r"\s*"
 _TABLE_HEADER_REGEX = (

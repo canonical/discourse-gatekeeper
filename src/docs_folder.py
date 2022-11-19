@@ -3,9 +3,9 @@
 
 """Class for reading the docs directory."""
 
+import typing
 from functools import partial
 from pathlib import Path
-import typing
 
 
 class PathInfo(typing.NamedTuple):
