@@ -17,7 +17,7 @@ def create_directories_files(
     base_path: Path,
     directories: tuple[tuple[str, ...], ...],
     files: tuple[tuple[str, ...], ...],
-) -> Path:
+) -> None:
     """Create directories and file.
 
     Args:
@@ -185,7 +185,8 @@ def test__calculate_table_path(
 ):
     """
     arrange: given directories and file to create
-    act: when _calculate_table_path is called with the docs folder and the created directory and file
+    act: when _calculate_table_path is called with the docs folder and the created directory and
+        file
     assert: then the expected table path is returned.
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
@@ -246,7 +247,8 @@ def test__calculate_navlink_title(
 ):
     """
     arrange: given directories and file to create and contents of the file
-    act: when _calculate_navlink_title is called with the docs folder and the created directory and file
+    act: when _calculate_navlink_title is called with the docs folder and the created directory and
+        file
     assert: then the expected navlink title is returned.
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
@@ -302,7 +304,7 @@ def test__get_path_info(tmp_path: Path):
 def test_read(
     directories: tuple[tuple[str, ...], ...],
     files: tuple[tuple[str, ...], ...],
-    expected_path_infos: list[docs_folder.PathInfo],
+    expected_path_infos: list[tuple[tuple[str, ...], int, str, str]],
     tmp_path: Path,
 ):
     """

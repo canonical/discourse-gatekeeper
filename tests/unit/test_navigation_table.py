@@ -192,6 +192,8 @@ def test_from_page_indico():
     act: when from_page is called with the page
     assert: then the page is parsed.
     """
+    # Line is too long as the indico docs are not limited to 100 characters per line
+    # pylint: disable=line-too-long
     indico_page = """Indico is an open-source tool for event organisation, archival and collaboration, catering to lectures, meetings, workshops and conferences.
 
 For details on Indico's features, see [this page](https://getindico.io/features/).

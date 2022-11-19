@@ -24,7 +24,7 @@ class PathInfo(typing.NamedTuple):
     navlink_title: str
 
 
-def _get_directories_files(docs_path: Path) -> typing.Iterator[Path]:
+def _get_directories_files(docs_path: Path) -> list[Path]:
     """Get all the directories and documentation files recursively in the docs directory.
 
     Args:
@@ -52,7 +52,7 @@ def _calculate_level(path: Path, docs_path: Path) -> int:
     return len(path.relative_to(docs_path).parents)
 
 
-def _calculate_table_path(path: Path, docs_path: Path) -> int:
+def _calculate_table_path(path: Path, docs_path: Path) -> str:
     """Calculate the table path of a path.
 
     Args:
@@ -70,7 +70,7 @@ def _calculate_table_path(path: Path, docs_path: Path) -> int:
     )
 
 
-def _calculate_navlink_title(path: Path) -> int:
+def _calculate_navlink_title(path: Path) -> str:
     """Calculate the navlink title of a path.
 
     Args:
@@ -126,8 +126,8 @@ def read(docs_path: Path) -> typing.Iterator[PathInfo]:
             2.2. Calculate the table path using the relative path to the docs directory, replacing
                 / with -, removing the extension and converting to lower case.
             2.3. Calculate the navlink title based on the first heading, first line if there is no
-                heading or the file/ directory name excluding the extension with - replaced by space
-                and titlelized if the file is empty or it is a directory.
+                heading or the file/ directory name excluding the extension with - replaced by
+                space and titlelized if the file is empty or it is a directory.
 
     Args:
         docs_path: The path to the docs folder containing all the documentation.

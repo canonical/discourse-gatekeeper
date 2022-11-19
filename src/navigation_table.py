@@ -121,7 +121,7 @@ def from_page(page: str) -> typing.Iterator[TableRow]:
     match = _TABLE_PATTERN.match(page)
 
     if match is None:
-        return []
+        return iter([])
 
     table = match.group(0)
     return (_line_to_row(line) for line in table.splitlines() if not _filter_line(line))
