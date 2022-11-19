@@ -183,7 +183,7 @@ def test_from_page(page: str, expected_table: list[navigation_table.TableRow]):
     """
     returned_table = navigation_table.from_page(page=page)
 
-    assert returned_table == expected_table
+    assert list(returned_table) == expected_table
 
 
 def test_from_page_indico():
@@ -213,7 +213,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 
     returned_table = navigation_table.from_page(page=indico_page)
 
-    assert returned_table == [
+    assert list(returned_table) == [
         (1, "tutorials", ("Tutorials", None)),
         (1, "how-to-guides", ("How-to guides", None)),
         (2, "contributing", ("Contributing", "/t/indico-docs-contributing/6574")),

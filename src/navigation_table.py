@@ -104,7 +104,7 @@ def _line_to_row(line: str) -> TableRow:
     )
 
 
-def from_page(page: str) -> list[TableRow]:
+def from_page(page: str) -> typing.Iterator[TableRow]:
     """Create an instance based on a markdown page.
 
     Algorithm:
@@ -125,4 +125,4 @@ def from_page(page: str) -> list[TableRow]:
         return []
 
     table = match.group(0)
-    return [_line_to_row(line) for line in table.splitlines() if not _filter_line(line)]
+    return (_line_to_row(line) for line in table.splitlines() if not _filter_line(line))

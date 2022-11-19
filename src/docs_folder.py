@@ -109,7 +109,7 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
     """
 
 
-def read(docs_path: Path) -> list[PathInfo]:
+def read(docs_path: Path) -> typing.Iterator[PathInfo]:
     """Read the docs directory and return information about each directory and documentation file.
 
     Algorithm:
