@@ -299,7 +299,7 @@ def test__get_path_info(tmp_path: Path):
         ),
     ],
 )
-def test__get_directories_files(
+def test_read(
     directories: tuple[tuple[str, ...], ...],
     files: tuple[tuple[str, ...], ...],
     expected_path_infos: list[docs_folder.PathInfo],
@@ -317,4 +317,63 @@ def test__get_directories_files(
     assert list(returned_path_infos) == [
         (tmp_path / Path(*expected_path_info[0]), *expected_path_info[1:])
         for expected_path_info in expected_path_infos
+    ]
+
+
+def test_read_indoco(tmp_path: Path):
+    """
+    arrange: given docs folder structured based on the indico docs
+    act: when read is called with the docs folder
+    assert: then the indico path infos are returned.
+    """
+    (tutorials := tmp_path / "tutorials").mkdir()
+    (how_to_guides := tmp_path / "how-to-guides").mkdir()
+    (contributing := how_to_guides / "contributing.md").touch()
+    contributing.write_text("# Contributing\nThis is how to contribute", encoding="utf-8")
+    (cross_model_db_relations := how_to_guides / "cross-model-db-relations.md").touch()
+    cross_model_db_relations.write_text(
+        "# Cross-model DB Relations\nThis is how to create cross-model DB relations",
+        encoding="utf-8",
+    )
+    (refresh_external_resources := how_to_guides / "refresh-external-resources.md").touch()
+    refresh_external_resources.write_text(
+        "# Refreshing external resources\nThis is how to refresh external resources",
+        encoding="utf-8",
+    )
+    (reference := tmp_path / "reference").mkdir()
+    (plugins := reference / "plugins.md").touch()
+    plugins.write_text("# Plugins\nPlugins reference", encoding="utf-8")
+    (theme_customisation := reference / "theme-customisation.md").touch()
+    theme_customisation.write_text(
+        "# Theme Customisation\nTheme customisation reference", encoding="utf-8"
+    )
+    (explanation := tmp_path / "explanation").mkdir()
+    (charm_architecture := explanation / "charm-architecture.md").touch()
+    charm_architecture.write_text(
+        "# Charm Architecture\nCharm architecture explanation", encoding="utf-8"
+    )
+
+    returned_path_infos = docs_folder.read(docs_path=tmp_path)
+
+    assert list(returned_path_infos) == [
+        (explanation, 1, "explanation", "Explanation"),
+        (charm_architecture, 2, "explanation-charm-architecture", "Charm Architecture"),
+        (how_to_guides, 1, "how-to-guides", "How To Guides"),
+        (contributing, 2, "how-to-guides-contributing", "Contributing"),
+        (
+            cross_model_db_relations,
+            2,
+            "how-to-guides-cross-model-db-relations",
+            "Cross-model DB Relations",
+        ),
+        (
+            refresh_external_resources,
+            2,
+            "how-to-guides-refresh-external-resources",
+            "Refreshing external resources",
+        ),
+        (reference, 1, "reference", "Reference"),
+        (plugins, 2, "reference-plugins", "Plugins"),
+        (theme_customisation, 2, "reference-theme-customisation", "Theme Customisation"),
+        (tutorials, 1, "tutorials", "Tutorials"),
     ]
