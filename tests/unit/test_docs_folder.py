@@ -97,52 +97,32 @@ def test__get_directories_files(
 
 
 @pytest.mark.parametrize(
-    "directories, expected_level",
+    "directories, file, expected_level",
     [
-        pytest.param(("dir1",), 1, id="single"),
-        pytest.param(("dir1", "dir2"), 2, id="multiple"),
-        pytest.param(("dir1", "dir2", "dir3"), 3, id="many"),
+        pytest.param((), "file1.md", 1, id="file in docs"),
+        pytest.param(("dir1",), None, 1, id="directory in docs"),
+        pytest.param(("dir1",), "file1.md", 2, id="directory file in docs"),
+        pytest.param(("dir1", "dir2"), None, 2, id="multiple directory in docs"),
+        pytest.param(("dir1", "dir2"), "file1.md", 3, id="multiple directory file in docs"),
+        pytest.param(("dir1", "dir2", "dir3"), None, 3, id="many directory in docs"),
+        pytest.param(("dir1", "dir2", "dir3"), "file1.md", 4, id="many directory file in docs"),
     ],
 )
-def test__calculate_level_directory(
-    directories: tuple[str, ...], expected_level: int, tmp_path: Path
+def test__calculate_level(
+    directories: tuple[str, ...], file: str | None, expected_level: int, tmp_path: Path
 ):
     """
-    arrange: directories to create
-    act: when _calculate_level is called with the docs folder and the created directory
+    arrange: given directories and file to create
+    act: when _calculate_level is called with the docs folder and the created directory and file
     assert: then the expected level is returned.
     """
     path = tmp_path
     for directory in directories:
         path /= directory
         path.mkdir()
-
-    returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
-
-    assert returned_level == expected_level
-
-
-@pytest.mark.parametrize(
-    "directories, expected_level",
-    [
-        pytest.param((), 1, id="in docs"),
-        pytest.param(("dir1",), 2, id="single directory"),
-        pytest.param(("dir1", "dir2"), 3, id="multiple directories"),
-        pytest.param(("dir1", "dir2", "dir3"), 4, id="many directories"),
-    ],
-)
-def test__calculate_level_file(directories: tuple[str, ...], expected_level: int, tmp_path: Path):
-    """
-    arrange: directories to create
-    act: when _calculate_level is called with the docs folder and the created directory
-    assert: then the expected level is returned.
-    """
-    path = tmp_path
-    for directory in directories:
-        path /= directory
-        path.mkdir()
-    path /= "file1.md"
-    path.touch()
+    if file is not None:
+        path /= file
+        path.touch()
 
     returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
 
