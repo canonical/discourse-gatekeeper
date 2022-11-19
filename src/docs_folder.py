@@ -11,13 +11,13 @@ class PathInfo(typing.NamedTuple):
     """Represents a file or directory in the docs directory.
 
     Attrs:
-        disk_path: The path to the file on the local disk.
+        local_path: The path to the file on the local disk.
         level: The number of parent directories to the docs folder including the docs folder.
         table_path: The compyuted table path based on the disk path relative to the docs folder.
         navlink_title: The title of the navlink.
     """
 
-    disk_path: Path
+    local_path: Path
     level: int
     table_path: str
     navlink_title: str
@@ -106,6 +106,12 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
     Returns:
         The information for the path.
     """
+    return PathInfo(
+        local_path=path,
+        level=_calculate_level(path=path, docs_path=docs_path),
+        table_path=_calculate_table_path(path=path, docs_path=docs_path),
+        navlink_title=_calculate_navlink_title(path=path),
+    )
 
 
 def read(docs_path: Path) -> typing.Iterator[PathInfo]:

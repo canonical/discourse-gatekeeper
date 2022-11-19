@@ -244,3 +244,16 @@ def test__calculate_navlink_title(
     returned_navlink_title = docs_folder._calculate_navlink_title(path=path)
 
     assert returned_navlink_title == expected_navlink_title
+
+
+def test__get_path_info(tmp_path: Path):
+    """
+    arrange: given directory
+    act: when _get_path_info is called with the docs folder and the created directory
+    assert: then the expected local path, level, table path and navlink title is returned.
+    """
+    (path := tmp_path / "dir1").mkdir()
+
+    returned_path_info = docs_folder._get_path_info(path=path, docs_path=tmp_path)
+
+    assert returned_path_info == (path, 1, "dir1", "Dir1")
