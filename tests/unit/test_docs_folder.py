@@ -13,6 +13,29 @@ import pytest
 from src import docs_folder
 
 
+def create_directories_file(
+    base_path: Path, directories: tuple[str, ...], file: str | None
+) -> Path:
+    """Create directories and file.
+
+    Args:
+        base_path: The path to start with.
+        directories: The directories to be created.
+        file: The file to be created. If None, only creates directories.
+
+    Returns:
+        The deepest nested directory or file.
+    """
+    path = base_path
+    for directory in directories:
+        path /= directory
+        path.mkdir()
+    if file is not None:
+        path /= file
+        path.touch()
+    return path
+
+
 @pytest.mark.parametrize(
     "directories, files, expected_paths",
     [
@@ -116,13 +139,7 @@ def test__calculate_level(
     act: when _calculate_level is called with the docs folder and the created directory and file
     assert: then the expected level is returned.
     """
-    path = tmp_path
-    for directory in directories:
-        path /= directory
-        path.mkdir()
-    if file is not None:
-        path /= file
-        path.touch()
+    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
 
     returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
 
@@ -159,13 +176,7 @@ def test__calculate_table_path(
     act: when _calculate_table_path is called with the docs folder and the created directory and file
     assert: then the expected table path is returned.
     """
-    path = tmp_path
-    for directory in directories:
-        path /= directory
-        path.mkdir()
-    if file is not None:
-        path /= file
-        path.touch()
+    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
 
     returned_level = docs_folder._calculate_table_path(path=path, docs_path=tmp_path)
 
