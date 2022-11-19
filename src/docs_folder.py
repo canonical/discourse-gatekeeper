@@ -48,6 +48,7 @@ def _calculate_level(path: Path, docs_path: Path) -> int:
         The number of sub-directories from the path to the docs directory including the docs
         directory.
     """
+    return len(path.relative_to(docs_path).parents)
 
 
 def _calculate_table_path(path: Path, docs_path: Path) -> int:

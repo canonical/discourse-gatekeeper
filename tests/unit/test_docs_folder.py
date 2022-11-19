@@ -74,9 +74,9 @@ from src import docs_folder
     ],
 )
 def test__get_directories_files(
-    directories: tuple[tuple[str], ...],
-    files: tuple[tuple[str], ...],
-    expected_paths: tuple[str, ...],
+    directories: tuple[tuple[str, ...], ...],
+    files: tuple[tuple[str, ...], ...],
+    expected_paths: tuple[tuple[str, ...], ...],
     tmp_path: Path,
 ):
     """
@@ -94,3 +94,56 @@ def test__get_directories_files(
     assert [path.relative_to(tmp_path) for path in returned_paths] == [
         Path(*expected_path) for expected_path in expected_paths
     ]
+
+
+@pytest.mark.parametrize(
+    "directories, expected_level",
+    [
+        pytest.param(("dir1",), 1, id="single"),
+        pytest.param(("dir1", "dir2"), 2, id="multiple"),
+        pytest.param(("dir1", "dir2", "dir3"), 3, id="many"),
+    ],
+)
+def test__calculate_level_directory(
+    directories: tuple[str, ...], expected_level: int, tmp_path: Path
+):
+    """
+    arrange: directories to create
+    act: when _calculate_level is called with the docs folder and the created directory
+    assert: then the expected level is returned.
+    """
+    path = tmp_path
+    for directory in directories:
+        path /= directory
+        path.mkdir()
+
+    returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
+
+    assert returned_level == expected_level
+
+
+@pytest.mark.parametrize(
+    "directories, expected_level",
+    [
+        pytest.param((), 1, id="in docs"),
+        pytest.param(("dir1",), 2, id="single directory"),
+        pytest.param(("dir1", "dir2"), 3, id="multiple directories"),
+        pytest.param(("dir1", "dir2", "dir3"), 4, id="many directories"),
+    ],
+)
+def test__calculate_level_file(directories: tuple[str, ...], expected_level: int, tmp_path: Path):
+    """
+    arrange: directories to create
+    act: when _calculate_level is called with the docs folder and the created directory
+    assert: then the expected level is returned.
+    """
+    path = tmp_path
+    for directory in directories:
+        path /= directory
+        path.mkdir()
+    path /= "file1.md"
+    path.touch()
+
+    returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
+
+    assert returned_level == expected_level
