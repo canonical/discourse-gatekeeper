@@ -69,12 +69,11 @@ def _calculate_table_path(path: Path, docs_path: Path) -> int:
     )
 
 
-def _calculate_navlink_title(path: Path, docs_path: Path) -> int:
+def _calculate_navlink_title(path: Path) -> int:
     """Calculate the navlink title of a path.
 
     Args:
         path: The path to calculate the navlink title for.
-        docs_path: The path to the docs folder.
 
     Returns:
         The first heading, first line if there is no heading or the file/ directory name excluding

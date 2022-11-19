@@ -241,6 +241,6 @@ def test__calculate_navlink_title(
     if file is not None and content is not None:
         path.write_text(content, encoding="utf-8")
 
-    returned_navlink_title = docs_folder._calculate_navlink_title(path=path, docs_path=tmp_path)
+    returned_navlink_title = docs_folder._calculate_navlink_title(path=path)
 
     assert returned_navlink_title == expected_navlink_title
