@@ -3,6 +3,7 @@
 
 """Class for reading the docs directory."""
 
+from functools import partial
 from pathlib import Path
 import typing
 
@@ -134,3 +135,6 @@ def read(docs_path: Path) -> typing.Iterator[PathInfo]:
     Returns:
         Information about each directory and documentation file in the docs folder.
     """
+    return map(
+        partial(_get_path_info, docs_path=docs_path), _get_directories_files(docs_path=docs_path)
+    )

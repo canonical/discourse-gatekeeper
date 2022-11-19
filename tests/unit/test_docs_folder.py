@@ -13,7 +13,28 @@ import pytest
 from src import docs_folder
 
 
-def create_directories_file(
+def create_directories_files(
+    base_path: Path,
+    directories: tuple[tuple[str, ...], ...],
+    files: tuple[tuple[str, ...], ...],
+) -> Path:
+    """Create directories and file.
+
+    Args:
+        base_path: The path to start with.
+        directories: The directories to be created.
+        file: The file to be created. If None, only creates directories.
+
+    Returns:
+        The deepest nested directory or file.
+    """
+    for directory in directories:
+        (base_path / Path(*directory)).mkdir()
+    for file in files:
+        (base_path / Path(*file)).touch()
+
+
+def create_nested_directories_file(
     base_path: Path, directories: tuple[str, ...], file: str | None
 ) -> Path:
     """Create directories and file.
@@ -53,12 +74,6 @@ def create_directories_file(
             (), (("file1.MD",),), (("file1.MD",),), id="single file upper case extension"
         ),
         pytest.param((), (("file1.txt",),), (), id="single file not documentation"),
-        pytest.param(
-            (("dir1",),),
-            (("dir1", "file1.md"),),
-            (("dir1",), ("dir1", "file1.md")),
-            id="single file in directory",
-        ),
         pytest.param(
             (), (("file1.md",), ("file2.md",)), (("file1.md",), ("file2.md",)), id="multiple files"
         ),
@@ -107,10 +122,7 @@ def test__get_directories_files(
     act: when _get_directories_files is called with the docs folder
     assert: then the expected paths are returned.
     """
-    for directory in directories:
-        (tmp_path / Path(*directory)).mkdir()
-    for file in files:
-        (tmp_path / Path(*file)).touch()
+    create_directories_files(base_path=tmp_path, directories=directories, files=files)
 
     returned_paths = docs_folder._get_directories_files(docs_path=tmp_path)
 
@@ -139,7 +151,7 @@ def test__calculate_level(
     act: when _calculate_level is called with the docs folder and the created directory and file
     assert: then the expected level is returned.
     """
-    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
+    path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
     returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
 
@@ -176,7 +188,7 @@ def test__calculate_table_path(
     act: when _calculate_table_path is called with the docs folder and the created directory and file
     assert: then the expected table path is returned.
     """
-    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
+    path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
     returned_level = docs_folder._calculate_table_path(path=path, docs_path=tmp_path)
 
@@ -237,7 +249,7 @@ def test__calculate_navlink_title(
     act: when _calculate_navlink_title is called with the docs folder and the created directory and file
     assert: then the expected navlink title is returned.
     """
-    path = create_directories_file(base_path=tmp_path, directories=directories, file=file)
+    path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
     if file is not None and content is not None:
         path.write_text(content, encoding="utf-8")
 
@@ -257,3 +269,52 @@ def test__get_path_info(tmp_path: Path):
     returned_path_info = docs_folder._get_path_info(path=path, docs_path=tmp_path)
 
     assert returned_path_info == (path, 1, "dir1", "Dir1")
+
+
+@pytest.mark.parametrize(
+    "directories, files, expected_path_infos",
+    [
+        pytest.param((), (), [], id="empty"),
+        pytest.param((("dir1",),), (), [(("dir1",), 1, "dir1", "Dir1")], id="single directory"),
+        pytest.param(
+            (("dir1",), ("dir2",)),
+            (),
+            [(("dir1",), 1, "dir1", "Dir1"), (("dir2",), 1, "dir2", "Dir2")],
+            id="multiple directory",
+        ),
+        pytest.param(
+            (), (("file1.md",),), [(("file1.md",), 1, "file1", "File1")], id="single file"
+        ),
+        pytest.param(
+            (("dir1",),),
+            (("dir1", "file1.md"),),
+            [(("dir1",), 1, "dir1", "Dir1"), (("dir1", "file1.md"), 2, "dir1-file1", "File1")],
+            id="single file in directory",
+        ),
+        pytest.param(
+            (),
+            (("file1.md",), ("file2.md",)),
+            [(("file1.md",), 1, "file1", "File1"), (("file2.md",), 1, "file2", "File2")],
+            id="multiple files",
+        ),
+    ],
+)
+def test__get_directories_files(
+    directories: tuple[tuple[str, ...], ...],
+    files: tuple[tuple[str, ...], ...],
+    expected_path_infos: list[docs_folder.PathInfo],
+    tmp_path: Path,
+):
+    """
+    arrange: given docs folder and paths to create
+    act: when read is called with the docs folder
+    assert: then the expected path infos are returned.
+    """
+    create_directories_files(base_path=tmp_path, directories=directories, files=files)
+
+    returned_path_infos = docs_folder.read(docs_path=tmp_path)
+
+    assert list(returned_path_infos) == [
+        (tmp_path / Path(*expected_path_info[0]), *expected_path_info[1:])
+        for expected_path_info in expected_path_infos
+    ]
