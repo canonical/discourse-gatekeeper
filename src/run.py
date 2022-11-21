@@ -88,12 +88,12 @@ def _read_docs_index(base_path: Path) -> str:
         InputError: if the file does not exist.
 
     """
-    if not (docs_folder := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
+    if not (docs_directory := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
         raise InputError(
-            f"Could not find directory '{docs_folder}' which is where documentation is expected "
+            f"Could not find directory '{docs_directory}' which is where documentation is expected "
             "to be stored"
         )
-    if not (index_file := docs_folder / DOCUMENTATION_INDEX_FILENAME).is_file():
+    if not (index_file := docs_directory / DOCUMENTATION_INDEX_FILENAME).is_file():
         raise InputError(
             f"Could not find file '{index_file}' which is where the documentation index file is "
             "expected to be stored"

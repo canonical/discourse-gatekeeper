@@ -14,7 +14,7 @@ class PathInfo(typing.NamedTuple):
     Attrs:
         local_path: The path to the file on the local disk.
         level: The number of parent directories to the docs folder including the docs folder.
-        table_path: The compyuted table path based on the disk path relative to the docs folder.
+        table_path: The computed table path based on the disk path relative to the docs folder.
         navlink_title: The title of the navlink.
     """
 
@@ -31,7 +31,7 @@ def _get_directories_files(docs_path: Path) -> list[Path]:
         docs_path: The path to the docs directory containing all the documentation.
 
     Returns:
-        Iterator with all the directories and documentation files in the docs directory.
+        List with all the directories and documentation files in the docs directory.
     """
     return sorted(
         path for path in docs_path.rglob("*") if path.is_dir() or path.suffix.lower() == ".md"
@@ -43,7 +43,7 @@ def _calculate_level(path: Path, docs_path: Path) -> int:
 
     Args:
         path: The path to calculate the level for.
-        docs_path: The path to the docs folder.
+        docs_path: The path to the docs directory.
 
     Returns:
         The number of sub-directories from the path to the docs directory including the docs
@@ -57,14 +57,14 @@ def _calculate_table_path(path: Path, docs_path: Path) -> str:
 
     Args:
         path: The path to calculate the table path for.
-        docs_path: The path to the docs folder.
+        docs_path: The path to the docs directory.
 
     Returns:
         The relative path to the docs directory, replacing / with -, removing the extension and
         converting to lower case.
     """
     return (
-        "-".join(str(part) for part in path.relative_to(docs_path).parts)
+        "-".join(part for part in path.relative_to(docs_path).parts)
         .removesuffix(path.suffix)
         .lower()
     )
@@ -102,7 +102,7 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
 
     Args:
         path: The path to calculate the information for.
-        docs_path: The path to the docs folder.
+        docs_path: The path to the docs directory.
 
     Returns:
         The information for the path.
@@ -130,7 +130,7 @@ def read(docs_path: Path) -> typing.Iterator[PathInfo]:
                 space and titlelized if the file is empty or it is a directory.
 
     Args:
-        docs_path: The path to the docs folder containing all the documentation.
+        docs_path: The path to the docs directory containing all the documentation.
 
     Returns:
         Information about each directory and documentation file in the docs folder.

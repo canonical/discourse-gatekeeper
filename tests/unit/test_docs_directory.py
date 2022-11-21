@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src import docs_folder
+from src import docs_directory
 
 
 def create_directories_files(
@@ -124,7 +124,7 @@ def test__get_directories_files(
     """
     create_directories_files(base_path=tmp_path, directories=directories, files=files)
 
-    returned_paths = docs_folder._get_directories_files(docs_path=tmp_path)
+    returned_paths = docs_directory._get_directories_files(docs_path=tmp_path)
 
     assert [path.relative_to(tmp_path) for path in returned_paths] == [
         Path(*expected_path) for expected_path in expected_paths
@@ -153,7 +153,7 @@ def test__calculate_level(
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
-    returned_level = docs_folder._calculate_level(path=path, docs_path=tmp_path)
+    returned_level = docs_directory._calculate_level(path=path, docs_path=tmp_path)
 
     assert returned_level == expected_level
 
@@ -162,6 +162,7 @@ def test__calculate_level(
     "directories, file, expected_table_path",
     [
         pytest.param((), "file1.md", "file1", id="file in docs"),
+        pytest.param((), "file1.MD", "file1", id="file in docs upper case suffix"),
         pytest.param((), "FILE1.md", "file1", id="file upper case in docs"),
         pytest.param(("dir1",), None, "dir1", id="directory in docs"),
         pytest.param(("dir1",), "file1.md", "dir1-file1", id="directory file in docs"),
@@ -191,7 +192,7 @@ def test__calculate_table_path(
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
-    returned_level = docs_folder._calculate_table_path(path=path, docs_path=tmp_path)
+    returned_level = docs_directory._calculate_table_path(path=path, docs_path=tmp_path)
 
     assert returned_level == expected_table_path
 
@@ -255,7 +256,7 @@ def test__calculate_navlink_title(
     if file is not None and content is not None:
         path.write_text(content, encoding="utf-8")
 
-    returned_navlink_title = docs_folder._calculate_navlink_title(path=path)
+    returned_navlink_title = docs_directory._calculate_navlink_title(path=path)
 
     assert returned_navlink_title == expected_navlink_title
 
@@ -268,7 +269,7 @@ def test__get_path_info(tmp_path: Path):
     """
     (path := tmp_path / "dir1").mkdir()
 
-    returned_path_info = docs_folder._get_path_info(path=path, docs_path=tmp_path)
+    returned_path_info = docs_directory._get_path_info(path=path, docs_path=tmp_path)
 
     assert returned_path_info == (path, 1, "dir1", "Dir1")
 
@@ -314,7 +315,7 @@ def test_read(
     """
     create_directories_files(base_path=tmp_path, directories=directories, files=files)
 
-    returned_path_infos = docs_folder.read(docs_path=tmp_path)
+    returned_path_infos = docs_directory.read(docs_path=tmp_path)
 
     assert list(returned_path_infos) == [
         (tmp_path / Path(*expected_path_info[0]), *expected_path_info[1:])
@@ -355,7 +356,7 @@ def test_read_indoco(tmp_path: Path):
         "# Charm Architecture\nCharm architecture explanation", encoding="utf-8"
     )
 
-    returned_path_infos = docs_folder.read(docs_path=tmp_path)
+    returned_path_infos = docs_directory.read(docs_path=tmp_path)
 
     assert list(returned_path_infos) == [
         (explanation, 1, "explanation", "Explanation"),
