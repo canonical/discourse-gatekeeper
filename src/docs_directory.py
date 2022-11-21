@@ -7,21 +7,7 @@ import typing
 from functools import partial
 from pathlib import Path
 
-
-class PathInfo(typing.NamedTuple):
-    """Represents a file or directory in the docs directory.
-
-    Attrs:
-        local_path: The path to the file on the local disk.
-        level: The number of parent directories to the docs folder including the docs folder.
-        table_path: The computed table path based on the disk path relative to the docs folder.
-        navlink_title: The title of the navlink.
-    """
-
-    local_path: Path
-    level: int
-    table_path: str
-    navlink_title: str
+from . import types_
 
 
 def _get_directories_files(docs_path: Path) -> list[Path]:
@@ -38,7 +24,7 @@ def _get_directories_files(docs_path: Path) -> list[Path]:
     )
 
 
-def _calculate_level(path: Path, docs_path: Path) -> int:
+def _calculate_level(path: Path, docs_path: Path) -> types_.Level:
     """Calculate the level of a path.
 
     Args:
@@ -52,7 +38,7 @@ def _calculate_level(path: Path, docs_path: Path) -> int:
     return len(path.relative_to(docs_path).parents)
 
 
-def _calculate_table_path(path: Path, docs_path: Path) -> str:
+def _calculate_table_path(path: Path, docs_path: Path) -> types_.TablePath:
     """Calculate the table path of a path.
 
     Args:
@@ -70,7 +56,7 @@ def _calculate_table_path(path: Path, docs_path: Path) -> str:
     )
 
 
-def _calculate_navlink_title(path: Path) -> str:
+def _calculate_navlink_title(path: Path) -> types_.NavlinkTitle:
     """Calculate the navlink title of a path.
 
     Args:
@@ -97,7 +83,7 @@ def _calculate_navlink_title(path: Path) -> str:
     return path.stem.replace("-", " ").title()
 
 
-def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
+def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:
     """Get the information for a path.
 
     Args:
@@ -107,7 +93,7 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
     Returns:
         The information for the path.
     """
-    return PathInfo(
+    return types_.PathInfo(
         local_path=path,
         level=_calculate_level(path=path, docs_path=docs_path),
         table_path=_calculate_table_path(path=path, docs_path=docs_path),
@@ -115,7 +101,7 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
     )
 
 
-def read(docs_path: Path) -> typing.Iterator[PathInfo]:
+def read(docs_path: Path) -> typing.Iterator[types_.PathInfo]:
     """Read the docs directory and return information about each directory and documentation file.
 
     Algorithm:

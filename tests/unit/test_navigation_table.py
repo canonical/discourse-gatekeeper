@@ -8,7 +8,7 @@
 
 import pytest
 
-from src import navigation_table
+from src import navigation_table, types_
 from src.exceptions import NavigationTableParseError
 
 
@@ -126,7 +126,7 @@ def test__filter_line(line, expected_result):
         pytest.param("|1|a|[b](-)|", (1, "a", ("b", "-")), id="third column link dash"),
     ],
 )
-def test__line_to_row(line: str, expected_result: navigation_table.TableRow):
+def test__line_to_row(line: str, expected_result: types_.TableRow):
     """
     arrange: given line and expected return value
     act: when _line_to_row is called with the line
@@ -175,7 +175,7 @@ def test__line_to_row_no_match():
         ),
     ],
 )
-def test_from_page(page: str, expected_table: list[navigation_table.TableRow]):
+def test_from_page(page: str, expected_table: list[types_.TableRow]):
     """
     arrange: given page and expected table
     act: when from_page is called with the page
