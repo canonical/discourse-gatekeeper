@@ -22,9 +22,13 @@ from src.exceptions import NavigationTableParseError
         pytest.param("|LEVEL|PATH|NAVLINK|", True, id="matches the header upper case"),
         pytest.param("|Level|Path|Navlink|", True, id="matches the header mixed case"),
         pytest.param(" |level|path|navlink|", True, id="matches the header single leading space"),
+        # This test ensures that the whitespace check includes looking for multiple spaces, needed
+        # only once since the same regular expression is used for all whitespace checks
         pytest.param(
             "  |level|path|navlink|", True, id="matches the header multiple leading space"
         ),
+        # This test ensures that the whitespace check includes looking for tabs, needed only once
+        # since the same regular expression is used for all whitespace checks
         pytest.param("\t|level|path|navlink|", True, id="matches the header leading tab"),
         pytest.param("| level|path|navlink|", True, id="matches the header space before level"),
         pytest.param("|level |path|navlink|", True, id="matches the header space after level"),
@@ -99,6 +103,7 @@ def test__filter_line(line, expected_result):
         pytest.param("|1|a|[2]()|", (1, "a", ("2", None)), id="third column title digit"),
         pytest.param("|1|a|[_]()|", (1, "a", ("_", None)), id="third column title underscore"),
         pytest.param("|1|a|[-]()|", (1, "a", ("-", None)), id="third column title dash"),
+        # Titles are allowed to contain spaces, for simplicity just capture all allowed characters
         pytest.param("|1|a|[ ]()|", (1, "a", (" ", None)), id="third column title space"),
         pytest.param("|1|a|[ b]()|", (1, "a", ("b", None)), id="third column title space before"),
         pytest.param("|1|a|[b ]()|", (1, "a", ("b", None)), id="third column title space after"),
