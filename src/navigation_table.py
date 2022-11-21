@@ -10,15 +10,15 @@ from .exceptions import NavigationTableParseError
 
 _WHITESPACE = r"\s*"
 _TABLE_HEADER_REGEX = (
-    r"\|"
+    rf"{_WHITESPACE}\|"
     rf"{_WHITESPACE}level{_WHITESPACE}\|"
     rf"{_WHITESPACE}path{_WHITESPACE}\|"
-    rf"{_WHITESPACE}navlink{_WHITESPACE}\|"
+    rf"{_WHITESPACE}navlink{_WHITESPACE}\|{_WHITESPACE}"
 )
 _TABLE_HEADER_PATTERN = re.compile(_TABLE_HEADER_REGEX, re.IGNORECASE)
 _TABLE_PATTERN = re.compile(rf"[\s\S]*{_TABLE_HEADER_REGEX}[\s\S]*\|?", re.IGNORECASE)
 _FILLER_ROW_REGEX_COLUMN = rf"{_WHITESPACE}-+{_WHITESPACE}\|"
-_FILLER_ROW_PATTERN = re.compile(rf"\|{_FILLER_ROW_REGEX_COLUMN * 3}")
+_FILLER_ROW_PATTERN = re.compile(rf"{_WHITESPACE}\|{_FILLER_ROW_REGEX_COLUMN * 3}{_WHITESPACE}")
 _LEVEL_REGEX = rf"{_WHITESPACE}(\d+){_WHITESPACE}"
 _PATH_REGEX = rf"{_WHITESPACE}([\w-]+){_WHITESPACE}"
 _NAVLINK_TITLE_REGEX = r"[\w\- ]+?"
@@ -117,6 +117,8 @@ def from_page(page: str) -> typing.Iterator[TableRow]:
     Args:
         page: The page to extract the rows from.
 
+    Returns:
+        The parsed rows from the table.
     """
     match = _TABLE_PATTERN.match(page)
 
