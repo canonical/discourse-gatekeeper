@@ -18,6 +18,13 @@ def _create_page_action(path_info: types_.PathInfo) -> types_.CreatePageAction:
     Returns:
         A page create action.
     """
+    return types_.CreatePageAction(
+        action=types_.PageAction.CREATE,
+        level=path_info.level,
+        path=path_info.table_path,
+        navlink_title=path_info.navlink_title,
+        content=path_info.local_path.read_text() if path_info.local_path.is_file() else None,
+    )
 
 
 def _update_page_action(
@@ -35,7 +42,9 @@ def _update_page_action(
     """
 
 
-def _create_page_action(table_row: types_.TableRow) -> types_.DeletePageAction:
+def _delete_page_action(
+    table_row: types_.TableRow, discourse: Discourse
+) -> types_.DeletePageAction:
     """Return a delete action based on a navigation table entry.
 
     Args:

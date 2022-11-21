@@ -4,6 +4,7 @@
 """Types for uploading docs to charmhub."""
 
 import typing
+import dataclasses
 from pathlib import Path
 from enum import Enum
 
@@ -76,7 +77,7 @@ PathInfoLookup = dict[tuple[Level, TablePath], TableRow]
 Content = str
 
 
-class PageAction(Enum, str):
+class PageAction(str, Enum):
     """The possible actions to take for a page.
 
     Attrs:
@@ -90,7 +91,8 @@ class PageAction(Enum, str):
     DELETE = "delete"
 
 
-class BasePageAction(typing.NamedTuple):
+@dataclasses.dataclass
+class BasePageAction:
     """Represents an action on a page.
 
     Attrs:
@@ -100,6 +102,7 @@ class BasePageAction(typing.NamedTuple):
     action: PageAction
 
 
+@dataclasses.dataclass
 class CreatePageAction(BasePageAction):
     """Represents a page to be created.
 
@@ -110,7 +113,7 @@ class CreatePageAction(BasePageAction):
         content: The documentation content, is None for directories.
     """
 
-    action = PageAction.CREATE
+    action: PageAction.CREATE
 
     level: Level
     path: TablePath
@@ -142,7 +145,8 @@ class ContentChange(typing.NamedTuple):
     new: Content
 
 
-class UpdatePageAction(typing.NamedTuple):
+@dataclasses.dataclass
+class UpdatePageAction(BasePageAction):
     """Represents a page to be updated.
 
     Attrs:
@@ -152,7 +156,7 @@ class UpdatePageAction(typing.NamedTuple):
         content_change: The change to the documentation content.
     """
 
-    action = PageAction.UPDATE
+    action: PageAction.UPDATE
 
     level: Level
     path: TablePath
@@ -160,7 +164,8 @@ class UpdatePageAction(typing.NamedTuple):
     content_change: ContentChange
 
 
-class DeletePageAction(typing.NamedTuple):
+@dataclasses.dataclass
+class DeletePageAction(BasePageAction):
     """Represents a page to be deleted.
 
     Attrs:
@@ -170,7 +175,7 @@ class DeletePageAction(typing.NamedTuple):
         content: The documentation content.
     """
 
-    action = PageAction.DELETE
+    action: PageAction.DELETE
 
     level: Level
     path: TablePath
