@@ -1,7 +1,7 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Class for parsing and rendering a navigation table."""
+"""Module for parsing and rendering a navigation table."""
 
 import re
 import typing
