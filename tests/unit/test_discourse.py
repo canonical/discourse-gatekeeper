@@ -224,7 +224,7 @@ def test_function_call_invalid_url(function_: str, additional_args: tuple, disco
         pytest.param("check_topic_read_permission", None, id="check_topic_read_permission None"),
     ],
 )
-def test_check_malformed(
+def test_check_topic_malformed(
     monkeypatch: pytest.MonkeyPatch,
     function_: str,
     topic_data,
@@ -255,7 +255,7 @@ def test_check_topic_write_permission_user_deleted(
 ):
     """
     arrange: given a mocked discourse client that returns a deleted topic
-    act: when check_topic_write_permission function is called
+    act: when check_topic_write_permission is called
     assert: then DiscourseError is raised.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
@@ -264,12 +264,15 @@ def test_check_topic_write_permission_user_deleted(
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
+    url = f"{base_path}/t/slug/1"
     with pytest.raises(DiscourseError) as exc_info:
-        discourse.check_topic_write_permission(url=f"{base_path}/t/slug/1")
+        discourse.check_topic_write_permission(url=url)
 
     exc_str = str(exc_info.value).lower()
     assert "topic" in exc_str
     assert "deleted" in exc_str
+    assert "url" in exc_str
+    assert url in exc_str
 
 
 @pytest.mark.parametrize(
@@ -333,7 +336,7 @@ def test_check_topic_write_permission_user_deleted(
 )
 # All arguments needed to be able to parametrize tests
 # pylint: disable=too-many-arguments
-def test_check_success(
+def test_check_topic_success(
     monkeypatch: pytest.MonkeyPatch,
     function_: str,
     topic_data,
