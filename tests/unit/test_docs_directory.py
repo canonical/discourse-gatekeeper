@@ -148,7 +148,9 @@ def test__calculate_level(
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
-    returned_level = docs_directory._calculate_level(path=path, docs_path=tmp_path)
+    returned_level = docs_directory._calculate_level(
+        path_relative_to_docs=path.relative_to(tmp_path)
+    )
 
     assert returned_level == expected_level
 
@@ -186,7 +188,9 @@ def test__calculate_table_path(
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)
 
-    returned_level = docs_directory._calculate_table_path(path=path, docs_path=tmp_path)
+    returned_level = docs_directory._calculate_table_path(
+        path_relative_to_docs=path.relative_to(tmp_path)
+    )
 
     assert returned_level == expected_table_path
 
