@@ -38,34 +38,34 @@ def _get_directories_files(docs_path: Path) -> list[Path]:
     )
 
 
-def _calculate_level(path: Path, docs_path: Path) -> int:
+def _calculate_level(path_relative_to_docs: Path) -> int:
     """Calculate the level of a path.
 
     Args:
-        path: The path to calculate the level for.
-        docs_path: The path to the docs directory.
+        path_relative_to_docs: The path to calculate the level for relative to the docs
+            directory.
 
     Returns:
         The number of sub-directories from the path to the docs directory including the docs
         directory.
     """
-    return len(path.relative_to(docs_path).parents)
+    return len(path_relative_to_docs.parents)
 
 
-def _calculate_table_path(path: Path, docs_path: Path) -> str:
+def _calculate_table_path(path_relative_to_docs: Path) -> str:
     """Calculate the table path of a path.
 
     Args:
-        path: The path to calculate the table path for.
-        docs_path: The path to the docs directory.
+        path_relative_to_docs: The path to calculate the table path for relative to the docs
+            directory.
 
     Returns:
         The relative path to the docs directory, replacing / with -, removing the extension and
         converting to lower case.
     """
     return (
-        "-".join(part for part in path.relative_to(docs_path).parts)
-        .removesuffix(path.suffix)
+        "-".join(part for part in path_relative_to_docs.parts)
+        .removesuffix(path_relative_to_docs.suffix)
         .lower()
     )
 
@@ -107,10 +107,11 @@ def _get_path_info(path: Path, docs_path: Path) -> PathInfo:
     Returns:
         The information for the path.
     """
+    path_relative_to_docs = path.relative_to(docs_path)
     return PathInfo(
         local_path=path,
-        level=_calculate_level(path=path, docs_path=docs_path),
-        table_path=_calculate_table_path(path=path, docs_path=docs_path),
+        level=_calculate_level(path_relative_to_docs=path_relative_to_docs),
+        table_path=_calculate_table_path(path_relative_to_docs=path_relative_to_docs),
         navlink_title=_calculate_navlink_title(path=path),
     )
 
