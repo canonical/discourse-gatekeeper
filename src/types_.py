@@ -3,10 +3,10 @@
 
 """Types for uploading docs to charmhub."""
 
-import typing
 import dataclasses
-from pathlib import Path
+import typing
 from enum import Enum
+from pathlib import Path
 
 
 class Page(typing.NamedTuple):
@@ -70,8 +70,13 @@ class TableRow(typing.NamedTuple):
     path: TablePath
     navlink: Navlink
 
+    @property
+    def is_group(self) -> bool:
+        """Whether the row is a group of pages."""
+        return self.navlink.link is None
 
-PathInfoLookup = dict[tuple[Level, TablePath], TableRow]
+
+TableRowLookup = dict[tuple[Level, TablePath], TableRow]
 
 
 Content = str
@@ -81,12 +86,14 @@ class PageAction(str, Enum):
     """The possible actions to take for a page.
 
     Attrs:
-        create: create a new page.
-        update: change aspects of an existing page.
-        delete: remove an existing page.
+        CREATE: create a new page.
+        NOOP: no action required.
+        UPDATE: change aspects of an existing page.
+        DELETE: remove an existing page.
     """
 
     CREATE = "create"
+    NOOP = "noop"
     UPDATE = "update"
     DELETE = "delete"
 
@@ -113,7 +120,7 @@ class CreatePageAction(BasePageAction):
         content: The documentation content, is None for directories.
     """
 
-    action: PageAction.CREATE
+    action: typing.Literal[PageAction.CREATE]
 
     level: Level
     path: TablePath
@@ -141,8 +148,27 @@ class ContentChange(typing.NamedTuple):
         new: The new content.
     """
 
-    old: Content
-    new: Content
+    old: Content | None
+    new: Content | None
+
+
+@dataclasses.dataclass
+class NoopPageAction(BasePageAction):
+    """Represents a page with no required changes.
+
+    Attrs:
+        level: The number of parents, is 1 if there is no parent.
+        path: The a unique string identifying the navigation table row.
+        navlink: The navling title and link for the page.
+        content: The documentation content of the page.
+    """
+
+    action: typing.Literal[PageAction.NOOP]
+
+    level: Level
+    path: TablePath
+    navlink: Navlink
+    content: Content | None
 
 
 @dataclasses.dataclass
@@ -156,7 +182,7 @@ class UpdatePageAction(BasePageAction):
         content_change: The change to the documentation content.
     """
 
-    action: PageAction.UPDATE
+    action: typing.Literal[PageAction.UPDATE]
 
     level: Level
     path: TablePath
@@ -175,7 +201,7 @@ class DeletePageAction(BasePageAction):
         content: The documentation content.
     """
 
-    action: PageAction.DELETE
+    action: typing.Literal[PageAction.DELETE]
 
     level: Level
     path: TablePath
