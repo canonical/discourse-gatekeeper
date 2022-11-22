@@ -178,13 +178,23 @@ def _calculate_action(
     Raises:
         ReconcilliationError: if both path_info and table_row are None.
     """
+    if path_info is None and table_row is None:
+        raise exceptions.ReconcilliationError(
+            "internal error, both path info and table row are None"
+        )
+
+    if table_row is None:
+        return _local_only(path_info=path_info)
+    if path_info is None:
+        return _server_only(table_row=table_row, discourse=discourse)
+    return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
 
 
 def run(
     path_infos: typing.Iterator[types_.PathInfo],
     table_rows: typing.Iterator[types_.TableRow],
     discourse: Discourse,
-) -> typing.Iterator[types_.BaseAction]:
+) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
     Args:

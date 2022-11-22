@@ -377,3 +377,69 @@ def test__server_only_directory():
     assert returned_action.navlink == table_row.navlink
     assert returned_action.content is None
     mock_discourse.retrieve_topic.assert_not_called()
+
+
+def test__calculate_action_error():
+    """
+    arrange: given path info and table row that are None
+    act: when _calculate_action is called with the path info and table row
+    assert: then ReconcilliationError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    with pytest.raises(exceptions.ReconcilliationError):
+        reconcile._calculate_action(path_info=None, table_row=None, discourse=mock_discourse)
+
+
+@pytest.mark.parametrize(
+    "path_info, table_row, expected_action",
+    [
+        pytest.param(
+            types_.PathInfo(
+                local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+            ),
+            None,
+            types_.Action.CREATE,
+            id="path info defined table row None",
+        ),
+        pytest.param(
+            types_.PathInfo(
+                local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+            ),
+            types_.TableRow(
+                level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+            ),
+            types_.Action.NOOP,
+            id="path info defined table row defined",
+        ),
+        pytest.param(
+            None,
+            types_.TableRow(
+                level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+            ),
+            types_.Action.DELETE,
+            id="path info None table row defined",
+        ),
+    ],
+)
+def test__calculate_action(
+    path_info: types_.PathInfo | None,
+    table_row: types_.TableRow | None,
+    expected_action: types_.Action,
+    tmp_path: Path,
+):
+    """
+    arrange: given path info and table row for a directory and grouping
+    act: when _calculate_action is called with the path info and table row
+    assert: then the expected action is returned.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    if path_info is not None:
+        (path := tmp_path / path_info.local_path).mkdir()
+        path_info = types_.PathInfo(path, *path_info[1:])
+
+    returned_action = reconcile._calculate_action(
+        path_info=path_info, table_row=table_row, discourse=mock_discourse
+    )
+
+    assert returned_action.action == expected_action
