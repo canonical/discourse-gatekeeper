@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+from functools import partial
 from pathlib import Path
 from unittest import mock
 
@@ -391,6 +392,20 @@ def test__calculate_action_error():
         reconcile._calculate_action(path_info=None, table_row=None, discourse=mock_discourse)
 
 
+def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathInfo:
+    """Create the directory and update the path info.
+
+    Args:
+        path_info: The path info to update
+        base_dir: The directory to create the directory within
+
+    Returns:
+        The path info with an updated path to the created directory.
+    """
+    (path := base_dir / path_info.local_path).mkdir()
+    return types_.PathInfo(path, *path_info[1:])
+
+
 @pytest.mark.parametrize(
     "path_info, table_row, expected_action",
     [
@@ -435,11 +450,127 @@ def test__calculate_action(
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     if path_info is not None:
-        (path := tmp_path / path_info.local_path).mkdir()
-        path_info = types_.PathInfo(path, *path_info[1:])
+        path_info = path_info_mkdir(path_info=path_info, base_dir=tmp_path)
 
     returned_action = reconcile._calculate_action(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
     assert returned_action.action == expected_action
+
+
+@pytest.mark.parametrize(
+    "path_infos, table_rows, expected_actions",
+    [
+        pytest.param((), (), (), id="empty path infos empty table rows"),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                ),
+            ),
+            (),
+            (types_.Action.CREATE,),
+            id="single path info empty table rows",
+        ),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                ),
+                types_.PathInfo(
+                    local_path=Path("dir2"), level=2, table_path="path 2", navlink_title="title 2"
+                ),
+            ),
+            (),
+            (types_.Action.CREATE, types_.Action.CREATE),
+            id="multiple path infos empty table rows",
+        ),
+        pytest.param(
+            (),
+            (
+                types_.TableRow(
+                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+            ),
+            (types_.Action.DELETE,),
+            id="empty path infos single table row",
+        ),
+        pytest.param(
+            (),
+            (
+                types_.TableRow(
+                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+                types_.TableRow(
+                    level=2, path="path 2", navlink=types_.Navlink(title="title 2", link=None)
+                ),
+            ),
+            (types_.Action.DELETE, types_.Action.DELETE),
+            id="empty path infos multiple table rows",
+        ),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                ),
+            ),
+            (
+                types_.TableRow(
+                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+            ),
+            (types_.Action.NOOP,),
+            id="single path info single table row match",
+        ),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                ),
+            ),
+            (
+                types_.TableRow(
+                    level=2, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+            ),
+            (types_.Action.CREATE, types_.Action.DELETE),
+            id="single path info single table row level mismatch",
+        ),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                ),
+            ),
+            (
+                types_.TableRow(
+                    level=1, path="path 2", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+            ),
+            (types_.Action.CREATE, types_.Action.DELETE),
+            id="single path info single table row path mismatch",
+        ),
+    ],
+)
+def test_run(
+    path_infos: tuple[types_.PathInfo],
+    table_rows: tuple[types_.TableRow],
+    expected_actions: tuple[types_.Action],
+    tmp_path: Path,
+):
+    """
+    arrange: given path infos and table rows
+    act: when run is called with the path infos and table rows
+    assert: then the expected actions are returned.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    path_infos = tuple(path_info_mkdir(path_info, base_dir=tmp_path) for path_info in path_infos)
+
+    returned_actions = reconcile.run(
+        path_infos=path_infos, table_rows=table_rows, discourse=mock_discourse
+    )
+
+    assert (
+        tuple(returned_action.action for returned_action in returned_actions) == expected_actions
+    )

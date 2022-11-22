@@ -3,6 +3,8 @@
 
 """Module for calculating required changes based on docs directory and navigation table."""
 
+import collections
+import itertools
 import typing
 
 from . import exceptions, types_
@@ -191,11 +193,13 @@ def _calculate_action(
 
 
 def run(
-    path_infos: typing.Iterator[types_.PathInfo],
-    table_rows: typing.Iterator[types_.TableRow],
+    path_infos: typing.Iterable[types_.PathInfo],
+    table_rows: typing.Iterable[types_.TableRow],
     discourse: Discourse,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
+
+    Preserves the order of path_infos although does not for items only in table_rows.
 
     Args:
         path_infos: Information about the local documentation files.
@@ -206,3 +210,18 @@ def run(
         The actions required to reconcile differences between the documentation server and local
         files.
     """
+    path_info_lookup: types_.PathInfoLookup = {
+        (path_info.level, path_info.table_path): path_info for path_info in path_infos
+    }
+    table_row_lookup: types_.TableRowLookup = {
+        (table_row.level, table_row.path): table_row for table_row in table_rows
+    }
+
+    # Need to process items only on the server last
+    keys = itertools.chain(
+        path_info_lookup.keys(), (table_row_lookup.keys() - path_info_lookup.keys())
+    )
+    return (
+        _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
+        for key in keys
+    )
