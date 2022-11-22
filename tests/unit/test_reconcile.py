@@ -18,7 +18,7 @@ def test__local_only_file(tmp_path: Path):
     """
     arrange: given path info with a file
     act: when _local_only is called with the path info
-    assert: then a create page action with the file content is returned.
+    assert: then a create action with the file content is returned.
     """
     (path := tmp_path / "file1.md").touch()
     content = "content 1"
@@ -29,7 +29,7 @@ def test__local_only_file(tmp_path: Path):
 
     returned_action = reconcile._local_only(path_info=path_info)
 
-    assert returned_action.action == types_.PageAction.CREATE
+    assert returned_action.action == types_.Action.CREATE
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
@@ -40,7 +40,7 @@ def test__local_only_directory(tmp_path: Path):
     """
     arrange: given path info with a directory
     act: when _local_only is called with the path info
-    assert: then a create page action for the directory.
+    assert: then a create action for the directory is returned.
     """
     (path := tmp_path / "dir1").mkdir()
     path_info = types_.PathInfo(
@@ -49,7 +49,7 @@ def test__local_only_directory(tmp_path: Path):
 
     returned_action = reconcile._local_only(path_info=path_info)
 
-    assert returned_action.action == types_.PageAction.CREATE
+    assert returned_action.action == types_.Action.CREATE
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
@@ -120,7 +120,7 @@ def test__local_and_server_file_same(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.NOOP
+    assert returned_action.action == types_.Action.NOOP
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -134,7 +134,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file
     act: when _local_and_server is called with the path info and table row
-    assert: then a noop action is returned.
+    assert: then an update action is returned.
     """
     (path := tmp_path / "file1.md").touch()
     local_content = "content 1"
@@ -156,7 +156,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.UPDATE
+    assert returned_action.action == types_.Action.UPDATE
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -172,7 +172,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     arrange: given path info with a file and table row with different navlink title and discourse
         client that returns the same content as in the file
     act: when _local_and_server is called with the path info and table row
-    assert: then a noop action is returned.
+    assert: then an update action is returned.
     """
     (path := tmp_path / "file1.md").touch()
     content = "content 1"
@@ -194,7 +194,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.UPDATE
+    assert returned_action.action == types_.Action.UPDATE
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -228,7 +228,7 @@ def test__local_and_server_directory_same(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.NOOP
+    assert returned_action.action == types_.Action.NOOP
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -241,7 +241,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
     """
     arrange: given path info with a directory and table row with different navlink title
     act: when _local_and_server is called with the path info and table row
-    assert: then a noop action is returned.
+    assert: then an update action is returned.
     """
     (path := tmp_path / "dir1").mkdir()
     level = 1
@@ -259,7 +259,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.UPDATE
+    assert returned_action.action == types_.Action.UPDATE
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -295,7 +295,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.CREATE
+    assert returned_action.action == types_.Action.CREATE
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -328,10 +328,52 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.PageAction.DELETE
+    assert returned_action.action == types_.Action.DELETE
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink == navlink  # type: ignore
     assert returned_action.content == content  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+
+
+def test__server_only_file():
+    """
+    arrange: given table row with a file
+    act: when _server_only is called with the table row
+    assert: then a delete action with the file content is returned.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    content = "content 1"
+    mock_discourse.retrieve_topic.return_value = content
+    navlink = types_.Navlink(title="title 1", link="link 1")
+    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+
+    returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
+
+    assert returned_action.action == types_.Action.DELETE
+    assert returned_action.level == table_row.level
+    assert returned_action.path == table_row.path
+    assert returned_action.navlink == table_row.navlink
+    assert returned_action.content == content
+    mock_discourse.retrieve_topic.assert_called_once_with(url=navlink.link)
+
+
+def test__server_only_directory():
+    """
+    arrange: given table row with a directory
+    act: when _server_only is called with the table row
+    assert: then a delete action for the directory is returned.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    navlink = types_.Navlink(title="title 1", link=None)
+    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+
+    returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
+
+    assert returned_action.action == types_.Action.DELETE
+    assert returned_action.level == table_row.level
+    assert returned_action.path == table_row.path
+    assert returned_action.navlink == table_row.navlink
+    assert returned_action.content is None
+    mock_discourse.retrieve_topic.assert_not_called()

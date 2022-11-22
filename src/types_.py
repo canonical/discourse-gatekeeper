@@ -82,7 +82,7 @@ TableRowLookup = dict[tuple[Level, TablePath], TableRow]
 Content = str
 
 
-class PageAction(str, Enum):
+class Action(str, Enum):
     """The possible actions to take for a page.
 
     Attrs:
@@ -99,18 +99,18 @@ class PageAction(str, Enum):
 
 
 @dataclasses.dataclass
-class BasePageAction:
+class BaseAction:
     """Represents an action on a page.
 
     Attrs:
         action: The action to execute on the page.
     """
 
-    action: PageAction
+    action: Action
 
 
 @dataclasses.dataclass
-class CreatePageAction(BasePageAction):
+class CreateAction(BaseAction):
     """Represents a page to be created.
 
     Attrs:
@@ -120,7 +120,7 @@ class CreatePageAction(BasePageAction):
         content: The documentation content, is None for directories.
     """
 
-    action: typing.Literal[PageAction.CREATE]
+    action: typing.Literal[Action.CREATE]
 
     level: Level
     path: TablePath
@@ -153,7 +153,7 @@ class ContentChange(typing.NamedTuple):
 
 
 @dataclasses.dataclass
-class NoopPageAction(BasePageAction):
+class NoopAction(BaseAction):
     """Represents a page with no required changes.
 
     Attrs:
@@ -163,7 +163,7 @@ class NoopPageAction(BasePageAction):
         content: The documentation content of the page.
     """
 
-    action: typing.Literal[PageAction.NOOP]
+    action: typing.Literal[Action.NOOP]
 
     level: Level
     path: TablePath
@@ -172,7 +172,7 @@ class NoopPageAction(BasePageAction):
 
 
 @dataclasses.dataclass
-class UpdatePageAction(BasePageAction):
+class UpdateAction(BaseAction):
     """Represents a page to be updated.
 
     Attrs:
@@ -182,7 +182,7 @@ class UpdatePageAction(BasePageAction):
         content_change: The change to the documentation content.
     """
 
-    action: typing.Literal[PageAction.UPDATE]
+    action: typing.Literal[Action.UPDATE]
 
     level: Level
     path: TablePath
@@ -191,7 +191,7 @@ class UpdatePageAction(BasePageAction):
 
 
 @dataclasses.dataclass
-class DeletePageAction(BasePageAction):
+class DeleteAction(BaseAction):
     """Represents a page to be deleted.
 
     Attrs:
@@ -201,9 +201,12 @@ class DeletePageAction(BasePageAction):
         content: The documentation content.
     """
 
-    action: typing.Literal[PageAction.DELETE]
+    action: typing.Literal[Action.DELETE]
 
     level: Level
     path: TablePath
     navlink: Navlink
     content: Content
+
+
+AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction
