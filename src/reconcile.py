@@ -229,7 +229,7 @@ def run(
 
     # Need to process items only on the server last
     keys = itertools.chain(
-        path_info_lookup.keys(), (table_row_lookup.keys() - path_info_lookup.keys())
+        path_info_lookup.keys(), table_row_lookup.keys() - path_info_lookup.keys()
     )
     return (
         _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
