@@ -74,7 +74,7 @@ def _line_to_row(line: str) -> types_.TableRow:
     return types_.TableRow(
         level=level,
         path=path,
-        navlink=types_.Navlink(title=navlink_title, link=navlink_link if navlink_link else None),
+        navlink=types_.Navlink(title=navlink_title, link=navlink_link or None),
     )
 
 
