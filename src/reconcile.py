@@ -3,7 +3,6 @@
 
 """Module for calculating required changes based on docs directory and navigation table."""
 
-import collections
 import itertools
 import typing
 
@@ -144,6 +143,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
     Returns:
         A page delete action.
     """
+    # Group case
     if table_row.is_group:
         return types_.DeleteAction(
             action=types_.Action.DELETE,
@@ -151,6 +151,13 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             path=table_row.path,
             navlink=table_row.navlink,
             content=None,
+        )
+
+    # This is an edge case that can't actually occur because table_row.is_group is based on
+    # whether the navlink link is None so this case would have been caught in the group case
+    if table_row.navlink.link is None:  # pragma: no cover
+        raise exceptions.ReconcilliationError(
+            f"internal error, expecting link on table row, {table_row=!r}"
         )
     return types_.DeleteAction(
         action=types_.Action.DELETE,
@@ -184,12 +191,15 @@ def _calculate_action(
         raise exceptions.ReconcilliationError(
             "internal error, both path info and table row are None"
         )
-
-    if table_row is None:
+    if path_info is not None and table_row is None:
         return _local_only(path_info=path_info)
-    if path_info is None:
+    if path_info is None and table_row is not None:
         return _server_only(table_row=table_row, discourse=discourse)
-    return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
+    if path_info is not None and table_row is not None:
+        return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
+
+    # Something weird has happened since all cases should already be covered
+    raise exceptions.ReconcilliationError("internal error")  # pragma: no cover
 
 
 def run(

@@ -206,7 +206,7 @@ class DeleteAction(BaseAction):
     level: Level
     path: TablePath
     navlink: Navlink
-    content: Content
+    content: Content | None
 
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction

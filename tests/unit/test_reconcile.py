@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
-from functools import partial
 from pathlib import Path
 from unittest import mock
 
@@ -554,9 +553,9 @@ def test__calculate_action(
     ],
 )
 def test_run(
-    path_infos: tuple[types_.PathInfo],
-    table_rows: tuple[types_.TableRow],
-    expected_actions: tuple[types_.Action],
+    path_infos: tuple[types_.PathInfo, ...],
+    table_rows: tuple[types_.TableRow, ...],
+    expected_actions: tuple[types_.Action, ...],
     tmp_path: Path,
 ):
     """
