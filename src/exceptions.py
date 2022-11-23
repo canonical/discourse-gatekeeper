@@ -18,3 +18,7 @@ class ServerError(BaseError):
 
 class DiscourseError(BaseError):
     """Parent exception for all Discourse errors."""
+
+
+class NavigationTableParseError(BaseError):
+    """A problem with the navigation table parsing occurred."""

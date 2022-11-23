@@ -131,7 +131,7 @@ def test__get_key():
     assert returned_value == docs_value
 
 
-def test__read_docs_index_docs_folder_missing(tmp_path: Path):
+def test__read_docs_index_docs_directory_missing(tmp_path: Path):
     """
     arrange: given empty directory
     act: when _read_docs_index is called with the directory
@@ -152,14 +152,14 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then InputError is raised.
     """
-    docs_folder = tmp_path / run.DOCUMENTATION_FOLDER_NAME
-    docs_folder.mkdir()
+    docs_directory = tmp_path / run.DOCUMENTATION_FOLDER_NAME
+    docs_directory.mkdir()
 
     with pytest.raises(InputError) as exc_info:
         run._read_docs_index(base_path=tmp_path)
 
     assert_substrings_in_string(
-        ("not", "find", "file", str(docs_folder / run.DOCUMENTATION_INDEX_FILENAME)),
+        ("not", "find", "file", str(docs_directory / run.DOCUMENTATION_INDEX_FILENAME)),
         str(exc_info.value).lower(),
     )
 

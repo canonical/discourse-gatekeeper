@@ -8,6 +8,7 @@ from urllib import parse
 
 import pydiscourse
 import pydiscourse.exceptions
+import requests
 
 from .exceptions import DiscourseError, InputError
 
@@ -75,6 +76,8 @@ class Discourse:
         )
         self._category_id = category_id
         self._base_path = base_path
+        self._api_username = api_username
+        self._api_key = api_key
 
     def topic_url_valid(self, url: str) -> _ValidationResult:
         """Check whether a url to a topic is valid. Assume the url is well formatted.
@@ -133,13 +136,14 @@ class Discourse:
     def _retrieve_topic_info_from_url(self, url: str) -> _DiscourseTopicInfo:
         """Retrieve the topic information from the url to the topic.
 
-        Raises DiscourseError if the url is not valid.
-
         Args:
             url: The URL to the topic.
 
         Returns:
             The topic information.
+
+        Raises:
+            DiscourseError: if the url is not valid.
 
         """
         result = self.topic_url_valid(url=url)
@@ -152,13 +156,14 @@ class Discourse:
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.
 
-        Raises DiscourseError is pydiscourse raises an error or if the topic has been deleted.
-
         Args:
             usl: The URL to the topic.
 
         Returns:
             The first post from the topic.
+
+        Raises:
+            DiscourseError: if pydiscourse raises an error or if the topic has been deleted.
 
         """
         topic_info = self._retrieve_topic_info_from_url(url=url)
@@ -189,8 +194,6 @@ class Discourse:
     def _get_post_value(post: dict, key: str, expected_type: typing.Type[KeyT]) -> KeyT:
         """Get a value by key from the first post checking the value is the correct type.
 
-        Raises DiscourseError if the key is missing or is not of the correct type.
-
         Args:
             post: The first post to retrieve the value from.
             key: The key to the value.
@@ -198,6 +201,9 @@ class Discourse:
 
         Returns:
             The value pointed to by the key.
+
+        Raises:
+            DiscourseError: if the key is missing or is not of the correct type.
 
         """
         try:
@@ -213,14 +219,15 @@ class Discourse:
     def check_topic_write_permission(self, url: str) -> bool:
         """Check whether the credentials have write permission on a topic.
 
-        Raises DiscourseError if authentication fails or if the topic is not found.
-
         Args:
             url: The URL to the topic. Assume it includes the slug and id of the topic as the last
                 2 elements of the url.
 
         Returns:
             Whether the credentials have write permissions to the topic.
+
+        Raises:
+            DiscourseError: if authentication fails or if the topic is not found.
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
@@ -232,14 +239,15 @@ class Discourse:
         Uses whether retrieve topic succeeds as indication whether the read permission is
         available.
 
-        Raises DiscourseError if authentication fails or if the topic is not found.
-
         Args:
             url: The URL to the topic. Assume it includes the slug and id of the topic as the last
                 2 elements of the url.
 
         Returns:
             Whether the credentials have read permissions to the topic.
+
+        Raises:
+            DiscourseError: if authentication fails or if the topic is not found.
 
         """
         self._retrieve_topic_first_post(url=url)
@@ -248,9 +256,6 @@ class Discourse:
     def retrieve_topic(self, url: str) -> str:
         """Retrieve the topic content.
 
-        Raises DiscourseError if authentication fails, if the server refuses to return the
-        requested topic or if the topic is not found.
-
         Args:
             url: The URL to the topic. Assume it includes the slug and id of the topic as the last
                 2 elements of the url.
@@ -258,14 +263,29 @@ class Discourse:
         Returns:
             The content of the first post in the topic.
 
+        Raises:
+            DiscourseError: if authentication fails, if the server refuses to return the requested
+                topic or if the topic is not found.
+
         """
-        first_post = self._retrieve_topic_first_post(url=url)
-        return self._get_post_value(post=first_post, key="cooked", expected_type=str)
+        # Check for any read issues
+        if not self.check_topic_read_permission(url=url):
+            raise DiscourseError(f"Error retrieving the topic, could not read the topic, {url=!r}")
+
+        topic_info = self._retrieve_topic_info_from_url(url=url)
+        headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
+        response = requests.get(
+            f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
+        )
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
+
+        return response.content.decode("utf-8")
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
-
-        Raises DiscourseError if anything goes wrong during topic creation.
 
         Args:
             title: The title of the topic.
@@ -273,6 +293,9 @@ class Discourse:
 
         Returns:
             The URL to the topic.
+
+        Raises:
+            DiscourseError: if anything goes wrong during topic creation.
 
         """
         try:
@@ -291,11 +314,12 @@ class Discourse:
     def delete_topic(self, url: str) -> None:
         """Delete a topic.
 
-        Raises DiscourseError if authentication fails if the server refuses to delete the topic,
-        if the topic is not found or if anything else has gone wrong.
-
         Args:
             url: The URL to the topic.
+
+        Raises:
+            DiscourseError: if authentication fails if the server refuses to delete the topic, if
+                the topic is not found or if anything else has gone wrong.
 
         """
         topic_info = self._retrieve_topic_info_from_url(url=url)
@@ -309,13 +333,14 @@ class Discourse:
     ) -> None:
         """Update the first post of a topic.
 
-        Raises DiscourseError if authentication fails, if the server refuses to update the first
-        post in the topic or if the topic is not found.
-
         Args:
             url: The URL to the topic.
             content: The content for the first post in the topic.
             edit_reason: The reason the edit was made.
+
+        Raises:
+            DiscourseError: if authentication fails, if the server refuses to update the first post
+                in the topic or if the topic is not found.
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
@@ -334,10 +359,6 @@ def create_discourse(
 ) -> Discourse:
     """Create discourse client.
 
-    Raises InputError if the api_username and api_key arguments are not strings or empty, if the
-    protocol has been included in the hostname, the hostname is not a string or the category_id is
-    not an integer or a string that can be converted to an integer.
-
     Args:
         hostname: The Discourse server hostname.
         category_id: The category to use for topics.
@@ -346,6 +367,11 @@ def create_discourse(
 
     Returns:
         A discourse client that is connected to the server.
+
+    Raises:
+    InputError: if the api_username and api_key arguments are not strings or empty, if the
+        protocol has been included in the hostname, the hostname is not a string or the category_id
+        is not an integer or a string that can be converted to an integer.
 
     """
     if not isinstance(hostname, str):

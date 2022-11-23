@@ -21,13 +21,14 @@ DOCUMENTATION_INDEX_FILENAME = "index.md"
 def _get_metadata(path: Path) -> dict:
     """Check for and read the metadata.
 
-    Raises InputError if the metadata file does not exists or is malformed.
-
     Args:
         path: The base path to look for the metadata file in.
 
     Returns:
         The contents of the metadata file.
+
+    Raises:
+        InputError: if the metadata file does not exists or is malformed.
 
     """
     metadata_yaml = path / METADATA_FILENAME
@@ -55,13 +56,14 @@ def _get_metadata(path: Path) -> dict:
 def _get_key(metadata: dict, key: str) -> str:
     """Check and return the key value from the metadata.
 
-    Raises InputError if key does not exists, is empty or not a string.
-
     Args:
         metadata: The metadata to retrieve the key from.
 
     Returns:
         The value of the key.
+
+    Raises:
+        InputError: if key does not exists, is empty or not a string.
 
     """
     if key not in metadata:
@@ -76,21 +78,22 @@ def _get_key(metadata: dict, key: str) -> str:
 def _read_docs_index(base_path: Path) -> str:
     """Read the content of the index file.
 
-    Raises InputError if the file does not exist.
-
     Args:
         base_path: The starting path to look for the index content.
 
     Returns:
         The content of the index file.
 
+    Raises:
+        InputError: if the file does not exist.
+
     """
-    if not (docs_folder := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
+    if not (docs_directory := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
         raise InputError(
-            f"Could not find directory '{docs_folder}' which is where documentation is expected "
+            f"Could not find directory '{docs_directory}' which is where documentation is expected "
             "to be stored"
         )
-    if not (index_file := docs_folder / DOCUMENTATION_INDEX_FILENAME).is_file():
+    if not (index_file := docs_directory / DOCUMENTATION_INDEX_FILENAME).is_file():
         raise InputError(
             f"Could not find file '{index_file}' which is where the documentation index file is "
             "expected to be stored"
@@ -112,10 +115,6 @@ def retrieve_or_create_index(
     In that case, the index documentation is published based on the contents of the index file in
     the docs folder and the url is set based on the response from the server.
 
-    Raises InputError if create_if_not_exists is False and the docs key is not defined in the
-    metadata file. Raises ServerError if interactions with the documentation server (retrieving or
-    creating the index page) occurs.
-
     Args:
         create_if_not_exists: Whether to create the index page if it does not exist.
         base_path: The base path to look for the metadata file in.
@@ -123,6 +122,12 @@ def retrieve_or_create_index(
 
     Returns:
         The index page.
+
+    Raises:
+        InputError: if create_if_not_exists is False and the docs key is not defined in the
+            metadata file.
+        ServerError: if interactions with the documentation server (retrieving or creating the
+            index page) occurs.
 
     """
     metadata = _get_metadata(path=base_path)
