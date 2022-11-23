@@ -235,3 +235,20 @@ def run(
         _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
         for key in keys
     )
+
+
+def index_page(
+    index_page: types_.Page,
+    server_table_rows: typing.Iterable[types_.TableRow],
+    local_table_rows: typing.Iterable[types_.TableRow],
+) -> types_.CreateAction | types_.NoopAction | types_.UpdateAction:
+    """Reconcile differences for the index page.
+
+    Args:
+        index_page: Information about the index page.
+        server_table_rows: The current navigation table rows on the server.
+        local_table_rows: The current navigation table rows based on local files.
+
+    Returns:
+        The action to take for the index page.
+    """

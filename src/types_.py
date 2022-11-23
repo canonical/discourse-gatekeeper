@@ -17,8 +17,13 @@ class Page(typing.NamedTuple):
         content: The documentation text of the page.
     """
 
-    url: str
+    url: str | None
     content: str
+
+    @property
+    def is_created(self) -> bool:
+        """Whether the page has already been created."""
+        return self.url is not None
 
 
 Level = int
