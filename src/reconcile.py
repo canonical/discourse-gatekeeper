@@ -238,14 +238,14 @@ def run(
 
 
 def index_page(
-    index_page: types_.Page,
+    index: types_.Index,
     server_table_rows: typing.Iterable[types_.TableRow],
     local_table_rows: typing.Iterable[types_.TableRow],
 ) -> types_.CreateAction | types_.NoopAction | types_.UpdateAction:
     """Reconcile differences for the index page.
 
     Args:
-        index_page: Information about the index page.
+        index: Information about the index on the server and locally.
         server_table_rows: The current navigation table rows on the server.
         local_table_rows: The current navigation table rows based on local files.
 

@@ -17,13 +17,20 @@ class Page(typing.NamedTuple):
         content: The documentation text of the page.
     """
 
-    url: str | None
+    url: str
     content: str
 
-    @property
-    def is_created(self) -> bool:
-        """Whether the page has already been created."""
-        return self.url is not None
+
+class Index(typing.NamedTuple):
+    """Information about the local and server index page.
+
+    Attrs:
+        server: The index page on the server.
+        local: The local index file contents.
+    """
+
+    server: Page | None
+    local: str | None
 
 
 Level = int
