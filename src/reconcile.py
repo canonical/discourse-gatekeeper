@@ -237,11 +237,18 @@ def run(
     )
 
 
+NAVIGATION_TABLE_START = """
+
+# Navigation
+
+| Level | Path | Navlink |
+| -- | -- | -- |"""
+
+
 def index_page(
     index: types_.Index,
-    server_table_rows: typing.Iterable[types_.TableRow],
     local_table_rows: typing.Iterable[types_.TableRow],
-) -> types_.CreateAction | types_.NoopAction | types_.UpdateAction:
+) -> types_.AnyIndexAction:
     """Reconcile differences for the index page.
 
     Args:
@@ -252,3 +259,17 @@ def index_page(
     Returns:
         The action to take for the index page.
     """
+    table_contents = "\n".join(table_row.to_line() for table_row in local_table_rows)
+    local_content = f"{index.local or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
+
+    if index.server is None:
+        return types_.CreateIndexAction(action=types_.Action.CREATE, content=local_content)
+    if local_content != index.server.content:
+        return types_.UpdateIndexAction(
+            action=types_.Action.UPDATE,
+            content_change=types_.IndexContentChange(old=index.server.content, new=local_content),
+            url=index.server.url,
+        )
+    return types_.NoopIndexAction(
+        action=types_.Action.NOOP, content=local_content, url=index.server.url
+    )

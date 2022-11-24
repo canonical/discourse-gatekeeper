@@ -573,3 +573,106 @@ def test_run(
     assert (
         tuple(returned_action.action for returned_action in returned_actions) == expected_actions
     )
+
+
+@pytest.mark.parametrize(
+    "index, local_table_rows, expected_action",
+    [
+        pytest.param(
+            types_.Index(server=None, local=None),
+            (),
+            types_.CreateIndexAction(
+                action=types_.Action.CREATE,
+                content=f"{reconcile.NAVIGATION_TABLE_START}\n\n",
+            ),
+            id="empty local only empty rows",
+        ),
+        pytest.param(
+            types_.Index(server=None, local=(local_content := "content 1")),
+            (),
+            types_.CreateIndexAction(
+                action=types_.Action.CREATE,
+                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
+            ),
+            id="local only empty rows",
+        ),
+        pytest.param(
+            types_.Index(server=None, local=(local_content := "content 1")),
+            (
+                table_row := types_.TableRow(
+                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+            ),
+            types_.CreateIndexAction(
+                action=types_.Action.CREATE,
+                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n{table_row.to_line()}\n",
+            ),
+            id="local only single row",
+        ),
+        pytest.param(
+            types_.Index(server=None, local=(local_content := "content 1")),
+            (
+                table_row_1 := types_.TableRow(
+                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                ),
+                table_row_2 := types_.TableRow(
+                    level=2, path="path 2", navlink=types_.Navlink(title="title 2", link=None)
+                ),
+            ),
+            types_.CreateIndexAction(
+                action=types_.Action.CREATE,
+                content=(
+                    f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
+                    f"{table_row_1.to_line()}\n{table_row_2.to_line()}\n"
+                ),
+            ),
+            id="local only multiple rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=(local_content := "content 1"),
+                server=types_.Page(
+                    url=(url := "url 1"),
+                    content=(
+                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
+                    ),
+                ),
+            ),
+            (),
+            types_.NoopIndexAction(
+                action=types_.Action.NOOP,
+                content=server_content,
+                url=url,
+            ),
+            id="local server same empty rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=(local_content := "content 1"),
+                server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
+            ),
+            (),
+            types_.UpdateIndexAction(
+                action=types_.Action.UPDATE,
+                content_change=types_.IndexContentChange(
+                    old=server_content, new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
+                ),
+                url=url,
+            ),
+            id="local server different empty rows",
+        ),
+    ],
+)
+def test_index_page(
+    index: types_.Index,
+    local_table_rows: tuple[types_.TableRow],
+    expected_action: types_.AnyIndexAction,
+):
+    """
+    arrange: given index information and server and local table rows
+    act: when index_page is called with the index and server and table rows
+    assert: then the expected action is returned.
+    """
+    returned_action = reconcile.index_page(index=index, local_table_rows=local_table_rows)
+
+    assert returned_action == expected_action

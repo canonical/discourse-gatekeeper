@@ -9,6 +9,10 @@ from enum import Enum
 from pathlib import Path
 
 
+Content = str
+Url = str
+
+
 class Page(typing.NamedTuple):
     """Information about a documentation page.
 
@@ -17,8 +21,8 @@ class Page(typing.NamedTuple):
         content: The documentation text of the page.
     """
 
-    url: str
-    content: str
+    url: Url
+    content: Content
 
 
 class Index(typing.NamedTuple):
@@ -30,7 +34,7 @@ class Index(typing.NamedTuple):
     """
 
     server: Page | None
-    local: str | None
+    local: Content | None
 
 
 Level = int
@@ -87,11 +91,18 @@ class TableRow(typing.NamedTuple):
         """Whether the row is a group of pages."""
         return self.navlink.link is None
 
+    def to_line(self) -> str:
+        """Convert to a line in the navigation table.
+
+        Returns:
+            The line in the navigation table.
+        """
+        return (
+            f"| {self.level} | {self.path} | [{self.navlink.title}]({self.navlink.link or ''}) |"
+        )
+
 
 TableRowLookup = dict[tuple[Level, TablePath], TableRow]
-
-
-Content = str
 
 
 class Action(str, Enum):
@@ -140,6 +151,52 @@ class CreateAction(BaseAction):
     content: Content | None
 
 
+@dataclasses.dataclass
+class CreateIndexAction(BaseAction):
+    """Represents an index page to be created.
+
+    Attrs:
+        content: The content including the navigation table.
+    """
+
+    action: typing.Literal[Action.CREATE]
+
+    content: Content
+
+
+@dataclasses.dataclass
+class NoopAction(BaseAction):
+    """Represents a page with no required changes.
+
+    Attrs:
+        level: The number of parents, is 1 if there is no parent.
+        path: The a unique string identifying the navigation table row.
+        navlink: The navling title and link for the page.
+        content: The documentation content of the page.
+    """
+
+    action: typing.Literal[Action.NOOP]
+
+    level: Level
+    path: TablePath
+    navlink: Navlink
+    content: Content | None
+
+
+@dataclasses.dataclass
+class NoopIndexAction(BaseAction):
+    """Represents an index page with no required changes.
+
+    Attrs:
+        content: The content including the navigation table.
+    """
+
+    action: typing.Literal[Action.NOOP]
+
+    content: Content
+    url: Url
+
+
 class NavlinkChange(typing.NamedTuple):
     """Represents a change to the navlink.
 
@@ -164,23 +221,16 @@ class ContentChange(typing.NamedTuple):
     new: Content | None
 
 
-@dataclasses.dataclass
-class NoopAction(BaseAction):
-    """Represents a page with no required changes.
+class IndexContentChange(typing.NamedTuple):
+    """Represents a change to the content of the index.
 
     Attrs:
-        level: The number of parents, is 1 if there is no parent.
-        path: The a unique string identifying the navigation table row.
-        navlink: The navling title and link for the page.
-        content: The documentation content of the page.
+        old: The previous content.
+        new: The new content.
     """
 
-    action: typing.Literal[Action.NOOP]
-
-    level: Level
-    path: TablePath
-    navlink: Navlink
-    content: Content | None
+    old: Content
+    new: Content
 
 
 @dataclasses.dataclass
@@ -203,6 +253,20 @@ class UpdateAction(BaseAction):
 
 
 @dataclasses.dataclass
+class UpdateIndexAction(BaseAction):
+    """Represents an index page to be updated.
+
+    Attrs:
+        content_change: The change to the content including the navigation table.
+    """
+
+    action: typing.Literal[Action.UPDATE]
+
+    content_change: IndexContentChange
+    url: Url
+
+
+@dataclasses.dataclass
 class DeleteAction(BaseAction):
     """Represents a page to be deleted.
 
@@ -222,3 +286,4 @@ class DeleteAction(BaseAction):
 
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction
+AnyIndexAction = CreateIndexAction | NoopIndexAction | UpdateIndexAction
