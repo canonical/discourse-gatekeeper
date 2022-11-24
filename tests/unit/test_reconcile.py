@@ -576,28 +576,42 @@ def test_run(
 
 
 @pytest.mark.parametrize(
-    "index, local_table_rows, expected_action",
+    "index, table_rows, expected_action",
     [
         pytest.param(
-            types_.Index(server=None, local=None),
+            types_.Index(
+                server=None, local=types_.IndexFile(title=(local_title := "title 1"), content=None)
+            ),
             (),
             types_.CreateIndexAction(
                 action=types_.Action.CREATE,
+                title=local_title,
                 content=f"{reconcile.NAVIGATION_TABLE_START}\n\n",
             ),
             id="empty local only empty rows",
         ),
         pytest.param(
-            types_.Index(server=None, local=(local_content := "content 1")),
+            types_.Index(
+                server=None,
+                local=types_.IndexFile(
+                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                ),
+            ),
             (),
             types_.CreateIndexAction(
                 action=types_.Action.CREATE,
+                title=local_title,
                 content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
             ),
             id="local only empty rows",
         ),
         pytest.param(
-            types_.Index(server=None, local=(local_content := "content 1")),
+            types_.Index(
+                server=None,
+                local=types_.IndexFile(
+                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                ),
+            ),
             (
                 table_row := types_.TableRow(
                     level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
@@ -605,12 +619,18 @@ def test_run(
             ),
             types_.CreateIndexAction(
                 action=types_.Action.CREATE,
+                title=local_title,
                 content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n{table_row.to_line()}\n",
             ),
             id="local only single row",
         ),
         pytest.param(
-            types_.Index(server=None, local=(local_content := "content 1")),
+            types_.Index(
+                server=None,
+                local=types_.IndexFile(
+                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                ),
+            ),
             (
                 table_row_1 := types_.TableRow(
                     level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
@@ -621,6 +641,7 @@ def test_run(
             ),
             types_.CreateIndexAction(
                 action=types_.Action.CREATE,
+                title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
                     f"{table_row_1.to_line()}\n{table_row_2.to_line()}\n"
@@ -630,7 +651,7 @@ def test_run(
         ),
         pytest.param(
             types_.Index(
-                local=(local_content := "content 1"),
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
@@ -648,14 +669,15 @@ def test_run(
         ),
         pytest.param(
             types_.Index(
-                local=(local_content := "content 1"),
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
                 server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
             ),
             (),
             types_.UpdateIndexAction(
                 action=types_.Action.UPDATE,
                 content_change=types_.IndexContentChange(
-                    old=server_content, new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
+                    old=server_content,
+                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
                 ),
                 url=url,
             ),
@@ -665,7 +687,7 @@ def test_run(
 )
 def test_index_page(
     index: types_.Index,
-    local_table_rows: tuple[types_.TableRow],
+    table_rows: tuple[types_.TableRow],
     expected_action: types_.AnyIndexAction,
 ):
     """
@@ -673,6 +695,6 @@ def test_index_page(
     act: when index_page is called with the index and server and table rows
     assert: then the expected action is returned.
     """
-    returned_action = reconcile.index_page(index=index, local_table_rows=local_table_rows)
+    returned_action = reconcile.index_page(index=index, table_rows=table_rows)
 
     assert returned_action == expected_action

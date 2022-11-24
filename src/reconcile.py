@@ -247,23 +247,25 @@ NAVIGATION_TABLE_START = """
 
 def index_page(
     index: types_.Index,
-    local_table_rows: typing.Iterable[types_.TableRow],
+    table_rows: typing.Iterable[types_.TableRow],
 ) -> types_.AnyIndexAction:
     """Reconcile differences for the index page.
 
     Args:
         index: Information about the index on the server and locally.
         server_table_rows: The current navigation table rows on the server.
-        local_table_rows: The current navigation table rows based on local files.
+        table_rows: The current navigation table rows based on local files.
 
     Returns:
         The action to take for the index page.
     """
-    table_contents = "\n".join(table_row.to_line() for table_row in local_table_rows)
-    local_content = f"{index.local or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
+    table_contents = "\n".join(table_row.to_line() for table_row in table_rows)
+    local_content = f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
 
     if index.server is None:
-        return types_.CreateIndexAction(action=types_.Action.CREATE, content=local_content)
+        return types_.CreateIndexAction(
+            action=types_.Action.CREATE, content=local_content, title=index.local.title
+        )
     if local_content != index.server.content:
         return types_.UpdateIndexAction(
             action=types_.Action.UPDATE,

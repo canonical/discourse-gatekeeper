@@ -25,6 +25,21 @@ class Page(typing.NamedTuple):
     content: Content
 
 
+NavlinkTitle = str
+
+
+class IndexFile(typing.NamedTuple):
+    """Information about a documentation page.
+
+    Atrs:
+        title: The title for the index.
+        content: The local content of the index.
+    """
+
+    title: NavlinkTitle
+    content: Content | None
+
+
 class Index(typing.NamedTuple):
     """Information about the local and server index page.
 
@@ -34,12 +49,11 @@ class Index(typing.NamedTuple):
     """
 
     server: Page | None
-    local: Content | None
+    local: IndexFile
 
 
 Level = int
 TablePath = str
-NavlinkTitle = str
 
 
 class PathInfo(typing.NamedTuple):
@@ -161,6 +175,7 @@ class CreateIndexAction(BaseAction):
 
     action: typing.Literal[Action.CREATE]
 
+    title: NavlinkTitle
     content: Content
 
 

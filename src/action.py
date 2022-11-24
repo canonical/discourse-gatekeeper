@@ -6,7 +6,7 @@
 import logging
 import typing
 
-from . import types_, exceptions
+from . import types_, exceptions, reconcile
 from .discourse import Discourse
 
 
@@ -120,6 +120,52 @@ def _run_one(
     Returns:
         The table row for the navigation table or None if the action does not require a row.
     """
+    match action.action:
+        case types_.Action.CREATE:
+            return _create(action=action, discourse=discourse, draft_mode=draft_mode)
+        case types_.Action.NOOP:
+            return _noop(action=action)
+        case types_.Action.UPDATE:
+            return _update(action=action, discourse=discourse, draft_mode=draft_mode)
+        case types_.Action.DELETE:
+            return _delete(
+                action=action,
+                discourse=discourse,
+                draft_mode=draft_mode,
+                delete_pages=delete_pages,
+            )
+        case _:
+            raise exceptions.ActionError(
+                f"internal error, no implementation for action, {action=!r}"
+            )
+
+
+def _run_index_action(
+    action: types_.AnyIndexAction, discouse: Discourse, draft_mode: bool
+) -> None:
+    """Take the index action against the server.
+
+    Args:
+        action: The actions to take.
+        discourse: A client to the documentation server.
+        draft_mode: If enabled, only log the action that would be taken.
+    """
+    logging.info("draft mode: %s, action: %s", draft_mode, action)
+
+    if draft_mode:
+        return
+
+    match action.action:
+        case types_.Action.CREATE:
+            discouse.create_topic(title=action.title, content=action.content)
+        case types_.Action.NOOP:
+            pass
+        case types_.Action.UPDATE:
+            discouse.update_topic(url=action.url, content=action.content)
+        case _:
+            raise exceptions.ActionError(
+                f"internal error, no implementation for action, {action=!r}"
+            )
 
 
 def run_all(
@@ -141,3 +187,18 @@ def run_all(
     Returns:
         The table rows for the navigation table.
     """
+    table_rows = (
+        table_row
+        for action in actions
+        if (
+            table_row := _run_one(
+                action=action,
+                discourse=discourse,
+                draft_mode=draft_mode,
+                delete_pages=delete_pages,
+            )
+        )
+        is not None
+    )
+    index_action = reconcile.index_page(index=index, table_rows=table_rows)
+    _run_index_action(action=index_action, discourse=discourse, draft_mode=draft_mode)
