@@ -304,7 +304,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     assert returned_table_row.navlink == update_action.navlink_change.new
 
 
-def test__update_file_navlink_content_change_error(caplog: pytest.LogCaptureFixture):
+def test__update_file_navlink_content_change_error():
     """
     arrange: given update action for a file where content has changed to None
     act: wnen action is passed to _update with draft_mode False
@@ -325,3 +325,75 @@ def test__update_file_navlink_content_change_error(caplog: pytest.LogCaptureFixt
 
     with pytest.raises(exceptions.ActionError):
         action._update(action=update_action, discourse=mocked_discourse, draft_mode=False)
+
+
+@pytest.mark.parametrize(
+    "draft_mode, delete_pages, navlink_link",
+    [
+        pytest.param(True, True, "link 1", id="draft mode enabled"),
+        pytest.param(False, False, "link 1", id="delete pages false enabled"),
+        pytest.param(False, True, None, id="directory"),
+    ],
+)
+def test__delete_not_delete(
+    draft_mode: bool,
+    delete_pages: bool,
+    navlink_link: str | None,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given delete action with given navlink link, draft mode and whether to delete pages
+    act: wnen action is passed to _delete with draft_mode and whether to delete pages
+    assert: then no topic is deleted and the action is logged.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    delete_action = types_.DeleteAction(
+        action=types_.Action.DELETE,
+        level=1,
+        path="path 1",
+        navlink=types_.Navlink(title="title 1", link=navlink_link),
+        content="content 1",
+    )
+
+    action._delete(
+        action=delete_action,
+        discourse=mocked_discourse,
+        draft_mode=draft_mode,
+        delete_pages=delete_pages,
+    )
+
+    assert str(delete_action) in caplog.text
+    assert f"draft mode: {draft_mode}" in caplog.text
+    assert f"delete pages: {delete_pages}" in caplog.text
+    mocked_discourse.delete_topic.assert_not_called()
+
+
+def test__delete(caplog: pytest.LogCaptureFixture):
+    """
+    arrange: given delete action for file
+    act: wnen action is passed to _delete with draft_mode False and whether to delete pages True
+    assert: then topic is deleted and the action is logged.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    link = "link 1"
+    delete_action = types_.DeleteAction(
+        action=types_.Action.DELETE,
+        level=1,
+        path="path 1",
+        navlink=types_.Navlink(title="title 1", link=link),
+        content="content 1",
+    )
+
+    action._delete(
+        action=delete_action,
+        discourse=mocked_discourse,
+        draft_mode=False,
+        delete_pages=True,
+    )
+
+    assert str(delete_action) in caplog.text
+    assert f"draft mode: {False}" in caplog.text
+    assert f"delete pages: {True}" in caplog.text
+    mocked_discourse.delete_topic.assert_called_once_with(url=link)

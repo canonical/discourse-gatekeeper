@@ -95,6 +95,12 @@ def _delete(
         draft_mode: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
     """
+    logging.info("draft mode: %s, delete pages: %s, action: %s", draft_mode, delete_pages, action)
+
+    if draft_mode or not delete_pages or action.navlink.link is None:
+        return
+
+    discourse.delete_topic(url=action.navlink.link)
 
 
 def _run_one(
