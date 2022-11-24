@@ -6,7 +6,7 @@
 import logging
 import typing
 
-from . import types_
+from . import types_, exceptions
 from .discourse import Discourse
 
 
@@ -66,6 +66,22 @@ def _update(
     Returns:
         The updated navigation table row to for the navigation table.
     """
+    logging.info("draft mode: %s, action: %s", draft_mode, action)
+
+    if (
+        not draft_mode
+        and action.navlink_change.new.link is not None
+        and action.content_change.new != action.content_change.old
+    ):
+        if action.content_change.new is None:
+            raise exceptions.ActionError(
+                f"internal error, new content for page is None, {action=!r}"
+            )
+        discourse.update_topic(
+            url=action.navlink_change.new.link, content=action.content_change.new
+        )
+
+    return types_.TableRow(level=action.level, path=action.path, navlink=action.navlink_change.new)
 
 
 def _delete(
