@@ -3,10 +3,14 @@
 
 """Module for taking the required actions to match the server state with the local state."""
 
+import logging
 import typing
 
 from . import types_
 from .discourse import Discourse
+
+
+DRAFT_NAVLINK_LINK = "<not created due to draft mode>"
 
 
 def _create(
@@ -22,6 +26,20 @@ def _create(
     Returns:
         The navigation table row to add to the navigation table.
     """
+    logging.info("draft mode: %s, action: %s", draft_mode, action)
+
+    if action.content is None:
+        url = None
+    elif draft_mode:
+        url = DRAFT_NAVLINK_LINK
+    else:
+        url = discourse.create_topic(title=action.navlink_title, content=action.content)
+
+    return types_.TableRow(
+        level=action.level,
+        path=action.path,
+        navlink=types_.Navlink(title=action.navlink_title, link=url),
+    )
 
 
 def _noop(action: types_.NoopAction) -> types_.TableRow:
@@ -60,9 +78,8 @@ def _delete(
     """
 
 
-def run_one(
+def _run_one(
     action: types_.AnyAction,
-    index_page: types_.Page,
     discourse: Discourse,
     draft_mode: bool,
     delete_pages: bool,
@@ -82,15 +99,16 @@ def run_one(
 
 def run_all(
     actions: typing.Iterable[types_.AnyAction],
-    index_page: types_.Page,
+    index: types_.Index,
     discourse: Discourse,
     draft_mode: bool,
     delete_pages: bool,
-) -> typing.Iterator[types_.TableRow]:
+) -> None:
     """Take the actions against the server.
 
     Args:
         actions: The actions to take.
+        index: Information about the index.
         discourse: A client to the documentation server.
         draft_mode: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
