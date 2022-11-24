@@ -48,6 +48,9 @@ def _noop(action: types_.NoopAction) -> types_.TableRow:
     Args:
         action: The noop action details.
     """
+    logging.info("action: %s", action)
+
+    return types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
 
 
 def _update(
