@@ -133,7 +133,7 @@ class Discourse:
 
         return _ValidationResultValid()
 
-    def _retrieve_topic_info_from_url(self, url: str) -> _DiscourseTopicInfo:
+    def _url_to_topic_info(self, url: str) -> _DiscourseTopicInfo:
         """Retrieve the topic information from the url to the topic.
 
         Args:
@@ -153,6 +153,18 @@ class Discourse:
         path_components = parse.urlparse(url=url).path.split("/")
         return _DiscourseTopicInfo(slug=path_components[-2], id_=path_components[-1])
 
+    def _topic_info_to_url(self, topic_info: _DiscourseTopicInfo) -> str:
+        """Retrieve the url from the topic information.
+
+        Args:
+            url: The topic information.
+
+        Returns:
+            The URL to the topic.
+
+        """
+        return f"{self._base_path}/t/{topic_info.slug}/{topic_info.id_}"
+
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.
 
@@ -166,7 +178,7 @@ class Discourse:
             DiscourseError: if pydiscourse raises an error or if the topic has been deleted.
 
         """
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         try:
             topic = self._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
@@ -217,6 +229,18 @@ class Discourse:
             raise DiscourseError(
                 f"The documentation server returned unexpected data, {post=!r}"
             ) from exc
+
+    def absolute_url(self, url: str) -> str:
+        """Get the URL including base path for a topic.
+
+        Args:
+            url: The relative or absolute URL.
+
+        Returns:
+            The url with the base path.
+        """
+        topic_info = self._url_to_topic_info(url=url)
+        return self._topic_info_to_url(topic_info=topic_info)
 
     def check_topic_write_permission(self, url: str) -> bool:
         """Check whether the credentials have write permission on a topic.
@@ -274,7 +298,7 @@ class Discourse:
         if not self.check_topic_read_permission(url=url):
             raise DiscourseError(f"Error retrieving the topic, could not read the topic, {url=!r}")
 
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
         response = requests.get(
             f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
@@ -311,7 +335,7 @@ class Discourse:
 
         topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
         topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
-        return f"{self._base_path}/t/{topic_slug}/{topic_id}"
+        return self._topic_info_to_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
 
     def delete_topic(self, url: str) -> None:
         """Delete a topic.
@@ -324,13 +348,14 @@ class Discourse:
                 the topic is not found or if anything else has gone wrong.
 
         """
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         try:
             self._client.delete_topic(topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
                 f"Error deleting the topic, {url=!r}, {discourse_error=}"
             ) from discourse_error
+        return self._topic_info_to_url(topic_info)
 
     def update_topic(
         self, url: str, content: str, edit_reason: str = "Charm documentation updated"
@@ -356,6 +381,8 @@ class Discourse:
             raise DiscourseError(
                 f"Error updating the topic, {url=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
+
+        return self.absolute_url(url=url)
 
 
 def create_discourse(

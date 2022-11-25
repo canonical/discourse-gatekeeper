@@ -265,8 +265,8 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link="link 1"),
-            new=src_types.Navlink(title="title 2", link="link 2"),
+            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
+            new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
@@ -282,7 +282,7 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.url == link
     assert returned_report.result == src_types.ActionResult.SKIP
     assert returned_report.reason == action.DRAFT_MODE_REASON
 

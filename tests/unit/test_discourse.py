@@ -399,7 +399,7 @@ def test_create_topic_post_malformed(
 def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
     """
     arrange: given a mocked discourse client that returns valid data for a post
-    act: when given create_topic is called
+    act: when create_topic is called
     assert: then the url to the topic is returned.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
@@ -412,6 +412,26 @@ def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse
     url = discourse.create_topic(title="title 1", content="content 1")
 
     assert url == f"{base_path}/t/{topic_slug}/{topic_id}"
+
+
+def test_delete_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
+    """
+    arrange: given a mocked discourse client
+    act: when delete_topic is called first without the base path and then with it
+    assert: then the url to the topic is returned.
+    """
+    mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
+    url_path = "/t/slug/1"
+    url = f"{base_path}{url_path}"
+    monkeypatch.setattr(discourse, "_client", mocked_client)
+
+    returned_url = discourse.delete_topic(url=url_path)
+
+    assert returned_url == url
+
+    returned_url = discourse.delete_topic(url=url)
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(
@@ -481,16 +501,24 @@ def test_update_topic_discourse_error(
 def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str):
     """
     arrange: given a mocked discourse client that returns valid data for a topic
-    act: when given update_topic is called
-    assert: then nothing is returned.
+    act: when given update_topic is called without base path and then with
+    assert: then topic url is returned.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
     mocked_client.topic.return_value = {
         "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
+    url_path = "/t/slug/1"
+    url = f"{base_path}{url_path}"
 
-    discourse.update_topic(url=f"{base_path}/t/slug/1", content="content 1")
+    returned_url = discourse.update_topic(url=url_path, content="content 1")
+
+    assert returned_url == url
+
+    returned_url = discourse.update_topic(url=url, content="content 1")
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(
@@ -633,6 +661,24 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
     returned_content = discourse.retrieve_topic(url=url)
 
     assert returned_content == content
+
+
+def test_absolute_url(base_path: str, discourse: Discourse):
+    """
+    arrange: given a mocked discourse client
+    act: when absolute_url is called first without the base path and then with it
+    assert: then the url to the topic is returned.
+    """
+    url_path = "/t/slug/1"
+    url = f"{base_path}{url_path}"
+
+    returned_url = discourse.absolute_url(url=url_path)
+
+    assert returned_url == url
+
+    returned_url = discourse.absolute_url(url=url)
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(

@@ -105,7 +105,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     # 4. docs with a documentation file added in draft mode
     caplog.clear()
     doc_table_key = "doc"
-    (docs_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content := "doc content 1")
+    (docs_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
 
     urls_with_actions = run(
         base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
@@ -130,13 +130,39 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert "'update'" in caplog.text
     assert "'success'" in caplog.text
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert f"| 1 | {doc_table_key} | [{doc_content}]({urlparse(doc_url).path}) |" in index_topic
+    doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_content_1}]({urlparse(doc_url).path}) |"
+    assert doc_table_line_1 in index_topic
 
     # 6. docs with a documentation file updated in draft mode
     pytest.set_trace()
     caplog.clear()
-    docs_file.write_text(doc_content := "doc content 2")
+    docs_file.write_text(doc_content_2 := "doc content 2")
 
     urls_with_actions = run(
         base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
     )
+
+    assert len(urls_with_actions) == 2
+    assert urls_with_actions.keys() == (doc_url, index_url)
+    for url in urls_with_actions.keys():
+        assert url in caplog.text
+    assert "'update'" in caplog.text
+    assert "'skip'" in caplog.text
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert doc_table_line_1 in index_topic
+
+    # 7. docs with a documentation file updated
+    caplog.clear()
+
+    urls_with_actions = run(
+        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+    )
+
+    assert len(urls_with_actions) == 2
+    assert tuple(urls_with_actions.keys()) == (doc_url, index_url)
+    for url in urls_with_actions.keys():
+        assert url in caplog.text
+    assert "'update'" in caplog.text
+    assert "'success'" in caplog.text
+    doc_table_line_2 = f"| 1 | {doc_table_key} | [{doc_content_2}]({urlparse(doc_url).path}) |"
+    assert doc_table_line_2 in index_topic

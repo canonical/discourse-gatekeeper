@@ -116,11 +116,7 @@ def _update(
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:
-        if action.navlink_change.new.link is not None:
-            url = DRAFT_NAVLINK_LINK if draft_mode else action.navlink_change.new.link
-        else:
-            # URL for directory should always be None
-            url = None
+        url = action.navlink_change.new.link
         result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
         reason = DRAFT_MODE_REASON if draft_mode else None
 
