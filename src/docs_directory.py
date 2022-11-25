@@ -55,6 +55,8 @@ def _calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
         "-".join(part for part in path_relative_to_docs.parts)
         .removesuffix(path_relative_to_docs.suffix)
         .lower()
+        .replace(" ", "-")
+        .replace("_", "-")
     )
 
 

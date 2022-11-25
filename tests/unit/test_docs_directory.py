@@ -162,6 +162,8 @@ def test__calculate_level(
     "directories, file, expected_table_path",
     [
         pytest.param((), "file1.md", "file1", id="file in docs"),
+        pytest.param((), "file_1.md", "file-1", id="file in docs including space"),
+        pytest.param((), "file 1.md", "file-1", id="file in docs including underscore"),
         pytest.param((), "file1.MD", "file1", id="file in docs upper case suffix"),
         pytest.param((), "FILE1.md", "file1", id="file upper case in docs"),
         pytest.param(("dir1",), None, "dir1", id="directory in docs"),

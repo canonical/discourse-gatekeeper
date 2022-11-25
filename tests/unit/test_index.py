@@ -14,17 +14,7 @@ import pytest
 from src import discourse, index
 from src.exceptions import DiscourseError, InputError, ServerError
 
-
-def create_metadata_yaml(content: str, path: Path) -> None:
-    """Create the metadata file.
-
-    Args:
-        content: The text to be written to the file.
-        path: The directory to create the file in.
-
-    """
-    metadata_yaml = path / index.METADATA_FILENAME
-    metadata_yaml.write_text(content, encoding="utf-8")
+from .helpers import create_metadata_yaml
 
 
 def assert_substrings_in_string(substrings: tuple[str, ...], string: str) -> None:

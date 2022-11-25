@@ -31,7 +31,7 @@ def run(
         All the URLs that had an action with the result of that action.
 
     """
-    index = get_index(base_path=base_path, discourse=discourse)
+    index = get_index(base_path=base_path, server_client=discourse)
     path_infos = read_docs_directory(docs_path=base_path / "docs")
     server_content = (index.server.content or "") if index.server is not None else ""
     table_rows = navigation_table_from_page(page=server_content)
@@ -43,4 +43,10 @@ def run(
         draft_mode=draft_mode,
         delete_pages=delete_pages,
     )
-    return {report.url: report.result for report in reports if report.url is not None}
+    return {
+        report.url: report.result
+        for report in reports
+        if report.url is not None
+        and report.url != action.DRAFT_NAVLINK_LINK
+        and report.url != action.FAIL_NAVLINK_LINK
+    }
