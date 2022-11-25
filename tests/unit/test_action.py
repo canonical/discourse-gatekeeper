@@ -458,10 +458,9 @@ def test__delete(caplog: pytest.LogCaptureFixture):
 )
 def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
     """
-    arrange: given action and mocked discourse
-    act: when _run_one is called with the action and mocked discourse
-    assert: then then expected value is returned and any expected function calls are on the mocked
-        discourse
+    arrange: given action
+    act: when _run_one is called with the action
+    assert: then the returned value is of the expected type
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
@@ -470,3 +469,103 @@ def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
     )
 
     assert isinstance(returned_value, expected_return_type)
+
+
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable
+@pytest.mark.parametrize(
+    "index_action, draft_mode, expected_discourse_function_call, "
+    "expected_discourse_function_call_kwargs",
+    [
+        pytest.param(
+            src_types.CreateIndexAction(
+                action=src_types.Action.CREATE, title="title 1", content="content 1"
+            ),
+            True,
+            None,
+            None,
+            id="create draft mode enabled",
+        ),
+        pytest.param(
+            src_types.CreateIndexAction(
+                action=src_types.Action.CREATE,
+                title=(title := "title 1"),
+                content=(content := "content 1"),
+            ),
+            False,
+            "create_topic",
+            {"title": title, "content": content},
+            id="create draft mode disabled",
+        ),
+        pytest.param(
+            src_types.NoopIndexAction(
+                action=src_types.Action.NOOP, url="url 1", content="content 1"
+            ),
+            True,
+            None,
+            None,
+            id="noop draft mode enabled",
+        ),
+        pytest.param(
+            src_types.NoopIndexAction(
+                action=src_types.Action.NOOP, url="url 1", content="content 1"
+            ),
+            False,
+            None,
+            None,
+            id="noop draft mode disabled",
+        ),
+        pytest.param(
+            src_types.UpdateIndexAction(
+                action=src_types.Action.UPDATE,
+                url="url 1",
+                content_change=src_types.ContentChange(old="content 1", new="content 2"),
+            ),
+            True,
+            None,
+            None,
+            id="update draft mode enabled",
+        ),
+        pytest.param(
+            src_types.UpdateIndexAction(
+                action=src_types.Action.UPDATE,
+                url=(url := "url 1"),
+                content_change=src_types.ContentChange(
+                    old="content 1", new=(content := "content 2")
+                ),
+            ),
+            False,
+            "update_topic",
+            {"url": url, "content": content},
+            id="update draft mode disabled",
+        ),
+    ],
+)
+# pylint: enable=undefined-variable,unused-variable
+def test__run_index_directory(
+    index_action: src_types.AnyIndexAction,
+    draft_mode: bool,
+    expected_discourse_function_call: str | None,
+    expected_discourse_function_call_kwargs: dict | None,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given index action, draft mode and mocked discourse
+    act: when action is passed to _run_index with draft_mode and mocked discourse
+    assert: then the action is logged and any expected function calls are on the mocked discourse
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    action._run_index(action=index_action, discourse=mocked_discourse, draft_mode=draft_mode)
+
+    assert str(index_action) in caplog.text
+    assert f"draft mode: {draft_mode}" in caplog.text
+    expected_not_called = {"create_topic", "update_topic"}
+    if expected_discourse_function_call is not None:
+        expected_not_called.remove(expected_discourse_function_call)
+        getattr(mocked_discourse, expected_discourse_function_call).assert_called_once_with(
+            **(expected_discourse_function_call_kwargs or {})
+        )
+    for call in expected_not_called:
+        getattr(mocked_discourse, call).assert_not_called()

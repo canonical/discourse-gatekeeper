@@ -146,9 +146,7 @@ def _run_one(
             )
 
 
-def _run_index_action(
-    action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool
-) -> None:
+def _run_index(action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool) -> None:
     """Take the index action against the server.
 
     Args:
@@ -211,4 +209,4 @@ def run_all(
         is not None
     )
     index_action = reconcile.index_page(index=index, table_rows=table_rows)
-    _run_index_action(action=index_action, discourse=discourse, draft_mode=draft_mode)
+    _run_index(action=index_action, discourse=discourse, draft_mode=draft_mode)
