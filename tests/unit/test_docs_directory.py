@@ -57,6 +57,7 @@ def create_nested_directories_file(
     [
         pytest.param((), (), (), id="empty"),
         pytest.param((("dir1",),), (), (("dir1",),), id="single directory"),
+        pytest.param((("index",),), (), (("index",),), id="single directory called index"),
         pytest.param(
             (("dir1",), ("dir2",)), (), (("dir1",), ("dir2",)), id="multiple directories"
         ),
@@ -69,6 +70,8 @@ def create_nested_directories_file(
         pytest.param((), (("file1.md",),), (("file1.md",),), id="single file"),
         pytest.param((), (("file1.MD",),), (("file1.MD",),), id="single file upper case suffix"),
         pytest.param((), (("file1.txt",),), (), id="single file not documentation"),
+        pytest.param((), (("index.md",),), (), id="single file index"),
+        pytest.param((), (("INDEX.md",),), (), id="single file index capitalised"),
         pytest.param(
             (), (("file1.md",), ("file2.md",)), (("file1.md",), ("file2.md",)), id="multiple files"
         ),

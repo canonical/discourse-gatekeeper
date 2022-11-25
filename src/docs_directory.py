@@ -20,7 +20,9 @@ def _get_directories_files(docs_path: Path) -> list[Path]:
         List with all the directories and documentation files in the docs directory.
     """
     return sorted(
-        path for path in docs_path.rglob("*") if path.is_dir() or path.suffix.lower() == ".md"
+        path
+        for path in docs_path.rglob("*")
+        if path.is_dir() or (path.suffix.lower() == ".md" and not path.stem.lower() == "index")
     )
 
 
