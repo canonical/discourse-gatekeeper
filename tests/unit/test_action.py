@@ -7,12 +7,13 @@
 # pylint: disable=protected-access
 
 import logging
-from unittest import mock
 import types
+from unittest import mock
 
 import pytest
 
-from src import action, discourse, types_ as src_types, exceptions
+from src import action, discourse, exceptions
+from src import types_ as src_types
 
 
 @pytest.mark.parametrize(

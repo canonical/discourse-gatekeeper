@@ -6,9 +6,8 @@
 import logging
 import typing
 
-from . import types_, exceptions, reconcile
+from . import exceptions, reconcile, types_
 from .discourse import Discourse
-
 
 DRAFT_NAVLINK_LINK = "<not created due to draft mode>"
 
@@ -120,14 +119,14 @@ def _run_one(
     Returns:
         The table row for the navigation table or None if the action does not require a row.
     """
-    match action.action:
-        case types_.Action.CREATE:
+    match type(action):
+        case types_.CreateAction:
             return _create(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.Action.NOOP:
+        case types_.NoopAction:
             return _noop(action=action)
-        case types_.Action.UPDATE:
+        case types_.UpdateAction:
             return _update(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.Action.DELETE:
+        case types_.DeleteAction:
             return _delete(
                 action=action,
                 discourse=discourse,
@@ -163,7 +162,8 @@ def _run_index_action(
             pass
         case types_.Action.UPDATE:
             discouse.update_topic(url=action.url, content=action.content)
-        case _:
+        # Edge case that should not be possible
+        case _:  # pragma: no cover
             raise exceptions.ActionError(
                 f"internal error, no implementation for action, {action=!r}"
             )

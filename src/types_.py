@@ -8,7 +8,6 @@ import typing
 from enum import Enum
 from pathlib import Path
 
-
 Content = str
 Url = str
 
