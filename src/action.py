@@ -10,11 +10,14 @@ from . import exceptions, reconcile, types_
 from .discourse import Discourse
 
 DRAFT_NAVLINK_LINK = "<not created due to draft mode>"
+FAIL_NAVLINK_LINK = "<not created due to error>"
+DRAFT_MODE_REASON = "draft mode"
+NOT_DELETE_REASON = "delete_topics is false"
 
 
 def _create(
     action: types_.CreateAction, discourse: Discourse, draft_mode: bool
-) -> types_.TableRow:
+) -> types_.ActionResult:
     """Execute a create action.
 
     Args:
@@ -29,19 +32,31 @@ def _create(
 
     if action.content is None:
         url = None
+        result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
+        reason = DRAFT_MODE_REASON if draft_mode else None
     elif draft_mode:
         url = DRAFT_NAVLINK_LINK
+        result = types_.ActionResult.SKIP
+        reason = DRAFT_MODE_REASON
     else:
-        url = discourse.create_topic(title=action.navlink_title, content=action.content)
+        try:
+            url = discourse.create_topic(title=action.navlink_title, content=action.content)
+            result = types_.ActionResult.SUCCESS
+            reason = None
+        except exceptions.DiscourseError as exc:
+            url = FAIL_NAVLINK_LINK
+            result = types_.ActionResult.FAIL
+            reason = str(exc)
 
-    return types_.TableRow(
+    table_row = types_.TableRow(
         level=action.level,
         path=action.path,
         navlink=types_.Navlink(title=action.navlink_title, link=url),
     )
+    return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
 
 
-def _noop(action: types_.NoopAction) -> types_.TableRow:
+def _noop(action: types_.NoopAction) -> types_.ActionResult:
     """Execute a noop action.
 
     Args:
@@ -49,12 +64,18 @@ def _noop(action: types_.NoopAction) -> types_.TableRow:
     """
     logging.info("action: %s", action)
 
-    return types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
+    table_row = types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
+    return types_.ActionReport(
+        table_row=table_row,
+        url=table_row.navlink.link,
+        result=types_.ActionResult.SUCCESS,
+        reason=None,
+    )
 
 
 def _update(
     action: types_.UpdateAction, discourse: Discourse, draft_mode: bool
-) -> types_.TableRow:
+) -> types_.ActionResult:
     """Execute an update action.
 
     Args:
@@ -76,16 +97,36 @@ def _update(
             raise exceptions.ActionError(
                 f"internal error, new content for page is None, {action=!r}"
             )
-        discourse.update_topic(
-            url=action.navlink_change.new.link, content=action.content_change.new
-        )
 
-    return types_.TableRow(level=action.level, path=action.path, navlink=action.navlink_change.new)
+        try:
+            discourse.update_topic(
+                url=action.navlink_change.new.link, content=action.content_change.new
+            )
+            url = action.navlink_change.new.link
+            result = types_.ActionResult.SUCCESS
+            reason = None
+        except exceptions.DiscourseError as exc:
+            url = action.navlink_change.new.link
+            result = types_.ActionResult.FAIL
+            reason = str(exc)
+    else:
+        if action.navlink_change.new.link is not None:
+            url = DRAFT_NAVLINK_LINK if draft_mode else action.navlink_change.new.link
+        else:
+            # URL for directory should always be None
+            url = None
+        result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
+        reason = DRAFT_MODE_REASON if draft_mode else None
+
+    table_row = types_.TableRow(
+        level=action.level, path=action.path, navlink=action.navlink_change.new
+    )
+    return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
 
 
 def _delete(
     action: types_.DeleteAction, discourse: Discourse, draft_mode: bool, delete_pages: bool
-) -> None:
+) -> types_.ActionResult:
     """Execute a delete action.
 
     Args:
@@ -96,10 +137,44 @@ def _delete(
     """
     logging.info("draft mode: %s, delete pages: %s, action: %s", draft_mode, delete_pages, action)
 
-    if draft_mode or not delete_pages or action.navlink.link is None:
-        return
+    is_group = action.navlink.link is None
+    if draft_mode:
+        return types_.ActionReport(
+            table_row=None,
+            url=action.navlink.link,
+            result=types_.ActionResult.SKIP,
+            reason=DRAFT_MODE_REASON,
+        )
+    if not delete_pages and not is_group:
+        return types_.ActionReport(
+            table_row=None,
+            url=action.navlink.link,
+            result=types_.ActionResult.SKIP,
+            reason=NOT_DELETE_REASON,
+        )
+    if is_group:
+        return types_.ActionReport(
+            table_row=None,
+            url=action.navlink.link,
+            result=types_.ActionResult.SUCCESS,
+            reason=None,
+        )
 
-    discourse.delete_topic(url=action.navlink.link)
+    try:
+        discourse.delete_topic(url=action.navlink.link)
+        return types_.ActionReport(
+            table_row=None,
+            url=action.navlink.link,
+            result=types_.ActionResult.SUCCESS,
+            reason=None,
+        )
+    except exceptions.DiscourseError as exc:
+        return types_.ActionReport(
+            table_row=None,
+            url=action.navlink.link,
+            result=types_.ActionResult.FAIL,
+            reason=str(exc),
+        )
 
 
 def _run_one(
@@ -107,7 +182,7 @@ def _run_one(
     discourse: Discourse,
     draft_mode: bool,
     delete_pages: bool,
-) -> types_.TableRow | None:
+) -> types_.ActionResult:
     """Take the actions against the server.
 
     Args:
@@ -132,13 +207,12 @@ def _run_one(
             return _update(action=action, discourse=discourse, draft_mode=draft_mode)
         case types_.Action.DELETE:
             assert isinstance(action, types_.DeleteAction)  # nosec
-            _delete(
+            return _delete(
                 action=action,
                 discourse=discourse,
                 draft_mode=draft_mode,
                 delete_pages=delete_pages,
             )
-            return None
         # Edge case that should not be possible
         case _:  # pragma: no cover
             raise exceptions.ActionError(
@@ -146,7 +220,9 @@ def _run_one(
             )
 
 
-def _run_index(action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool) -> None:
+def _run_index(
+    action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool
+) -> types_.ActionResult:
     """Take the index action against the server.
 
     Args:
@@ -157,18 +233,44 @@ def _run_index(action: types_.AnyIndexAction, discourse: Discourse, draft_mode: 
     logging.info("draft mode: %s, action: %s", draft_mode, action)
 
     if draft_mode:
-        return
+        return types_.ActionReport(
+            table_row=None,
+            url=DRAFT_NAVLINK_LINK,
+            result=types_.ActionResult.SKIP,
+            reason=DRAFT_MODE_REASON,
+        )
 
     match action.action:
         case types_.Action.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateIndexAction)  # nosec
-            discourse.create_topic(title=action.title, content=action.content)
+            try:
+                url = discourse.create_topic(title=action.title, content=action.content)
+                return types_.ActionReport(
+                    table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
+                )
+            except exceptions.DiscourseError as exc:
+                return types_.ActionReport(
+                    table_row=None, url=None, result=types_.ActionResult.FAIL, reason=str(exc)
+                )
         case types_.Action.NOOP:
-            pass
+            return types_.ActionReport(
+                table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
+            )
         case types_.Action.UPDATE:
             assert isinstance(action, types_.UpdateIndexAction)  # nosec
-            discourse.update_topic(url=action.url, content=action.content_change.new)
+            try:
+                discourse.update_topic(url=action.url, content=action.content_change.new)
+                return types_.ActionReport(
+                    table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
+                )
+            except exceptions.DiscourseError as exc:
+                return types_.ActionReport(
+                    table_row=None,
+                    url=action.url,
+                    result=types_.ActionResult.FAIL,
+                    reason=str(exc),
+                )
         # Edge case that should not be possible
         case _:  # pragma: no cover
             raise exceptions.ActionError(
@@ -182,7 +284,7 @@ def run_all(
     discourse: Discourse,
     draft_mode: bool,
     delete_pages: bool,
-) -> None:
+) -> list[types_.ActionReport]:
     """Take the actions against the server.
 
     Args:

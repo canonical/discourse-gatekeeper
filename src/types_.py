@@ -301,3 +301,34 @@ class DeleteAction(BaseAction):
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction
 AnyIndexAction = CreateIndexAction | NoopIndexAction | UpdateIndexAction
+
+
+class ActionResult(str, Enum):
+    """Result of taking an action.
+
+    Attrs:
+        SUCCESS: The action succeeded.
+        SKIP: The action was skipped.
+        FAIL: The action failed.
+    """
+
+    SUCCESS = "success"
+    SKIP = "skip"
+    FAIL = "fail"
+
+
+class ActionReport(typing.NamedTuple):
+    """Post execution report for an action.
+
+    Attrs:
+        table_row: The navigation table entry, None for delete or index actions.
+        url: The URL that the action operated on, None for groups or if a create action was
+            skipped.
+        result: The action execution result.
+        reason: The reason, None for success reports.
+    """
+
+    table_row: TableRow | None
+    url: Url | None
+    result: ActionResult
+    reason: str | None
