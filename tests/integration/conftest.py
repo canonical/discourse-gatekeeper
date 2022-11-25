@@ -16,6 +16,8 @@ import requests
 from ops.model import ActiveStatus, Application
 from pytest_operator.plugin import OpsTest
 
+from src.discourse import Discourse
+
 from . import types
 
 
@@ -233,6 +235,22 @@ async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
     """Create the category for topics."""
     category = discourse_client.create_category(name="docs", color="FFFFFF")
     return category["category"]["id"]
+
+
+@pytest_asyncio.fixture(scope="module")
+async def discourse_api(
+    discourse_user_credentials: types.Credentials,
+    discourse_hostname: str,
+    discourse_user_api_key: str,
+    discourse_category_id: int,
+):
+    """Create discourse instance."""
+    return Discourse(
+        base_path=f"http://{discourse_hostname}",
+        api_username=discourse_user_credentials.username,
+        api_key=discourse_user_api_key,
+        category_id=discourse_category_id,
+    )
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)

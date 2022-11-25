@@ -5,12 +5,13 @@
 
 from pathlib import Path
 
-from .index import get as get_index
-from .docs_directory import read as read_docs_directory
-from .navigation_table import from_page as navigation_table_from_page
-from .discourse import Discourse
-from .reconcile import run as run_reconcile
+from .action import DRAFT_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
+from .discourse import Discourse
+from .docs_directory import read as read_docs_directory
+from .index import get as get_index
+from .navigation_table import from_page as navigation_table_from_page
+from .reconcile import run as run_reconcile
 
 
 def run(
@@ -19,7 +20,7 @@ def run(
     draft_mode: bool,
     delete_pages: bool,
 ) -> dict[str, str]:
-    """Uploading the documentation to charmhub.
+    """Upload the documentation to charmhub.
 
     Args:
         base_path: The base path to look for the metadata file in.
@@ -47,6 +48,6 @@ def run(
         report.url: report.result
         for report in reports
         if report.url is not None
-        and report.url != action.DRAFT_NAVLINK_LINK
-        and report.url != action.FAIL_NAVLINK_LINK
+        and report.url != DRAFT_NAVLINK_LINK
+        and report.url != FAIL_NAVLINK_LINK
     }

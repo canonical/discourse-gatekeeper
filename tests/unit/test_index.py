@@ -195,6 +195,7 @@ def test_get_metadata_yaml_retrieve_local_and_server(tmp_path: Path, index_file_
 
     returned_index = index.get(base_path=tmp_path, server_client=mocked_server_client)
 
+    assert returned_index.server is not None
     assert returned_index.server.url == url
     assert returned_index.server.content == content
     assert returned_index.local.title == "Name 1 Documentation Overview"

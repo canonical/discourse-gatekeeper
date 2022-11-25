@@ -3,11 +3,10 @@
 
 """Unit tests for execution."""
 
-from unittest import mock
 from pathlib import Path
+from unittest import mock
 
-from src import run
-from src import discourse, index, types_, reconcile, exceptions
+from src import discourse, exceptions, index, reconcile, run, types_
 
 from .helpers import create_metadata_yaml
 
@@ -37,7 +36,7 @@ def test_run_local_empty_server(tmp_path: Path):
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when run is called
     assert: then a documentation page is created and an index page is created with a navigation
-        page whith a reference to the documentation page.
+        page with a reference to the documentation page.
     """
     create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()

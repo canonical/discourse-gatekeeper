@@ -3,11 +3,11 @@
 
 """Types for uploading docs to charmhub."""
 
-from urllib.parse import urlparse
 import dataclasses
 import typing
 from enum import Enum
 from pathlib import Path
+from urllib.parse import urlparse
 
 Content = str
 Url = str

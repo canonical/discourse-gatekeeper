@@ -3,28 +3,23 @@
 
 """Integration tests for running the action."""
 
-from urllib.parse import urlparse
+# This test is fairly complex as it simulates sequential action runs
+# pylint: disable=too-many-arguments,too-many-locals
+
 import logging
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
-from src import index, run, reconcile
+from src import index, reconcile, run
 from src.discourse import Discourse
 
-from . import types
 from ..unit.helpers import create_metadata_yaml
 
 
 @pytest.mark.asyncio
-async def test_run(
-    discourse_user_api_key: str,
-    discourse_hostname: str,
-    discourse_user_credentials: types.Credentials,
-    discourse_category_id: int,
-    tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
-):
+async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogCaptureFixture):
     """
     arrange: given running discourse server
     act: when run is called with:
@@ -60,40 +55,34 @@ async def test_run(
         14. an index page is not updated
     """
     caplog.set_level(logging.INFO)
-    discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
-        api_username=discourse_user_credentials.username,
-        api_key=discourse_user_api_key,
-        category_id=discourse_category_id,
-    )
     create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
 
     # 1. docs empty
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 1
     index_url = next(iter(urls_with_actions.keys()))
-    index_topic = discourse.retrieve_topic(url=index_url)
+    index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}"
     assert index_url in caplog.text
 
     # 2. docs with an index file in draft mode
     caplog.clear()
     create_metadata_yaml(
-        content=f"{index.METADATA_NAME_KEY}: name 1\n{index.METADATA_DOCS_KEY}: {url}",
+        content=f"{index.METADATA_NAME_KEY}: name 1\n{index.METADATA_DOCS_KEY}: {index_url}",
         path=tmp_path,
     )
     (docs_dir := tmp_path / "docs").mkdir()
-    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
+    (docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
     )
 
     assert len(urls_with_actions) == 1
-    index_topic = discourse.retrieve_topic(url=index_url)
+    index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}"
     assert index_url in caplog.text
     assert "'update'" in caplog.text
@@ -103,11 +92,11 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 1
-    index_topic = discourse.retrieve_topic(url=index_url)
+    index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{index_content}{reconcile.NAVIGATION_TABLE_START}"
     assert index_url in caplog.text
     assert "'update'" in caplog.text
@@ -116,10 +105,10 @@ async def test_run(
     # 4. docs with a documentation file added in draft mode
     caplog.clear()
     doc_table_key = "doc"
-    (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content := "doc content 1")
+    (docs_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content := "doc content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
     )
 
     assert len(urls_with_actions) == 1
@@ -131,15 +120,23 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 2
-    (_, doc_url) = urls_with_actions.keys()
+    (doc_url, _) = urls_with_actions.keys()
     for url in urls_with_actions.keys():
         assert url in caplog.text
     assert "'create'" in caplog.text
     assert "'update'" in caplog.text
     assert "'success'" in caplog.text
-    index_topic = discourse.retrieve_topic(url=index_url)
+    index_topic = discourse_api.retrieve_topic(url=index_url)
     assert f"| 1 | {doc_table_key} | [{doc_content}]({urlparse(doc_url).path}) |" in index_topic
+
+    # 6. docs with a documentation file updated in draft mode
+    caplog.clear()
+    docs_file.write_text(doc_content := "doc content 2")
+
+    urls_with_actions = run(
+        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
+    )

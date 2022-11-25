@@ -9,7 +9,7 @@ import yaml
 
 from .discourse import Discourse
 from .exceptions import DiscourseError, InputError, ServerError
-from .types_ import Page, IndexFile, Index
+from .types_ import Index, IndexFile, Page
 
 METADATA_FILENAME = "metadata.yaml"
 METADATA_DOCS_KEY = "docs"
@@ -112,17 +112,18 @@ def get(base_path: Path, server_client: Discourse) -> Index:
     if METADATA_DOCS_KEY in metadata:
         index_url = _get_key(metadata=metadata, key=METADATA_DOCS_KEY)
         try:
-            content = server_client.retrieve_topic(url=index_url)
+            server_content = server_client.retrieve_topic(url=index_url)
         except DiscourseError as exc:
             raise ServerError("Index page retrieval failed") from exc
-        server = Page(url=index_url, content=content)
+        server = Page(url=index_url, content=server_content)
     else:
         server = None
 
     name_value = _get_key(metadata=metadata, key=METADATA_NAME_KEY)
-    content = _read_docs_index(base_path=base_path)
+    local_content = _read_docs_index(base_path=base_path)
     local = IndexFile(
-        title=f"{name_value.replace('-', ' ').title()} Documentation Overview", content=content
+        title=f"{name_value.replace('-', ' ').title()} Documentation Overview",
+        content=local_content,
     )
 
     return Index(server=server, local=local)
