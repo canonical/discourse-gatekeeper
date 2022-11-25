@@ -623,33 +623,39 @@ def test__run_one(
     assert f"report: {returned_report}" in caplog.text
 
 
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "index_action",
+    "index_action, expected_url",
     [
         pytest.param(
             src_types.CreateIndexAction(
                 action=src_types.Action.CREATE, title="title 1", content="content 1"
             ),
+            action.DRAFT_NAVLINK_LINK,
             id="create",
         ),
         pytest.param(
             src_types.NoopIndexAction(
-                action=src_types.Action.NOOP, url="url 1", content="content 1"
+                action=src_types.Action.NOOP, url=(url := "url 1"), content="content 1"
             ),
+            url,
             id="noop",
         ),
         pytest.param(
             src_types.UpdateIndexAction(
                 action=src_types.Action.UPDATE,
-                url="url 1",
+                url=(url := "url 1"),
                 content_change=src_types.IndexContentChange(old="content 1", new="content 2"),
             ),
+            url,
             id="update",
         ),
     ],
 )
+# pylint: enable=undefined-variable,unused-variable
 def test__run_index_draft_mode(
-    index_action: src_types.AnyIndexAction, caplog: pytest.LogCaptureFixture
+    index_action: src_types.AnyIndexAction, expected_url: str, caplog: pytest.LogCaptureFixture
 ):
     """
     arrange: given index action and mocked discourse
@@ -670,7 +676,7 @@ def test__run_index_draft_mode(
     mocked_discourse.create_topic.assert_not_called()
     mocked_discourse.update_topic.assert_not_called()
     assert returned_report.table_row is None
-    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.url == expected_url
     assert returned_report.result == src_types.ActionResult.SKIP
     assert returned_report.reason == action.DRAFT_MODE_REASON
 

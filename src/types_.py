@@ -3,6 +3,7 @@
 
 """Types for uploading docs to charmhub."""
 
+from urllib.parse import urlparse
 import dataclasses
 import typing
 from enum import Enum
@@ -111,7 +112,8 @@ class TableRow(typing.NamedTuple):
             The line in the navigation table.
         """
         return (
-            f"| {self.level} | {self.path} | [{self.navlink.title}]({self.navlink.link or ''}) |"
+            f"| {self.level} | {self.path} | "
+            f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 
 

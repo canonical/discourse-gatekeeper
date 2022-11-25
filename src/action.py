@@ -264,7 +264,7 @@ def _run_index(
     if draft_mode:
         report = types_.ActionReport(
             table_row=None,
-            url=DRAFT_NAVLINK_LINK,
+            url=DRAFT_NAVLINK_LINK if action.action == types_.Action.CREATE else action.url,
             result=types_.ActionResult.SKIP,
             reason=DRAFT_MODE_REASON,
         )

@@ -267,6 +267,14 @@ async def discourse_remove_rate_limits(discourse_main_api_key, discourse_hostnam
         "max_topics_in_first_day": "1000",
         "max_post_deletions_per_minute": "1000",
         "max_post_deletions_per_day": "1000",
+        "min_post_length": "1",
+        "min_first_post_length": "1",
+        "body_min_entropy": "0",
+        "min_topic_title_length": "1",
+        "title_min_entropy": "0",
+        "title_prettify": "false",
+        "allow_duplicate_topic_titles": "false",
+        "min_title_similar_length": "1000000",
     }
     for setting, value in settings.items():
         response = requests.put(

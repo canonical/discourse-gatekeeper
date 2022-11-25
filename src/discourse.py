@@ -170,7 +170,9 @@ class Discourse:
         try:
             topic = self._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError(f"Error retrieving topic, {url=!r}") from discourse_error
+            raise DiscourseError(
+                f"Error retrieving topic, {url=!r}, {discourse_error=}"
+            ) from discourse_error
 
         try:
             first_post = next(
@@ -304,7 +306,7 @@ class Discourse:
             )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
-                f"Error creating the topic, {title=!r}, {content=!r}"
+                f"Error creating the topic, {title=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
 
         topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
@@ -326,7 +328,9 @@ class Discourse:
         try:
             self._client.delete_topic(topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError(f"Error deleting the topic, {url=!r}") from discourse_error
+            raise DiscourseError(
+                f"Error deleting the topic, {url=!r}, {discourse_error=}"
+            ) from discourse_error
 
     def update_topic(
         self, url: str, content: str, edit_reason: str = "Charm documentation updated"
@@ -350,7 +354,7 @@ class Discourse:
             self._client.update_post(post_id=post_id, content=content, edit_reason=edit_reason)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
-                f"Error updating the topic, {url=!r}, {content=!r}"
+                f"Error updating the topic, {url=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
 
 
