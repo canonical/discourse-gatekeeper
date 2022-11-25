@@ -297,18 +297,19 @@ def run_all(
     Returns:
         The table rows for the navigation table.
     """
-    table_rows = (
-        table_row
-        for action in actions
-        if (
-            table_row := _run_one(
-                action=action,
-                discourse=discourse,
-                draft_mode=draft_mode,
-                delete_pages=delete_pages,
-            )
+    action_reports = [
+        _run_one(
+            action=action,
+            discourse=discourse,
+            draft_mode=draft_mode,
+            delete_pages=delete_pages,
         )
-        is not None
-    )
+        for action in actions
+    ]
+    table_rows = (report.table_row for report in action_reports if report.table_row is not None)
     index_action = reconcile.index_page(index=index, table_rows=table_rows)
-    _run_index(action=index_action, discourse=discourse, draft_mode=draft_mode)
+    index_action_report = _run_index(
+        action=index_action, discourse=discourse, draft_mode=draft_mode
+    )
+    action_reports.append(index_action_report)
+    return action_reports

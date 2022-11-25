@@ -39,25 +39,25 @@ def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
         content=None,
     )
 
-    returned_action_report = action._create(
+    returned_report = action._create(
         action=create_action, discourse=mocked_discourse, draft_mode=draft_mode
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {draft_mode}" in caplog.text
     mocked_discourse.create_topic.assert_not_called()
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink.title == navlink_title
-    assert returned_action_report.table_row.navlink.link is None
-    assert returned_action_report.url is None
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link is None
+    assert returned_report.url is None
     assert (
-        returned_action_report.result == src_types.ActionResult.SKIP
+        returned_report.result == src_types.ActionResult.SKIP
         if draft_mode
         else src_types.ActionResult.SUCCESS
     )
-    assert returned_action_report.reason == (action.DRAFT_MODE_REASON if draft_mode else None)
+    assert returned_report.reason == (action.DRAFT_MODE_REASON if draft_mode else None)
 
 
 def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
@@ -79,21 +79,21 @@ def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
         content="content 1",
     )
 
-    returned_action_report = action._create(
+    returned_report = action._create(
         action=create_action, discourse=mocked_discourse, draft_mode=True
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {True}" in caplog.text
     mocked_discourse.create_topic.assert_not_called()
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink.title == navlink_title
-    assert returned_action_report.table_row.navlink.link == action.DRAFT_NAVLINK_LINK
-    assert returned_action_report.url == action.DRAFT_NAVLINK_LINK
-    assert returned_action_report.result == src_types.ActionResult.SKIP
-    assert returned_action_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == action.DRAFT_NAVLINK_LINK
+    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.result == src_types.ActionResult.SKIP
+    assert returned_report.reason == action.DRAFT_MODE_REASON
 
 
 def test__create_file_fail(caplog: pytest.LogCaptureFixture):
@@ -118,20 +118,20 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
         content=content,
     )
 
-    returned_action_report = action._create(
+    returned_report = action._create(
         action=create_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink.title == navlink_title
-    assert returned_action_report.table_row.navlink.link == action.FAIL_NAVLINK_LINK
-    assert returned_action_report.url == action.FAIL_NAVLINK_LINK
-    assert returned_action_report.result == src_types.ActionResult.FAIL
-    assert returned_action_report.reason == str(error)
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == action.FAIL_NAVLINK_LINK
+    assert returned_report.url == action.FAIL_NAVLINK_LINK
+    assert returned_report.result == src_types.ActionResult.FAIL
+    assert returned_report.reason == str(error)
 
 
 def test__create_file(caplog: pytest.LogCaptureFixture):
@@ -156,20 +156,20 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
         content=content,
     )
 
-    returned_action_report = action._create(
+    returned_report = action._create(
         action=create_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink.title == navlink_title
-    assert returned_action_report.table_row.navlink.link == url
-    assert returned_action_report.url == url
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == url
+    assert returned_report.url == url
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 # Pylint diesn't understand how the walrus operator works
@@ -214,13 +214,13 @@ def test__noop(
     """
     caplog.set_level(logging.INFO)
 
-    returned_action_report = action._noop(action=noop_action)
+    returned_report = action._noop(action=noop_action)
 
     assert str(noop_action) in caplog.text
-    assert returned_action_report.table_row == expected_table_row
-    assert returned_action_report.url == expected_table_row.navlink.link
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row == expected_table_row
+    assert returned_report.url == expected_table_row.navlink.link
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 @pytest.mark.parametrize(
@@ -248,24 +248,24 @@ def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old=None, new=None),
     )
 
-    returned_action_report = action._update(
+    returned_report = action._update(
         action=update_action, discourse=mocked_discourse, draft_mode=draft_mode
     )
 
     assert str(update_action) in caplog.text
     assert f"draft mode: {draft_mode}" in caplog.text
     mocked_discourse.update_topic.assert_not_called()
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_action_report.url is None
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.url is None
     assert (
-        returned_action_report.result == src_types.ActionResult.SKIP
+        returned_report.result == src_types.ActionResult.SKIP
         if draft_mode
         else src_types.ActionResult.SUCCESS
     )
-    assert returned_action_report.reason == (action.DRAFT_MODE_REASON if draft_mode else None)
+    assert returned_report.reason == (action.DRAFT_MODE_REASON if draft_mode else None)
 
 
 def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
@@ -289,20 +289,20 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
 
-    returned_action_report = action._update(
+    returned_report = action._update(
         action=update_action, discourse=mocked_discourse, draft_mode=True
     )
 
     assert str(update_action) in caplog.text
     assert f"draft mode: {True}" in caplog.text
     mocked_discourse.update_topic.assert_not_called()
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_action_report.url == action.DRAFT_NAVLINK_LINK
-    assert returned_action_report.result == src_types.ActionResult.SKIP
-    assert returned_action_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.result == src_types.ActionResult.SKIP
+    assert returned_report.reason == action.DRAFT_MODE_REASON
 
 
 def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
@@ -329,20 +329,20 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old=content, new=content),
     )
 
-    returned_action_report = action._update(
+    returned_report = action._update(
         action=update_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(update_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.update_topic.assert_not_called()
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_action_report.url == link
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.url == link
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogCaptureFixture):
@@ -369,7 +369,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
 
-    returned_action_report = action._update(
+    returned_report = action._update(
         action=update_action, discourse=mocked_discourse, draft_mode=False
     )
 
@@ -378,13 +378,13 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new
     )
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_action_report.url == link
-    assert returned_action_report.result == src_types.ActionResult.FAIL
-    assert returned_action_report.reason == str(error)
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.url == link
+    assert returned_report.result == src_types.ActionResult.FAIL
+    assert returned_report.reason == str(error)
 
 
 def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
@@ -409,7 +409,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
 
-    returned_action_report = action._update(
+    returned_report = action._update(
         action=update_action, discourse=mocked_discourse, draft_mode=False
     )
 
@@ -418,13 +418,13 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new
     )
-    assert returned_action_report.table_row is not None
-    assert returned_action_report.table_row.level == level
-    assert returned_action_report.table_row.path == path
-    assert returned_action_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_action_report.url == link
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.url == link
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 def test__update_file_navlink_content_change_error():
@@ -495,7 +495,7 @@ def test__delete_not_delete(
         content="content 1",
     )
 
-    returned_action_report = action._delete(
+    returned_report = action._delete(
         action=delete_action,
         discourse=mocked_discourse,
         draft_mode=draft_mode,
@@ -506,10 +506,10 @@ def test__delete_not_delete(
     assert f"draft mode: {draft_mode}" in caplog.text
     assert f"delete pages: {delete_pages}" in caplog.text
     mocked_discourse.delete_topic.assert_not_called()
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == navlink_link
-    assert returned_action_report.result == expected_result
-    assert returned_action_report.reason == expected_reason
+    assert returned_report.table_row is None
+    assert returned_report.url == navlink_link
+    assert returned_report.result == expected_result
+    assert returned_report.reason == expected_reason
 
 
 def test__delete_error(caplog: pytest.LogCaptureFixture):
@@ -531,7 +531,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
         content="content 1",
     )
 
-    returned_action_report = action._delete(
+    returned_report = action._delete(
         action=delete_action,
         discourse=mocked_discourse,
         draft_mode=False,
@@ -542,10 +542,10 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     assert f"draft mode: {False}" in caplog.text
     assert f"delete pages: {True}" in caplog.text
     mocked_discourse.delete_topic.assert_called_once_with(url=link)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == link
-    assert returned_action_report.result == src_types.ActionResult.FAIL
-    assert returned_action_report.reason == str(error)
+    assert returned_report.table_row is None
+    assert returned_report.url == link
+    assert returned_report.result == src_types.ActionResult.FAIL
+    assert returned_report.reason == str(error)
 
 
 def test__delete(caplog: pytest.LogCaptureFixture):
@@ -565,7 +565,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         content="content 1",
     )
 
-    returned_action_report = action._delete(
+    returned_report = action._delete(
         action=delete_action,
         discourse=mocked_discourse,
         draft_mode=False,
@@ -576,10 +576,10 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     assert f"draft mode: {False}" in caplog.text
     assert f"delete pages: {True}" in caplog.text
     mocked_discourse.delete_topic.assert_called_once_with(url=link)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == link
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is None
+    assert returned_report.url == link
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 @pytest.mark.parametrize(
@@ -716,17 +716,17 @@ def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
         content=(content := "content 1"),
     )
 
-    returned_action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(index_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=title, content=content)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url is None
-    assert returned_action_report.result == src_types.ActionResult.FAIL
-    assert returned_action_report.reason == str(error)
+    assert returned_report.table_row is None
+    assert returned_report.url is None
+    assert returned_report.result == src_types.ActionResult.FAIL
+    assert returned_report.reason == str(error)
 
 
 def test__run_index_create(caplog: pytest.LogCaptureFixture):
@@ -745,17 +745,17 @@ def test__run_index_create(caplog: pytest.LogCaptureFixture):
         content=(content := "content 1"),
     )
 
-    returned_action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(index_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=title, content=content)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == url
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is None
+    assert returned_report.url == url
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 def test__run_index_noop(caplog: pytest.LogCaptureFixture):
@@ -771,7 +771,7 @@ def test__run_index_noop(caplog: pytest.LogCaptureFixture):
         action=src_types.Action.NOOP, url=(url := "url 1"), content="content 1"
     )
 
-    returned_action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
@@ -779,10 +779,10 @@ def test__run_index_noop(caplog: pytest.LogCaptureFixture):
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_not_called()
     mocked_discourse.update_topic.assert_not_called()
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == url
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is None
+    assert returned_report.url == url
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
 
 
 def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
@@ -801,17 +801,17 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old="content 1", new=(content := "content 2")),
     )
 
-    returned_action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(index_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == url
-    assert returned_action_report.result == src_types.ActionResult.FAIL
-    assert returned_action_report.reason == str(error)
+    assert returned_report.table_row is None
+    assert returned_report.url == url
+    assert returned_report.result == src_types.ActionResult.FAIL
+    assert returned_report.reason == str(error)
 
 
 def test__run_index_update(caplog: pytest.LogCaptureFixture):
@@ -828,14 +828,108 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         content_change=src_types.ContentChange(old="content 1", new=(content := "content 2")),
     )
 
-    returned_action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
     assert str(index_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
-    assert returned_action_report.table_row is None
-    assert returned_action_report.url == url
-    assert returned_action_report.result == src_types.ActionResult.SUCCESS
-    assert returned_action_report.reason is None
+    assert returned_report.table_row is None
+    assert returned_report.url == url
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
+
+
+@pytest.mark.parametrize(
+    "actions, expected_reports",
+    [
+        pytest.param((), [], id="empty"),
+        pytest.param(
+            (
+                src_types.NoopAction(
+                    action=src_types.Action.NOOP,
+                    level=(level := 1),
+                    path=(path := "path 1"),
+                    navlink=(
+                        navlink := src_types.Navlink(title="title 1", link=(link := "link 1"))
+                    ),
+                    content="content 1",
+                ),
+            ),
+            [
+                src_types.ActionReport(
+                    table_row=src_types.TableRow(level=level, path=path, navlink=navlink),
+                    url=link,
+                    result=src_types.ActionResult.SUCCESS,
+                    reason=None,
+                )
+            ],
+            id="single",
+        ),
+        pytest.param(
+            (
+                src_types.NoopAction(
+                    action=src_types.Action.NOOP,
+                    level=(level_1 := 1),
+                    path=(path_1 := "path 1"),
+                    navlink=(
+                        navlink_1 := src_types.Navlink(title="title 1", link=(link_1 := "link 1"))
+                    ),
+                    content="content 1",
+                ),
+                src_types.NoopAction(
+                    action=src_types.Action.NOOP,
+                    level=(level_2 := 2),
+                    path=(path_2 := "path 2"),
+                    navlink=(
+                        navlink_2 := src_types.Navlink(title="title 2", link=(link_2 := "link 2"))
+                    ),
+                    content="content 2",
+                ),
+            ),
+            [
+                src_types.ActionReport(
+                    table_row=src_types.TableRow(level=level_1, path=path_1, navlink=navlink_1),
+                    url=link_1,
+                    result=src_types.ActionResult.SUCCESS,
+                    reason=None,
+                ),
+                src_types.ActionReport(
+                    table_row=src_types.TableRow(level=level_2, path=path_2, navlink=navlink_2),
+                    url=link_2,
+                    result=src_types.ActionResult.SUCCESS,
+                    reason=None,
+                ),
+            ],
+            id="multiple",
+        ),
+    ],
+)
+def test_run_all(
+    actions: tuple[src_types.AnyAction, ...], expected_reports: list[src_types.ActionReport]
+):
+    """
+    arrange: given actions and index
+    act: when run_all is called with the actions
+    assert: then the expected actions are returned.
+    """
+    index = src_types.Index(server=None, local=src_types.IndexFile(title="title 1", content=None))
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.create_topic.return_value = url
+
+    returned_reports = action.run_all(
+        actions=actions,
+        index=index,
+        discourse=mocked_discourse,
+        draft_mode=False,
+        delete_pages=True,
+    )
+
+    expected_reports.append(
+        src_types.ActionReport(
+            table_row=None, url=url, result=src_types.ActionResult.SUCCESS, reason=None
+        )
+    )
+    assert returned_reports == expected_reports
