@@ -112,6 +112,12 @@ from src.exceptions import DiscourseError, InputError
             None,
             id="valid trailing /",
         ),
+        pytest.param(
+            "/t/slug/1",
+            True,
+            None,
+            id="valid no protocol host",
+        ),
     ],
 )
 def test_topic_url_valid(
@@ -619,6 +625,11 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
     monkeypatch.setattr(requests, "get", mocked_get)
 
     url = f"{base_path}/t/slug/1"
+    returned_content = discourse.retrieve_topic(url=url)
+
+    assert returned_content == content
+
+    url = "/t/slug/1"
     returned_content = discourse.retrieve_topic(url=url)
 
     assert returned_content == content

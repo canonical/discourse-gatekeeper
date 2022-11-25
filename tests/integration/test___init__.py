@@ -116,7 +116,6 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert "'skip'" in caplog.text
 
     # 5. docs with a documentation file added
-    pytest.set_trace()
     caplog.clear()
 
     urls_with_actions = run(
@@ -134,6 +133,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert f"| 1 | {doc_table_key} | [{doc_content}]({urlparse(doc_url).path}) |" in index_topic
 
     # 6. docs with a documentation file updated in draft mode
+    pytest.set_trace()
     caplog.clear()
     docs_file.write_text(doc_content := "doc content 2")
 

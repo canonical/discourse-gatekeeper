@@ -97,7 +97,7 @@ class Discourse:
             Whether the URL is a valid topic URL.
 
         """
-        if not url.startswith(self._base_path):
+        if not url.startswith(self._base_path) and not url.startswith("/t/"):
             return _ValidationResultInvalid(
                 "The base path is different to the expected base path, "
                 f"expected: {self._base_path}, {url=}"
