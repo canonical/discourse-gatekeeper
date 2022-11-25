@@ -134,7 +134,8 @@ def _run_one(
                 draft_mode=draft_mode,
                 delete_pages=delete_pages,
             )
-        case _:
+        # Edge case that should not be possible
+        case _:  # pragma: no cover
             raise exceptions.ActionError(
                 f"internal error, no implementation for action, {action=!r}"
             )

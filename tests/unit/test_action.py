@@ -8,10 +8,11 @@
 
 import logging
 from unittest import mock
+import types
 
 import pytest
 
-from src import action, discourse, types_, exceptions
+from src import action, discourse, types_ as src_types, exceptions
 
 
 @pytest.mark.parametrize(
@@ -29,8 +30,8 @@ def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     level = 1
     path = "path 1"
     navlink_title = "title 1"
-    create_action = types_.CreateAction(
-        action=types_.Action.CREATE,
+    create_action = src_types.CreateAction(
+        action=src_types.Action.CREATE,
         level=level,
         path=path,
         navlink_title=navlink_title,
@@ -61,8 +62,8 @@ def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
     level = 1
     path = "path 1"
     navlink_title = "title 1"
-    create_action = types_.CreateAction(
-        action=types_.Action.CREATE,
+    create_action = src_types.CreateAction(
+        action=src_types.Action.CREATE,
         level=level,
         path=path,
         navlink_title=navlink_title,
@@ -96,8 +97,8 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     path = "path 1"
     navlink_title = "title 1"
     content = "content 1"
-    create_action = types_.CreateAction(
-        action=types_.Action.CREATE,
+    create_action = src_types.CreateAction(
+        action=src_types.Action.CREATE,
         level=level,
         path=path,
         navlink_title=navlink_title,
@@ -121,32 +122,32 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     "noop_action, expected_table_row",
     [
         pytest.param(
-            types_.NoopAction(
-                action=types_.Action.NOOP,
+            src_types.NoopAction(
+                action=src_types.Action.NOOP,
                 level=(level := 1),
                 path=(path := "path 1"),
-                navlink=(navlink := types_.Navlink(title="title 1", link=None)),
+                navlink=(navlink := src_types.Navlink(title="title 1", link=None)),
                 content=None,
             ),
-            types_.TableRow(level=level, path=path, navlink=navlink),
+            src_types.TableRow(level=level, path=path, navlink=navlink),
             id="directory",
         ),
         pytest.param(
-            types_.NoopAction(
-                action=types_.Action.NOOP,
+            src_types.NoopAction(
+                action=src_types.Action.NOOP,
                 level=(level := 1),
                 path=(path := "path 1"),
-                navlink=(navlink := types_.Navlink(title="title 1", link="link 1")),
+                navlink=(navlink := src_types.Navlink(title="title 1", link="link 1")),
                 content="content 1",
             ),
-            types_.TableRow(level=level, path=path, navlink=navlink),
+            src_types.TableRow(level=level, path=path, navlink=navlink),
             id="file",
         ),
     ],
 )
 def test__noop(
-    noop_action: types_.NoopAction,
-    expected_table_row: types_.TableRow,
+    noop_action: src_types.NoopAction,
+    expected_table_row: src_types.TableRow,
     caplog: pytest.LogCaptureFixture,
 ):
     """
@@ -176,15 +177,15 @@ def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     level = 1
     path = "path 1"
-    update_action = types_.UpdateAction(
-        action=types_.Action.UPDATE,
+    update_action = src_types.UpdateAction(
+        action=src_types.Action.UPDATE,
         level=level,
         path=path,
-        navlink_change=types_.NavlinkChange(
-            old=types_.Navlink(title="title 1", link=None),
-            new=types_.Navlink(title="title 2", link=None),
+        navlink_change=src_types.NavlinkChange(
+            old=src_types.Navlink(title="title 1", link=None),
+            new=src_types.Navlink(title="title 2", link=None),
         ),
-        content_change=types_.ContentChange(old=None, new=None),
+        content_change=src_types.ContentChange(old=None, new=None),
     )
 
     returned_table_row = action._update(
@@ -209,15 +210,15 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     level = 1
     path = "path 1"
-    update_action = types_.UpdateAction(
-        action=types_.Action.UPDATE,
+    update_action = src_types.UpdateAction(
+        action=src_types.Action.UPDATE,
         level=level,
         path=path,
-        navlink_change=types_.NavlinkChange(
-            old=types_.Navlink(title="title 1", link="link 1"),
-            new=types_.Navlink(title="title 2", link="link 2"),
+        navlink_change=src_types.NavlinkChange(
+            old=src_types.Navlink(title="title 1", link="link 1"),
+            new=src_types.Navlink(title="title 2", link="link 2"),
         ),
-        content_change=types_.ContentChange(old="content 1", new="content 2"),
+        content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
 
     returned_table_row = action._update(
@@ -245,15 +246,15 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     path = "path 1"
     content = "content 1"
     link = "link 1"
-    update_action = types_.UpdateAction(
-        action=types_.Action.UPDATE,
+    update_action = src_types.UpdateAction(
+        action=src_types.Action.UPDATE,
         level=level,
         path=path,
-        navlink_change=types_.NavlinkChange(
-            old=types_.Navlink(title="title 1", link=link),
-            new=types_.Navlink(title="title 2", link=link),
+        navlink_change=src_types.NavlinkChange(
+            old=src_types.Navlink(title="title 1", link=link),
+            new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=types_.ContentChange(old=content, new=content),
+        content_change=src_types.ContentChange(old=content, new=content),
     )
 
     returned_table_row = action._update(
@@ -279,15 +280,15 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     level = 1
     path = "path 1"
     link = "link 1"
-    update_action = types_.UpdateAction(
-        action=types_.Action.UPDATE,
+    update_action = src_types.UpdateAction(
+        action=src_types.Action.UPDATE,
         level=level,
         path=path,
-        navlink_change=types_.NavlinkChange(
-            old=types_.Navlink(title="title 1", link=link),
-            new=types_.Navlink(title="title 2", link=link),
+        navlink_change=src_types.NavlinkChange(
+            old=src_types.Navlink(title="title 1", link=link),
+            new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=types_.ContentChange(old="content 1", new="content 2"),
+        content_change=src_types.ContentChange(old="content 1", new="content 2"),
     )
 
     returned_table_row = action._update(
@@ -312,15 +313,15 @@ def test__update_file_navlink_content_change_error():
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     link = "link 1"
-    update_action = types_.UpdateAction(
-        action=types_.Action.UPDATE,
+    update_action = src_types.UpdateAction(
+        action=src_types.Action.UPDATE,
         level=1,
         path="path 1",
-        navlink_change=types_.NavlinkChange(
-            old=types_.Navlink(title="title 1", link=link),
-            new=types_.Navlink(title="title 2", link=link),
+        navlink_change=src_types.NavlinkChange(
+            old=src_types.Navlink(title="title 1", link=link),
+            new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=types_.ContentChange(old="content 1", new=None),
+        content_change=src_types.ContentChange(old="content 1", new=None),
     )
 
     with pytest.raises(exceptions.ActionError):
@@ -348,11 +349,11 @@ def test__delete_not_delete(
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    delete_action = types_.DeleteAction(
-        action=types_.Action.DELETE,
+    delete_action = src_types.DeleteAction(
+        action=src_types.Action.DELETE,
         level=1,
         path="path 1",
-        navlink=types_.Navlink(title="title 1", link=navlink_link),
+        navlink=src_types.Navlink(title="title 1", link=navlink_link),
         content="content 1",
     )
 
@@ -378,11 +379,11 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     link = "link 1"
-    delete_action = types_.DeleteAction(
-        action=types_.Action.DELETE,
+    delete_action = src_types.DeleteAction(
+        action=src_types.Action.DELETE,
         level=1,
         path="path 1",
-        navlink=types_.Navlink(title="title 1", link=link),
+        navlink=src_types.Navlink(title="title 1", link=link),
         content="content 1",
     )
 
@@ -397,3 +398,71 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     assert f"draft mode: {False}" in caplog.text
     assert f"delete pages: {True}" in caplog.text
     mocked_discourse.delete_topic.assert_called_once_with(url=link)
+
+
+@pytest.mark.parametrize(
+    "test_action, expected_return_type",
+    [
+        pytest.param(
+            src_types.CreateAction(
+                action=src_types.Action.CREATE,
+                level=1,
+                path="path 1",
+                navlink_title="title 1",
+                content=None,
+            ),
+            src_types.TableRow,
+            id="create",
+        ),
+        pytest.param(
+            src_types.NoopAction(
+                action=src_types.Action.NOOP,
+                level=1,
+                path="path 1",
+                navlink=src_types.Navlink(title="title 1", link=None),
+                content=None,
+            ),
+            src_types.TableRow,
+            id="noop",
+        ),
+        pytest.param(
+            src_types.UpdateAction(
+                action=src_types.Action.UPDATE,
+                level=1,
+                path="path 1",
+                navlink_change=src_types.NavlinkChange(
+                    old=src_types.Navlink(title="title 1", link=None),
+                    new=src_types.Navlink(title="title 1", link=None),
+                ),
+                content_change=src_types.ContentChange(old=None, new=None),
+            ),
+            src_types.TableRow,
+            id="update",
+        ),
+        pytest.param(
+            src_types.DeleteAction(
+                action=src_types.Action.DELETE,
+                level=1,
+                path="path 1",
+                navlink=src_types.Navlink(title="title 1", link=None),
+                content=None,
+            ),
+            types.NoneType,
+            id="delete",
+        ),
+    ],
+)
+def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
+    """
+    arrange: given action and mocked discourse
+    act: when _run_one is called with the action and mocked discourse
+    assert: then then expected value is returned and any expected function calls are on the mocked
+        discourse
+    """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    returned_value = action._run_one(
+        action=test_action, discourse=mocked_discourse, draft_mode=False, delete_pages=True
+    )
+
+    assert isinstance(returned_value, expected_return_type)
