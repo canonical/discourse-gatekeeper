@@ -26,7 +26,7 @@ def _create(
         draft_mode: If enabled, only log the action that would be taken.
 
     Returns:
-        The navigation table row to add to the navigation table.
+        A report on the outcome of executing the action.
     """
     logging.info("draft mode: %s, action: %s", draft_mode, action)
 
@@ -61,6 +61,9 @@ def _noop(action: types_.NoopAction) -> types_.ActionReport:
 
     Args:
         action: The noop action details.
+
+    Returns:
+        A report on the outcome of executing the action.
     """
     logging.info("action: %s", action)
 
@@ -84,7 +87,10 @@ def _update(
         draft_mode: If enabled, only log the action that would be taken.
 
     Returns:
-        The updated navigation table row to for the navigation table.
+        A report on the outcome of executing the action.
+
+    Raises:
+        ActionError: if the new content for a page is None.
     """
     logging.info("draft mode: %s, action: %s", draft_mode, action)
 
@@ -134,6 +140,12 @@ def _delete(
         discourse: A client to the documentation server.
         draft_mode: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
+
+    Returns:
+        A report on the outcome of executing the action.
+
+    Raises:
+        ActionError: If the link for a page to delete is None.
     """
     logging.info("draft mode: %s, delete pages: %s, action: %s", draft_mode, delete_pages, action)
 
@@ -197,7 +209,10 @@ def _run_one(
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
-        The table row for the navigation table or None if the action does not require a row.
+        A report on the outcome of executing the action.
+
+    Raises:
+        ActionError: if an action that is not handled is passed to the function.
     """
     match action.action:
         case types_.Action.CREATE:
@@ -234,6 +249,12 @@ def _run_index(
         action: The actions to take.
         discourse: A client to the documentation server.
         draft_mode: If enabled, only log the action that would be taken.
+
+    Returns:
+        A report on the outcome of executing the action.
+
+    Raises:
+        ActionError: if an action that is not handled is passed to the function.
     """
     logging.info("draft mode: %s, action: %s", draft_mode, action)
 
@@ -303,7 +324,7 @@ def run_all(
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
-        The table rows for the navigation table.
+        The reports of taking all the requested action and the index action report.
     """
     action_reports = [
         _run_one(

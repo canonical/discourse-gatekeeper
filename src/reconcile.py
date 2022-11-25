@@ -142,6 +142,9 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
     Returns:
         A page delete action.
+
+    Raises:
+        ReconcilliationError: if the link for a page is None.
     """
     # Group case
     if table_row.is_group:
@@ -172,12 +175,6 @@ def _calculate_action(
     path_info: types_.PathInfo | None, table_row: types_.TableRow | None, discourse: Discourse
 ) -> types_.AnyAction:
     """Calculate the required action for a page.
-
-    The action is based on a path in the docs directory and a navigation table entry:
-        1. If both path_info and tabke_row are None, raise an error.
-        2. If path_info is not None and table_row is None, return a create action.
-        2. If table_row is not None and path_info is None, return a delete action.
-        2. If both table_row and path_info are not None, return an update action.
 
     Args:
         path_info: Information about the local documentation file.

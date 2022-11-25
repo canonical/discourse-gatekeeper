@@ -24,18 +24,15 @@ def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a directory, draft mode and mocked discourse
     act: when action is passed to _create with draft_mode
-    assert: then no topic is created, the action is logged and the expected report is returned.
+    assert: then no topic is created, the action is logged and a skip report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
-    navlink_title = "title 1"
     create_action = src_types.CreateAction(
         action=src_types.Action.CREATE,
-        level=level,
-        path=path,
-        navlink_title=navlink_title,
+        level=(level := 1),
+        path=(path := "path 1"),
+        navlink_title=(navlink_title := "title 1"),
         content=None,
     )
 
@@ -68,14 +65,11 @@ def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
-    navlink_title = "title 1"
     create_action = src_types.CreateAction(
         action=src_types.Action.CREATE,
-        level=level,
-        path=path,
-        navlink_title=navlink_title,
+        level=(level := 1),
+        path=(path := "path 1"),
+        navlink_title=(navlink_title := "title 1"),
         content="content 1",
     )
 
@@ -104,18 +98,13 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    error = exceptions.DiscourseError("failed")
-    mocked_discourse.create_topic.side_effect = error
-    level = 1
-    path = "path 1"
-    navlink_title = "title 1"
-    content = "content 1"
+    mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     create_action = src_types.CreateAction(
         action=src_types.Action.CREATE,
-        level=level,
-        path=path,
-        navlink_title=navlink_title,
-        content=content,
+        level=(level := 1),
+        path=(path := "path 1"),
+        navlink_title=(navlink_title := "title 1"),
+        content=(content := "content 1"),
     )
 
     returned_report = action._create(
@@ -143,18 +132,13 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    url = "url 1"
-    mocked_discourse.create_topic.return_value = url
-    level = 1
-    path = "path 1"
-    navlink_title = "title 1"
-    content = "content 1"
+    mocked_discourse.create_topic.return_value = (url := "url 1")
     create_action = src_types.CreateAction(
         action=src_types.Action.CREATE,
-        level=level,
-        path=path,
-        navlink_title=navlink_title,
-        content=content,
+        level=(level := 1),
+        path=(path := "path 1"),
+        navlink_title=(navlink_title := "title 1"),
+        content=(content := "content 1"),
     )
 
     returned_report = action._create(
@@ -237,12 +221,10 @@ def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
-        level=level,
-        path=path,
+        level=(level := 1),
+        path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=None),
             new=src_types.Navlink(title="title 2", link=None),
@@ -278,12 +260,10 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
-        level=level,
-        path=path,
+        level=(level := 1),
+        path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link="link 1"),
             new=src_types.Navlink(title="title 2", link="link 2"),
@@ -316,19 +296,15 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
-    content = "content 1"
-    link = "link 1"
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
-        level=level,
-        path=path,
+        level=(level := 1),
+        path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=link),
+            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old=content, new=content),
+        content_change=src_types.ContentChange(old=(content := "content 1"), new=content),
     )
 
     returned_report = action._update(
@@ -349,23 +325,20 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
 
 def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogCaptureFixture):
     """
-    arrange: given update action for a file where content has changed and mocked discourse
+    arrange: given update action for a file where content has changed and mocked discourse that
+        raises an error
     act: when action is passed to _update with draft_mode False
-    assert: then topic is updated, the action is logged and the expected table row is returned.
+    assert: then topic is updated, the action is logged and a fail report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    error = exceptions.DiscourseError("failed")
-    mocked_discourse.update_topic.side_effect = error
-    level = 1
-    path = "path 1"
-    link = "link 1"
+    mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
-        level=level,
-        path=path,
+        level=(level := 1),
+        path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=link),
+            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
@@ -393,19 +366,16 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file where content has changed and mocked discourse
     act: when action is passed to _update with draft_mode False
-    assert: then topic is updated, the action is logged and the expected table row is returned.
+    assert: then topic is updated, the action is logged and success report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    level = 1
-    path = "path 1"
-    link = "link 1"
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
-        level=level,
-        path=path,
+        level=(level := 1),
+        path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=link),
+            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(old="content 1", new="content 2"),
@@ -436,13 +406,12 @@ def test__update_file_navlink_content_change_error():
     assert: ActionError is raised.
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    link = "link 1"
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
         level=1,
         path="path 1",
         navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=link),
+            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(old="content 1", new=None),
@@ -524,14 +493,12 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    error = exceptions.DiscourseError("fail")
-    mocked_discourse.delete_topic.side_effect = error
-    link = "link 1"
+    mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     delete_action = src_types.DeleteAction(
         action=src_types.Action.DELETE,
         level=1,
         path="path 1",
-        navlink=src_types.Navlink(title="title 1", link=link),
+        navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
 
@@ -560,12 +527,11 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    link = "link 1"
     delete_action = src_types.DeleteAction(
         action=src_types.Action.DELETE,
         level=1,
         path="path 1",
-        navlink=src_types.Navlink(title="title 1", link=link),
+        navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
 
@@ -712,8 +678,7 @@ def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    error = exceptions.DiscourseError("failed")
-    mocked_discourse.create_topic.side_effect = error
+    mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     index_action = src_types.CreateIndexAction(
         action=src_types.Action.CREATE,
         title=(title := "title 1"),
@@ -741,8 +706,7 @@ def test__run_index_create(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    url = "url 1"
-    mocked_discourse.create_topic.return_value = url
+    mocked_discourse.create_topic.return_value = (url := "url 1")
     index_action = src_types.CreateIndexAction(
         action=src_types.Action.CREATE,
         title=(title := "title 1"),
@@ -797,8 +761,7 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    error = exceptions.DiscourseError("failed")
-    mocked_discourse.update_topic.side_effect = error
+    mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     index_action = src_types.UpdateIndexAction(
         action=src_types.Action.UPDATE,
         url=(url := "url 1"),
@@ -923,8 +886,7 @@ def test_run_all(
     """
     index = src_types.Index(server=None, local=src_types.IndexFile(title="title 1", content=None))
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    url = "url 1"
-    mocked_discourse.create_topic.return_value = url
+    mocked_discourse.create_topic.return_value = (url := "url 1")
 
     returned_reports = action.run_all(
         actions=actions,
