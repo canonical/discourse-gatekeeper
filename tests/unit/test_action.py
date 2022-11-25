@@ -620,7 +620,7 @@ def test__run_one(
     )
 
     assert isinstance(returned_report.table_row, expected_return_type)
-    assert str(returned_report) in caplog.text
+    assert f"report: {returned_report}" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -660,18 +660,19 @@ def test__run_index_draft_mode(
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
-    action_report = action._run_index(
+    returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, draft_mode=True
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {True}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.create_topic.assert_not_called()
     mocked_discourse.update_topic.assert_not_called()
-    assert action_report.table_row is None
-    assert action_report.url == action.DRAFT_NAVLINK_LINK
-    assert action_report.result == src_types.ActionResult.SKIP
-    assert action_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.table_row is None
+    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.result == src_types.ActionResult.SKIP
+    assert returned_report.reason == action.DRAFT_MODE_REASON
 
 
 def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
@@ -693,8 +694,9 @@ def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=title, content=content)
     assert returned_report.table_row is None
     assert returned_report.url is None
@@ -721,8 +723,9 @@ def test__run_index_create(caplog: pytest.LogCaptureFixture):
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=title, content=content)
     assert returned_report.table_row is None
     assert returned_report.url == url
@@ -747,8 +750,9 @@ def test__run_index_noop(caplog: pytest.LogCaptureFixture):
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.create_topic.assert_not_called()
     mocked_discourse.update_topic.assert_not_called()
     assert returned_report.table_row is None
@@ -776,8 +780,9 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
     assert returned_report.table_row is None
     assert returned_report.url == url
@@ -803,8 +808,9 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         action=index_action, discourse=mocked_discourse, draft_mode=False
     )
 
-    assert str(index_action) in caplog.text
+    assert f"action: {index_action}" in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert f"report: {returned_report}" in caplog.text
     mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
     assert returned_report.table_row is None
     assert returned_report.url == url
