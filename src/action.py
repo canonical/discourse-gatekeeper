@@ -17,7 +17,7 @@ NOT_DELETE_REASON = "delete_topics is false"
 
 def _create(
     action: types_.CreateAction, discourse: Discourse, draft_mode: bool
-) -> types_.ActionResult:
+) -> types_.ActionReport:
     """Execute a create action.
 
     Args:
@@ -56,7 +56,7 @@ def _create(
     return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
 
 
-def _noop(action: types_.NoopAction) -> types_.ActionResult:
+def _noop(action: types_.NoopAction) -> types_.ActionReport:
     """Execute a noop action.
 
     Args:
@@ -75,7 +75,7 @@ def _noop(action: types_.NoopAction) -> types_.ActionResult:
 
 def _update(
     action: types_.UpdateAction, discourse: Discourse, draft_mode: bool
-) -> types_.ActionResult:
+) -> types_.ActionReport:
     """Execute an update action.
 
     Args:
@@ -126,7 +126,7 @@ def _update(
 
 def _delete(
     action: types_.DeleteAction, discourse: Discourse, draft_mode: bool, delete_pages: bool
-) -> types_.ActionResult:
+) -> types_.ActionReport:
     """Execute a delete action.
 
     Args:
@@ -161,6 +161,11 @@ def _delete(
         )
 
     try:
+        # Edge case that should not be possible
+        if action.navlink.link is None:  # pragma: no cover
+            raise exceptions.ActionError(
+                f"internal error, url None for page to delete, {action=!r}"
+            )
         discourse.delete_topic(url=action.navlink.link)
         return types_.ActionReport(
             table_row=None,
@@ -182,7 +187,7 @@ def _run_one(
     discourse: Discourse,
     draft_mode: bool,
     delete_pages: bool,
-) -> types_.ActionResult:
+) -> types_.ActionReport:
     """Take the actions against the server.
 
     Args:
@@ -222,7 +227,7 @@ def _run_one(
 
 def _run_index(
     action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool
-) -> types_.ActionResult:
+) -> types_.ActionReport:
     """Take the index action against the server.
 
     Args:
@@ -242,9 +247,10 @@ def _run_index(
 
     match action.action:
         case types_.Action.CREATE:
-            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
-            assert isinstance(action, types_.CreateIndexAction)  # nosec
             try:
+                # To help mypy (same for the rest of the asserts), it is ok if the assert does not
+                # run
+                assert isinstance(action, types_.CreateIndexAction)  # nosec
                 url = discourse.create_topic(title=action.title, content=action.content)
                 return types_.ActionReport(
                     table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
@@ -254,17 +260,19 @@ def _run_index(
                     table_row=None, url=None, result=types_.ActionResult.FAIL, reason=str(exc)
                 )
         case types_.Action.NOOP:
+            assert isinstance(action, types_.NoopIndexAction)  # nosec
             return types_.ActionReport(
                 table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
             )
         case types_.Action.UPDATE:
-            assert isinstance(action, types_.UpdateIndexAction)  # nosec
             try:
+                assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 return types_.ActionReport(
                     table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
                 )
             except exceptions.DiscourseError as exc:
+                assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 return types_.ActionReport(
                     table_row=None,
                     url=action.url,

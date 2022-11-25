@@ -125,6 +125,7 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
+    assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink.title == navlink_title
@@ -163,6 +164,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
+    assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink.title == navlink_title
@@ -472,6 +474,8 @@ def test__update_file_navlink_content_change_error():
         pytest.param(False, True, None, src_types.ActionResult.SUCCESS, None, id="directory"),
     ],
 )
+# Simplifying the test would mean needing to write many more tests instead of parametrize
+# pylint: disable=too-many-arguments
 def test__delete_not_delete(
     draft_mode: bool,
     delete_pages: bool,
@@ -668,7 +672,7 @@ def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
             src_types.UpdateIndexAction(
                 action=src_types.Action.UPDATE,
                 url="url 1",
-                content_change=src_types.ContentChange(old="content 1", new="content 2"),
+                content_change=src_types.IndexContentChange(old="content 1", new="content 2"),
             ),
             id="update",
         ),
@@ -798,7 +802,7 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
     index_action = src_types.UpdateIndexAction(
         action=src_types.Action.UPDATE,
         url=(url := "url 1"),
-        content_change=src_types.ContentChange(old="content 1", new=(content := "content 2")),
+        content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
     )
 
     returned_report = action._run_index(
@@ -825,7 +829,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     index_action = src_types.UpdateIndexAction(
         action=src_types.Action.UPDATE,
         url=(url := "url 1"),
-        content_change=src_types.ContentChange(old="content 1", new=(content := "content 2")),
+        content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
     )
 
     returned_report = action._run_index(
@@ -841,6 +845,8 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     assert returned_report.reason is None
 
 
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable,too-many-locals
 @pytest.mark.parametrize(
     "actions, expected_reports",
     [
@@ -906,6 +912,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         ),
     ],
 )
+# pylint: enable=undefined-variable,unused-variable
 def test_run_all(
     actions: tuple[src_types.AnyAction, ...], expected_reports: list[src_types.ActionReport]
 ):
@@ -933,3 +940,7 @@ def test_run_all(
         )
     )
     assert returned_reports == expected_reports
+
+
+# Need this after the function as locals from parametrize also go to function
+# pylint: enable=too-many-locals
