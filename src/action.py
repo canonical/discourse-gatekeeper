@@ -218,16 +218,16 @@ def _run_one(
         case types_.Action.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
-            return _create(action=action, discourse=discourse, draft_mode=draft_mode)
+            report = _create(action=action, discourse=discourse, draft_mode=draft_mode)
         case types_.Action.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
-            return _noop(action=action)
+            report = _noop(action=action)
         case types_.Action.UPDATE:
             assert isinstance(action, types_.UpdateAction)  # nosec
-            return _update(action=action, discourse=discourse, draft_mode=draft_mode)
+            report = _update(action=action, discourse=discourse, draft_mode=draft_mode)
         case types_.Action.DELETE:
             assert isinstance(action, types_.DeleteAction)  # nosec
-            return _delete(
+            report = _delete(
                 action=action,
                 discourse=discourse,
                 draft_mode=draft_mode,
@@ -238,6 +238,9 @@ def _run_one(
             raise exceptions.ActionError(
                 f"internal error, no implementation for action, {action=!r}"
             )
+
+    logging.info("report: %s", report)
+    return report
 
 
 def _run_index(

@@ -604,12 +604,15 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         ),
     ],
 )
-def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
+def test__run_one(
+    test_action: src_types.AnyAction, expected_return_type: type, caplog: pytest.LogCaptureFixture
+):
     """
     arrange: given action
     act: when _run_one is called with the action
     assert: then the expected report is returned
     """
+    caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
     returned_report = action._run_one(
@@ -617,6 +620,7 @@ def test__run_one(test_action: src_types.AnyAction, expected_return_type: type):
     )
 
     assert isinstance(returned_report.table_row, expected_return_type)
+    assert str(returned_report) in caplog.text
 
 
 @pytest.mark.parametrize(
