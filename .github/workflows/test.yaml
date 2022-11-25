@@ -14,6 +14,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update && sudo apt install python3-pip
-          pip3 install pyupgrade
+          pip3 install pyupgrade refurb
       - name: Check for any code improvements
-        run: find . -name '*.py' | xargs pyupgrade --py310-plus
+        run: |
+          find . -name '*.py' | xargs pyupgrade --py310-plus
+          find . -name '*.py' | xargs refurb

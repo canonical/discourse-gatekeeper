@@ -23,7 +23,7 @@ from src import types_ as src_types
 def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a directory, draft mode and mocked discourse
-    act: wnen action is passed to _create with draft_mode
+    act: when action is passed to _create with draft_mode
     assert: then no topic is created, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -55,7 +55,7 @@ def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
 def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a file and mocked discourse
-    act: wnen action is passed to _create with draft_mode True
+    act: when action is passed to _create with draft_mode True
     assert: then no topic is created, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -87,7 +87,7 @@ def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
 def test__create_file(caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a file and mocked discourse
-    act: wnen action is passed to _create with draft_mode False
+    act: when action is passed to _create with draft_mode False
     assert: then no topic is created, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -119,6 +119,8 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     assert returned_table_row.navlink.link == url
 
 
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
     "noop_action, expected_table_row",
     [
@@ -146,6 +148,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
         ),
     ],
 )
+# pylint: enable=undefined-variable,unused-variable
 def test__noop(
     noop_action: src_types.NoopAction,
     expected_table_row: src_types.TableRow,
@@ -153,7 +156,7 @@ def test__noop(
 ):
     """
     arrange: given noop action
-    act: wnen action is passed to _noop
+    act: when action is passed to _noop
     assert: then the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -171,7 +174,7 @@ def test__noop(
 def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a directory, draft mode and mocked discourse
-    act: wnen action is passed to _update with draft_mode
+    act: when action is passed to _update with draft_mode
     assert: then no topic is updated, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -204,7 +207,7 @@ def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
 def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file and mocked discourse
-    act: wnen action is passed to _update with draft_mode True
+    act: when action is passed to _update with draft_mode True
     assert: then no topic is updated, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -238,7 +241,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file where only the navlink title has changed and mocked
         discourse
-    act: wnen action is passed to _update with draft_mode False
+    act: when action is passed to _update with draft_mode False
     assert: then no topic is updated, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -273,7 +276,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
 def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file where content has changed and mocked discourse
-    act: wnen action is passed to _update with draft_mode False
+    act: when action is passed to _update with draft_mode False
     assert: then topic is updated, the action is logged and the expected table row is returned.
     """
     caplog.set_level(logging.INFO)
@@ -309,7 +312,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
 def test__update_file_navlink_content_change_error():
     """
     arrange: given update action for a file where content has changed to None
-    act: wnen action is passed to _update with draft_mode False
+    act: when action is passed to _update with draft_mode False
     assert: ActionError is raised.
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
@@ -345,7 +348,7 @@ def test__delete_not_delete(
 ):
     """
     arrange: given delete action with given navlink link, draft mode and whether to delete pages
-    act: wnen action is passed to _delete with draft_mode and whether to delete pages
+    act: when action is passed to _delete with draft_mode and whether to delete pages
     assert: then no topic is deleted and the action is logged.
     """
     caplog.set_level(logging.INFO)
@@ -374,7 +377,7 @@ def test__delete_not_delete(
 def test__delete(caplog: pytest.LogCaptureFixture):
     """
     arrange: given delete action for file
-    act: wnen action is passed to _delete with draft_mode False and whether to delete pages True
+    act: when action is passed to _delete with draft_mode False and whether to delete pages True
     assert: then topic is deleted and the action is logged.
     """
     caplog.set_level(logging.INFO)

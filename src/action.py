@@ -119,20 +119,26 @@ def _run_one(
     Returns:
         The table row for the navigation table or None if the action does not require a row.
     """
-    match type(action):
-        case types_.CreateAction:
+    match action.action:
+        case types_.Action.CREATE:
+            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
+            assert isinstance(action, types_.CreateAction)  # nosec
             return _create(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.NoopAction:
+        case types_.Action.NOOP:
+            assert isinstance(action, types_.NoopAction)  # nosec
             return _noop(action=action)
-        case types_.UpdateAction:
+        case types_.Action.UPDATE:
+            assert isinstance(action, types_.UpdateAction)  # nosec
             return _update(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.DeleteAction:
-            return _delete(
+        case types_.Action.DELETE:
+            assert isinstance(action, types_.DeleteAction)  # nosec
+            _delete(
                 action=action,
                 discourse=discourse,
                 draft_mode=draft_mode,
                 delete_pages=delete_pages,
             )
+            return None
         # Edge case that should not be possible
         case _:  # pragma: no cover
             raise exceptions.ActionError(
@@ -141,7 +147,7 @@ def _run_one(
 
 
 def _run_index_action(
-    action: types_.AnyIndexAction, discouse: Discourse, draft_mode: bool
+    action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool
 ) -> None:
     """Take the index action against the server.
 
@@ -157,11 +163,14 @@ def _run_index_action(
 
     match action.action:
         case types_.Action.CREATE:
-            discouse.create_topic(title=action.title, content=action.content)
+            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
+            assert isinstance(action, types_.CreateIndexAction)  # nosec
+            discourse.create_topic(title=action.title, content=action.content)
         case types_.Action.NOOP:
             pass
         case types_.Action.UPDATE:
-            discouse.update_topic(url=action.url, content=action.content)
+            assert isinstance(action, types_.UpdateIndexAction)  # nosec
+            discourse.update_topic(url=action.url, content=action.content_change.new)
         # Edge case that should not be possible
         case _:  # pragma: no cover
             raise exceptions.ActionError(

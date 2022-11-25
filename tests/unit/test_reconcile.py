@@ -575,6 +575,8 @@ def test_run(
     )
 
 
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
     "index, table_rows, expected_action",
     [
@@ -620,7 +622,10 @@ def test_run(
             types_.CreateIndexAction(
                 action=types_.Action.CREATE,
                 title=local_title,
-                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n{table_row.to_line()}\n",
+                content=(
+                    f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
+                    f"{table_row.to_line()}\n"
+                ),
             ),
             id="local only single row",
         ),
@@ -685,6 +690,7 @@ def test_run(
         ),
     ],
 )
+# pylint: enable=undefined-variable,unused-variable
 def test_index_page(
     index: types_.Index,
     table_rows: tuple[types_.TableRow],
