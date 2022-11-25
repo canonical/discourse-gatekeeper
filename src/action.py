@@ -15,6 +15,19 @@ DRAFT_MODE_REASON = "draft mode"
 NOT_DELETE_REASON = "delete_topics is false"
 
 
+def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | None:
+    """Get the abolute URL.
+
+    Args:
+        url The url to convert.
+        discourse: A client to the documentation server.
+
+    Returns:
+        The converted url or None if the url is None.
+    """
+    return discourse.absolute_url(url=url) if url is not None else None
+
+
 def _create(
     action: types_.CreateAction, discourse: Discourse, draft_mode: bool
 ) -> types_.ActionReport:
@@ -56,11 +69,12 @@ def _create(
     return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
 
 
-def _noop(action: types_.NoopAction) -> types_.ActionReport:
+def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionReport:
     """Execute a noop action.
 
     Args:
         action: The noop action details.
+        discourse: A client to the documentation server.
 
     Returns:
         A report on the outcome of executing the action.
@@ -70,7 +84,7 @@ def _noop(action: types_.NoopAction) -> types_.ActionReport:
     table_row = types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
     return types_.ActionReport(
         table_row=table_row,
-        url=table_row.navlink.link,
+        url=_absolute_url(table_row.navlink.link, discourse=discourse),
         result=types_.ActionResult.SUCCESS,
         reason=None,
     )
@@ -108,18 +122,16 @@ def _update(
             discourse.update_topic(
                 url=action.navlink_change.new.link, content=action.content_change.new
             )
-            url = action.navlink_change.new.link
             result = types_.ActionResult.SUCCESS
             reason = None
         except exceptions.DiscourseError as exc:
-            url = action.navlink_change.new.link
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:
-        url = action.navlink_change.new.link
         result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
         reason = DRAFT_MODE_REASON if draft_mode else None
 
+    url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(
         level=action.level, path=action.path, navlink=action.navlink_change.new
     )
@@ -145,27 +157,19 @@ def _delete(
     """
     logging.info("draft mode: %s, delete pages: %s, action: %s", draft_mode, delete_pages, action)
 
+    url = _absolute_url(action.navlink.link, discourse=discourse)
     is_group = action.navlink.link is None
     if draft_mode:
         return types_.ActionReport(
-            table_row=None,
-            url=action.navlink.link,
-            result=types_.ActionResult.SKIP,
-            reason=DRAFT_MODE_REASON,
+            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRAFT_MODE_REASON
         )
     if not delete_pages and not is_group:
         return types_.ActionReport(
-            table_row=None,
-            url=action.navlink.link,
-            result=types_.ActionResult.SKIP,
-            reason=NOT_DELETE_REASON,
+            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=NOT_DELETE_REASON
         )
     if is_group:
         return types_.ActionReport(
-            table_row=None,
-            url=action.navlink.link,
-            result=types_.ActionResult.SUCCESS,
-            reason=None,
+            table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
         )
 
     try:
@@ -176,17 +180,11 @@ def _delete(
             )
         discourse.delete_topic(url=action.navlink.link)
         return types_.ActionReport(
-            table_row=None,
-            url=action.navlink.link,
-            result=types_.ActionResult.SUCCESS,
-            reason=None,
+            table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
         )
     except exceptions.DiscourseError as exc:
         return types_.ActionReport(
-            table_row=None,
-            url=action.navlink.link,
-            result=types_.ActionResult.FAIL,
-            reason=str(exc),
+            table_row=None, url=url, result=types_.ActionResult.FAIL, reason=str(exc)
         )
 
 
@@ -217,7 +215,7 @@ def _run_one(
             report = _create(action=action, discourse=discourse, draft_mode=draft_mode)
         case types_.Action.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
-            report = _noop(action=action)
+            report = _noop(action=action, discourse=discourse)
         case types_.Action.UPDATE:
             assert isinstance(action, types_.UpdateAction)  # nosec
             report = _update(action=action, discourse=discourse, draft_mode=draft_mode)

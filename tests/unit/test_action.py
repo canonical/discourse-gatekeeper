@@ -199,12 +199,17 @@ def test__noop(
     assert: then the action is logged and a success report is returned.
     """
     caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    absolute_url = "absolute url 1"
+    mocked_discourse.absolute_url.return_value = absolute_url
 
-    returned_report = action._noop(action=noop_action)
+    returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
 
     assert str(noop_action) in caplog.text
     assert returned_report.table_row == expected_table_row
-    assert returned_report.url == expected_table_row.navlink.link
+    assert returned_report.url == (
+        absolute_url if expected_table_row.navlink.link is not None else None
+    )
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
@@ -260,6 +265,8 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
         level=(level := 1),
@@ -282,7 +289,7 @@ def test__update_file_draft_mode(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SKIP
     assert returned_report.reason == action.DRAFT_MODE_REASON
 
@@ -296,6 +303,8 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
         level=(level := 1),
@@ -318,7 +327,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
@@ -332,6 +341,8 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
@@ -357,7 +368,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.FAIL
     assert returned_report.reason == str(error)
 
@@ -370,6 +381,8 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
         action=src_types.Action.UPDATE,
         level=(level := 1),
@@ -394,7 +407,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
@@ -460,6 +473,8 @@ def test__delete_not_delete(
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
         action=src_types.Action.DELETE,
         level=1,
@@ -480,7 +495,7 @@ def test__delete_not_delete(
     assert f"delete pages: {delete_pages}" in caplog.text
     mocked_discourse.delete_topic.assert_not_called()
     assert returned_report.table_row is None
-    assert returned_report.url == navlink_link
+    assert returned_report.url == (url if navlink_link else None)
     assert returned_report.result == expected_result
     assert returned_report.reason == expected_reason
 
@@ -493,6 +508,8 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     delete_action = src_types.DeleteAction(
         action=src_types.Action.DELETE,
@@ -514,7 +531,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     assert f"delete pages: {True}" in caplog.text
     mocked_discourse.delete_topic.assert_called_once_with(url=link)
     assert returned_report.table_row is None
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.FAIL
     assert returned_report.reason == str(error)
 
@@ -527,6 +544,8 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
         action=src_types.Action.DELETE,
         level=1,
@@ -547,7 +566,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     assert f"delete pages: {True}" in caplog.text
     mocked_discourse.delete_topic.assert_called_once_with(url=link)
     assert returned_report.table_row is None
-    assert returned_report.url == link
+    assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
@@ -903,6 +922,7 @@ def test_run_all(
     index = src_types.Index(server=None, local=src_types.IndexFile(title="title 1", content=None))
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
+    mocked_discourse.absolute_url.side_effect = lambda url: url
 
     returned_reports = action.run_all(
         actions=actions,
