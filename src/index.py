@@ -126,4 +126,4 @@ def get(base_path: Path, server_client: Discourse) -> Index:
         content=local_content,
     )
 
-    return Index(server=server, local=local)
+    return Index(server=server, local=local, name=name_value)

@@ -29,7 +29,7 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
 
 
 def _create(
-    action: types_.CreateAction, discourse: Discourse, draft_mode: bool
+    action: types_.CreateAction, discourse: Discourse, draft_mode: bool, name: str
 ) -> types_.ActionReport:
     """Execute a create action.
 
@@ -37,6 +37,7 @@ def _create(
         action: The create action details.
         discourse: A client to the documentation server.
         draft_mode: If enabled, only log the action that would be taken.
+        name: The charm name to prefix to the created pages title.
 
     Returns:
         A report on the outcome of executing the action.
@@ -53,7 +54,9 @@ def _create(
         reason = DRAFT_MODE_REASON
     else:
         try:
-            url = discourse.create_topic(title=action.navlink_title, content=action.content)
+            url = discourse.create_topic(
+                title=f"{name} docs: {action.navlink_title}", content=action.content
+            )
             result = types_.ActionResult.SUCCESS
             reason = None
         except exceptions.DiscourseError as exc:
@@ -191,6 +194,7 @@ def _delete(
 def _run_one(
     action: types_.AnyAction,
     discourse: Discourse,
+    name: str,
     draft_mode: bool,
     delete_pages: bool,
 ) -> types_.ActionReport:
@@ -199,6 +203,7 @@ def _run_one(
     Args:
         actions: The actions to take.
         discourse: A client to the documentation server.
+        name: The charm name to prefix to the created pages title.
         draft_mode: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
 
@@ -212,7 +217,7 @@ def _run_one(
         case types_.Action.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
-            report = _create(action=action, discourse=discourse, draft_mode=draft_mode)
+            report = _create(action=action, discourse=discourse, draft_mode=draft_mode, name=name)
         case types_.Action.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
@@ -332,6 +337,7 @@ def run_all(
         _run_one(
             action=action,
             discourse=discourse,
+            name=index.name,
             draft_mode=draft_mode,
             delete_pages=delete_pages,
         )

@@ -46,10 +46,12 @@ class Index(typing.NamedTuple):
     Attrs:
         server: The index page on the server.
         local: The local index file contents.
+        name: The name of the charm.
     """
 
     server: Page | None
     local: IndexFile
+    name: str
 
 
 Level = int

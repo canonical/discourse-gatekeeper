@@ -200,6 +200,7 @@ def test_get_metadata_yaml_retrieve_local_and_server(tmp_path: Path, index_file_
     assert returned_index.server.content == content
     assert returned_index.local.title == "Name 1 Documentation Overview"
     assert returned_index.local.content == index_file_content
+    assert returned_index.name == name
     mocked_server_client.retrieve_topic.assert_called_once_with(url=url)
 
 
@@ -218,3 +219,4 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     assert returned_index.server is None
     assert returned_index.local.title == "Name 1 Documentation Overview"
     assert returned_index.local.content is None
+    assert returned_index.name == name

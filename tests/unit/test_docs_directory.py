@@ -206,9 +206,11 @@ def test__calculate_table_path(
         pytest.param(("dir1",), None, None, "Dir1", id="directory in docs"),
         pytest.param(("dir1", "dir2"), None, None, "Dir2", id="nested directory in docs"),
         pytest.param(("the-dir-1",), None, None, "The Dir 1", id="directory in docs with -"),
+        pytest.param(("the_dir_1",), None, None, "The Dir 1", id="directory in docs with _"),
         pytest.param((), "file1.md", None, "File1", id="file in docs empty"),
         pytest.param(("dir1",), "file1.md", None, "File1", id="file in subdirectory empty"),
         pytest.param((), "the-file-1.md", None, "The File 1", id="file including - in docs empty"),
+        pytest.param((), "the_file_1.md", None, "The File 1", id="file including _ in docs empty"),
         pytest.param((), "file1.md", "", "File1", id="file in docs empty string"),
         pytest.param((), "file1.md", "line 1", "line 1", id="file in docs single line no title"),
         pytest.param(

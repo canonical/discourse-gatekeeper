@@ -37,7 +37,7 @@ def test__create_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
     )
 
     returned_report = action._create(
-        action=create_action, discourse=mocked_discourse, draft_mode=draft_mode
+        action=create_action, discourse=mocked_discourse, draft_mode=draft_mode, name="name 1"
     )
 
     assert str(create_action) in caplog.text
@@ -74,7 +74,7 @@ def test__create_file_draft_mode(caplog: pytest.LogCaptureFixture):
     )
 
     returned_report = action._create(
-        action=create_action, discourse=mocked_discourse, draft_mode=True
+        action=create_action, discourse=mocked_discourse, draft_mode=True, name="name 1"
     )
 
     assert str(create_action) in caplog.text
@@ -108,12 +108,14 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     )
 
     returned_report = action._create(
-        action=create_action, discourse=mocked_discourse, draft_mode=False
+        action=create_action, discourse=mocked_discourse, draft_mode=False, name=(name := "name 1")
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
-    mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
+    mocked_discourse.create_topic.assert_called_once_with(
+        title=f"{name} docs: {navlink_title}", content=content
+    )
     assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
@@ -142,12 +144,14 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     )
 
     returned_report = action._create(
-        action=create_action, discourse=mocked_discourse, draft_mode=False
+        action=create_action, discourse=mocked_discourse, draft_mode=False, name=(name := "name 1")
     )
 
     assert str(create_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
-    mocked_discourse.create_topic.assert_called_once_with(title=navlink_title, content=content)
+    mocked_discourse.create_topic.assert_called_once_with(
+        title=f"{name} docs: {navlink_title}", content=content
+    )
     assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
@@ -635,7 +639,11 @@ def test__run_one(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
     returned_report = action._run_one(
-        action=test_action, discourse=mocked_discourse, draft_mode=False, delete_pages=True
+        action=test_action,
+        discourse=mocked_discourse,
+        draft_mode=False,
+        delete_pages=True,
+        name="name 1",
     )
 
     assert isinstance(returned_report.table_row, expected_return_type)
@@ -919,7 +927,9 @@ def test_run_all(
     act: when run_all is called with the actions
     assert: then the expected actions are returned.
     """
-    index = src_types.Index(server=None, local=src_types.IndexFile(title="title 1", content=None))
+    index = src_types.Index(
+        server=None, local=src_types.IndexFile(title="title 1", content=None), name="name 1"
+    )
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
     mocked_discourse.absolute_url.side_effect = lambda url: url

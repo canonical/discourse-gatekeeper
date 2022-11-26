@@ -84,7 +84,7 @@ def _calculate_navlink_title(path: Path) -> types_.NavlinkTitle:
         except StopIteration:
             return content_lines[0]
 
-    return path.stem.replace("-", " ").title()
+    return path.stem.replace("-", " ").replace("_", " ").title()
 
 
 def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:

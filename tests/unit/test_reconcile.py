@@ -579,7 +579,9 @@ def test_run(
     [
         pytest.param(
             types_.Index(
-                server=None, local=types_.IndexFile(title=(local_title := "title 1"), content=None)
+                server=None,
+                local=types_.IndexFile(title=(local_title := "title 1"), content=None),
+                name="name 1",
             ),
             (),
             types_.CreateIndexAction(
@@ -595,6 +597,7 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (),
             types_.CreateIndexAction(
@@ -610,6 +613,7 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (
                 table_row := types_.TableRow(
@@ -634,6 +638,7 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (
                 table_row_1 := types_.TableRow(
@@ -666,6 +671,7 @@ def test_run(
                         server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
                     ),
                 ),
+                name="name 1",
             ),
             (),
             types_.NoopIndexAction(
@@ -679,6 +685,7 @@ def test_run(
             types_.Index(
                 local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
                 server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
+                name="name 1",
             ),
             (),
             types_.UpdateIndexAction(

@@ -38,7 +38,8 @@ def test_run_local_empty_server(tmp_path: Path):
     assert: then a documentation page is created and an index page is created with a navigation
         page with a reference to the documentation page.
     """
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    name = "name 1"
+    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: {name}", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
     (docs_folder / "page_1.md").write_text(page_1_content := "page 1 content")
@@ -53,7 +54,9 @@ def test_run_local_empty_server(tmp_path: Path):
     )
 
     assert mocked_discourse.create_topic.call_count == 2
-    mocked_discourse.create_topic.assert_any_call(title=page_1_content, content=page_1_content)
+    mocked_discourse.create_topic.assert_any_call(
+        title=f"{name} docs: {page_1_content}", content=page_1_content
+    )
     mocked_discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(

@@ -293,6 +293,7 @@ async def discourse_remove_rate_limits(discourse_main_api_key, discourse_hostnam
         "title_prettify": "false",
         "allow_duplicate_topic_titles": "false",
         "min_title_similar_length": "1000000",
+        "newuser_max_links": "1000000",
     }
     for setting, value in settings.items():
         response = requests.put(
