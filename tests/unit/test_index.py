@@ -14,19 +14,7 @@ import pytest
 from src import discourse, index
 from src.exceptions import DiscourseError, InputError, ServerError
 
-from .helpers import create_metadata_yaml
-
-
-def assert_substrings_in_string(substrings: tuple[str, ...], string: str) -> None:
-    """Assert that a string contains substrings.
-
-    Args:
-        string: The string to check.
-        substrings: The sub strings that must be contained in the string.
-
-    """
-    for substring in substrings:
-        assert substring in string
+from .helpers import create_metadata_yaml, assert_substrings_in_string
 
 
 def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
