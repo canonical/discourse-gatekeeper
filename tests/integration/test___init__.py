@@ -143,7 +143,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     assert len(urls_with_actions) == 2
-    assert urls_with_actions.keys() == (doc_url, index_url)
+    assert tuple(urls_with_actions.keys()) == (doc_url, index_url)
     for url in urls_with_actions.keys():
         assert url in caplog.text
     assert "'update'" in caplog.text
