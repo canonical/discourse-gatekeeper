@@ -273,25 +273,21 @@ def _run_index(
                 # run
                 assert isinstance(action, types_.CreateIndexAction)  # nosec
                 url = discourse.create_topic(title=action.title, content=action.content)
-                return types_.ActionReport(
-                    table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
-                )
             except exceptions.DiscourseError as exc:
                 return types_.ActionReport(
-                    table_row=None, url=None, result=types_.ActionResult.FAIL, reason=str(exc)
+                    table_row=None,
+                    url=FAIL_NAVLINK_LINK,
+                    result=types_.ActionResult.FAIL,
+                    reason=str(exc),
                 )
         case types_.Action.NOOP:
             assert isinstance(action, types_.NoopIndexAction)  # nosec
-            return types_.ActionReport(
-                table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
-            )
+            url = action.url
         case types_.Action.UPDATE:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 discourse.update_topic(url=action.url, content=action.content_change.new)
-                return types_.ActionReport(
-                    table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
-                )
+                url = action.url
             except exceptions.DiscourseError as exc:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 return types_.ActionReport(
@@ -305,6 +301,10 @@ def _run_index(
             raise exceptions.ActionError(
                 f"internal error, no implementation for action, {action=!r}"
             )
+
+    return types_.ActionReport(
+        table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
+    )
 
 
 def run_all(

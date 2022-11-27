@@ -693,7 +693,7 @@ def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
     assert f"draft mode: {False}" in caplog.text
     mocked_discourse.create_topic.assert_called_once_with(title=title, content=content)
     assert returned_report.table_row is None
-    assert returned_report.url is None
+    assert returned_report.url == action.FAIL_NAVLINK_LINK
     assert returned_report.result == src_types.ActionResult.FAIL
     assert returned_report.reason == str(error)
 
