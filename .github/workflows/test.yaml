@@ -17,5 +17,6 @@ jobs:
           pip3 install pyupgrade refurb
       - name: Check for any code improvements
         run: |
-          find . -name '*.py' | xargs pyupgrade --py310-plus
-          find . -name '*.py' | xargs refurb
+          PYTHON_FILES=$(find . -name '*.py')
+          pyupgrade --py310-plus $PYTHON_FILES
+          refurb $PYTHON_FILES
