@@ -282,7 +282,10 @@ def _run_index(
                 )
             except exceptions.DiscourseError as exc:
                 report = types_.ActionReport(
-                    table_row=None, url=None, result=types_.ActionResult.FAIL, reason=str(exc)
+                    table_row=None,
+                    url=FAIL_NAVLINK_LINK,
+                    result=types_.ActionResult.FAIL,
+                    reason=str(exc),
                 )
         case types_.Action.NOOP:
             assert isinstance(action, types_.NoopIndexAction)  # nosec

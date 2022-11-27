@@ -337,7 +337,7 @@ class Discourse:
         topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
         return self._topic_info_to_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
 
-    def delete_topic(self, url: str) -> None:
+    def delete_topic(self, url: str) -> str:
         """Delete a topic.
 
         Args:
@@ -359,7 +359,7 @@ class Discourse:
 
     def update_topic(
         self, url: str, content: str, edit_reason: str = "Charm documentation updated"
-    ) -> None:
+    ) -> str:
         """Update the first post of a topic.
 
         Args:

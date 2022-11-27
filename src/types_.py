@@ -16,7 +16,7 @@ Url = str
 class Page(typing.NamedTuple):
     """Information about a documentation page.
 
-    Atrs:
+    Attrs:
         url: The link to the page.
         content: The documentation text of the page.
     """
@@ -31,7 +31,7 @@ NavlinkTitle = str
 class IndexFile(typing.NamedTuple):
     """Information about a documentation page.
 
-    Atrs:
+    Attrs:
         title: The title for the index.
         content: The local content of the index.
     """
