@@ -60,6 +60,8 @@ def main():
         check_result = check_delete_topics(
             urls_with_actions=urls_with_actions, discourse=discourse
         )
+    if args.check_delete:
+        check_result = check_delete(urls_with_actions=urls_with_actions, discourse=discourse)
 
     if not args.check_only:
         for url in urls_with_actions.keys():
@@ -197,6 +199,7 @@ def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> boo
             ActionResult.SUCCESS.value,
             ActionResult.SUCCESS.value,
         ],
+        test_name=test_name,
     ):
         return False
 
@@ -235,12 +238,64 @@ def check_delete_topics(urls_with_actions: dict[str, str], discourse: Discourse)
             ActionResult.SKIP.value,
             ActionResult.SUCCESS.value,
         ],
+        test_name=test_name,
     ):
         return False
 
     if not _check_url_retrieve(
         urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
     ):
+        return False
+
+    logging.info("%s check succeeded", test_name)
+    return True
+
+
+def check_delete(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
+    """Check that the delete test succeeded.
+
+    Success is indicated by that there are 2 URLs with a success result and that retrieving the
+    first URL fails and the second succeeds.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        discourse: Client to the documentation server.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    test_name = "delete"
+    if not _check_url_count(
+        urls_with_actions=urls_with_actions, expected_count=2, test_name=test_name
+    ):
+        return False
+
+    if not _check_url_result(
+        urls_with_actions=urls_with_actions,
+        expected_result=[
+            ActionResult.SUCCESS.value,
+            ActionResult.SUCCESS.value,
+        ],
+        test_name=test_name,
+    ):
+        return False
+
+    urls = tuple(urls_with_actions.keys())
+    if not _check_url_retrieve(
+        urls_with_actions={urls[1]: urls_with_actions[urls[1]]},
+        discourse=discourse,
+        test_name=test_name,
+    ):
+        return False
+
+    with contextlib.suppress(DiscourseError):
+        discourse.retrieve_topic(url=urls[0])
+        logging.error(
+            "%s check failed, topic not deleted, url: %s, urls_with_actions=%s",
+            test_name,
+            urls[0],
+            urls_with_actions,
+        )
         return False
 
     logging.info("%s check succeeded", test_name)
