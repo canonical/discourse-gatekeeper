@@ -103,6 +103,7 @@ def test__filter_line(line, expected_result):
         pytest.param("|1|a|[2]()|", (1, "a", ("2", None)), id="third column title digit"),
         pytest.param("|1|a|[_]()|", (1, "a", ("_", None)), id="third column title underscore"),
         pytest.param("|1|a|[-]()|", (1, "a", ("-", None)), id="third column title dash"),
+        pytest.param("|1|a|[:]()|", (1, "a", (":", None)), id="third column title punctuation"),
         pytest.param("|1|a|[c d]()|", (1, "a", ("c d", None)), id="third column title space"),
         pytest.param("|1|a|[ b]()|", (1, "a", ("b", None)), id="third column title space before"),
         pytest.param("|1|a|[b ]()|", (1, "a", ("b", None)), id="third column title space after"),
