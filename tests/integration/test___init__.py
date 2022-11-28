@@ -19,6 +19,9 @@ from src.discourse import Discourse
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
 
+pytestmark = pytest.mark.init
+
+
 @pytest.mark.asyncio
 async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogCaptureFixture):
     """

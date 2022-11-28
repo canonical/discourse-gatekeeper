@@ -14,6 +14,9 @@ from src.exceptions import DiscourseError
 from . import types
 
 
+pytestmark = pytest.mark.discourse
+
+
 @pytest.mark.asyncio
 async def test_create_retrieve_update_delete_topic(
     discourse_category_id: int,
