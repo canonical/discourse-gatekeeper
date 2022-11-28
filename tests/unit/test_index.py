@@ -14,7 +14,7 @@ import pytest
 from src import discourse, index
 from src.exceptions import DiscourseError, InputError, ServerError
 
-from .helpers import create_metadata_yaml, assert_substrings_in_string
+from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
 def test__get_metadata_metadata_yaml_missing(tmp_path: Path):

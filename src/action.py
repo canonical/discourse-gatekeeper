@@ -16,7 +16,7 @@ NOT_DELETE_REASON = "delete_topics is false"
 
 
 def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | None:
-    """Get the abolute URL.
+    """Get the absolute URL.
 
     Args:
         url The url to convert.

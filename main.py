@@ -34,7 +34,7 @@ def main():
     discourse = create_discourse(**create_discourse_kwargs)
     urls_with_actions = run(
         base_path=pathlib.Path(),
-        server_client=discourse,
+        discourse=discourse,
         draft_mode=draft_mode,
         delete_pages=delete_topics,
     )

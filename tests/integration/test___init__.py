@@ -4,19 +4,19 @@
 """Integration tests for running the action."""
 
 # This test is fairly complex as it simulates sequential action runs
-# pylint: disable=too-many-arguments,too-many-locals
+# pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
+from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
-from itertools import chain
 
 import pytest
 
-from src import index, reconcile, run, exceptions
+from src import exceptions, index, reconcile, run
 from src.discourse import Discourse
 
-from ..unit.helpers import create_metadata_yaml, assert_substrings_in_string
+from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
 
 @pytest.mark.asyncio

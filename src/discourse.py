@@ -23,7 +23,7 @@ class _DiscourseTopicInfo(typing.NamedTuple):
     """
 
     slug: str
-    id_: str
+    id_: int
 
 
 class _ValidationResultValid(typing.NamedTuple):
@@ -151,7 +151,7 @@ class Discourse:
             raise DiscourseError(result.message)
 
         path_components = parse.urlparse(url=url).path.split("/")
-        return _DiscourseTopicInfo(slug=path_components[-2], id_=path_components[-1])
+        return _DiscourseTopicInfo(slug=path_components[-2], id_=int(path_components[-1]))
 
     def _topic_info_to_url(self, topic_info: _DiscourseTopicInfo) -> str:
         """Retrieve the url from the topic information.

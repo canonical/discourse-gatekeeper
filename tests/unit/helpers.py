@@ -3,7 +3,7 @@
 
 """Helper functions for tests."""
 
-from typing import Iterable
+import typing
 from pathlib import Path
 
 from src import index
@@ -21,7 +21,7 @@ def create_metadata_yaml(content: str, path: Path) -> None:
     metadata_yaml.write_text(content, encoding="utf-8")
 
 
-def assert_substrings_in_string(substrings: Iterable[str], string: str) -> None:
+def assert_substrings_in_string(substrings: typing.Iterable[str], string: str) -> None:
     """Assert that a string contains substrings.
 
     Args:

@@ -5,8 +5,8 @@
 
 """Cleanup utility after running the action, primarily for testing purposes."""
 
-import contextlib
 import argparse
+import contextlib
 import json
 
 from src.discourse import create_discourse
