@@ -90,20 +90,26 @@ def _update(
         A report on the outcome of executing the action.
 
     Raises:
-        ActionError: if the new content for a page is None.
+        ActionError: if the content change or new content for a page is None.
     """
     logging.info("draft mode: %s, action: %s", draft_mode, action)
+
+    # Check that action is valid
+    if action.navlink_change.new.link is not None:
+        if action.content_change is None:
+            raise exceptions.ActionError(
+                f"internal error, content change for page is None, {action=!r}"
+            )
+        if action.content_change.new is None:
+            raise exceptions.ActionError(
+                f"internal error, new content for page is None, {action=!r}"
+            )
 
     if (
         not draft_mode
         and action.navlink_change.new.link is not None
         and action.content_change.new != action.content_change.old
     ):
-        if action.content_change.new is None:
-            raise exceptions.ActionError(
-                f"internal error, new content for page is None, {action=!r}"
-            )
-
         try:
             discourse.update_topic(
                 url=action.navlink_change.new.link, content=action.content_change.new

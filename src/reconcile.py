@@ -91,7 +91,7 @@ def _local_and_server(
                     old=table_row.navlink,
                     new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
                 ),
-                content_change=types_.ContentChange(old=None, new=None),
+                content_change=None,
             ),
         )
 

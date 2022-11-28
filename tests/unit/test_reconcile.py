@@ -256,8 +256,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
     assert returned_action.navlink_change.new == types_.Navlink(  # type: ignore
         title=local_navlink_title, link=None
     )
-    assert returned_action.content_change.old is None  # type: ignore
-    assert returned_action.content_change.new is None  # type: ignore
+    assert returned_action.content_change is None  # type: ignore
     mock_discourse.retrieve_topic.assert_not_called()
 
 

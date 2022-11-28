@@ -229,7 +229,7 @@ def test__update_directory(draft_mode: bool, caplog: pytest.LogCaptureFixture):
             old=src_types.Navlink(title="title 1", link=None),
             new=src_types.Navlink(title="title 2", link=None),
         ),
-        content_change=src_types.ContentChange(old=None, new=None),
+        content_change=None,
     )
 
     returned_report = action._update(
@@ -399,7 +399,14 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     assert returned_report.reason is None
 
 
-def test__update_file_navlink_content_change_error():
+@pytest.mark.parametrize(
+    "content_change",
+    [
+        pytest.param(None, id="None"),
+        pytest.param(src_types.ContentChange(old="content 1", new=None), id="new is None"),
+    ],
+)
+def test__update_file_navlink_content_change_error(content_change: src_types.ContentChange | None):
     """
     arrange: given update action for a file where content has changed to None
     act: when action is passed to _update with draft_mode False
@@ -414,7 +421,7 @@ def test__update_file_navlink_content_change_error():
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old="content 1", new=None),
+        content_change=content_change,
     )
 
     with pytest.raises(exceptions.ActionError):
@@ -586,7 +593,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
                     old=src_types.Navlink(title="title 1", link=None),
                     new=src_types.Navlink(title="title 1", link=None),
                 ),
-                content_change=src_types.ContentChange(old=None, new=None),
+                content_change=None,
             ),
             src_types.TableRow,
             id="update",

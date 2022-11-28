@@ -263,7 +263,7 @@ class UpdateAction(BaseAction):
     level: Level
     path: TablePath
     navlink_change: NavlinkChange
-    content_change: ContentChange
+    content_change: ContentChange | None
 
 
 @dataclasses.dataclass
