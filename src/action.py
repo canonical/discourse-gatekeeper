@@ -213,7 +213,8 @@ def _run_one(
     Raises:
         ActionError: if an action that is not handled is passed to the function.
     """
-    match action.action:
+    # Ruff seems to think this is invalid syntax but the syntax is fine
+    match action.action:  # noqa: E999
         case types_.Action.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec

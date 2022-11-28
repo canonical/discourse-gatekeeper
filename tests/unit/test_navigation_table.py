@@ -215,7 +215,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 | 2 | plugins | [Plugins](/t/indico-docs-plugins/6553) |
 | 2 | theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
 | 1 | explanation | [Explanation]() |
-| 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""
+| 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
 
     returned_table = navigation_table.from_page(page=indico_page)
 

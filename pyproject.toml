@@ -48,3 +48,6 @@ copyright-regexp = "Copyright\\s\\d{4}([-,]\\d{4})*\\s+%(author)s"
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 99

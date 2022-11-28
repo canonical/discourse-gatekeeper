@@ -9,7 +9,7 @@ import argparse
 import contextlib
 import json
 import logging
-import typing
+import sys
 
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
@@ -68,7 +68,7 @@ def main():
             with contextlib.suppress(DiscourseError):
                 discourse.delete_topic(url=url)
 
-    exit(0 if check_result else 1)
+    sys.exit(0 if check_result else 1)
 
 
 def _check_url_count(

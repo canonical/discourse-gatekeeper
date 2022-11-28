@@ -414,7 +414,8 @@ def create_discourse(
     hostname = hostname.lower()
     if hostname.startswith(("http://", "https://")):
         raise InputError(
-            f"Invalid 'discourse_host' input, it should not include the protocol, got {hostname=!r}"
+            "Invalid 'discourse_host' input, it should not include the protocol, "
+            f"got {hostname=!r}"
         )
 
     if not isinstance(category_id, int) and not (
