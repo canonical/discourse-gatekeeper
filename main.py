@@ -46,7 +46,10 @@ def main():
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
     compact_json = partial(json.dumps, separators=(",", ":"))
     urls_with_actions = compact_json(urls_with_actions_dict)
-    *_, index_url = urls_with_actions_dict.keys()
+    if urls_with_actions_dict:
+        *_, index_url = urls_with_actions_dict.keys()
+    else:
+        index_url = ""
     discourse_config = compact_json(create_discourse_kwargs)
     with github_output.open("w", encoding="utf-8") as github_output_file:
         github_output_file.write(f"urls_with_actions={urls_with_actions}\n")
