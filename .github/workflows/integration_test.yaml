@@ -70,7 +70,7 @@ jobs:
       - name: Check create
         run: |
           ./discourse_check_cleanup.py --check-create --check-only '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTestCreate.outputs.discourse_config }}'
-      - name: Delete the alternate docs with delete_topics disabled
+      - name: Delete the alternate doc with delete_topics disabled
         run: rm docs/alternate_doc.md
       - name: Delete topics disabled self test
         id: selfTestDeleteTopics
@@ -83,6 +83,18 @@ jobs:
       - name: Check delete topics disabled
         run: |
           ./discourse_check_cleanup.py --check-delete-topics --check-only '${{ steps.selfTestDeleteTopics.outputs.urls_with_actions }}' '${{ steps.selfTestDeleteTopics.outputs.discourse_config }}'
+      - name: Delete the doc with delete_topics enabled
+        run: rm docs/doc.md
+      - name: Delete topics enabled self test
+        id: selfTestDelete
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      - name: Check delete topics enabled
+        run: |
+          ./discourse_check_cleanup.py --check-delete-topics --check-only '${{ steps.selfTestDelete.outputs.urls_with_actions }}' '${{ steps.selfTestDelete.outputs.discourse_config }}'
       - name: Clean up
         if: always()
         run: |
