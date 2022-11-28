@@ -21,14 +21,14 @@ jobs:
           mkdir docs
           # need some values in the content that change on every commit as discourse looks for file
           # similarity
-          echo "# Charm Upload Automation Test Index Title some uuid: $(uuidgen)\n" \
+          echo -e "# Charm Upload Automation Test Index Title some uuid: $(uuidgen)\n" \
             "placeholder index content for testing, " \
             "repository: ${{ github.repository }}, " \
             "branch: ${{ github.head_ref }}, " \
             "commit sha: ${{ github.sha }}, " \
             "some uuid: $(uuidgen)" \
             > docs/index.md
-          echo "# Charm Upload Automation Test Documentation Title some uuid: $(uuidgen)\n" \
+          echo -e "# Charm Upload Automation Test Documentation Title some uuid: $(uuidgen)\n" \
             "placeholder documentation content for testing, " \
             "repository: ${{ github.repository }}, " \
             "branch: ${{ github.head_ref }}, " \
