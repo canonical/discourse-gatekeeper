@@ -35,7 +35,7 @@ def main():
         "api_key": discourse_api_key,
     }
     discourse = create_discourse(**create_discourse_kwargs)
-    urls_with_actions = run(
+    urls_with_actions_dict = run(
         base_path=pathlib.Path(),
         discourse=discourse,
         draft_mode=draft_mode,
@@ -45,10 +45,12 @@ def main():
     # Write output
     github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
     compact_json = partial(json.dumps, separators=(",", ":"))
-    urls_with_actions = compact_json(urls_with_actions)
+    urls_with_actions = compact_json(urls_with_actions_dict)
+    *_, index_url = urls_with_actions_dict.keys()
     discourse_config = compact_json(create_discourse_kwargs)
     with github_output.open("w", encoding="utf-8") as github_output_file:
         github_output_file.write(f"urls_with_actions={urls_with_actions}\n")
+        github_output_file.write(f"index_url={index_url}\n")
         github_output_file.write(f"discourse_config={discourse_config}\n")
 
 

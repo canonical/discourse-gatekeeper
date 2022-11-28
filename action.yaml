@@ -39,6 +39,8 @@ outputs:
     description: |
       A JSON map with the urls and the actions that have been taken against
       them.
+  index_url:
+    description: The URL to the documentation index page.
   discourse_config:
     description: |
       The configuration used by the action to interact with the discourse

@@ -70,6 +70,10 @@ jobs:
       - name: Check create
         run: |
           ./discourse_check_cleanup.py --check-create --check-only '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTestCreate.outputs.discourse_config }}'
+      - name: Add docs key to metadata
+        run: |
+          echo "docs: ${{ steps.selfTestCreate.outputs.index_url }}" >> metadata.yaml
+          cat metadata.yaml
       - name: Delete the alternate doc with delete_topics disabled
         run: rm docs/alternate_doc.md
       - name: Delete topics disabled self test
