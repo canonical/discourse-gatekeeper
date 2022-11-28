@@ -173,11 +173,12 @@ def _delete(
         )
 
     try:
-        # Edge case that should not be possible
+        # Edge case that should not be possible, here for defensive programming
         if action.navlink.link is None:  # pragma: no cover
             raise exceptions.ActionError(
                 f"internal error, url None for page to delete, {action=!r}"
             )
+
         discourse.delete_topic(url=action.navlink.link)
         return types_.ActionReport(
             table_row=None,

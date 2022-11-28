@@ -440,7 +440,7 @@ def test__calculate_action(
     if path_info is not None:
         path_info = path_info_mkdir(path_info=path_info, base_dir=tmp_path)
 
-    returned_action = reconcile._calculate_action(
+    (returned_action,) = reconcile._calculate_action(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 

@@ -31,7 +31,19 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
 def _local_and_server(
     path_info: types_.PathInfo, table_row: types_.TableRow, discourse: Discourse
 ) -> (types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction):
-    """Return an update or noop action depending on if the content or navlink title has changed.
+    """Compare the local and server content and return an appropriate action.
+
+    Cases:
+        1. The action relates to a directory locally and grouping on the server and
+            1.1. the navlink title has not change: noop or
+            1.2. the navling title has changed: update action.
+        2. The action related to a directory locally and a page on the server: delete the page on
+            the server and create the directory.
+        3. The action related to a file locally and a group on the server: create the page on the
+            server.
+        4. The action relates to a file locally and a page on the server and
+            4.1. the content and navlink title has not changed: noop or
+            4.2. the content and/ or the navlink have changed: update action.
 
     Args:
         path_info: Information about the local documentation file.
@@ -39,11 +51,13 @@ def _local_and_server(
         discourse: A client to the documentation server.
 
     Returns:
-        A page update or noop action.
+        The action to execute against the server.
 
     Raises:
         ReconcilliationError: if the table path or level do not match for the path info and table
             row.
+        ReconcilliationError: if certain edge cases occur that are not expected, such as
+            table_row.navlink.link for a page on the server.
     """
     if path_info.level != table_row.level:
         raise exceptions.ReconcilliationError(
@@ -173,7 +187,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
 def _calculate_action(
     path_info: types_.PathInfo | None, table_row: types_.TableRow | None, discourse: Discourse
-) -> types_.AnyAction:
+) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
     Args:
@@ -189,11 +203,11 @@ def _calculate_action(
             "internal error, both path info and table row are None"
         )
     if path_info is not None and table_row is None:
-        return _local_only(path_info=path_info)
+        return (_local_only(path_info=path_info),)
     if path_info is None and table_row is not None:
-        return _server_only(table_row=table_row, discourse=discourse)
+        return (_server_only(table_row=table_row, discourse=discourse),)
     if path_info is not None and table_row is not None:
-        return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
+        return (_local_and_server(path_info=path_info, table_row=table_row, discourse=discourse),)
 
     # Something weird has happened since all cases should already be covered
     raise exceptions.ReconcilliationError("internal error")  # pragma: no cover
@@ -228,7 +242,7 @@ def run(
     keys = itertools.chain(
         path_info_lookup.keys(), table_row_lookup.keys() - path_info_lookup.keys()
     )
-    return (
+    return itertools.chain.from_iterable(
         _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
         for key in keys
     )
