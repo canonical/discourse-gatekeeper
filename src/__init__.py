@@ -3,6 +3,7 @@
 
 """Library for uploading docs to charmhub."""
 
+import logging
 from pathlib import Path
 
 from .action import DRAFT_NAVLINK_LINK, FAIL_NAVLINK_LINK
@@ -33,9 +34,13 @@ def run(
 
     """
     index = get_index(base_path=base_path, server_client=discourse)
-    path_infos = read_docs_directory(docs_path=base_path / "docs")
+    logging.info("index=%s", index)
+    path_infos = list(read_docs_directory(docs_path=base_path / "docs"))
+    logging.info("path_infos=%s", path_infos)
     server_content = (index.server.content or "") if index.server is not None else ""
-    table_rows = navigation_table_from_page(page=server_content)
+    logging.info("server_content=%s", server_content)
+    table_rows = list(navigation_table_from_page(page=server_content))
+    logging.info("table_rows=%s", table_rows)
     actions = run_reconcile(path_infos=path_infos, table_rows=table_rows, discourse=discourse)
     reports = run_all_actions(
         actions=actions,
