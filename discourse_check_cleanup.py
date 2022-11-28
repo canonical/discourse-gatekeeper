@@ -33,20 +33,25 @@ def main():
     parser.add_argument(
         "--check-create", help="Check that the create test succeeded", action="store_true"
     )
+    parser.add_argument(
+        "--check-only", help="Skip cleanup and only run any checks", action="store_true"
+    )
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
     discourse_config = json.loads(args.discourse_config)
 
     discourse = create_discourse(**discourse_config)
 
+    check_result = True
     if args.check_draft:
         check_result = check_draft(urls_with_actions=urls_with_actions)
     if args.check_create:
         check_result = check_create(urls_with_actions=urls_with_actions, discourse=discourse)
 
-    for url in urls_with_actions.keys():
-        with contextlib.suppress(DiscourseError):
-            discourse.delete_topic(url=url)
+    if not args.check_only:
+        for url in urls_with_actions.keys():
+            with contextlib.suppress(DiscourseError):
+                discourse.delete_topic(url=url)
 
     exit(0 if check_result else 1)
 
