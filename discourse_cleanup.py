@@ -62,9 +62,11 @@ def check_draft(urls_with_actions: dict[str, str]) -> bool:
     Returns:
         Whether the test succeeded.
     """
-    if len(urls_with_actions) == 0:
+    if not urls_with_actions:
         logging.info("draft check succeeded")
         return True
+
+    logging.error("create check failed, more than 0 URLs with actions: %s", urls_with_actions)
     return False
 
 
@@ -100,6 +102,7 @@ def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> boo
             )
             return False
 
+    logging.info("create check succeeded")
     return True
 
 
