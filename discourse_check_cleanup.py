@@ -9,8 +9,9 @@ import argparse
 import contextlib
 import json
 import logging
+import typing
 
-from src.discourse import create_discourse, Discourse
+from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.types_ import ActionResult
 
@@ -34,6 +35,14 @@ def main():
         "--check-create", help="Check that the create test succeeded", action="store_true"
     )
     parser.add_argument(
+        "--check-delete-topics",
+        help="Check that the delete_topics test succeeded",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--check-delete", help="Check that the delete test succeeded", action="store_true"
+    )
+    parser.add_argument(
         "--check-only", help="Skip cleanup and only run any checks", action="store_true"
     )
     args = parser.parse_args()
@@ -47,6 +56,10 @@ def main():
         check_result = check_draft(urls_with_actions=urls_with_actions)
     if args.check_create:
         check_result = check_create(urls_with_actions=urls_with_actions, discourse=discourse)
+    if args.check_delete_topics:
+        check_result = check_delete_topics(
+            urls_with_actions=urls_with_actions, discourse=discourse
+        )
 
     if not args.check_only:
         for url in urls_with_actions.keys():
@@ -54,6 +67,87 @@ def main():
                 discourse.delete_topic(url=url)
 
     exit(0 if check_result else 1)
+
+
+def _check_url_count(
+    urls_with_actions: dict[str, str], expected_count: int, test_name: str
+) -> bool:
+    """Perform the check for the number of URLs.
+
+    Success is if the number of urls in urls_with_actions matches the expected count.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        expected_count: The expected number of URLs.
+        test_name: The name of the test to include in the logging message.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    if (url_count := len(urls_with_actions)) != expected_count:
+        logging.error(
+            "%s check failed, expected %s URLs with actions, got %s, urls_with_actions=%s",
+            test_name,
+            expected_count,
+            url_count,
+            urls_with_actions,
+        )
+        return False
+    return True
+
+
+def _check_url_retrieve(
+    urls_with_actions: dict[str, str], discourse: Discourse, test_name: str
+) -> bool:
+    """Check that retrieving the URL succeeds.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        discourse: Client to the documentation server.
+        test_name: The name of the test to include in the logging message.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    for url in urls_with_actions.keys():
+        try:
+            discourse.retrieve_topic(url=url)
+        except DiscourseError as exc:
+            logging.error(
+                "%s check failed, URL retrieval failed for %s, error: %s, urls_with_actions=%s",
+                test_name,
+                url,
+                exc,
+                urls_with_actions,
+            )
+            return False
+    return True
+
+
+def _check_url_result(
+    urls_with_actions: dict[str, str], expected_result: list[str], test_name: str
+) -> bool:
+    """Check the results for the URLs.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        expected_result: The expected results.
+        test_name: The name of the test to include in the logging message.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    if sorted(results := urls_with_actions.values()) != sorted(expected_result):
+        logging.error(
+            "%s check failed, the result is not as expected, "
+            "expected: %s, got: %s, urls_with_actions=%s",
+            test_name,
+            results,
+            expected_result,
+            urls_with_actions,
+        )
+        return False
+    return True
 
 
 def check_draft(urls_with_actions: dict[str, str]) -> bool:
@@ -67,18 +161,20 @@ def check_draft(urls_with_actions: dict[str, str]) -> bool:
     Returns:
         Whether the test succeeded.
     """
-    if not urls_with_actions:
-        logging.info("draft check succeeded")
-        return True
+    test_name = "draft"
+    if not _check_url_count(
+        urls_with_actions=urls_with_actions, expected_count=0, test_name=test_name
+    ):
+        return False
 
-    logging.error("create check failed, more than 0 URLs with actions: %s", urls_with_actions)
-    return False
+    logging.info("%s check succeeded", test_name)
+    return True
 
 
 def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
     """Check that the create test succeeded.
 
-    Success is indicated by that there are 2 URLs with a success result and that retrieving the
+    Success is indicated by that there are 3 URLs with a success result and that retrieving the
     URLs succeeds.
 
     Args:
@@ -88,26 +184,66 @@ def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> boo
     Returns:
         Whether the test succeeded.
     """
-    if len(urls_with_actions) != 2:
-        logging.error("create check failed, fewer than 2 URLs with actions: %s", urls_with_actions)
+    test_name = "create"
+    if not _check_url_count(
+        urls_with_actions=urls_with_actions, expected_count=3, test_name=test_name
+    ):
         return False
 
-    if not all(result == ActionResult.SUCCESS.value for result in urls_with_actions.values()):
-        logging.error(
-            "create check failed, not all URLs have success result: %s", urls_with_actions
-        )
+    if not _check_url_result(
+        urls_with_actions=urls_with_actions,
+        expected_result=[
+            ActionResult.SUCCESS.value,
+            ActionResult.SUCCESS.value,
+            ActionResult.SUCCESS.value,
+        ],
+    ):
         return False
 
-    for url in urls_with_actions.keys():
-        try:
-            discourse.retrieve_topic(url=url)
-        except DiscourseError as exc:
-            logging.error(
-                "create check failed, URL retrieval failed for %s, %s", url, urls_with_actions
-            )
-            return False
+    if not _check_url_retrieve(
+        urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
+    ):
+        return False
 
-    logging.info("create check succeeded")
+    logging.info("%s check succeeded", test_name)
+    return True
+
+
+def check_delete_topics(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
+    """Check that the delete_topics test succeeded.
+
+    Success is indicated by that there are 3 URLs with 2 success and 1 skip result and that
+    retrieving the URLs succeeds (none have been deleted).
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        discourse: Client to the documentation server.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    test_name = "delete_topics"
+    if not _check_url_count(
+        urls_with_actions=urls_with_actions, expected_count=3, test_name=test_name
+    ):
+        return False
+
+    if not _check_url_result(
+        urls_with_actions=urls_with_actions,
+        expected_result=[
+            ActionResult.SUCCESS.value,
+            ActionResult.SKIP.value,
+            ActionResult.SUCCESS.value,
+        ],
+    ):
+        return False
+
+    if not _check_url_retrieve(
+        urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
+    ):
+        return False
+
+    logging.info("%s check succeeded", test_name)
     return True
 
 

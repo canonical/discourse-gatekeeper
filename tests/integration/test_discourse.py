@@ -13,7 +13,6 @@ from src.exceptions import DiscourseError
 
 from . import types
 
-
 pytestmark = pytest.mark.discourse
 
 
