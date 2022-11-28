@@ -30,7 +30,9 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
 
 def _local_and_server(
     path_info: types_.PathInfo, table_row: types_.TableRow, discourse: Discourse
-) -> (types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction):
+) -> tuple[
+    types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
+]:
     """Compare the local and server content and return an appropriate action.
 
     Cases:
@@ -71,22 +73,26 @@ def _local_and_server(
     # Is a directory locally and a grouping on the server
     if path_info.local_path.is_dir() and table_row.is_group:
         if table_row.navlink.title == path_info.navlink_title:
-            return types_.NoopAction(
-                action=types_.Action.NOOP,
+            return (
+                types_.NoopAction(
+                    action=types_.Action.NOOP,
+                    level=path_info.level,
+                    path=path_info.table_path,
+                    navlink=table_row.navlink,
+                    content=None,
+                ),
+            )
+        return (
+            types_.UpdateAction(
+                action=types_.Action.UPDATE,
                 level=path_info.level,
                 path=path_info.table_path,
-                navlink=table_row.navlink,
-                content=None,
-            )
-        return types_.UpdateAction(
-            action=types_.Action.UPDATE,
-            level=path_info.level,
-            path=path_info.table_path,
-            navlink_change=types_.NavlinkChange(
-                old=table_row.navlink,
-                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+                navlink_change=types_.NavlinkChange(
+                    old=table_row.navlink,
+                    new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+                ),
+                content_change=types_.ContentChange(old=None, new=None),
             ),
-            content_change=types_.ContentChange(old=None, new=None),
         )
 
     # Is a directory locally and a page on the server
@@ -98,22 +104,33 @@ def _local_and_server(
             raise exceptions.ReconcilliationError(
                 f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
             )
-        return types_.DeleteAction(
-            action=types_.Action.DELETE,
-            level=path_info.level,
-            path=path_info.table_path,
-            navlink=table_row.navlink,
-            content=discourse.retrieve_topic(url=table_row.navlink.link),
+        return (
+            types_.DeleteAction(
+                action=types_.Action.DELETE,
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink=table_row.navlink,
+                content=discourse.retrieve_topic(url=table_row.navlink.link),
+            ),
+            types_.CreateAction(
+                action=types_.Action.CREATE,
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink_title=path_info.navlink_title,
+                content=None,
+            ),
         )
 
     # Is a page locally and a grouping on the server
     if table_row.is_group:
-        return types_.CreateAction(
-            action=types_.Action.CREATE,
-            level=path_info.level,
-            path=path_info.table_path,
-            navlink_title=path_info.navlink_title,
-            content=path_info.local_path.read_text(),
+        return (
+            types_.CreateAction(
+                action=types_.Action.CREATE,
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink_title=path_info.navlink_title,
+                content=path_info.local_path.read_text(),
+            ),
         )
 
     # Is a page locally and on the server
@@ -128,22 +145,26 @@ def _local_and_server(
     server_content = discourse.retrieve_topic(url=table_row.navlink.link)
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
-        return types_.NoopAction(
-            action=types_.Action.NOOP,
+        return (
+            types_.NoopAction(
+                action=types_.Action.NOOP,
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink=table_row.navlink,
+                content=local_content,
+            ),
+        )
+    return (
+        types_.UpdateAction(
+            action=types_.Action.UPDATE,
             level=path_info.level,
             path=path_info.table_path,
-            navlink=table_row.navlink,
-            content=local_content,
-        )
-    return types_.UpdateAction(
-        action=types_.Action.UPDATE,
-        level=path_info.level,
-        path=path_info.table_path,
-        navlink_change=types_.NavlinkChange(
-            old=table_row.navlink,
-            new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+            navlink_change=types_.NavlinkChange(
+                old=table_row.navlink,
+                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+            ),
+            content_change=types_.ContentChange(old=server_content, new=local_content),
         ),
-        content_change=types_.ContentChange(old=server_content, new=local_content),
     )
 
 
@@ -207,7 +228,7 @@ def _calculate_action(
     if path_info is None and table_row is not None:
         return (_server_only(table_row=table_row, discourse=discourse),)
     if path_info is not None and table_row is not None:
-        return (_local_and_server(path_info=path_info, table_row=table_row, discourse=discourse),)
+        return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
 
     # Something weird has happened since all cases should already be covered
     raise exceptions.ReconcilliationError("internal error")  # pragma: no cover

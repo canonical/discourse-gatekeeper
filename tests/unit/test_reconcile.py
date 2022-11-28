@@ -112,7 +112,7 @@ def test__local_and_server_file_same(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -145,7 +145,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -180,7 +180,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     navlink = types_.Navlink(title="title 2", link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -214,7 +214,7 @@ def test__local_and_server_directory_same(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=None)
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -244,7 +244,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
     navlink = types_.Navlink(title="title 2", link=None)
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -265,7 +265,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
     """
     arrange: given path info with a file and table row with a group
     act: when _local_and_server is called with the path info and table row
-    assert: then an update action is returned.
+    assert: then a create action is returned.
     """
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
@@ -279,7 +279,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=None)
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_action,) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
@@ -296,7 +296,7 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
     """
     arrange: given path info with a directory and table row with a file
     act: when _local_and_server is called with the path info and table row
-    assert: then a delete action is returned.
+    assert: then a delete and create action is returned.
     """
     (path := tmp_path / "dir1").mkdir()
     path_info = types_.PathInfo(
@@ -310,16 +310,22 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    returned_action = reconcile._local_and_server(
+    (returned_delete_action, returned_create_action) = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.action == types_.Action.DELETE
-    assert returned_action.level == level
-    assert returned_action.path == table_path
+    assert returned_delete_action.action == types_.Action.DELETE
+    assert returned_delete_action.level == level
+    assert returned_delete_action.path == table_path
     # mypy has difficulty with determining which action is returned
-    assert returned_action.navlink == navlink  # type: ignore
-    assert returned_action.content == content  # type: ignore
+    assert returned_delete_action.navlink == navlink  # type: ignore
+    assert returned_delete_action.content == content  # type: ignore
+    assert returned_create_action.action == types_.Action.CREATE
+    assert returned_create_action.level == level
+    assert returned_create_action.path == table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_create_action.navlink_title == navlink_title  # type: ignore
+    assert returned_create_action.content is None  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
