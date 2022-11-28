@@ -6,6 +6,7 @@
 """Main execution for the action."""
 
 import json
+import logging
 import os
 import pathlib
 from functools import partial
@@ -16,6 +17,8 @@ from src.discourse import create_discourse
 
 def main():
     """Execute the action."""
+    logging.basicConfig(level=logging.INFO)
+
     # Read input
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     draft_mode = os.getenv("INPUT_DRAFT_MODE") == "true"

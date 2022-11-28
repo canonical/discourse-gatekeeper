@@ -48,7 +48,7 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip
           pip3 install -r requirements.txt
-          ./discourse_cleanup.py '${{ steps.selfTestDraft.outputs.urls_with_actions }}' '${{ steps.selfTest.outputs.discourse_config }}'
+          ./discourse_cleanup.py '${{ steps.selfTestDraft.outputs.urls_with_actions }}' '${{ steps.selfTestDraft.outputs.discourse_config }}'
       - name: Create self test
         id: selfTestCreate
         uses: ./
@@ -61,4 +61,4 @@ jobs:
         run: echo '${{ steps.selfTestCreate.outputs.urls_with_actions }}'
       - name: Clean up
         run: |
-          ./discourse_cleanup.py '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTest.outputs.discourse_config }}'
+          ./discourse_cleanup.py '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTestCreate.outputs.discourse_config }}'

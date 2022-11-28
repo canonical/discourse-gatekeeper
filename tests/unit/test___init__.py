@@ -87,7 +87,7 @@ def test_run_local_empty_server_draft_mode(tmp_path: Path):
     )
 
     mocked_discourse.create_topic.assert_not_called()
-    assert returned_page_interactions == {}
+    assert not returned_page_interactions
 
 
 def test_run_local_empty_server_error(tmp_path: Path):
@@ -108,4 +108,4 @@ def test_run_local_empty_server_error(tmp_path: Path):
     mocked_discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview", content=f"{reconcile.NAVIGATION_TABLE_START}\n\n"
     )
-    assert returned_page_interactions == {}
+    assert not returned_page_interactions
