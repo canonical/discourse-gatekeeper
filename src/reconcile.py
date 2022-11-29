@@ -9,7 +9,6 @@ import typing
 from . import exceptions, types_
 from .discourse import Discourse
 
-
 NAVIGATION_TABLE_START = """
 
 # Navigation

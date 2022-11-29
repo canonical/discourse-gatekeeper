@@ -95,19 +95,22 @@ def _update(
     logging.info("draft mode: %s, action: %s", draft_mode, action)
 
     # Check that action is valid
-    if action.navlink_change.new.link is not None:
-        if action.content_change is None:
-            raise exceptions.ActionError(
-                f"internal error, content change for page is None, {action=!r}"
-            )
-        if action.content_change.new is None:
-            raise exceptions.ActionError(
-                f"internal error, new content for page is None, {action=!r}"
-            )
+    if action.navlink_change.new.link is not None and action.content_change is None:
+        raise exceptions.ActionError(
+            f"internal error, content change for page is None, {action=!r}"
+        )
+    if (
+        action.navlink_change.new.link is not None
+        and action.content_change is not None
+        and action.content_change.new is None
+    ):
+        raise exceptions.ActionError(f"internal error, new content for page is None, {action=!r}")
 
     if (
         not draft_mode
         and action.navlink_change.new.link is not None
+        and action.content_change is not None
+        and action.content_change.new is not None
         and action.content_change.new != action.content_change.old
     ):
         try:

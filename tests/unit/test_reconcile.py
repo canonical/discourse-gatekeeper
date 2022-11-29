@@ -309,22 +309,23 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
     navlink = types_.Navlink(title=navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
-    (returned_delete_action, returned_create_action) = reconcile._local_and_server(
+    returned_actions = reconcile._local_and_server(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_delete_action.type_ == types_.ActionType.DELETE
-    assert returned_delete_action.level == level
-    assert returned_delete_action.path == table_path
+    assert len(returned_actions) == 2
+    assert returned_actions[0].type_ == types_.ActionType.DELETE
+    assert returned_actions[0].level == level
+    assert returned_actions[0].path == table_path
     # mypy has difficulty with determining which action is returned
-    assert returned_delete_action.navlink == navlink  # type: ignore
-    assert returned_delete_action.content == content  # type: ignore
-    assert returned_create_action.type_ == types_.ActionType.CREATE
-    assert returned_create_action.level == level
-    assert returned_create_action.path == table_path
+    assert returned_actions[0].navlink == navlink  # type: ignore
+    assert returned_actions[0].content == content  # type: ignore
+    assert returned_actions[1].type_ == types_.ActionType.CREATE
+    assert returned_actions[1].level == level
+    assert returned_actions[1].path == table_path
     # mypy has difficulty with determining which action is returned
-    assert returned_create_action.navlink_title == navlink_title  # type: ignore
-    assert returned_create_action.content is None  # type: ignore
+    assert returned_actions[1].navlink_title == navlink_title  # type: ignore
+    assert returned_actions[1].content is None  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 

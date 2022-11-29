@@ -350,6 +350,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
 
     assert str(update_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert update_action.content_change is not None
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new
     )
@@ -387,6 +388,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
 
     assert str(update_action) in caplog.text
     assert f"draft mode: {False}" in caplog.text
+    assert update_action.content_change is not None
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new
     )
