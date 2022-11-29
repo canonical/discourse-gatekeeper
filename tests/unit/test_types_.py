@@ -64,10 +64,10 @@ def test_table_row_is_group(table_row: types_.TableRow, expected_is_group: bool)
         ),
     ],
 )
-def test_table_row_to_line(table_row: types_.TableRow, expected_line: bool):
+def test_table_row_to_markdown(table_row: types_.TableRow, expected_line: bool):
     """
     arrange: given TableRow
-    act: when to_line is called
+    act: when to_markdown is called
     assert: then expected result is returned.
     """
-    assert table_row.to_line() == expected_line
+    assert table_row.to_markdown() == expected_line

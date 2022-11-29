@@ -107,7 +107,7 @@ class TableRow(typing.NamedTuple):
         """Whether the row is a group of pages."""
         return self.navlink.link is None
 
-    def to_line(self) -> str:
+    def to_markdown(self) -> str:
         """Convert to a line in the navigation table.
 
         Returns:
