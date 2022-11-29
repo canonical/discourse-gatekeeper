@@ -99,7 +99,8 @@ def _local_and_server(
     if path_info.local_path.is_dir():
         # This is an edge case that can't actually occur because table_row.is_group is based on
         # whether the navlink link is None so this case would have been caught in the local
-        # directory and server group case
+        # directory and server group case, here for defensive programming if definition of is_group
+        # is buggy or changed
         if table_row.navlink.link is None:  # pragma: no cover
             raise exceptions.ReconcilliationError(
                 f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
@@ -121,7 +122,9 @@ def _local_and_server(
             ),
         )
 
-    # Is a page locally and a grouping on the server
+    # Is a page locally and a grouping on the server, only need to create the page since the
+    # grouping is automatically removed from the navigation table since the directory has been
+    # removed locally
     if table_row.is_group:
         return (
             types_.CreateAction(
