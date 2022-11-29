@@ -627,7 +627,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row.to_line()}\n"
+                    f"{table_row.to_markdown()}\n"
                 ),
             ),
             id="local only single row",
@@ -656,7 +656,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row_1.to_line()}\n{table_row_2.to_line()}\n"
+                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}\n"
                 ),
             ),
             id="local only multiple rows",

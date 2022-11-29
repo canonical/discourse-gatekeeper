@@ -306,7 +306,7 @@ def index_page(
     Returns:
         The action to take for the index page.
     """
-    table_contents = "\n".join(table_row.to_line() for table_row in table_rows)
+    table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
     local_content = f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
 
     if index.server is None:
