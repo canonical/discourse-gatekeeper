@@ -173,6 +173,7 @@ class CreateIndexAction(BaseAction):
     """Represents an index page to be created.
 
     Attrs:
+        title: The title of the index page.
         content: The content including the navigation table.
     """
 
@@ -207,6 +208,7 @@ class NoopIndexAction(BaseAction):
 
     Attrs:
         content: The content including the navigation table.
+        url: The URL to the index page.
     """
 
     type_: typing.Literal[ActionType.NOOP]
@@ -276,6 +278,7 @@ class UpdateIndexAction(BaseAction):
 
     Attrs:
         content_change: The change to the content including the navigation table.
+        url: The URL to the index page.
     """
 
     type_: typing.Literal[ActionType.UPDATE]
@@ -291,7 +294,7 @@ class DeleteAction(BaseAction):
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
-        navlink: The title link to the page
+        navlink: The link to the page
         content: The documentation content.
     """
 
