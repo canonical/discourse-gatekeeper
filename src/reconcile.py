@@ -144,7 +144,7 @@ def _local_and_server(
         )
 
     # Is a page locally and on the server
-    local_content = path_info.local_path.read_text(encoding="utf-8")
+    local_content = path_info.local_path.read_text(encoding="utf-8").strip()
     # This is an edge case that can't actually occur because table_row.is_group is based on
     # whether the navlink link is None so this case would have been caught in the local
     # page and server group case
@@ -152,7 +152,7 @@ def _local_and_server(
         raise exceptions.ReconcilliationError(
             f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
         )
-    server_content = discourse.retrieve_topic(url=table_row.navlink.link)
+    server_content = discourse.retrieve_topic(url=table_row.navlink.link).strip()
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
