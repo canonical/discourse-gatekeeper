@@ -107,20 +107,29 @@ def _update(
         A report on the outcome of executing the action.
 
     Raises:
-        ActionError: if the new content for a page is None.
+        ActionError: if the content change or new content for a page is None.
     """
     logging.info("draft mode: %s, action: %s", draft_mode, action)
+
+    # Check that action is valid
+    if action.navlink_change.new.link is not None and action.content_change is None:
+        raise exceptions.ActionError(
+            f"internal error, content change for page is None, {action=!r}"
+        )
+    if (
+        action.navlink_change.new.link is not None
+        and action.content_change is not None
+        and action.content_change.new is None
+    ):
+        raise exceptions.ActionError(f"internal error, new content for page is None, {action=!r}")
 
     if (
         not draft_mode
         and action.navlink_change.new.link is not None
+        and action.content_change is not None
+        and action.content_change.new is not None
         and action.content_change.new != action.content_change.old
     ):
-        if action.content_change.new is None:
-            raise exceptions.ActionError(
-                f"internal error, new content for page is None, {action=!r}"
-            )
-
         try:
             discourse.update_topic(
                 url=action.navlink_change.new.link, content=action.content_change.new
@@ -176,11 +185,12 @@ def _delete(
         )
 
     try:
-        # Edge case that should not be possible
+        # Edge case that should not be possible, here for defensive programming
         if action.navlink.link is None:  # pragma: no cover
             raise exceptions.ActionError(
                 f"internal error, url None for page to delete, {action=!r}"
             )
+
         discourse.delete_topic(url=action.navlink.link)
         return types_.ActionReport(
             table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
@@ -214,18 +224,18 @@ def _run_one(
         ActionError: if an action that is not handled is passed to the function.
     """
     # Ruff seems to think this is invalid syntax but the syntax is fine
-    match action.action:  # noqa: E999
-        case types_.Action.CREATE:
+    match action.type_:  # noqa: E999
+        case types_.ActionType.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
             report = _create(action=action, discourse=discourse, draft_mode=draft_mode, name=name)
-        case types_.Action.NOOP:
+        case types_.ActionType.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
-        case types_.Action.UPDATE:
+        case types_.ActionType.UPDATE:
             assert isinstance(action, types_.UpdateAction)  # nosec
             report = _update(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.Action.DELETE:
+        case types_.ActionType.DELETE:
             assert isinstance(action, types_.DeleteAction)  # nosec
             report = _delete(
                 action=action,
@@ -264,15 +274,15 @@ def _run_index(
     if draft_mode:
         report = types_.ActionReport(
             table_row=None,
-            url=DRAFT_NAVLINK_LINK if action.action == types_.Action.CREATE else action.url,
+            url=DRAFT_NAVLINK_LINK if action.type_ == types_.ActionType.CREATE else action.url,
             result=types_.ActionResult.SKIP,
             reason=DRAFT_MODE_REASON,
         )
         logging.info("report: %s", report)
         return report
 
-    match action.action:
-        case types_.Action.CREATE:
+    match action.type_:
+        case types_.ActionType.CREATE:
             try:
                 # To help mypy (same for the rest of the asserts), it is ok if the assert does not
                 # run
@@ -288,12 +298,12 @@ def _run_index(
                     result=types_.ActionResult.FAIL,
                     reason=str(exc),
                 )
-        case types_.Action.NOOP:
+        case types_.ActionType.NOOP:
             assert isinstance(action, types_.NoopIndexAction)  # nosec
             report = types_.ActionReport(
                 table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
             )
-        case types_.Action.UPDATE:
+        case types_.ActionType.UPDATE:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 discourse.update_topic(url=action.url, content=action.content_change.new)

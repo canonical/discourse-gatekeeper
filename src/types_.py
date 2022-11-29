@@ -122,7 +122,7 @@ class TableRow(typing.NamedTuple):
 TableRowLookup = dict[tuple[Level, TablePath], TableRow]
 
 
-class Action(str, Enum):
+class ActionType(str, Enum):
     """The possible actions to take for a page.
 
     Attrs:
@@ -143,10 +143,10 @@ class BaseAction:
     """Represents an action on a page.
 
     Attrs:
-        action: The action to execute on the page.
+        type_: The type of action to execute on the page.
     """
 
-    action: Action
+    type_: ActionType
 
 
 @dataclasses.dataclass
@@ -160,7 +160,7 @@ class CreateAction(BaseAction):
         content: The documentation content, is None for directories.
     """
 
-    action: typing.Literal[Action.CREATE]
+    type_: typing.Literal[ActionType.CREATE]
 
     level: Level
     path: TablePath
@@ -176,7 +176,7 @@ class CreateIndexAction(BaseAction):
         content: The content including the navigation table.
     """
 
-    action: typing.Literal[Action.CREATE]
+    type_: typing.Literal[ActionType.CREATE]
 
     title: NavlinkTitle
     content: Content
@@ -193,7 +193,7 @@ class NoopAction(BaseAction):
         content: The documentation content of the page.
     """
 
-    action: typing.Literal[Action.NOOP]
+    type_: typing.Literal[ActionType.NOOP]
 
     level: Level
     path: TablePath
@@ -209,7 +209,7 @@ class NoopIndexAction(BaseAction):
         content: The content including the navigation table.
     """
 
-    action: typing.Literal[Action.NOOP]
+    type_: typing.Literal[ActionType.NOOP]
 
     content: Content
     url: Url
@@ -262,12 +262,12 @@ class UpdateAction(BaseAction):
         content_change: The change to the documentation content.
     """
 
-    action: typing.Literal[Action.UPDATE]
+    type_: typing.Literal[ActionType.UPDATE]
 
     level: Level
     path: TablePath
     navlink_change: NavlinkChange
-    content_change: ContentChange
+    content_change: ContentChange | None
 
 
 @dataclasses.dataclass
@@ -278,7 +278,7 @@ class UpdateIndexAction(BaseAction):
         content_change: The change to the content including the navigation table.
     """
 
-    action: typing.Literal[Action.UPDATE]
+    type_: typing.Literal[ActionType.UPDATE]
 
     content_change: IndexContentChange
     url: Url
@@ -295,7 +295,7 @@ class DeleteAction(BaseAction):
         content: The documentation content.
     """
 
-    action: typing.Literal[Action.DELETE]
+    type_: typing.Literal[ActionType.DELETE]
 
     level: Level
     path: TablePath
