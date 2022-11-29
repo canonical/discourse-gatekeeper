@@ -267,7 +267,7 @@ async def discourse_enable_tags(
         data=data,
         timeout=60,
     )
-    assert response.status_code == 200, f"Enabling taging failed, {response.content=}"
+    assert response.status_code == 200, f"Enabling tagging failed, {response.content=}"
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)

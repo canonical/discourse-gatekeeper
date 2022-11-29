@@ -30,4 +30,4 @@ def assert_substrings_in_string(substrings: typing.Iterable[str], string: str) -
 
     """
     for substring in substrings:
-        assert substring in string
+        assert substring in string  # nosec
