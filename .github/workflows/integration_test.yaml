@@ -85,7 +85,7 @@ jobs:
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show pages
-        run: echo '${{ steps.selfTestDraft.outputs.urls_with_actions }}'
+        run: echo '${{ steps.selfTestDeleteTopics.outputs.urls_with_actions }}'
       - name: Check delete topics disabled
         run: |
           ./discourse_check_cleanup.py --check-delete-topics --check-only '${{ steps.selfTestDeleteTopics.outputs.urls_with_actions }}' '${{ steps.selfTestDeleteTopics.outputs.discourse_config }}'
@@ -99,10 +99,10 @@ jobs:
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show pages
-        run: echo '${{ steps.selfTestDraft.outputs.urls_with_actions }}'
+        run: echo '${{ steps.selfTestDelete.outputs.urls_with_actions }}'
       - name: Check delete topics enabled
         run: |
-          ./discourse_check_cleanup.py --check-delete-topics --check-only '${{ steps.selfTestDelete.outputs.urls_with_actions }}' '${{ steps.selfTestDelete.outputs.discourse_config }}'
+          ./discourse_check_cleanup.py --check-delete --check-only '${{ steps.selfTestDelete.outputs.urls_with_actions }}' '${{ steps.selfTestDelete.outputs.discourse_config }}'
       - name: Clean up
         if: always()
         run: |

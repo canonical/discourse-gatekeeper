@@ -102,5 +102,4 @@ def from_page(page: str) -> typing.Iterator[types_.TableRow]:
         return iter([])
 
     table = match.group(0)
-    print(list(map(_filter_line, table.splitlines())))
     return (_line_to_row(line) for line in table.splitlines() if not _filter_line(line))

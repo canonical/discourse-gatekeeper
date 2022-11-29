@@ -72,7 +72,7 @@ class Discourse:
 
         """
         self._client = pydiscourse.DiscourseClient(
-            host=base_path, api_username=api_username, api_key=api_key
+            host=base_path, api_username=api_username, api_key=api_key, timeout=10 * 60
         )
         self._category_id = category_id
         self._base_path = base_path
