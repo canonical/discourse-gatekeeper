@@ -10,6 +10,14 @@ from . import exceptions, types_
 from .discourse import Discourse
 
 
+NAVIGATION_TABLE_START = """
+
+# Navigation
+
+| Level | Path | Navlink |
+| -- | -- | -- |"""
+
+
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
     """Return a create action based on information about a local documentation file.
 
@@ -246,6 +254,17 @@ def run(
 
     Preserves the order of path_infos although does not for items only in table_rows.
 
+    This function needs to match files and directories locally to items on the navigation table on
+    the server knowing that there may be cases that are not matched. The navigation table relies on
+    the order that items are displayed to figure out the hierarchy/ page grouping (this is not a
+    design choice of this action but how the documentation is interpreted by charmhub). Assume the
+    `path_infos` have been ordered to ensure that the hierarchy will be calculated correctly by the
+    server when the new navigation table is generated.
+
+    Items only in table_rows won't have their order is not preserved. Those items are the items
+    that are only on the server, i.e., those keys will just result in delete actions which have no
+    effect on the navigation table that is generated and hence ordering for them doesn't matter.
+
     Args:
         path_infos: Information about the local documentation files.
         table_rows: Rows from the navigation table.
@@ -253,7 +272,7 @@ def run(
 
     Returns:
         The actions required to reconcile differences between the documentation server and local
-        files.
+            files.
     """
     path_info_lookup: types_.PathInfoLookup = {
         (path_info.level, path_info.table_path): path_info for path_info in path_infos
@@ -262,7 +281,9 @@ def run(
         (table_row.level, table_row.path): table_row for table_row in table_rows
     }
 
-    # Need to process items only on the server last
+    # Need to process items only on the server last. path_info_lookup.keys() is used first to keep
+    # the path_infos ordering. The items only in table_row_lookup do not need their ordering
+    # maintained.
     keys = itertools.chain(
         path_info_lookup.keys(), table_row_lookup.keys() - path_info_lookup.keys()
     )
@@ -270,14 +291,6 @@ def run(
         _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
         for key in keys
     )
-
-
-NAVIGATION_TABLE_START = """
-
-# Navigation
-
-| Level | Path | Navlink |
-| -- | -- | -- |"""
 
 
 def index_page(
