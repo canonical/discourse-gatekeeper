@@ -28,7 +28,7 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
         A page create action.
     """
     return types_.CreateAction(
-        action=types_.Action.CREATE,
+        type_=types_.ActionType.CREATE,
         level=path_info.level,
         path=path_info.table_path,
         navlink_title=path_info.navlink_title,
@@ -83,7 +83,7 @@ def _local_and_server(
         if table_row.navlink.title == path_info.navlink_title:
             return (
                 types_.NoopAction(
-                    action=types_.Action.NOOP,
+                    type_=types_.ActionType.NOOP,
                     level=path_info.level,
                     path=path_info.table_path,
                     navlink=table_row.navlink,
@@ -92,7 +92,7 @@ def _local_and_server(
             )
         return (
             types_.UpdateAction(
-                action=types_.Action.UPDATE,
+                type_=types_.ActionType.UPDATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_change=types_.NavlinkChange(
@@ -115,14 +115,14 @@ def _local_and_server(
             )
         return (
             types_.DeleteAction(
-                action=types_.Action.DELETE,
+                type_=types_.ActionType.DELETE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
                 content=discourse.retrieve_topic(url=table_row.navlink.link),
             ),
             types_.CreateAction(
-                action=types_.Action.CREATE,
+                type_=types_.ActionType.CREATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_title=path_info.navlink_title,
@@ -136,7 +136,7 @@ def _local_and_server(
     if table_row.is_group:
         return (
             types_.CreateAction(
-                action=types_.Action.CREATE,
+                type_=types_.ActionType.CREATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_title=path_info.navlink_title,
@@ -158,7 +158,7 @@ def _local_and_server(
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
             types_.NoopAction(
-                action=types_.Action.NOOP,
+                type_=types_.ActionType.NOOP,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
@@ -167,7 +167,7 @@ def _local_and_server(
         )
     return (
         types_.UpdateAction(
-            action=types_.Action.UPDATE,
+            type_=types_.ActionType.UPDATE,
             level=path_info.level,
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
@@ -195,7 +195,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
     # Group case
     if table_row.is_group:
         return types_.DeleteAction(
-            action=types_.Action.DELETE,
+            type_=types_.ActionType.DELETE,
             level=table_row.level,
             path=table_row.path,
             navlink=table_row.navlink,
@@ -209,7 +209,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             f"internal error, expecting link on table row, {table_row=!r}"
         )
     return types_.DeleteAction(
-        action=types_.Action.DELETE,
+        type_=types_.ActionType.DELETE,
         level=table_row.level,
         path=table_row.path,
         navlink=table_row.navlink,
@@ -312,14 +312,14 @@ def index_page(
 
     if index.server is None:
         return types_.CreateIndexAction(
-            action=types_.Action.CREATE, content=local_content, title=index.local.title
+            type_=types_.ActionType.CREATE, content=local_content, title=index.local.title
         )
     if local_content != index.server.content:
         return types_.UpdateIndexAction(
-            action=types_.Action.UPDATE,
+            type_=types_.ActionType.UPDATE,
             content_change=types_.IndexContentChange(old=index.server.content, new=local_content),
             url=index.server.url,
         )
     return types_.NoopIndexAction(
-        action=types_.Action.NOOP, content=local_content, url=index.server.url
+        type_=types_.ActionType.NOOP, content=local_content, url=index.server.url
     )

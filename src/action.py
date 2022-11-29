@@ -221,18 +221,18 @@ def _run_one(
     Raises:
         ActionError: if an action that is not handled is passed to the function.
     """
-    match action.action:
-        case types_.Action.CREATE:
+    match action.type_:
+        case types_.ActionType.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
             return _create(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.Action.NOOP:
+        case types_.ActionType.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
             return _noop(action=action)
-        case types_.Action.UPDATE:
+        case types_.ActionType.UPDATE:
             assert isinstance(action, types_.UpdateAction)  # nosec
             return _update(action=action, discourse=discourse, draft_mode=draft_mode)
-        case types_.Action.DELETE:
+        case types_.ActionType.DELETE:
             assert isinstance(action, types_.DeleteAction)  # nosec
             return _delete(
                 action=action,
@@ -273,8 +273,8 @@ def _run_index(
             reason=DRAFT_MODE_REASON,
         )
 
-    match action.action:
-        case types_.Action.CREATE:
+    match action.type_:
+        case types_.ActionType.CREATE:
             try:
                 # To help mypy (same for the rest of the asserts), it is ok if the assert does not
                 # run
@@ -287,10 +287,10 @@ def _run_index(
                     result=types_.ActionResult.FAIL,
                     reason=str(exc),
                 )
-        case types_.Action.NOOP:
+        case types_.ActionType.NOOP:
             assert isinstance(action, types_.NoopIndexAction)  # nosec
             url = action.url
-        case types_.Action.UPDATE:
+        case types_.ActionType.UPDATE:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 discourse.update_topic(url=action.url, content=action.content_change.new)
