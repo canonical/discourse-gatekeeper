@@ -26,7 +26,8 @@ def test_run_empty_local_server(tmp_path: Path):
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
-        title="Name 1 Documentation Overview", content=f"{reconcile.NAVIGATION_TABLE_START}\n\n"
+        title="Name 1 Documentation Overview",
+        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
     )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
@@ -61,7 +62,7 @@ def test_run_local_empty_server(tmp_path: Path):
         title="Name 1 Documentation Overview",
         content=(
             f"{index_content}{reconcile.NAVIGATION_TABLE_START}\n"
-            f"| 1 | page-1 | [{page_1_content}]({page_1_url}) |\n"
+            f"| 1 | page-1 | [{page_1_content}]({page_1_url}) |"
         ),
     )
     assert returned_page_interactions == {
@@ -106,6 +107,7 @@ def test_run_local_empty_server_error(tmp_path: Path):
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
-        title="Name 1 Documentation Overview", content=f"{reconcile.NAVIGATION_TABLE_START}\n\n"
+        title="Name 1 Documentation Overview",
+        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
     )
     assert not returned_page_interactions

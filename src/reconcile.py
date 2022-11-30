@@ -307,16 +307,20 @@ def index_page(
         The action to take for the index page.
     """
     table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
-    local_content = f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
+    local_content = (
+        f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
+    ).strip()
 
     if index.server is None:
         return types_.CreateIndexAction(
             type_=types_.ActionType.CREATE, content=local_content, title=index.local.title
         )
-    if local_content != index.server.content:
+
+    server_content = index.server.content.strip()
+    if local_content != server_content:
         return types_.UpdateIndexAction(
             type_=types_.ActionType.UPDATE,
-            content_change=types_.IndexContentChange(old=index.server.content, new=local_content),
+            content_change=types_.IndexContentChange(old=server_content, new=local_content),
             url=index.server.url,
         )
     return types_.NoopIndexAction(

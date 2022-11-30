@@ -603,7 +603,7 @@ def test_run(
             types_.CreateIndexAction(
                 type_=types_.ActionType.CREATE,
                 title=local_title,
-                content=f"{reconcile.NAVIGATION_TABLE_START}\n\n",
+                content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
             ),
             id="empty local only empty rows",
         ),
@@ -619,7 +619,7 @@ def test_run(
             types_.CreateIndexAction(
                 type_=types_.ActionType.CREATE,
                 title=local_title,
-                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
+                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
             ),
             id="local only empty rows",
         ),
@@ -643,7 +643,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row.to_markdown()}\n"
+                    f"{table_row.to_markdown()}"
                 ),
             ),
             id="local only single row",
@@ -673,7 +673,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}\n"
+                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
                 ),
             ),
             id="local only multiple rows",
@@ -684,7 +684,7 @@ def test_run(
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
+                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -700,6 +700,45 @@ def test_run(
         pytest.param(
             types_.Index(
                 local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
+                server=types_.Page(
+                    url=(url := "url 1"),
+                    content=(
+                        server_content := f" {local_content}{reconcile.NAVIGATION_TABLE_START}"
+                    ),
+                ),
+                name="name 1",
+            ),
+            (),
+            types_.NoopIndexAction(
+                type_=types_.ActionType.NOOP,
+                content=server_content[1:],
+                url=url,
+            ),
+            id="local server whitespace different same empty rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=types_.IndexFile(title="title 1", content=(local_content := " content 1")),
+                server=types_.Page(
+                    url=(url := "url 1"),
+                    content=(
+                        server_content := f"{local_content.strip()}"
+                        f"{reconcile.NAVIGATION_TABLE_START}"
+                    ),
+                ),
+                name="name 1",
+            ),
+            (),
+            types_.NoopIndexAction(
+                type_=types_.ActionType.NOOP,
+                content=server_content,
+                url=url,
+            ),
+            id="local whitespace server different same empty rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
                 server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
                 name="name 1",
             ),
@@ -708,7 +747,7 @@ def test_run(
                 type_=types_.ActionType.UPDATE,
                 content_change=types_.IndexContentChange(
                     old=server_content,
-                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
+                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
                 ),
                 url=url,
             ),
