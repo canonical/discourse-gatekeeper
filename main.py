@@ -21,7 +21,7 @@ def main():
 
     # Read input
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
-    dry_run = os.getenv("INPUT_DRAFT_MODE") == "true"
+    dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     discourse_host = os.getenv("INPUT_DISCOURSE_HOST")
     discourse_category_id = os.getenv("INPUT_DISCOURSE_CATEGORY_ID")
     discourse_api_username = os.getenv("INPUT_DISCOURSE_API_USERNAME")
