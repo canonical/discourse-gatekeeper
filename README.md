@@ -39,23 +39,23 @@ charmhub.
     something unexpected or you would prefer it to do something different.
 5. Add this action to your desired workflow. For example:
 
-```yaml
-jobs:
-  publish-docs:
-    name: Publish docs
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Publish documentation
-        uses: canonical/upload-charm-docs@alpha-5
-        id: publishDocumentation
-        with:
-        discourse_host: discourse.charmhub.io
-        discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-        discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-      - name: Show index page
-        run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
-```
+    ```yaml
+    jobs:
+      publish-docs:
+        name: Publish docs
+        runs-on: ubuntu-22.04
+        steps:
+          - uses: actions/checkout@v3
+          - name: Publish documentation
+            uses: canonical/upload-charm-docs@alpha-5
+            id: publishDocumentation
+            with:
+            discourse_host: discourse.charmhub.io
+            discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+            discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          - name: Show index page
+            run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
+    ```
 
     This action requires an API username and key to discourse. For Canonical
     staff, please file a ticket with IS to request one. Note that there is a
