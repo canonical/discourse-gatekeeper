@@ -58,7 +58,15 @@ jobs:
 ```
 
     This action requires an API username and key to discourse. For Canonical
-    staff, please file an issue with IS top request one.
+    staff, please file a ticket with IS to request one. Note that there is a
+    rate limit on the number of topics that can be created by a user per day on
+    discourse. If you encounter this issue, the action will fail and report
+    that as the reason. It may help to space out adopting this action if you
+    are planning to use it for multiple charms or to use different users for
+    each charm. Note that other rate limits also apply which is why execution
+    might look like it is stalled for a short period and then resume. The
+    action will gracefully wait in case of throttling up to a maximum of 10
+    minutes.
 
     There is a nice parameter, `dry_run`, which will do everything except
     make changes on discourse and log what would have happened. This will help

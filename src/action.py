@@ -44,14 +44,17 @@ def _create(
     """
     logging.info("dry run: %s, action: %s", dry_run, action)
 
+    # Handle the directory/ group case, no server interactions are required
     if action.content is None:
         url = None
         result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
         reason = DRAFT_MODE_REASON if dry_run else None
+    # Handle the file/ page case when dry run is enabled, no server interactions are required
     elif dry_run:
         url = DRAFT_NAVLINK_LINK
         result = types_.ActionResult.SKIP
         reason = DRAFT_MODE_REASON
+    # Handle the file/ page case where a new page needs to be created on the server
     else:
         try:
             url = discourse.create_topic(

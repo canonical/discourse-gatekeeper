@@ -3,7 +3,7 @@
 # # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Cleanup utility after running the action, primarily for testing purposes."""
+"""Cleanup and checking utility after running the action, primarily for testing purposes."""
 
 import argparse
 import contextlib

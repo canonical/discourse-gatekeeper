@@ -3,6 +3,9 @@
 
 """Unit tests for discourse."""
 
+# Need access to protected functions for testing
+# pylint: disable=protected-access
+
 from unittest import mock
 
 import pydiscourse
@@ -618,11 +621,13 @@ def test_retrieve_topic_http_error(
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    mocked_get = mock.MagicMock(spec=requests.get)
+    mock_get_requests_session = mock.MagicMock(spec=discourse._get_requests_session)
+    mocked_session = mock.MagicMock(spec=requests.Session)
+    mock_get_requests_session.return_value = mocked_session
     mocked_response = mock.MagicMock(spec=requests.Response)
-    mocked_get.return_value = mocked_response
+    mocked_session.get.return_value = mocked_response
     mocked_response.raise_for_status.side_effect = requests.HTTPError
-    monkeypatch.setattr(requests, "get", mocked_get)
+    monkeypatch.setattr(discourse, "_get_requests_session", mock_get_requests_session)
 
     url = f"{base_path}/t/slug/1"
     with pytest.raises(DiscourseError) as exc_info:
@@ -645,12 +650,14 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    mocked_get = mock.MagicMock(spec=requests.get)
+    mock_get_requests_session = mock.MagicMock(spec=discourse._get_requests_session)
+    mocked_session = mock.MagicMock(spec=requests.Session)
+    mock_get_requests_session.return_value = mocked_session
     mocked_response = mock.MagicMock(spec=requests.Response)
-    mocked_get.return_value = mocked_response
+    mocked_session.get.return_value = mocked_response
     content = "content 1"
     mocked_response.content = content.encode("utf-8")
-    monkeypatch.setattr(requests, "get", mocked_get)
+    monkeypatch.setattr(discourse, "_get_requests_session", mock_get_requests_session)
 
     url = f"{base_path}/t/slug/1"
     returned_content = discourse.retrieve_topic(url=url)

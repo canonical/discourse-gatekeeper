@@ -308,8 +308,8 @@ def index_page(
     """
     table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
     local_content = (
-        f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n"
-    ).strip()
+        f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
+    )
 
     if index.server is None:
         return types_.CreateIndexAction(

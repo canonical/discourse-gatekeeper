@@ -9,6 +9,8 @@ from urllib import parse
 import pydiscourse
 import pydiscourse.exceptions
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from .exceptions import DiscourseError, InputError
 
@@ -279,6 +281,26 @@ class Discourse:
         self._retrieve_topic_first_post(url=url)
         return True
 
+    # Tested in integration tests
+    @staticmethod
+    def _get_requests_session() -> requests.Session:  # pragma: no cover
+        """Get a requests session.
+
+        Returns:
+            A session with retries enabled.
+        """
+        session = requests.Session()
+        adapter = HTTPAdapter(
+            max_retries=Retry(
+                total=5,
+                backoff_factor=1,
+                status_forcelist=[429, 500, 502, 503, 504],
+            )
+        )
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
+
     def retrieve_topic(self, url: str) -> str:
         """Retrieve the topic content.
 
@@ -300,7 +322,7 @@ class Discourse:
 
         topic_info = self._url_to_topic_info(url=url)
         headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
-        response = requests.get(
+        response = self._get_requests_session().get(
             f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
         )
         try:

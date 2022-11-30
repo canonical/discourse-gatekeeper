@@ -68,7 +68,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert len(urls_with_actions) == 1
     index_url = next(iter(urls_with_actions.keys()))
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}"
+    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
     assert index_url in caplog.text
 
     # 2. docs with an index file in dry run mode
@@ -86,7 +86,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}"
+    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
     assert_substrings_in_string((index_url, "'update'", "'skip'"), caplog.text)
 
     # 3. docs with an index file
