@@ -9,9 +9,9 @@ import typing
 from . import exceptions, reconcile, types_
 from .discourse import Discourse
 
-DRAFT_NAVLINK_LINK = "<not created due to draft mode>"
+DRAFT_NAVLINK_LINK = "<not created due to dry run>"
 FAIL_NAVLINK_LINK = "<not created due to error>"
-DRAFT_MODE_REASON = "draft mode"
+DRAFT_MODE_REASON = "dry run"
 NOT_DELETE_REASON = "delete_topics is false"
 
 
@@ -29,26 +29,26 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
 
 
 def _create(
-    action: types_.CreateAction, discourse: Discourse, draft_mode: bool, name: str
+    action: types_.CreateAction, discourse: Discourse, dry_run: bool, name: str
 ) -> types_.ActionReport:
     """Execute a create action.
 
     Args:
         action: The create action details.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
         name: The charm name to prefix to the created pages title.
 
     Returns:
         A report on the outcome of executing the action.
     """
-    logging.info("draft mode: %s, action: %s", draft_mode, action)
+    logging.info("dry run: %s, action: %s", dry_run, action)
 
     if action.content is None:
         url = None
-        result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
-        reason = DRAFT_MODE_REASON if draft_mode else None
-    elif draft_mode:
+        result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
+        reason = DRAFT_MODE_REASON if dry_run else None
+    elif dry_run:
         url = DRAFT_NAVLINK_LINK
         result = types_.ActionResult.SKIP
         reason = DRAFT_MODE_REASON
@@ -94,14 +94,14 @@ def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionRepor
 
 
 def _update(
-    action: types_.UpdateAction, discourse: Discourse, draft_mode: bool
+    action: types_.UpdateAction, discourse: Discourse, dry_run: bool
 ) -> types_.ActionReport:
     """Execute an update action.
 
     Args:
         action: The update action details.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
 
     Returns:
         A report on the outcome of executing the action.
@@ -109,7 +109,7 @@ def _update(
     Raises:
         ActionError: if the content change or new content for a page is None.
     """
-    logging.info("draft mode: %s, action: %s", draft_mode, action)
+    logging.info("dry run: %s, action: %s", dry_run, action)
 
     # Check that action is valid
     if action.navlink_change.new.link is not None and action.content_change is None:
@@ -124,7 +124,7 @@ def _update(
         raise exceptions.ActionError(f"internal error, new content for page is None, {action=!r}")
 
     if (
-        not draft_mode
+        not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None
         and action.content_change.new is not None
@@ -140,8 +140,8 @@ def _update(
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:
-        result = types_.ActionResult.SKIP if draft_mode else types_.ActionResult.SUCCESS
-        reason = DRAFT_MODE_REASON if draft_mode else None
+        result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
+        reason = DRAFT_MODE_REASON if dry_run else None
 
     url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(
@@ -151,14 +151,14 @@ def _update(
 
 
 def _delete(
-    action: types_.DeleteAction, discourse: Discourse, draft_mode: bool, delete_pages: bool
+    action: types_.DeleteAction, discourse: Discourse, dry_run: bool, delete_pages: bool
 ) -> types_.ActionReport:
     """Execute a delete action.
 
     Args:
         action: The delete action details.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
@@ -167,11 +167,11 @@ def _delete(
     Raises:
         ActionError: If the link for a page to delete is None.
     """
-    logging.info("draft mode: %s, delete pages: %s, action: %s", draft_mode, delete_pages, action)
+    logging.info("dry run: %s, delete pages: %s, action: %s", dry_run, delete_pages, action)
 
     url = _absolute_url(action.navlink.link, discourse=discourse)
     is_group = action.navlink.link is None
-    if draft_mode:
+    if dry_run:
         return types_.ActionReport(
             table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRAFT_MODE_REASON
         )
@@ -205,7 +205,7 @@ def _run_one(
     action: types_.AnyAction,
     discourse: Discourse,
     name: str,
-    draft_mode: bool,
+    dry_run: bool,
     delete_pages: bool,
 ) -> types_.ActionReport:
     """Take the actions against the server.
@@ -214,7 +214,7 @@ def _run_one(
         actions: The actions to take.
         discourse: A client to the documentation server.
         name: The charm name to prefix to the created pages title.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
@@ -228,19 +228,19 @@ def _run_one(
         case types_.ActionType.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
-            report = _create(action=action, discourse=discourse, draft_mode=draft_mode, name=name)
+            report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
         case types_.ActionType.NOOP:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
         case types_.ActionType.UPDATE:
             assert isinstance(action, types_.UpdateAction)  # nosec
-            report = _update(action=action, discourse=discourse, draft_mode=draft_mode)
+            report = _update(action=action, discourse=discourse, dry_run=dry_run)
         case types_.ActionType.DELETE:
             assert isinstance(action, types_.DeleteAction)  # nosec
             report = _delete(
                 action=action,
                 discourse=discourse,
-                draft_mode=draft_mode,
+                dry_run=dry_run,
                 delete_pages=delete_pages,
             )
         # Edge case that should not be possible
@@ -254,14 +254,14 @@ def _run_one(
 
 
 def _run_index(
-    action: types_.AnyIndexAction, discourse: Discourse, draft_mode: bool
+    action: types_.AnyIndexAction, discourse: Discourse, dry_run: bool
 ) -> types_.ActionReport:
     """Take the index action against the server.
 
     Args:
         action: The actions to take.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
 
     Returns:
         A report on the outcome of executing the action.
@@ -269,9 +269,9 @@ def _run_index(
     Raises:
         ActionError: if an action that is not handled is passed to the function.
     """
-    logging.info("draft mode: %s, action: %s", draft_mode, action)
+    logging.info("dry run: %s, action: %s", dry_run, action)
 
-    if draft_mode:
+    if dry_run:
         report = types_.ActionReport(
             table_row=None,
             url=DRAFT_NAVLINK_LINK if action.type_ == types_.ActionType.CREATE else action.url,
@@ -332,7 +332,7 @@ def run_all(
     actions: typing.Iterable[types_.AnyAction],
     index: types_.Index,
     discourse: Discourse,
-    draft_mode: bool,
+    dry_run: bool,
     delete_pages: bool,
 ) -> list[types_.ActionReport]:
     """Take the actions against the server.
@@ -341,7 +341,7 @@ def run_all(
         actions: The actions to take.
         index: Information about the index.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
@@ -352,15 +352,13 @@ def run_all(
             action=action,
             discourse=discourse,
             name=index.name,
-            draft_mode=draft_mode,
+            dry_run=dry_run,
             delete_pages=delete_pages,
         )
         for action in actions
     ]
     table_rows = (report.table_row for report in action_reports if report.table_row is not None)
     index_action = reconcile.index_page(index=index, table_rows=table_rows)
-    index_action_report = _run_index(
-        action=index_action, discourse=discourse, draft_mode=draft_mode
-    )
+    index_action_report = _run_index(action=index_action, discourse=discourse, dry_run=dry_run)
     action_reports.append(index_action_report)
     return action_reports

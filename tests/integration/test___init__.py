@@ -27,15 +27,15 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     arrange: given running discourse server
     act: when run is called with:
         1. docs empty
-        2. docs with an index file in draft mode
+        2. docs with an index file in dry run mode
         3. docs with an index file
-        4. docs with a documentation file added in draft mode
+        4. docs with a documentation file added in dry run mode
         5. docs with a documentation file added
-        6. docs with a documentation file updated in draft mode
+        6. docs with a documentation file updated in dry run mode
         7. docs with a documentation file updated
         8. docs with a nested directory added
         9. docs with a documentation file added in the nested directory
-        10. docs with the documentation file in the nested directory removed in draft mode
+        10. docs with the documentation file in the nested directory removed in dry run mode
         11. docs with the documentation file in the nested directory removed with page deletion
             disabled
         12. with the nested directory removed
@@ -62,7 +62,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     # 1. docs empty
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 1
@@ -71,7 +71,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}"
     assert index_url in caplog.text
 
-    # 2. docs with an index file in draft mode
+    # 2. docs with an index file in dry run mode
     caplog.clear()
     create_metadata_yaml(
         content=f"{index.METADATA_NAME_KEY}: name 1\n{index.METADATA_DOCS_KEY}: {index_url}",
@@ -81,7 +81,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -93,7 +93,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -101,13 +101,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert index_topic == f"{index_content}{reconcile.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "'update'", "'success'"), caplog.text)
 
-    # 4. docs with a documentation file added in draft mode
+    # 4. docs with a documentation file added in dry run mode
     caplog.clear()
     doc_table_key = "doc"
     (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -119,7 +119,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 2
@@ -132,12 +132,12 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_1
 
-    # 6. docs with a documentation file updated in draft mode
+    # 6. docs with a documentation file updated in dry run mode
     caplog.clear()
     doc_file.write_text(doc_content_2 := "doc content 2")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -151,7 +151,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -168,7 +168,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -185,7 +185,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert len(urls_with_actions) == 3
@@ -201,12 +201,12 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 10. docs with the documentation file in the nested directory removed in draft mode
+    # 10. docs with the documentation file in the nested directory removed in dry run mode
     caplog.clear()
     nested_dir_doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=True, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -221,7 +221,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=False
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=False
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -236,7 +236,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     nested_dir.rmdir()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -249,7 +249,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -264,7 +264,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     index_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, draft_mode=False, delete_pages=True
+        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
     )
 
     assert (urls := tuple(urls_with_actions)) == (index_url,)

@@ -60,7 +60,7 @@ jobs:
     This action requires an API username and key to discourse. For Canonical
     staff, please file an issue with IS top request one.
 
-    There is a nice parameter, `draft_mode`, which will do everything except
+    There is a nice parameter, `dry_run`, which will do everything except
     make changes on discourse and log what would have happened. This will help
     you see what the action would have done.
 6. Check the logs for the URL to the index topic that the action created. This
@@ -71,8 +71,8 @@ The action will now compare the discourse topics with the files and directories
 under the `docs` directory and make any changes based on differences.
 Additional recommended steps:
 
-* Add the action in draft mode to run on every PR. This will mean that you will
-  see all the changes that would be made by the PR once you are ready to
+* Add the action in dry run mode to run on every PR. This will mean that you
+  will see all the changes that would be made by the PR once you are ready to
   publish a new version of the charm and documentation.
-* Add the action in draft mode on publishes to `edge` to see what changes to
+* Add the action in dry run mode on publishes to `edge` to see what changes to
   the documentation will be made once you publish to `stable`.

@@ -17,7 +17,7 @@ from .reconcile import run as run_reconcile
 def run(
     base_path: Path,
     discourse: Discourse,
-    draft_mode: bool,
+    dry_run: bool,
     delete_pages: bool,
 ) -> dict[str, str]:
     """Upload the documentation to charmhub.
@@ -25,7 +25,7 @@ def run(
     Args:
         base_path: The base path to look for the metadata file in.
         discourse: A client to the documentation server.
-        draft_mode: If enabled, only log the action that would be taken.
+        dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
@@ -41,7 +41,7 @@ def run(
         actions=actions,
         index=index,
         discourse=discourse,
-        draft_mode=draft_mode,
+        dry_run=dry_run,
         delete_pages=delete_pages,
     )
     return {

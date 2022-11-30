@@ -9,7 +9,7 @@ inputs:
     default: true
     required: false
     type: boolean
-  draft_mode:
+  dry_run:
     description: |
       If enabled, only log the changes that would be made.
     default: false
