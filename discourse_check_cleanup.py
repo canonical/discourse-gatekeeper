@@ -48,7 +48,7 @@ def main():
         "discourse_config", help="The discourse configuration used to create the pages"
     )
     parser.add_argument(
-        "--action", help="Action to run", choices=iter(action.value for action in Actions)
+        "--action", help="Action to run", choices=tuple(action.value for action in Actions)
     )
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
