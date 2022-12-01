@@ -13,7 +13,7 @@ import pydiscourse.exceptions
 import pytest
 import requests
 
-from src.discourse import Discourse, create_discourse
+from src.discourse import _URL_PATH_PREFIX, Discourse, create_discourse
 from src.exceptions import DiscourseError, InputError
 
 
@@ -116,7 +116,7 @@ from src.exceptions import DiscourseError, InputError
             id="valid trailing /",
         ),
         pytest.param(
-            "/t/slug/1",
+            f"{_URL_PATH_PREFIX}slug/1",
             True,
             None,
             id="valid no protocol host",
