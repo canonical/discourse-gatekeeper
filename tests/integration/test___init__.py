@@ -77,7 +77,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
         content=f"{index.METADATA_NAME_KEY}: name 1\n{index.METADATA_DOCS_KEY}: {index_url}",
         path=tmp_path,
     )
-    (docs_dir := tmp_path / "docs").mkdir()
+    (docs_dir := tmp_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
