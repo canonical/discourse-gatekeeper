@@ -191,7 +191,7 @@ class Discourse:
         return first_post
 
     @staticmethod
-    def _get_post_value(post: dict, key: str, expected_type: typing.Type[KeyT]) -> KeyT:
+    def _get_post_value(post: dict, key: str, expected_type: type[KeyT]) -> KeyT:
         """Get a value by key from the first post checking the value is the correct type.
 
         Args:
@@ -381,7 +381,7 @@ def create_discourse(
             f"Invalid 'discourse_host' input, it must be non-empty, got {hostname=!r}"
         )
     hostname = hostname.lower()
-    if hostname.startswith("http://") or hostname.startswith("https://"):
+    if hostname.startswith(("http://", "https://")):
         raise InputError(
             f"Invalid 'discourse_host' input, it should not include the protocol, got {hostname=!r}"
         )

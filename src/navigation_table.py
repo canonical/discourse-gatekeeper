@@ -1,11 +1,12 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Class for parsing and rendering a navigation table."""
+"""Module for parsing and rendering a navigation table."""
 
 import re
 import typing
 
+from . import types_
 from .exceptions import NavigationTableParseError
 
 _WHITESPACE = r"\s*"
@@ -30,32 +31,6 @@ _NAVLINK_REGEX = (
 _ROW_PATTERN = re.compile(rf"{_WHITESPACE}\|{_LEVEL_REGEX}\|{_PATH_REGEX}\|{_NAVLINK_REGEX}\|")
 
 
-class Navlink(typing.NamedTuple):
-    """Represents navlink of a table row of the navigation table.
-
-    Attrs:
-        title: The title of the documentation page.
-        link: The relative URL to the documentation page or None if there is no link.
-    """
-
-    title: str
-    link: str | None
-
-
-class TableRow(typing.NamedTuple):
-    """Represents one parsed row of the navigation table.
-
-    Attrs:
-        level: The number of parents, is 1 if there is no parent.
-        path: The a unique string identifying the row.
-        navlink: The title and relative URL to the documentation page.
-    """
-
-    level: int
-    path: str
-    navlink: Navlink
-
-
 def _filter_line(line: str) -> bool:
     """Check whether a line should be parsed.
 
@@ -74,7 +49,7 @@ def _filter_line(line: str) -> bool:
     return True
 
 
-def _line_to_row(line: str) -> TableRow:
+def _line_to_row(line: str) -> types_.TableRow:
     """Parse a markdown table line.
 
     Args:
@@ -96,14 +71,14 @@ def _line_to_row(line: str) -> TableRow:
     navlink_title = match.group(3)
     navlink_link = match.group(4)
 
-    return TableRow(
+    return types_.TableRow(
         level=level,
         path=path,
-        navlink=Navlink(title=navlink_title, link=navlink_link if navlink_link else None),
+        navlink=types_.Navlink(title=navlink_title, link=navlink_link or None),
     )
 
 
-def from_page(page: str) -> typing.Iterator[TableRow]:
+def from_page(page: str) -> typing.Iterator[types_.TableRow]:
     """Create an instance based on a markdown page.
 
     Algorithm:

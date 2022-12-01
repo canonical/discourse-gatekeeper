@@ -10,6 +10,19 @@ inputs:
     default: false
     required: false
     type: boolean
+  delete_topics:
+    description: |
+      Whether to delete topics from the documentation server if they are no
+      longer needed.
+    default: true
+    required: false
+    type: boolean
+  draft_mode:
+    description: |
+      If enabled, only log the changes that would be made.
+    default: false
+    required: false
+    type: boolean
   discourse_host:
     description: The discourse host name.
     required: true

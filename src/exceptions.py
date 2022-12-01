@@ -22,3 +22,11 @@ class DiscourseError(BaseError):
 
 class NavigationTableParseError(BaseError):
     """A problem with the navigation table parsing occurred."""
+
+
+class ReconcilliationError(BaseError):
+    """A problem with the reconcilliation occurred."""
+
+
+class ActionError(BaseError):
+    """A problem with the taking an action occurred."""
