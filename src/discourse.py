@@ -15,6 +15,9 @@ from urllib3 import Retry
 from .exceptions import DiscourseError, InputError
 
 
+_URL_PATH_PREFIX = "/t/"
+
+
 class _DiscourseTopicInfo(typing.NamedTuple):
     """Information about a discourse topic.
 
@@ -99,7 +102,7 @@ class Discourse:
             Whether the URL is a valid topic URL.
 
         """
-        if not url.startswith(self._base_path) and not url.startswith("/t/"):
+        if not url.startswith((self._base_path, _URL_PATH_PREFIX)):
             return _ValidationResultInvalid(
                 "The base path is different to the expected base path, "
                 f"expected: {self._base_path}, {url=}"
@@ -165,7 +168,7 @@ class Discourse:
             The URL to the topic.
 
         """
-        return f"{self._base_path}/t/{topic_info.slug}/{topic_info.id_}"
+        return f"{self._base_path}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
 
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.

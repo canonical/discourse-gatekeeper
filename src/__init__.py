@@ -9,6 +9,7 @@ from .action import DRAFT_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .discourse import Discourse
 from .docs_directory import read as read_docs_directory
+from .index import DOCUMENTATION_FOLDER_NAME
 from .index import get as get_index
 from .navigation_table import from_page as navigation_table_from_page
 from .reconcile import run as run_reconcile
@@ -33,8 +34,10 @@ def run(
 
     """
     index = get_index(base_path=base_path, server_client=discourse)
-    path_infos = read_docs_directory(docs_path=base_path / "docs")
-    server_content = (index.server.content or "") if index.server is not None else ""
+    path_infos = read_docs_directory(docs_path=base_path / DOCUMENTATION_FOLDER_NAME)
+    server_content = (
+        index.server.content if index.server is not None and index.server.content else ""
+    )
     table_rows = navigation_table_from_page(page=server_content)
     actions = run_reconcile(path_infos=path_infos, table_rows=table_rows, discourse=discourse)
     reports = run_all_actions(
