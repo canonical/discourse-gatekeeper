@@ -14,7 +14,6 @@ from urllib3 import Retry
 
 from .exceptions import DiscourseError, InputError
 
-
 _URL_PATH_PREFIX = "/t/"
 
 
@@ -158,7 +157,7 @@ class Discourse:
         path_components = parse.urlparse(url=url).path.split("/")
         return _DiscourseTopicInfo(slug=path_components[-2], id_=int(path_components[-1]))
 
-    def _topic_info_to_url(self, topic_info: _DiscourseTopicInfo) -> str:
+    def _topic_info_to_absolute_url(self, topic_info: _DiscourseTopicInfo) -> str:
         """Retrieve the url from the topic information.
 
         Args:
@@ -245,7 +244,7 @@ class Discourse:
             The url with the base path.
         """
         topic_info = self._url_to_topic_info(url=url)
-        return self._topic_info_to_url(topic_info=topic_info)
+        return self._topic_info_to_absolute_url(topic_info=topic_info)
 
     def check_topic_write_permission(self, url: str) -> bool:
         """Check whether the credentials have write permission on a topic.
@@ -360,7 +359,7 @@ class Discourse:
 
         topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
         topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
-        return self._topic_info_to_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
+        return self._topic_info_to_absolute_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
 
     def delete_topic(self, url: str) -> str:
         """Delete a topic.
@@ -380,7 +379,7 @@ class Discourse:
             raise DiscourseError(
                 f"Error deleting the topic, {url=!r}, {discourse_error=}"
             ) from discourse_error
-        return self._topic_info_to_url(topic_info)
+        return self._topic_info_to_absolute_url(topic_info)
 
     def update_topic(
         self, url: str, content: str, edit_reason: str = "Charm documentation updated"
