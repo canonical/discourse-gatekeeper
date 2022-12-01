@@ -2,13 +2,6 @@ name: Upload Charm Docs
 description: Upload charm documentation to charmhub
 author: David Andersson
 inputs:
-  delete_topics:
-    description: |
-      Whether to delete topics from the documentation server if they are no
-      longer needed.
-    default: true
-    required: false
-    type: boolean
   dry_run:
     description: |
       If enabled, only log the changes that would be made.
