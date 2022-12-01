@@ -50,9 +50,9 @@ charmhub.
             uses: canonical/upload-charm-docs@alpha-5
             id: publishDocumentation
             with:
-            discourse_host: discourse.charmhub.io
-            discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-            discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+              discourse_host: discourse.charmhub.io
+              discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+              discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
           - name: Show index page
             run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```

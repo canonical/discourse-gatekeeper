@@ -43,11 +43,11 @@ def test_run_local_empty_server(tmp_path: Path):
     create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: {name}", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
-    (docs_folder / "page_1.md").write_text(page_1_content := "page 1 content")
+    (docs_folder / "page.md").write_text(page_content := "page content")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = [
-        (page_1_url := "url 1"),
-        (index_1_url := "url 2"),
+        (page_url := "url 1"),
+        (index_url := "url 2"),
     ]
 
     returned_page_interactions = run(
@@ -56,18 +56,18 @@ def test_run_local_empty_server(tmp_path: Path):
 
     assert mocked_discourse.create_topic.call_count == 2
     mocked_discourse.create_topic.assert_any_call(
-        title=f"{name} docs: {page_1_content}", content=page_1_content
+        title=f"{name} docs: {page_content}", content=page_content
     )
     mocked_discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
             f"{index_content}{reconcile.NAVIGATION_TABLE_START}\n"
-            f"| 1 | page-1 | [{page_1_content}]({page_1_url}) |"
+            f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
     assert returned_page_interactions == {
-        page_1_url: types_.ActionResult.SUCCESS,
-        index_1_url: types_.ActionResult.SUCCESS,
+        page_url: types_.ActionResult.SUCCESS,
+        index_url: types_.ActionResult.SUCCESS,
     }
 
 
@@ -80,7 +80,7 @@ def test_run_local_empty_server_dry_run(tmp_path: Path):
     create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text("index content")
-    (docs_folder / "page_1.md").write_text("page 1 content")
+    (docs_folder / "page.md").write_text("page content")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
     returned_page_interactions = run(

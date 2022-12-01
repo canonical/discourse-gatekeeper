@@ -51,10 +51,12 @@ def main():
     else:
         index_url = ""
     discourse_config = compact_json(create_discourse_kwargs)
-    with github_output.open("w", encoding="utf-8") as github_output_file:
-        github_output_file.write(f"urls_with_actions={urls_with_actions}\n")
-        github_output_file.write(f"index_url={index_url}\n")
-        github_output_file.write(f"discourse_config={discourse_config}\n")
+    github_output.write_text(
+        f"urls_with_actions={urls_with_actions}\n"
+        f"index_url={index_url}\n"
+        f"discourse_config={discourse_config}\n",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":
