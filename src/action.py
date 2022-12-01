@@ -227,6 +227,7 @@ def _run_one(
         ActionError: if an action that is not handled is passed to the function.
     """
     # Ruff seems to think this is invalid syntax but the syntax is fine
+    # https://github.com/charliermarsh/ruff/issues/680
     match action.type_:  # noqa: E999
         case types_.ActionType.CREATE:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run

@@ -10,10 +10,29 @@ import contextlib
 import json
 import logging
 import sys
+from enum import Enum
 
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.types_ import ActionResult
+
+
+class Actions(str, Enum):
+    """The actions the utility can take.
+
+    Attrs:
+        CHECK_DRAFT: Check that the draft integration test succeeded.
+        CHECK_CREATE: Check that the create integration test succeeded.
+        CHECK_DELETE_TOPICS: Check that the delete_topics integration test succeeded.
+        CHECK_DELETE: Check that the delete integration test succeeded.
+        CLEANUP: Discourse cleanup after the testing.
+    """
+
+    CHECK_DRAFT = "check-draft"
+    CHECK_CREATE = "check-create"
+    CHECK_DELETE_TOPICS = "check-delete-topics"
+    CHECK_DELETE = "check-delete"
+    CLEANUP = "cleanup"
 
 
 def main():
@@ -29,21 +48,7 @@ def main():
         "discourse_config", help="The discourse configuration used to create the pages"
     )
     parser.add_argument(
-        "--check-draft", help="Check that the draft test succeeded", action="store_true"
-    )
-    parser.add_argument(
-        "--check-create", help="Check that the create test succeeded", action="store_true"
-    )
-    parser.add_argument(
-        "--check-delete-topics",
-        help="Check that the delete_topics test succeeded",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--check-delete", help="Check that the delete test succeeded", action="store_true"
-    )
-    parser.add_argument(
-        "--check-only", help="Skip cleanup and only run any checks", action="store_true"
+        "--action", help="Action to run", choices=iter(action.value for action in Actions)
     )
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
@@ -51,23 +56,36 @@ def main():
 
     discourse = create_discourse(**discourse_config)
 
-    check_result = True
-    if args.check_draft:
-        check_result = check_draft(urls_with_actions=urls_with_actions)
-    if args.check_create:
-        check_result = check_create(urls_with_actions=urls_with_actions, discourse=discourse)
-    if args.check_delete_topics:
-        check_result = check_delete_topics(
-            urls_with_actions=urls_with_actions, discourse=discourse
-        )
-    if args.check_delete:
-        check_result = check_delete(urls_with_actions=urls_with_actions, discourse=discourse)
+    # Ruff seems to think this is invalid syntax but the syntax is fine
+    # https://github.com/charliermarsh/ruff/issues/680
+    match args.action:  # noqa: E999
+        case Actions.CHECK_DRAFT.value:
+            _exit_with_result(check_draft(urls_with_actions=urls_with_actions))
+        case Actions.CHECK_CREATE.value:
+            _exit_with_result(
+                check_create(urls_with_actions=urls_with_actions, discourse=discourse)
+            )
+        case Actions.CHECK_DELETE_TOPICS.value:
+            _exit_with_result(
+                check_delete_topics(urls_with_actions=urls_with_actions, discourse=discourse)
+            )
+        case Actions.CHECK_DELETE.value:
+            _exit_with_result(
+                check_delete(urls_with_actions=urls_with_actions, discourse=discourse)
+            )
+        case Actions.CLEANUP.value:
+            cleanup(urls_with_actions=urls_with_actions, discourse=discourse)
+            sys.exit(0)
+        case _:
+            raise NotImplementedError(f"{args.action} has not been implemented")
 
-    if not args.check_only:
-        for url in urls_with_actions.keys():
-            with contextlib.suppress(DiscourseError):
-                discourse.delete_topic(url=url)
 
+def _exit_with_result(check_result: bool) -> None:
+    """Exit and set exit code based on the check result.
+
+    Args:
+        check_result: The outcome of a check.
+    """
     sys.exit(0 if check_result else 1)
 
 
@@ -300,6 +318,18 @@ def check_delete(urls_with_actions: dict[str, str], discourse: Discourse) -> boo
 
     logging.info("%s check succeeded", test_name)
     return True
+
+
+def cleanup(urls_with_actions: dict[str, str], discourse: Discourse) -> None:
+    """Delete all URLs.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        discourse: Client to the documentation server.
+    """
+    for url in urls_with_actions.keys():
+        with contextlib.suppress(DiscourseError):
+            discourse.delete_topic(url=url)
 
 
 if __name__ == "__main__":
