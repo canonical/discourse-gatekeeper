@@ -16,7 +16,7 @@ from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 
 
-class Actions(str, Enum):
+class Action(str, Enum):
     """The actions the utility can take.
 
     Attrs:
@@ -47,7 +47,7 @@ def main():
         "discourse_config", help="The discourse configuration used to create the pages"
     )
     parser.add_argument(
-        "--action", help="Action to run", choices=tuple(action.value for action in Actions)
+        "--action", help="Action to run", choices=tuple(action.value for action in Action)
     )
     parser.add_argument("--action-kwargs", help="Arguments for the action as a JSON mapping")
     args = parser.parse_args()
@@ -58,27 +58,27 @@ def main():
     discourse = create_discourse(**discourse_config)
 
     match args.action:
-        case Actions.CHECK_DRAFT.value:
+        case Action.CHECK_DRAFT.value:
             _exit_with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
-        case Actions.CHECK_CREATE.value:
+        case Action.CHECK_CREATE.value:
             _exit_with_result(
                 check_create(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
-        case Actions.CHECK_DELETE_TOPICS.value:
+        case Action.CHECK_DELETE_TOPICS.value:
             _exit_with_result(
                 check_delete_topics(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
-        case Actions.CHECK_DELETE.value:
+        case Action.CHECK_DELETE.value:
             _exit_with_result(
                 check_delete(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
-        case Actions.CLEANUP.value:
+        case Action.CLEANUP.value:
             cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
             sys.exit(0)
         case _:
