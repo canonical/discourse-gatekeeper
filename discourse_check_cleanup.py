@@ -14,7 +14,6 @@ from enum import Enum
 
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-from src.types_ import ActionResult
 
 
 class Actions(str, Enum):
@@ -58,9 +57,7 @@ def main():
 
     discourse = create_discourse(**discourse_config)
 
-    # Ruff seems to think this is invalid syntax but the syntax is fine
-    # https://github.com/charliermarsh/ruff/issues/680
-    match args.action:  # noqa: E999
+    match args.action:
         case Actions.CHECK_DRAFT.value:
             _exit_with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
         case Actions.CHECK_CREATE.value:
