@@ -57,7 +57,7 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
         if dry_run
         else src_types.ActionResult.SUCCESS
     )
-    assert returned_report.reason == (action.DRAFT_MODE_REASON if dry_run else None)
+    assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
 
 
 def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
@@ -87,10 +87,10 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.level == level
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink.title == navlink_title
-    assert returned_report.table_row.navlink.link == action.DRAFT_NAVLINK_LINK
-    assert returned_report.url == action.DRAFT_NAVLINK_LINK
+    assert returned_report.table_row.navlink.link == action.DRY_RUN_NAVLINK_LINK
+    assert returned_report.url == action.DRY_RUN_NAVLINK_LINK
     assert returned_report.result == src_types.ActionResult.SKIP
-    assert returned_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.reason == action.DRY_RUN_REASON
 
 
 def test__create_file_fail(caplog: pytest.LogCaptureFixture):
@@ -264,7 +264,7 @@ def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
         if dry_run
         else src_types.ActionResult.SUCCESS
     )
-    assert returned_report.reason == (action.DRAFT_MODE_REASON if dry_run else None)
+    assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
 
 
 def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
@@ -301,7 +301,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.navlink == update_action.navlink_change.new
     assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SKIP
-    assert returned_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.reason == action.DRY_RUN_REASON
 
 
 def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
@@ -461,7 +461,7 @@ def test__update_file_navlink_content_change_error(content_change: src_types.Con
             True,
             "link 1",
             src_types.ActionResult.SKIP,
-            action.DRAFT_MODE_REASON,
+            action.DRY_RUN_REASON,
             id="dry run mode enabled",
         ),
         pytest.param(
@@ -674,7 +674,7 @@ def test__run_one(
             src_types.CreateIndexAction(
                 type_=src_types.ActionType.CREATE, title="title 1", content="content 1"
             ),
-            action.DRAFT_NAVLINK_LINK,
+            action.DRY_RUN_NAVLINK_LINK,
             id="create",
         ),
         pytest.param(
@@ -720,7 +720,7 @@ def test__run_index_dry_run(
     assert returned_report.table_row is None
     assert returned_report.url == expected_url
     assert returned_report.result == src_types.ActionResult.SKIP
-    assert returned_report.reason == action.DRAFT_MODE_REASON
+    assert returned_report.reason == action.DRY_RUN_REASON
 
 
 def test__run_index_create_error(caplog: pytest.LogCaptureFixture):

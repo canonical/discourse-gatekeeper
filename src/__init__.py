@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from .action import DRAFT_NAVLINK_LINK, FAIL_NAVLINK_LINK
+from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .discourse import Discourse
 from .docs_directory import read as read_docs_directory
@@ -51,6 +51,6 @@ def run(
         report.url: report.result
         for report in reports
         if report.url is not None
-        and report.url != DRAFT_NAVLINK_LINK
+        and report.url != DRY_RUN_NAVLINK_LINK
         and report.url != FAIL_NAVLINK_LINK
     }

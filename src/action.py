@@ -9,9 +9,9 @@ import typing
 from . import exceptions, reconcile, types_
 from .discourse import Discourse
 
-DRAFT_NAVLINK_LINK = "<not created due to dry run>"
+DRY_RUN_NAVLINK_LINK = "<not created due to dry run>"
+DRY_RUN_REASON = "dry run"
 FAIL_NAVLINK_LINK = "<not created due to error>"
-DRAFT_MODE_REASON = "dry run"
 NOT_DELETE_REASON = "delete_topics is false"
 
 
@@ -48,12 +48,12 @@ def _create(
     if action.content is None:
         url = None
         result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
-        reason = DRAFT_MODE_REASON if dry_run else None
+        reason = DRY_RUN_REASON if dry_run else None
     # Handle the file/ page case when dry run is enabled, no server interactions are required
     elif dry_run:
-        url = DRAFT_NAVLINK_LINK
+        url = DRY_RUN_NAVLINK_LINK
         result = types_.ActionResult.SKIP
-        reason = DRAFT_MODE_REASON
+        reason = DRY_RUN_REASON
     # Handle the file/ page case where a new page needs to be created on the server
     else:
         try:
@@ -144,7 +144,7 @@ def _update(
             reason = str(exc)
     else:
         result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
-        reason = DRAFT_MODE_REASON if dry_run else None
+        reason = DRY_RUN_REASON if dry_run else None
 
     url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(
@@ -176,7 +176,7 @@ def _delete(
     is_group = action.navlink.link is None
     if dry_run:
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRAFT_MODE_REASON
+            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
         )
     if not delete_pages and not is_group:
         return types_.ActionReport(
@@ -276,9 +276,9 @@ def _run_index(
     if dry_run:
         report = types_.ActionReport(
             table_row=None,
-            url=DRAFT_NAVLINK_LINK if action.type_ == types_.ActionType.CREATE else action.url,
+            url=DRY_RUN_NAVLINK_LINK if action.type_ == types_.ActionType.CREATE else action.url,
             result=types_.ActionResult.SKIP,
-            reason=DRAFT_MODE_REASON,
+            reason=DRY_RUN_REASON,
         )
         logging.info("report: %s", report)
         return report
