@@ -49,11 +49,13 @@ def main():
     parser.add_argument(
         "--action", help="Action to run", choices=tuple(action.value for action in Action)
     )
-    parser.add_argument("--action-kwargs", help="Arguments for the action as a JSON mapping")
+    parser.add_argument(
+        "--action-kwargs", help="Arguments for the action as a JSON mapping", default="{}"
+    )
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
     discourse_config = json.loads(args.discourse_config)
-    action_kwargs = json.loads(args.action_kwargs or "{}")
+    action_kwargs = json.loads(args.action_kwargs)
 
     discourse = create_discourse(**discourse_config)
 
