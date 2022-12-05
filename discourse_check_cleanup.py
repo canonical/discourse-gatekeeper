@@ -175,14 +175,14 @@ def _check_url_result(
     return True
 
 
-def check_draft(urls_with_actions: dict[str, str], expected_url_result: list[str]) -> bool:
+def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
     """Check that the draft test succeeded.
 
     Success is indicated by that there are the expected number of URLs in urls_with_actions.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
-        expected_url_result: The expected url results.
+        expected_url_results: The expected url results.
 
     Returns:
         Whether the test succeeded.
@@ -190,7 +190,7 @@ def check_draft(urls_with_actions: dict[str, str], expected_url_result: list[str
     test_name = "draft"
     if not _check_url_count(
         urls_with_actions=urls_with_actions,
-        expected_count=len(expected_url_result),
+        expected_count=len(expected_url_results),
         test_name=test_name,
     ):
         return False
@@ -200,7 +200,7 @@ def check_draft(urls_with_actions: dict[str, str], expected_url_result: list[str
 
 
 def check_create(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
 ) -> bool:
     """Check that the create test succeeded.
 
@@ -210,7 +210,7 @@ def check_create(
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
-        expected_url_result: The expected url results.
+        expected_url_results: The expected url results.
 
     Returns:
         Whether the test succeeded.
@@ -218,14 +218,14 @@ def check_create(
     test_name = "create"
     if not _check_url_count(
         urls_with_actions=urls_with_actions,
-        expected_count=len(expected_url_result),
+        expected_count=len(expected_url_results),
         test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=expected_url_result,
+        expected_result=expected_url_results,
         test_name=test_name,
     ):
         return False
@@ -240,7 +240,7 @@ def check_create(
 
 
 def check_delete_topics(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
 ) -> bool:
     """Check that the delete_topics test succeeded.
 
@@ -250,7 +250,7 @@ def check_delete_topics(
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
-        expected_url_result: The expected url results.
+        expected_url_results: The expected url results.
 
     Returns:
         Whether the test succeeded.
@@ -258,14 +258,14 @@ def check_delete_topics(
     test_name = "delete_topics"
     if not _check_url_count(
         urls_with_actions=urls_with_actions,
-        expected_count=len(expected_url_result),
+        expected_count=len(expected_url_results),
         test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=expected_url_result,
+        expected_result=expected_url_results,
         test_name=test_name,
     ):
         return False
@@ -280,7 +280,7 @@ def check_delete_topics(
 
 
 def check_delete(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
 ) -> bool:
     """Check that the delete test succeeded.
 
@@ -290,7 +290,7 @@ def check_delete(
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
-        expected_url_result: The expected url results.
+        expected_url_results: The expected url results.
 
     Returns:
         Whether the test succeeded.
@@ -298,14 +298,14 @@ def check_delete(
     test_name = "delete"
     if not _check_url_count(
         urls_with_actions=urls_with_actions,
-        expected_count=len(expected_url_result),
+        expected_count=len(expected_url_results),
         test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=expected_url_result,
+        expected_result=expected_url_results,
         test_name=test_name,
     ):
         return False
