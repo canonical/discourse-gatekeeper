@@ -50,9 +50,11 @@ def main():
     parser.add_argument(
         "--action", help="Action to run", choices=tuple(action.value for action in Actions)
     )
+    parser.add_argument("--action-kwargs", help="Arguments for the action as a JSON mapping")
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
     discourse_config = json.loads(args.discourse_config)
+    action_kwargs = json.loads(args.action_kwargs or "{}")
 
     discourse = create_discourse(**discourse_config)
 
@@ -60,21 +62,27 @@ def main():
     # https://github.com/charliermarsh/ruff/issues/680
     match args.action:  # noqa: E999
         case Actions.CHECK_DRAFT.value:
-            _exit_with_result(check_draft(urls_with_actions=urls_with_actions))
+            _exit_with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
         case Actions.CHECK_CREATE.value:
             _exit_with_result(
-                check_create(urls_with_actions=urls_with_actions, discourse=discourse)
+                check_create(
+                    urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
+                )
             )
         case Actions.CHECK_DELETE_TOPICS.value:
             _exit_with_result(
-                check_delete_topics(urls_with_actions=urls_with_actions, discourse=discourse)
+                check_delete_topics(
+                    urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
+                )
             )
         case Actions.CHECK_DELETE.value:
             _exit_with_result(
-                check_delete(urls_with_actions=urls_with_actions, discourse=discourse)
+                check_delete(
+                    urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
+                )
             )
         case Actions.CLEANUP.value:
-            cleanup(urls_with_actions=urls_with_actions, discourse=discourse)
+            cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
             sys.exit(0)
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
@@ -170,20 +178,23 @@ def _check_url_result(
     return True
 
 
-def check_draft(urls_with_actions: dict[str, str]) -> bool:
+def check_draft(urls_with_actions: dict[str, str], expected_url_result: list[str]) -> bool:
     """Check that the draft test succeeded.
 
-    Success is indicated by that there are no URLs with actions.
+    Success is indicated by that there are the expected number of URLs in urls_with_actions.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
+        expected_url_result: The expected url results.
 
     Returns:
         Whether the test succeeded.
     """
     test_name = "draft"
     if not _check_url_count(
-        urls_with_actions=urls_with_actions, expected_count=0, test_name=test_name
+        urls_with_actions=urls_with_actions,
+        expected_count=len(expected_url_result),
+        test_name=test_name,
     ):
         return False
 
@@ -191,32 +202,33 @@ def check_draft(urls_with_actions: dict[str, str]) -> bool:
     return True
 
 
-def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
+def check_create(
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+) -> bool:
     """Check that the create test succeeded.
 
-    Success is indicated by that there are 3 URLs with a success result and that retrieving the
-    URLs succeeds.
+    Success is indicated by that there are the expected number of URLs with the expected result and
+    that retrieving the URLs succeeds.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
+        expected_url_result: The expected url results.
 
     Returns:
         Whether the test succeeded.
     """
     test_name = "create"
     if not _check_url_count(
-        urls_with_actions=urls_with_actions, expected_count=3, test_name=test_name
+        urls_with_actions=urls_with_actions,
+        expected_count=len(expected_url_result),
+        test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=[
-            ActionResult.SUCCESS.value,
-            ActionResult.SUCCESS.value,
-            ActionResult.SUCCESS.value,
-        ],
+        expected_result=expected_url_result,
         test_name=test_name,
     ):
         return False
@@ -230,32 +242,33 @@ def check_create(urls_with_actions: dict[str, str], discourse: Discourse) -> boo
     return True
 
 
-def check_delete_topics(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
+def check_delete_topics(
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+) -> bool:
     """Check that the delete_topics test succeeded.
 
-    Success is indicated by that there are 3 URLs with 2 success and 1 skip result and that
-    retrieving the URLs succeeds (none have been deleted).
+    Success is indicated by that there are the expected number of URLs and results in
+    urls_with_actions and that retrieving the URLs succeeds (none have been deleted).
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
+        expected_url_result: The expected url results.
 
     Returns:
         Whether the test succeeded.
     """
     test_name = "delete_topics"
     if not _check_url_count(
-        urls_with_actions=urls_with_actions, expected_count=3, test_name=test_name
+        urls_with_actions=urls_with_actions,
+        expected_count=len(expected_url_result),
+        test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=[
-            ActionResult.SUCCESS.value,
-            ActionResult.SKIP.value,
-            ActionResult.SUCCESS.value,
-        ],
+        expected_result=expected_url_result,
         test_name=test_name,
     ):
         return False
@@ -269,31 +282,33 @@ def check_delete_topics(urls_with_actions: dict[str, str], discourse: Discourse)
     return True
 
 
-def check_delete(urls_with_actions: dict[str, str], discourse: Discourse) -> bool:
+def check_delete(
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_result: list[str]
+) -> bool:
     """Check that the delete test succeeded.
 
-    Success is indicated by that there are 2 URLs with a success result and that retrieving the
-    first URL fails and the second succeeds.
+    Success is indicated by that there are the expected number of URLs in urls_with_actions with a
+    success result and that retrieving the first URL fails and the second succeeds.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
+        expected_url_result: The expected url results.
 
     Returns:
         Whether the test succeeded.
     """
     test_name = "delete"
     if not _check_url_count(
-        urls_with_actions=urls_with_actions, expected_count=2, test_name=test_name
+        urls_with_actions=urls_with_actions,
+        expected_count=len(expected_url_result),
+        test_name=test_name,
     ):
         return False
 
     if not _check_url_result(
         urls_with_actions=urls_with_actions,
-        expected_result=[
-            ActionResult.SUCCESS.value,
-            ActionResult.SUCCESS.value,
-        ],
+        expected_result=expected_url_result,
         test_name=test_name,
     ):
         return False
