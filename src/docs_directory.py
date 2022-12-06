@@ -20,7 +20,9 @@ def _get_directories_files(docs_path: Path) -> list[Path]:
         List with all the directories and documentation files in the docs directory.
     """
     return sorted(
-        path for path in docs_path.rglob("*") if path.is_dir() or path.suffix.lower() == ".md"
+        path
+        for path in docs_path.rglob("*")
+        if path.is_dir() or (path.suffix.lower() == ".md" and not path.stem.lower() == "index")
     )
 
 
@@ -53,6 +55,8 @@ def _calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
         "-".join(part for part in path_relative_to_docs.parts)
         .removesuffix(path_relative_to_docs.suffix)
         .lower()
+        .replace(" ", "-")
+        .replace("_", "-")
     )
 
 
@@ -80,7 +84,7 @@ def _calculate_navlink_title(path: Path) -> types_.NavlinkTitle:
         except StopIteration:
             return content_lines[0]
 
-    return path.stem.replace("-", " ").title()
+    return path.stem.replace("-", " ").replace("_", " ").title()
 
 
 def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:

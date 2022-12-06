@@ -57,6 +57,7 @@ def create_nested_directories_file(
     [
         pytest.param((), (), (), id="empty"),
         pytest.param((("dir1",),), (), (("dir1",),), id="single directory"),
+        pytest.param((("index",),), (), (("index",),), id="single directory called index"),
         pytest.param(
             (("dir1",), ("dir2",)), (), (("dir1",), ("dir2",)), id="multiple directories"
         ),
@@ -69,6 +70,8 @@ def create_nested_directories_file(
         pytest.param((), (("file1.md",),), (("file1.md",),), id="single file"),
         pytest.param((), (("file1.MD",),), (("file1.MD",),), id="single file upper case suffix"),
         pytest.param((), (("file1.txt",),), (), id="single file not documentation"),
+        pytest.param((), (("index.md",),), (), id="single file index"),
+        pytest.param((), (("INDEX.md",),), (), id="single file index capitalised"),
         pytest.param(
             (), (("file1.md",), ("file2.md",)), (("file1.md",), ("file2.md",)), id="multiple files"
         ),
@@ -159,6 +162,8 @@ def test__calculate_level(
     "directories, file, expected_table_path",
     [
         pytest.param((), "file1.md", "file1", id="file in docs"),
+        pytest.param((), "file_1.md", "file-1", id="file in docs including space"),
+        pytest.param((), "file 1.md", "file-1", id="file in docs including underscore"),
         pytest.param((), "file1.MD", "file1", id="file in docs upper case suffix"),
         pytest.param((), "FILE1.md", "file1", id="file upper case in docs"),
         pytest.param(("dir1",), None, "dir1", id="directory in docs"),
@@ -201,9 +206,11 @@ def test__calculate_table_path(
         pytest.param(("dir1",), None, None, "Dir1", id="directory in docs"),
         pytest.param(("dir1", "dir2"), None, None, "Dir2", id="nested directory in docs"),
         pytest.param(("the-dir-1",), None, None, "The Dir 1", id="directory in docs with -"),
+        pytest.param(("the_dir_1",), None, None, "The Dir 1", id="directory in docs with _"),
         pytest.param((), "file1.md", None, "File1", id="file in docs empty"),
         pytest.param(("dir1",), "file1.md", None, "File1", id="file in subdirectory empty"),
         pytest.param((), "the-file-1.md", None, "The File 1", id="file including - in docs empty"),
+        pytest.param((), "the_file_1.md", None, "The File 1", id="file including _ in docs empty"),
         pytest.param((), "file1.md", "", "File1", id="file in docs empty string"),
         pytest.param((), "file1.md", "line 1", "line 1", id="file in docs single line no title"),
         pytest.param(

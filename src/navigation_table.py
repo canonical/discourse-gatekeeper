@@ -4,6 +4,7 @@
 """Module for parsing and rendering a navigation table."""
 
 import re
+import string
 import typing
 
 from . import types_
@@ -22,7 +23,7 @@ _FILLER_ROW_REGEX_COLUMN = rf"{_WHITESPACE}-+{_WHITESPACE}\|"
 _FILLER_ROW_PATTERN = re.compile(rf"{_WHITESPACE}\|{_FILLER_ROW_REGEX_COLUMN * 3}{_WHITESPACE}")
 _LEVEL_REGEX = rf"{_WHITESPACE}(\d+){_WHITESPACE}"
 _PATH_REGEX = rf"{_WHITESPACE}([\w-]+){_WHITESPACE}"
-_NAVLINK_TITLE_REGEX = r"[\w\- ]+?"
+_NAVLINK_TITLE_REGEX = rf"[\w\- {string.punctuation}]+?"
 _NAVLINK_LINK_REGEX = r"[\w\/-]*"
 _NAVLINK_REGEX = (
     rf"{_WHITESPACE}\[{_WHITESPACE}({_NAVLINK_TITLE_REGEX}){_WHITESPACE}\]{_WHITESPACE}"

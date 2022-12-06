@@ -92,7 +92,19 @@ def test__local_and_server_error(
         )
 
 
-def test__local_and_server_file_same(tmp_path: Path):
+@pytest.mark.parametrize(
+    "local_content, server_content",
+    [
+        pytest.param("content 1", "content 1", id="same"),
+        pytest.param(" content 1", "content 1", id="server leading whitespace"),
+        pytest.param("\ncontent 1", "content 1", id="server leading whitespace new line"),
+        pytest.param("content 1 ", "content 1", id="server trailing whitespace"),
+        pytest.param("content 1", " content 1", id="local leading whitespace"),
+        pytest.param("content 1", "\ncontent 1", id="local leading whitespace new line"),
+        pytest.param("content 1", "content 1 ", id="local trailing whitespace"),
+    ],
+)
+def test__local_and_server_file_same(local_content: str, server_content: str, tmp_path: Path):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the same content as in the file
@@ -100,7 +112,7 @@ def test__local_and_server_file_same(tmp_path: Path):
     assert: then a noop action is returned.
     """
     (path := tmp_path / "file1.md").touch()
-    path.write_text(content := "content 1", encoding="utf-8")
+    path.write_text(local_content, encoding="utf-8")
     path_info = types_.PathInfo(
         local_path=path,
         level=(level := 1),
@@ -108,7 +120,7 @@ def test__local_and_server_file_same(tmp_path: Path):
         navlink_title=(navlink_title := "title 1"),
     )
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mock_discourse.retrieve_topic.return_value = content
+    mock_discourse.retrieve_topic.return_value = server_content
     navlink = types_.Navlink(title=navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=level, path=table_path, navlink=navlink)
 
@@ -121,7 +133,7 @@ def test__local_and_server_file_same(tmp_path: Path):
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink == navlink  # type: ignore
-    assert returned_action.content == content  # type: ignore
+    assert returned_action.content == local_content.strip()  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
@@ -583,13 +595,15 @@ def test_run(
     [
         pytest.param(
             types_.Index(
-                server=None, local=types_.IndexFile(title=(local_title := "title 1"), content=None)
+                server=None,
+                local=types_.IndexFile(title=(local_title := "title 1"), content=None),
+                name="name 1",
             ),
             (),
             types_.CreateIndexAction(
                 type_=types_.ActionType.CREATE,
                 title=local_title,
-                content=f"{reconcile.NAVIGATION_TABLE_START}\n\n",
+                content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
             ),
             id="empty local only empty rows",
         ),
@@ -599,12 +613,13 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (),
             types_.CreateIndexAction(
                 type_=types_.ActionType.CREATE,
                 title=local_title,
-                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
+                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
             ),
             id="local only empty rows",
         ),
@@ -614,6 +629,7 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (
                 table_row := types_.TableRow(
@@ -627,7 +643,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row.to_markdown()}\n"
+                    f"{table_row.to_markdown()}"
                 ),
             ),
             id="local only single row",
@@ -638,6 +654,7 @@ def test_run(
                 local=types_.IndexFile(
                     title=(local_title := "title 1"), content=(local_content := "content 1")
                 ),
+                name="name 1",
             ),
             (
                 table_row_1 := types_.TableRow(
@@ -656,7 +673,7 @@ def test_run(
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
-                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}\n"
+                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
                 ),
             ),
             id="local only multiple rows",
@@ -667,9 +684,10 @@ def test_run(
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n"
+                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}"
                     ),
                 ),
+                name="name 1",
             ),
             (),
             types_.NoopIndexAction(
@@ -682,14 +700,54 @@ def test_run(
         pytest.param(
             types_.Index(
                 local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
+                server=types_.Page(
+                    url=(url := "url 1"),
+                    content=(
+                        server_content := f" {local_content}{reconcile.NAVIGATION_TABLE_START}"
+                    ),
+                ),
+                name="name 1",
+            ),
+            (),
+            types_.NoopIndexAction(
+                type_=types_.ActionType.NOOP,
+                content=server_content[1:],
+                url=url,
+            ),
+            id="local server whitespace different same empty rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=types_.IndexFile(title="title 1", content=(local_content := " content 1")),
+                server=types_.Page(
+                    url=(url := "url 1"),
+                    content=(
+                        server_content := f"{local_content.strip()}"
+                        f"{reconcile.NAVIGATION_TABLE_START}"
+                    ),
+                ),
+                name="name 1",
+            ),
+            (),
+            types_.NoopIndexAction(
+                type_=types_.ActionType.NOOP,
+                content=server_content,
+                url=url,
+            ),
+            id="local whitespace server different same empty rows",
+        ),
+        pytest.param(
+            types_.Index(
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
                 server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
+                name="name 1",
             ),
             (),
             types_.UpdateIndexAction(
                 type_=types_.ActionType.UPDATE,
                 content_change=types_.IndexContentChange(
                     old=server_content,
-                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n\n",
+                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
                 ),
                 url=url,
             ),

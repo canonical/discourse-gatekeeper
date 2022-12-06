@@ -2,11 +2,9 @@ name: Upload Charm Docs
 description: Upload charm documentation to charmhub
 author: David Andersson
 inputs:
-  create_new_topic:
+  dry_run:
     description: |
-      Whether to create a new topic and commit it back to the repository if the
-      docs key in metadata.yaml either does not exist or is empty. Defaults to
-      not creating a new topic in which case an error is returned.
+      If enabled, only log the changes that would be made.
     default: false
     required: false
     type: boolean
@@ -43,10 +41,12 @@ inputs:
     required: false
     type: integer
 outputs:
-  created_pages:
+  urls_with_actions:
     description: |
-      A JSON map with the pages that have been created where the key is the
-      local path and the value is the URL to the created page.
+      A JSON map with the urls and the actions that have been taken against
+      them.
+  index_url:
+    description: The URL to the documentation index page.
   discourse_config:
     description: |
       The configuration used by the action to interact with the discourse

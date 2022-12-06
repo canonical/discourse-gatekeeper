@@ -3,6 +3,9 @@
 
 """Unit tests for discourse."""
 
+# Need access to protected functions for testing
+# pylint: disable=protected-access
+
 from unittest import mock
 
 import pydiscourse
@@ -10,7 +13,7 @@ import pydiscourse.exceptions
 import pytest
 import requests
 
-from src.discourse import Discourse, create_discourse
+from src.discourse import _URL_PATH_PREFIX, Discourse, create_discourse
 from src.exceptions import DiscourseError, InputError
 
 
@@ -33,13 +36,13 @@ from src.exceptions import DiscourseError, InputError
             id="2 components missing",
         ),
         pytest.param(
-            "http://discourse/t/slug",
+            f"http://discourse{_URL_PATH_PREFIX}slug",
             False,
             ("unexpected", "number", "path", "components", "3", "got", "2"),
             id="1 component missing",
         ),
         pytest.param(
-            "http://discourse/t/slug/1/a",
+            f"http://discourse{_URL_PATH_PREFIX}slug/1/a",
             False,
             ("unexpected", "number", "path", "components", "expected", "3", "got", "4"),
             id="too many components",
@@ -63,13 +66,13 @@ from src.exceptions import DiscourseError, InputError
             id="first component wrong multi character",
         ),
         pytest.param(
-            "http://discourse/t//1",
+            f"http://discourse{_URL_PATH_PREFIX}/1",
             False,
             ("empty", "second", "path", "component", "topic slug"),
             id="slug empty",
         ),
         pytest.param(
-            "http://discourse/t/slug/a",
+            f"http://discourse{_URL_PATH_PREFIX}slug/a",
             False,
             (
                 "unexpected",
@@ -85,7 +88,7 @@ from src.exceptions import DiscourseError, InputError
             id="topic id wrong character",
         ),
         pytest.param(
-            "http://discourse/t/slug/1a",
+            f"http://discourse{_URL_PATH_PREFIX}slug/1a",
             False,
             (
                 "unexpected",
@@ -101,16 +104,22 @@ from src.exceptions import DiscourseError, InputError
             id="topic id wrong integer and character",
         ),
         pytest.param(
-            "http://discourse/t/slug/1",
+            f"http://discourse{_URL_PATH_PREFIX}slug/1",
             True,
             None,
             id="valid",
         ),
         pytest.param(
-            "http://discourse/t/slug/1/",
+            f"http://discourse{_URL_PATH_PREFIX}slug/1/",
             True,
             None,
             id="valid trailing /",
+        ),
+        pytest.param(
+            f"{_URL_PATH_PREFIX}slug/1",
+            True,
+            None,
+            id="valid no protocol host",
         ),
     ],
 )
@@ -241,7 +250,7 @@ def test_check_topic_malformed(
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
     with pytest.raises(DiscourseError) as exc_info:
-        getattr(discourse, function_)(url=f"{base_path}/t/slug/1")
+        getattr(discourse, function_)(url=f"{base_path}{_URL_PATH_PREFIX}slug/1")
 
     exc_str = str(exc_info.value).lower()
     assert "server" in exc_str
@@ -264,7 +273,7 @@ def test_check_topic_write_permission_user_deleted(
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    url = f"{base_path}/t/slug/1"
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
     with pytest.raises(DiscourseError) as exc_info:
         discourse.check_topic_write_permission(url=url)
 
@@ -353,7 +362,7 @@ def test_check_topic_success(
     mocked_client.topic.return_value = topic_data
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    return_value = getattr(discourse, function_)(url=f"{base_path}/t/slug/1")
+    return_value = getattr(discourse, function_)(url=f"{base_path}{_URL_PATH_PREFIX}slug/1")
 
     assert return_value == expected_return_value
 
@@ -393,7 +402,7 @@ def test_create_topic_post_malformed(
 def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
     """
     arrange: given a mocked discourse client that returns valid data for a post
-    act: when given create_topic is called
+    act: when create_topic is called
     assert: then the url to the topic is returned.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
@@ -405,7 +414,27 @@ def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse
 
     url = discourse.create_topic(title="title 1", content="content 1")
 
-    assert url == f"{base_path}/t/{topic_slug}/{topic_id}"
+    assert url == f"{base_path}{_URL_PATH_PREFIX}{topic_slug}/{topic_id}"
+
+
+def test_delete_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
+    """
+    arrange: given a mocked discourse client
+    act: when delete_topic is called first without the base path and then with it
+    assert: then the url to the topic is returned.
+    """
+    mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
+    url_path = f"{_URL_PATH_PREFIX}slug/1"
+    url = f"{base_path}{url_path}"
+    monkeypatch.setattr(discourse, "_client", mocked_client)
+
+    returned_url = discourse.delete_topic(url=url_path)
+
+    assert returned_url == url
+
+    returned_url = discourse.delete_topic(url=url)
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(
@@ -435,7 +464,7 @@ def test_update_topic_malformed(
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
     with pytest.raises(DiscourseError) as exc_info:
-        discourse.update_topic(url=f"{base_path}/t/slug/1", content="content 1")
+        discourse.update_topic(url=f"{base_path}{_URL_PATH_PREFIX}slug/1", content="content 1")
 
     exc_str = str(exc_info.value).lower()
     assert "server" in exc_str
@@ -459,7 +488,7 @@ def test_update_topic_discourse_error(
     mocked_client.update_post.side_effect = pydiscourse.exceptions.DiscourseError
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
-    url = f"{base_path}/t/slug/1"
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
     content = "content 1"
     with pytest.raises(DiscourseError) as exc_info:
         discourse.update_topic(url=url, content=content)
@@ -475,16 +504,24 @@ def test_update_topic_discourse_error(
 def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str):
     """
     arrange: given a mocked discourse client that returns valid data for a topic
-    act: when given update_topic is called
-    assert: then nothing is returned.
+    act: when given update_topic is called without base path and then with
+    assert: then topic url is returned.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
     mocked_client.topic.return_value = {
         "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
+    url_path = f"{_URL_PATH_PREFIX}slug/1"
+    url = f"{base_path}{url_path}"
 
-    discourse.update_topic(url=f"{base_path}/t/slug/1", content="content 1")
+    returned_url = discourse.update_topic(url=url_path, content="content 1")
+
+    assert returned_url == url
+
+    returned_url = discourse.update_topic(url=url, content="content 1")
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(
@@ -493,15 +530,15 @@ def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, bas
         pytest.param(
             "topic",
             "check_topic_write_permission",
-            {"url": "http://discourse/t/slug/1"},
-            ("retrieving", "url", "http://discourse/t/slug/1"),
+            {"url": f"http://discourse{_URL_PATH_PREFIX}slug/1"},
+            ("retrieving", "url", f"http://discourse{_URL_PATH_PREFIX}slug/1"),
             id="check_topic_write_permission",
         ),
         pytest.param(
             "topic",
             "check_topic_read_permission",
-            {"url": "http://discourse/t/slug/1"},
-            ("retrieving", "url", "http://discourse/t/slug/1"),
+            {"url": f"http://discourse{_URL_PATH_PREFIX}slug/1"},
+            ("retrieving", "url", f"http://discourse{_URL_PATH_PREFIX}slug/1"),
             id="check_topic_read_permission",
         ),
         pytest.param(
@@ -514,8 +551,8 @@ def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, bas
         pytest.param(
             "delete_topic",
             "delete_topic",
-            {"url": "http://discourse/t/slug/1"},
-            ("deleting", "url", "http://discourse/t/slug/1"),
+            {"url": f"http://discourse{_URL_PATH_PREFIX}slug/1"},
+            ("deleting", "url", f"http://discourse{_URL_PATH_PREFIX}slug/1"),
             id="delete_topic",
         ),
     ],
@@ -561,7 +598,7 @@ def test_retrieve_topic_read_error(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
 
-    url = f"{base_path}/t/slug/1"
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
     with pytest.raises(DiscourseError) as exc_info:
         discourse.retrieve_topic(url=url)
 
@@ -584,13 +621,15 @@ def test_retrieve_topic_http_error(
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    mocked_get = mock.MagicMock(spec=requests.get)
+    mock_get_requests_session = mock.MagicMock(spec=discourse._get_requests_session)
+    mocked_session = mock.MagicMock(spec=requests.Session)
+    mock_get_requests_session.return_value = mocked_session
     mocked_response = mock.MagicMock(spec=requests.Response)
-    mocked_get.return_value = mocked_response
+    mocked_session.get.return_value = mocked_response
     mocked_response.raise_for_status.side_effect = requests.HTTPError
-    monkeypatch.setattr(requests, "get", mocked_get)
+    monkeypatch.setattr(discourse, "_get_requests_session", mock_get_requests_session)
 
-    url = f"{base_path}/t/slug/1"
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
     with pytest.raises(DiscourseError) as exc_info:
         discourse.retrieve_topic(url=url)
 
@@ -611,17 +650,42 @@ def test_retrieve_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, b
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    mocked_get = mock.MagicMock(spec=requests.get)
+    mock_get_requests_session = mock.MagicMock(spec=discourse._get_requests_session)
+    mocked_session = mock.MagicMock(spec=requests.Session)
+    mock_get_requests_session.return_value = mocked_session
     mocked_response = mock.MagicMock(spec=requests.Response)
-    mocked_get.return_value = mocked_response
+    mocked_session.get.return_value = mocked_response
     content = "content 1"
     mocked_response.content = content.encode("utf-8")
-    monkeypatch.setattr(requests, "get", mocked_get)
+    monkeypatch.setattr(discourse, "_get_requests_session", mock_get_requests_session)
 
-    url = f"{base_path}/t/slug/1"
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
     returned_content = discourse.retrieve_topic(url=url)
 
     assert returned_content == content
+
+    url = f"{_URL_PATH_PREFIX}slug/1"
+    returned_content = discourse.retrieve_topic(url=url)
+
+    assert returned_content == content
+
+
+def test_absolute_url(base_path: str, discourse: Discourse):
+    """
+    arrange: given a mocked discourse client
+    act: when absolute_url is called first without the base path and then with it
+    assert: then the url to the topic is returned.
+    """
+    url_path = f"{_URL_PATH_PREFIX}slug/1"
+    url = f"{base_path}{url_path}"
+
+    returned_url = discourse.absolute_url(url=url_path)
+
+    assert returned_url == url
+
+    returned_url = discourse.absolute_url(url=url)
+
+    assert returned_url == url
 
 
 @pytest.mark.parametrize(

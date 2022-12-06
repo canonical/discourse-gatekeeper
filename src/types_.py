@@ -7,6 +7,7 @@ import dataclasses
 import typing
 from enum import Enum
 from pathlib import Path
+from urllib.parse import urlparse
 
 Content = str
 Url = str
@@ -45,10 +46,12 @@ class Index(typing.NamedTuple):
     Attrs:
         server: The index page on the server.
         local: The local index file contents.
+        name: The name of the charm.
     """
 
     server: Page | None
     local: IndexFile
+    name: str
 
 
 Level = int
@@ -111,7 +114,8 @@ class TableRow(typing.NamedTuple):
             The line in the navigation table.
         """
         return (
-            f"| {self.level} | {self.path} | [{self.navlink.title}]({self.navlink.link or ''}) |"
+            f"| {self.level} | {self.path} | "
+            f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 
 
@@ -169,6 +173,7 @@ class CreateIndexAction(BaseAction):
     """Represents an index page to be created.
 
     Attrs:
+        title: The title of the index page.
         content: The content including the navigation table.
     """
 
@@ -203,6 +208,7 @@ class NoopIndexAction(BaseAction):
 
     Attrs:
         content: The content including the navigation table.
+        url: The URL to the index page.
     """
 
     type_: typing.Literal[ActionType.NOOP]
@@ -272,6 +278,7 @@ class UpdateIndexAction(BaseAction):
 
     Attrs:
         content_change: The change to the content including the navigation table.
+        url: The URL to the index page.
     """
 
     type_: typing.Literal[ActionType.UPDATE]
@@ -287,7 +294,7 @@ class DeleteAction(BaseAction):
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
-        navlink: The title link to the page
+        navlink: The link to the page
         content: The documentation content.
     """
 

@@ -16,6 +16,8 @@ import requests
 from ops.model import ActiveStatus, Application
 from pytest_operator.plugin import OpsTest
 
+from src.discourse import Discourse
+
 from . import types
 
 
@@ -235,6 +237,22 @@ async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
     return category["category"]["id"]
 
 
+@pytest_asyncio.fixture(scope="module")
+async def discourse_api(
+    discourse_user_credentials: types.Credentials,
+    discourse_hostname: str,
+    discourse_user_api_key: str,
+    discourse_category_id: int,
+):
+    """Create discourse instance."""
+    return Discourse(
+        base_path=f"http://{discourse_hostname}",
+        api_username=discourse_user_credentials.username,
+        api_key=discourse_user_api_key,
+        category_id=discourse_category_id,
+    )
+
+
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def discourse_enable_tags(
     discourse_main_api_key,
@@ -249,7 +267,7 @@ async def discourse_enable_tags(
         data=data,
         timeout=60,
     )
-    assert response.status_code == 200, f"Enabling taging failed, {response.content=}"
+    assert response.status_code == 200, f"Enabling tagging failed, {response.content=}"
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
@@ -267,6 +285,15 @@ async def discourse_remove_rate_limits(discourse_main_api_key, discourse_hostnam
         "max_topics_in_first_day": "1000",
         "max_post_deletions_per_minute": "1000",
         "max_post_deletions_per_day": "1000",
+        "min_post_length": "1",
+        "min_first_post_length": "1",
+        "body_min_entropy": "0",
+        "min_topic_title_length": "1",
+        "title_min_entropy": "0",
+        "title_prettify": "false",
+        "allow_duplicate_topic_titles": "false",
+        "min_title_similar_length": "1000000",
+        "newuser_max_links": "1000000",
     }
     for setting, value in settings.items():
         response = requests.put(

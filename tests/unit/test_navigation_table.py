@@ -103,6 +103,18 @@ def test__filter_line(line, expected_result):
         pytest.param("|1|a|[2]()|", (1, "a", ("2", None)), id="third column title digit"),
         pytest.param("|1|a|[_]()|", (1, "a", ("_", None)), id="third column title underscore"),
         pytest.param("|1|a|[-]()|", (1, "a", ("-", None)), id="third column title dash"),
+        pytest.param(
+            "|1|a|[:]()|", (1, "a", (":", None)), id="third column title punctuation colon"
+        ),
+        pytest.param(
+            "|1|a|[!]()|", (1, "a", ("!", None)), id="third column title punctuation exclamation"
+        ),
+        pytest.param(
+            "|1|a|[+]()|", (1, "a", ("+", None)), id="third column title punctuation plus"
+        ),
+        pytest.param(
+            "|1|a|[?]()|", (1, "a", ("?", None)), id="third column title punctuation question"
+        ),
         pytest.param("|1|a|[c d]()|", (1, "a", ("c d", None)), id="third column title space"),
         pytest.param("|1|a|[ b]()|", (1, "a", ("b", None)), id="third column title space before"),
         pytest.param("|1|a|[b ]()|", (1, "a", ("b", None)), id="third column title space after"),
@@ -215,7 +227,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 | 2 | plugins | [Plugins](/t/indico-docs-plugins/6553) |
 | 2 | theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
 | 1 | explanation | [Explanation]() |
-| 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""
+| 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
 
     returned_table = navigation_table.from_page(page=indico_page)
 

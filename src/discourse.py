@@ -9,8 +9,12 @@ from urllib import parse
 import pydiscourse
 import pydiscourse.exceptions
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from .exceptions import DiscourseError, InputError
+
+_URL_PATH_PREFIX = "/t/"
 
 
 class _DiscourseTopicInfo(typing.NamedTuple):
@@ -23,7 +27,7 @@ class _DiscourseTopicInfo(typing.NamedTuple):
     """
 
     slug: str
-    id_: str
+    id_: int
 
 
 class _ValidationResultValid(typing.NamedTuple):
@@ -72,7 +76,7 @@ class Discourse:
 
         """
         self._client = pydiscourse.DiscourseClient(
-            host=base_path, api_username=api_username, api_key=api_key
+            host=base_path, api_username=api_username, api_key=api_key, timeout=10 * 60
         )
         self._category_id = category_id
         self._base_path = base_path
@@ -97,7 +101,7 @@ class Discourse:
             Whether the URL is a valid topic URL.
 
         """
-        if not url.startswith(self._base_path):
+        if not url.startswith((self._base_path, _URL_PATH_PREFIX)):
             return _ValidationResultInvalid(
                 "The base path is different to the expected base path, "
                 f"expected: {self._base_path}, {url=}"
@@ -133,7 +137,7 @@ class Discourse:
 
         return _ValidationResultValid()
 
-    def _retrieve_topic_info_from_url(self, url: str) -> _DiscourseTopicInfo:
+    def _url_to_topic_info(self, url: str) -> _DiscourseTopicInfo:
         """Retrieve the topic information from the url to the topic.
 
         Args:
@@ -151,7 +155,19 @@ class Discourse:
             raise DiscourseError(result.message)
 
         path_components = parse.urlparse(url=url).path.split("/")
-        return _DiscourseTopicInfo(slug=path_components[-2], id_=path_components[-1])
+        return _DiscourseTopicInfo(slug=path_components[-2], id_=int(path_components[-1]))
+
+    def _topic_info_to_absolute_url(self, topic_info: _DiscourseTopicInfo) -> str:
+        """Retrieve the url from the topic information.
+
+        Args:
+            url: The topic information.
+
+        Returns:
+            The URL to the topic.
+
+        """
+        return f"{self._base_path}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
 
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.
@@ -166,11 +182,13 @@ class Discourse:
             DiscourseError: if pydiscourse raises an error or if the topic has been deleted.
 
         """
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         try:
             topic = self._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError(f"Error retrieving topic, {url=!r}") from discourse_error
+            raise DiscourseError(
+                f"Error retrieving topic, {url=!r}, {discourse_error=}"
+            ) from discourse_error
 
         try:
             first_post = next(
@@ -216,6 +234,18 @@ class Discourse:
                 f"The documentation server returned unexpected data, {post=!r}"
             ) from exc
 
+    def absolute_url(self, url: str) -> str:
+        """Get the URL including base path for a topic.
+
+        Args:
+            url: The relative or absolute URL.
+
+        Returns:
+            The url with the base path.
+        """
+        topic_info = self._url_to_topic_info(url=url)
+        return self._topic_info_to_absolute_url(topic_info=topic_info)
+
     def check_topic_write_permission(self, url: str) -> bool:
         """Check whether the credentials have write permission on a topic.
 
@@ -253,6 +283,26 @@ class Discourse:
         self._retrieve_topic_first_post(url=url)
         return True
 
+    # Tested in integration tests
+    @staticmethod
+    def _get_requests_session() -> requests.Session:  # pragma: no cover
+        """Get a requests session.
+
+        Returns:
+            A session with retries enabled.
+        """
+        session = requests.Session()
+        adapter = HTTPAdapter(
+            max_retries=Retry(
+                total=5,
+                backoff_factor=1,
+                status_forcelist=[429, 500, 502, 503, 504],
+            )
+        )
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
+
     def retrieve_topic(self, url: str) -> str:
         """Retrieve the topic content.
 
@@ -272,9 +322,9 @@ class Discourse:
         if not self.check_topic_read_permission(url=url):
             raise DiscourseError(f"Error retrieving the topic, could not read the topic, {url=!r}")
 
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
-        response = requests.get(
+        response = self._get_requests_session().get(
             f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
         )
         try:
@@ -304,14 +354,14 @@ class Discourse:
             )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
-                f"Error creating the topic, {title=!r}, {content=!r}"
+                f"Error creating the topic, {title=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
 
         topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
         topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
-        return f"{self._base_path}/t/{topic_slug}/{topic_id}"
+        return self._topic_info_to_absolute_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
 
-    def delete_topic(self, url: str) -> None:
+    def delete_topic(self, url: str) -> str:
         """Delete a topic.
 
         Args:
@@ -322,15 +372,18 @@ class Discourse:
                 the topic is not found or if anything else has gone wrong.
 
         """
-        topic_info = self._retrieve_topic_info_from_url(url=url)
+        topic_info = self._url_to_topic_info(url=url)
         try:
             self._client.delete_topic(topic_id=topic_info.id_)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
-            raise DiscourseError(f"Error deleting the topic, {url=!r}") from discourse_error
+            raise DiscourseError(
+                f"Error deleting the topic, {url=!r}, {discourse_error=}"
+            ) from discourse_error
+        return self._topic_info_to_absolute_url(topic_info)
 
     def update_topic(
         self, url: str, content: str, edit_reason: str = "Charm documentation updated"
-    ) -> None:
+    ) -> str:
         """Update the first post of a topic.
 
         Args:
@@ -350,8 +403,10 @@ class Discourse:
             self._client.update_post(post_id=post_id, content=content, edit_reason=edit_reason)
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
-                f"Error updating the topic, {url=!r}, {content=!r}"
+                f"Error updating the topic, {url=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
+
+        return self.absolute_url(url=url)
 
 
 def create_discourse(
@@ -383,7 +438,8 @@ def create_discourse(
     hostname = hostname.lower()
     if hostname.startswith(("http://", "https://")):
         raise InputError(
-            f"Invalid 'discourse_host' input, it should not include the protocol, got {hostname=!r}"
+            "Invalid 'discourse_host' input, it should not include the protocol, "
+            f"got {hostname=!r}"
         )
 
     if not isinstance(category_id, int) and not (
