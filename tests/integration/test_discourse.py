@@ -114,10 +114,7 @@ async def test_update_wrong_slug(discourse_api: Discourse):
 
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
     content_2 = "content 2 padding so it is long enough test_update_wrong_slug"
-    discourse_api.update_topic(
-        url=url_incorrect_slug,
-        content=content_2,
-    )
+    discourse_api.update_topic(url=url_incorrect_slug, content=content_2)
 
     returned_content = discourse_api.retrieve_topic(url=url)
     assert returned_content == content_2
