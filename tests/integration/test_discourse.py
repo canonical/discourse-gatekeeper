@@ -17,6 +17,19 @@ from . import types
 pytestmark = pytest.mark.discourse
 
 
+def change_url_slug(url: str, new_slug: str) -> str:
+    """Change the slug of a topic URL.
+
+    Args:
+        url: The topic URL to change.
+        new_slug: The slug to change to.
+
+    Returns:
+        The URL with the changed slug.
+    """
+    return re.sub(r"\/t\/[\w-]*\/", f"/t/{new_slug}/", url)
+
+
 @pytest.mark.asyncio
 async def test_create_retrieve_update_delete_topic(
     discourse_category_id: int,
@@ -78,16 +91,54 @@ async def test_retrieve_wrong_slug(discourse_api: Discourse):
     act: when a topic is created and retrieved with the wrong slug
     assert: then the correct content is returned.
     """
-    # Create topic
     title = "title 1 padding so it is long enough test_retrieve_wrong_slug"
     content = "content 1 padding so it is long enough test_retrieve_wrong_slug"
-
     url = discourse_api.create_topic(title=title, content=content)
-    url_incorrect_slug = re.sub(r"\/t\/[\w-]*\/", "/t/wrong-slug/", url)
 
+    url_incorrect_slug = change_url_slug(url, "wrong-slug")
     returned_content = discourse_api.retrieve_topic(url=url_incorrect_slug)
 
     assert returned_content == content
+
+
+@pytest.mark.asyncio
+async def test_update_wrong_slug(discourse_api: Discourse):
+    """
+    arrange: given running discourse server
+    act: when a topic is created and updated with the wrong slug
+    assert: then the topic is updated.
+    """
+    title = "title 1 padding so it is long enough test_update_wrong_slug"
+    content_1 = "content 1 padding so it is long enough test_update_wrong_slug"
+    url = discourse_api.create_topic(title=title, content=content_1)
+
+    url_incorrect_slug = change_url_slug(url, "wrong-slug")
+    content_2 = "content 2 padding so it is long enough test_update_wrong_slug"
+    discourse_api.update_topic(
+        url=url_incorrect_slug,
+        content=content_2,
+    )
+
+    returned_content = discourse_api.retrieve_topic(url=url)
+    assert returned_content == content_2
+
+
+@pytest.mark.asyncio
+async def test_delete_wrong_slug(discourse_api: Discourse):
+    """
+    arrange: given running discourse server
+    act: when a topic is created and deleted with the wrong slug
+    assert: then the topic is deleted.
+    """
+    title = "title 1 padding so it is long enough test_delete_wrong_slug"
+    content = "content 1 padding so it is long enough test_delete_wrong_slug"
+    url = discourse_api.create_topic(title=title, content=content)
+
+    url_incorrect_slug = change_url_slug(url, "wrong-slug")
+    discourse_api.delete_topic(url=url_incorrect_slug)
+
+    with pytest.raises(DiscourseError):
+        discourse_api.retrieve_topic(url=url)
 
 
 # Keep the API key parameter to ensure that the API key is created just that the wrong one is being
