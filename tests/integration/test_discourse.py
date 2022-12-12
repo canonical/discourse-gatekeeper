@@ -3,6 +3,7 @@
 
 """Integration tests for discourse."""
 
+import re
 from urllib import parse
 
 import pydiscourse
@@ -68,6 +69,25 @@ async def test_create_retrieve_update_delete_topic(
 
     with pytest.raises(DiscourseError):
         discourse_api.retrieve_topic(url=url)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_wrong_slug(discourse_api: Discourse):
+    """
+    arrange: given running discourse server
+    act: when a topic is created and retrieved with the wrong slug
+    assert: then the correct content is returned.
+    """
+    # Create topic
+    title = "title 1 padding so it is long enough test_retrieve_wrong_slug"
+    content = "content 1 padding so it is long enough test_retrieve_wrong_slug"
+
+    url = discourse_api.create_topic(title=title, content=content)
+    url_incorrect_slug = re.sub(r"\/t\/[\w-]*\/", "/t/wrong-slug/", url)
+
+    returned_content = discourse_api.retrieve_topic(url=url_incorrect_slug)
+
+    assert returned_content == content
 
 
 # Keep the API key parameter to ensure that the API key is created just that the wrong one is being

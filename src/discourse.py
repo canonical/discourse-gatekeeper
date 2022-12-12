@@ -184,7 +184,11 @@ class Discourse:
         """
         topic_info = self._url_to_topic_info(url=url)
         try:
-            topic = self._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+            topic = self._client.topic(
+                slug=topic_info.slug,
+                topic_id=topic_info.id_,
+                override_request_kwargs={"allow_redirects": True},
+            )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
                 f"Error retrieving topic, {url=!r}, {discourse_error=}"
