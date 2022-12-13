@@ -75,9 +75,7 @@ def test_get(metadata_name: str, metadata_docs_url: str, tmp_path: Path):
 
     data = metadata.get(path=tmp_path)
 
-    assert data == types_.Metadata(
-        name=metadata_name, docs=metadata_docs_url if metadata_docs_url else None
-    )
+    assert data == types_.Metadata(name=metadata_name, docs=metadata_docs_url or None)
 
 
 @pytest.mark.parametrize(
