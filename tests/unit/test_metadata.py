@@ -50,6 +50,43 @@ def test_get_yaml_malformed(
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
+@pytest.mark.parametrize(
+    "metadata_yaml_content, expected_error_msg_contents",
+    [
+        pytest.param("key: value", ("could not find", metadata.METADATA_NAME_KEY)),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: 1",
+            (
+                "invalid value for",
+                metadata.METADATA_NAME_KEY,
+            ),
+        ),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: 1",
+            ("invalid value for", metadata.METADATA_DOCS_KEY),
+        ),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: ",
+            ("invalid value for", metadata.METADATA_DOCS_KEY),
+        ),
+    ],
+)
+def test_get_invalid_metadata(
+    metadata_yaml_content: str, expected_error_msg_contents: tuple[str, ...], tmp_path: Path
+):
+    """
+    arrange: given metadata with missing required keys
+    act: when get is called with the directory
+    assert: InputError is raised with missing keys info.
+    """
+    create_metadata_yaml(content=metadata_yaml_content, path=tmp_path)
+
+    with pytest.raises(exceptions.InputError) as exc_info:
+        metadata.get(path=tmp_path)
+
+    assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
+
+
 # pylint currently does not understand walrus operator perfectly yet
 # pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
@@ -87,40 +124,3 @@ def test_get(
     data = metadata.get(path=tmp_path)
 
     assert data == expected_metadata
-
-
-@pytest.mark.parametrize(
-    "metadata_yaml_content, expected_error_msg_contents",
-    [
-        pytest.param("key: value", ("could not find", metadata.METADATA_NAME_KEY)),
-        pytest.param(
-            f"{metadata.METADATA_NAME_KEY}: 1",
-            (
-                "invalid value for",
-                metadata.METADATA_NAME_KEY,
-            ),
-        ),
-        pytest.param(
-            f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: 1",
-            ("invalid value for", metadata.METADATA_DOCS_KEY),
-        ),
-        pytest.param(
-            f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: ",
-            ("invalid value for", metadata.METADATA_DOCS_KEY),
-        ),
-    ],
-)
-def test_get_invalid_metadata(
-    metadata_yaml_content: str, expected_error_msg_contents: tuple[str, ...], tmp_path: Path
-):
-    """
-    arrange: given metadata with missing required keys
-    act: when get is called with the directory
-    assert: InputError is raised with missing keys info.
-    """
-    create_metadata_yaml(content=metadata_yaml_content, path=tmp_path)
-
-    with pytest.raises(exceptions.InputError) as exc_info:
-        metadata.get(path=tmp_path)
-
-    assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
