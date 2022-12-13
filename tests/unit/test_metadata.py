@@ -107,6 +107,10 @@ def test_get(
             f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: 1",
             ("invalid value for", metadata.METADATA_DOCS_KEY),
         ),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: name\n{metadata.METADATA_DOCS_KEY}: ",
+            ("invalid value for", metadata.METADATA_DOCS_KEY),
+        ),
     ],
 )
 def test_get_invalid_metadata(
