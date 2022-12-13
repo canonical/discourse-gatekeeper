@@ -6,7 +6,7 @@
 from pathlib import Path
 from unittest import mock
 
-from src import discourse, exceptions, index, reconcile, run, types_
+from src import discourse, exceptions, metadata, reconcile, run, types_
 
 from .helpers import create_metadata_yaml
 
@@ -17,7 +17,7 @@ def test_run_empty_local_server(tmp_path: Path):
     act: when run is called
     assert: then an index page is created with empty navigation table.
     """
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
 
@@ -40,7 +40,7 @@ def test_run_local_empty_server(tmp_path: Path):
         page with a reference to the documentation page.
     """
     name = "name 1"
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: {name}", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {name}", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
     (docs_folder / "page.md").write_text(page_content := "page content")
@@ -77,7 +77,7 @@ def test_run_local_empty_server_dry_run(tmp_path: Path):
     act: when run is called with dry run mode enabled
     assert: no pages are created.
     """
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content")
@@ -98,7 +98,7 @@ def test_run_local_empty_server_error(tmp_path: Path):
     act: when run is called
     assert: no pages are created.
     """
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = exceptions.DiscourseError
 
