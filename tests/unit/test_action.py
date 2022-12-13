@@ -32,7 +32,6 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     create_action = src_types.CreateAction(
-        type_=src_types.ActionType.CREATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_title=(navlink_title := "title 1"),
@@ -69,7 +68,6 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     create_action = src_types.CreateAction(
-        type_=src_types.ActionType.CREATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_title=(navlink_title := "title 1"),
@@ -103,7 +101,6 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     create_action = src_types.CreateAction(
-        type_=src_types.ActionType.CREATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_title=(navlink_title := "title 1"),
@@ -139,7 +136,6 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
     create_action = src_types.CreateAction(
-        type_=src_types.ActionType.CREATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_title=(navlink_title := "title 1"),
@@ -172,7 +168,6 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     [
         pytest.param(
             src_types.NoopAction(
-                type_=src_types.ActionType.NOOP,
                 level=(level := 1),
                 path=(path := "path 1"),
                 navlink=(navlink := src_types.Navlink(title="title 1", link=None)),
@@ -183,7 +178,6 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             src_types.NoopAction(
-                type_=src_types.ActionType.NOOP,
                 level=(level := 1),
                 path=(path := "path 1"),
                 navlink=(navlink := src_types.Navlink(title="title 1", link="link 1")),
@@ -237,7 +231,6 @@ def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
@@ -278,7 +271,6 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
@@ -316,7 +308,6 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
@@ -355,7 +346,6 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
@@ -395,7 +385,6 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=(level := 1),
         path=(path := "path 1"),
         navlink_change=src_types.NavlinkChange(
@@ -439,7 +428,6 @@ def test__update_file_navlink_content_change_error(content_change: src_types.Con
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     update_action = src_types.UpdateAction(
-        type_=src_types.ActionType.UPDATE,
         level=1,
         path="path 1",
         navlink_change=src_types.NavlinkChange(
@@ -495,7 +483,6 @@ def test__delete_not_delete(
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
-        type_=src_types.ActionType.DELETE,
         level=1,
         path="path 1",
         navlink=src_types.Navlink(title="title 1", link=navlink_link),
@@ -531,7 +518,6 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     delete_action = src_types.DeleteAction(
-        type_=src_types.ActionType.DELETE,
         level=1,
         path="path 1",
         navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
@@ -566,7 +552,6 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
-        type_=src_types.ActionType.DELETE,
         level=1,
         path="path 1",
         navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
@@ -595,7 +580,6 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     [
         pytest.param(
             src_types.CreateAction(
-                type_=src_types.ActionType.CREATE,
                 level=1,
                 path="path 1",
                 navlink_title="title 1",
@@ -606,7 +590,6 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             src_types.NoopAction(
-                type_=src_types.ActionType.NOOP,
                 level=1,
                 path="path 1",
                 navlink=src_types.Navlink(title="title 1", link=None),
@@ -617,7 +600,6 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             src_types.UpdateAction(
-                type_=src_types.ActionType.UPDATE,
                 level=1,
                 path="path 1",
                 navlink_change=src_types.NavlinkChange(
@@ -631,7 +613,6 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             src_types.DeleteAction(
-                type_=src_types.ActionType.DELETE,
                 level=1,
                 path="path 1",
                 navlink=src_types.Navlink(title="title 1", link=None),
@@ -671,22 +652,17 @@ def test__run_one(
     "index_action, expected_url",
     [
         pytest.param(
-            src_types.CreateIndexAction(
-                type_=src_types.ActionType.CREATE, title="title 1", content="content 1"
-            ),
+            src_types.CreateIndexAction(title="title 1", content="content 1"),
             action.DRY_RUN_NAVLINK_LINK,
             id="create",
         ),
         pytest.param(
-            src_types.NoopIndexAction(
-                type_=src_types.ActionType.NOOP, url=(url := "url 1"), content="content 1"
-            ),
+            src_types.NoopIndexAction(url=(url := "url 1"), content="content 1"),
             url,
             id="noop",
         ),
         pytest.param(
             src_types.UpdateIndexAction(
-                type_=src_types.ActionType.UPDATE,
                 url=(url := "url 1"),
                 content_change=src_types.IndexContentChange(old="content 1", new="content 2"),
             ),
@@ -733,7 +709,6 @@ def test__run_index_create_error(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     index_action = src_types.CreateIndexAction(
-        type_=src_types.ActionType.CREATE,
         title=(title := "title 1"),
         content=(content := "content 1"),
     )
@@ -762,7 +737,6 @@ def test__run_index_create(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
     index_action = src_types.CreateIndexAction(
-        type_=src_types.ActionType.CREATE,
         title=(title := "title 1"),
         content=(content := "content 1"),
     )
@@ -790,9 +764,7 @@ def test__run_index_noop(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    index_action = src_types.NoopIndexAction(
-        type_=src_types.ActionType.NOOP, url=(url := "url 1"), content="content 1"
-    )
+    index_action = src_types.NoopIndexAction(url=(url := "url 1"), content="content 1")
 
     returned_report = action._run_index(
         action=index_action, discourse=mocked_discourse, dry_run=False
@@ -819,7 +791,6 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     index_action = src_types.UpdateIndexAction(
-        type_=src_types.ActionType.UPDATE,
         url=(url := "url 1"),
         content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
     )
@@ -847,7 +818,6 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     index_action = src_types.UpdateIndexAction(
-        type_=src_types.ActionType.UPDATE,
         url=(url := "url 1"),
         content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
     )
@@ -875,7 +845,6 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         pytest.param(
             (
                 src_types.NoopAction(
-                    type_=src_types.ActionType.NOOP,
                     level=(level := 1),
                     path=(path := "path 1"),
                     navlink=(
@@ -897,7 +866,6 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         pytest.param(
             (
                 src_types.NoopAction(
-                    type_=src_types.ActionType.NOOP,
                     level=(level_1 := 1),
                     path=(path_1 := "path 1"),
                     navlink=(
@@ -906,7 +874,6 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                     content="content 1",
                 ),
                 src_types.NoopAction(
-                    type_=src_types.ActionType.NOOP,
                     level=(level_2 := 2),
                     path=(path_2 := "path 2"),
                     navlink=(

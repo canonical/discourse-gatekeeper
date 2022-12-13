@@ -226,18 +226,18 @@ def _run_one(
     Raises:
         ActionError: if an action that is not handled is passed to the function.
     """
-    match action.type_:
-        case types_.ActionType.CREATE:
+    match type(action):
+        case types_.CreateAction:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
             report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
-        case types_.ActionType.NOOP:
+        case types_.NoopAction:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
-        case types_.ActionType.UPDATE:
+        case types_.UpdateAction:
             assert isinstance(action, types_.UpdateAction)  # nosec
             report = _update(action=action, discourse=discourse, dry_run=dry_run)
-        case types_.ActionType.DELETE:
+        case types_.DeleteAction:
             assert isinstance(action, types_.DeleteAction)  # nosec
             report = _delete(
                 action=action,
@@ -274,17 +274,18 @@ def _run_index(
     logging.info("dry run: %s, action: %s", dry_run, action)
 
     if dry_run:
+        if isinstance(action, types_.CreateIndexAction):
+            url = DRY_RUN_NAVLINK_LINK
+        else:
+            url = action.url
         report = types_.ActionReport(
-            table_row=None,
-            url=DRY_RUN_NAVLINK_LINK if action.type_ == types_.ActionType.CREATE else action.url,
-            result=types_.ActionResult.SKIP,
-            reason=DRY_RUN_REASON,
+            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
         )
         logging.info("report: %s", report)
         return report
 
-    match action.type_:
-        case types_.ActionType.CREATE:
+    match type(action):
+        case types_.CreateIndexAction:
             try:
                 # To help mypy (same for the rest of the asserts), it is ok if the assert does not
                 # run
@@ -300,12 +301,12 @@ def _run_index(
                     result=types_.ActionResult.FAIL,
                     reason=str(exc),
                 )
-        case types_.ActionType.NOOP:
+        case types_.NoopIndexAction:
             assert isinstance(action, types_.NoopIndexAction)  # nosec
             report = types_.ActionReport(
                 table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
             )
-        case types_.ActionType.UPDATE:
+        case types_.UpdateIndexAction:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 discourse.update_topic(url=action.url, content=action.content_change.new)
