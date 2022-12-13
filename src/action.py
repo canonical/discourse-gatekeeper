@@ -274,12 +274,15 @@ def _run_index(
     logging.info("dry run: %s, action: %s", dry_run, action)
 
     if dry_run:
-        if isinstance(action, types_.CreateIndexAction):
-            url = DRY_RUN_NAVLINK_LINK
-        else:
-            url = action.url
         report = types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
+            table_row=None,
+            url=(
+                DRY_RUN_NAVLINK_LINK
+                if isinstance(action, types_.CreateIndexAction)
+                else action.url
+            ),
+            result=types_.ActionResult.SKIP,
+            reason=DRY_RUN_REASON,
         )
         logging.info("report: %s", report)
         return report
