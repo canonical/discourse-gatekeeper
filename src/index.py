@@ -5,74 +5,13 @@
 
 from pathlib import Path
 
-import yaml
-
 from .discourse import Discourse
-from .exceptions import DiscourseError, InputError, ServerError
+from .exceptions import DiscourseError, ServerError
+from .metadata import get as get_metadata
 from .types_ import Index, IndexFile, Page
 
-METADATA_FILENAME = "metadata.yaml"
-METADATA_DOCS_KEY = "docs"
-METADATA_NAME_KEY = "name"
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
-
-
-def _get_metadata(path: Path) -> dict:
-    """Check for and read the metadata.
-
-    Args:
-        path: The base path to look for the metadata file in.
-
-    Returns:
-        The contents of the metadata file.
-
-    Raises:
-        InputError: if the metadata file does not exists or is malformed.
-
-    """
-    metadata_yaml = path / METADATA_FILENAME
-    if not metadata_yaml.is_file():
-        raise InputError(f"Could not find {METADATA_FILENAME} file, looked in folder: {path}")
-
-    try:
-        metadata = yaml.safe_load(metadata_yaml.read_text())
-    except yaml.error.YAMLError as exc:
-        raise InputError(
-            f"Malformed {METADATA_FILENAME} file, read file: {metadata_yaml}"
-        ) from exc
-
-    if not metadata:
-        raise InputError(f"{METADATA_FILENAME} file is empty, read file: {metadata_yaml}")
-    if not isinstance(metadata, dict):
-        raise InputError(
-            f"{METADATA_FILENAME} file does not contain a mapping at the root, "
-            f"read file: {metadata_yaml}, content: {metadata!r}"
-        )
-
-    return metadata
-
-
-def _get_key(metadata: dict, key: str) -> str:
-    """Check and return the key value from the metadata.
-
-    Args:
-        metadata: The metadata to retrieve the key from.
-
-    Returns:
-        The value of the key.
-
-    Raises:
-        InputError: if key does not exists, is empty or not a string.
-
-    """
-    if key not in metadata:
-        raise InputError(f"{key!r} not defined in {METADATA_FILENAME}, {metadata=!r}")
-    if not isinstance(docs_value := metadata[key], str):
-        raise InputError(f"{key!r} is not a string in {METADATA_FILENAME}, {metadata=!r}")
-    if not docs_value:
-        raise InputError(f"{key!r} is empty in {METADATA_FILENAME}, {metadata=!r}")
-    return docs_value
 
 
 def _read_docs_index(base_path: Path) -> str | None:
@@ -107,10 +46,10 @@ def get(base_path: Path, server_client: Discourse) -> Index:
         ServerError: if interactions with the documentation server occurs.
 
     """
-    metadata = _get_metadata(path=base_path)
+    metadata = get_metadata(path=base_path)
 
-    if METADATA_DOCS_KEY in metadata:
-        index_url = _get_key(metadata=metadata, key=METADATA_DOCS_KEY)
+    if metadata.docs is not None:
+        index_url = metadata.docs
         try:
             server_content = server_client.retrieve_topic(url=index_url)
         except DiscourseError as exc:
@@ -119,7 +58,7 @@ def get(base_path: Path, server_client: Discourse) -> Index:
     else:
         server = None
 
-    name_value = _get_key(metadata=metadata, key=METADATA_NAME_KEY)
+    name_value = metadata.name
     local_content = _read_docs_index(base_path=base_path)
     local = IndexFile(
         title=f"{name_value.replace('-', ' ').title()} Documentation Overview",
