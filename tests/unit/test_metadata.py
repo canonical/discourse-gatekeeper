@@ -53,28 +53,25 @@ def test_get_yaml_malformed(
 # pylint currently does not understand walrus operator perfectly yet
 # pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
-    "metadata_yaml_content, expected_metadata_name, expected_metadata_docs",
+    "metadata_yaml_content, expected_metadata",
     [
         pytest.param(
             f"{metadata.METADATA_NAME_KEY}: {(name := 'name')}",
-            name,
-            None,
+            types_.Metadata(name=name, docs=None),
             id="name only",
         ),
         pytest.param(
             f"{metadata.METADATA_NAME_KEY}: {name}\n"
             f"{metadata.METADATA_DOCS_KEY}: "
             f"{(docs := 'https://discourse.charmhub.io/t/index/1')}",
-            name,
-            docs,
+            types_.Metadata(name=name, docs=docs),
             id="name and docs",
         ),
     ],
 )
 def test_get(
     metadata_yaml_content: str,
-    expected_metadata_name: str,
-    expected_metadata_docs: str | None,
+    expected_metadata: types_.Metadata,
     tmp_path: Path,
 ):
     """
@@ -89,7 +86,7 @@ def test_get(
 
     data = metadata.get(path=tmp_path)
 
-    assert data == types_.Metadata(name=expected_metadata_name, docs=expected_metadata_docs)
+    assert data == expected_metadata
 
 
 @pytest.mark.parametrize(
