@@ -47,7 +47,7 @@ charmhub.
         steps:
           - uses: actions/checkout@v3
           - name: Publish documentation
-            uses: canonical/upload-charm-docs@alpha-5
+            uses: canonical/upload-charm-docs@main
             id: publishDocumentation
             with:
               discourse_host: discourse.charmhub.io

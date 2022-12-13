@@ -28,7 +28,7 @@ def test__local_only_file(tmp_path: Path):
 
     returned_action = reconcile._local_only(path_info=path_info)
 
-    assert returned_action.type_ == types_.ActionType.CREATE
+    assert isinstance(returned_action, types_.CreateAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
@@ -48,7 +48,7 @@ def test__local_only_directory(tmp_path: Path):
 
     returned_action = reconcile._local_only(path_info=path_info)
 
-    assert returned_action.type_ == types_.ActionType.CREATE
+    assert isinstance(returned_action, types_.CreateAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
@@ -162,7 +162,7 @@ def test__local_and_server_file_same(local_content: str, server_content: str, tm
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.NOOP
+    assert isinstance(returned_action, types_.NoopAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -195,7 +195,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.UPDATE
+    assert isinstance(returned_action, types_.UpdateAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -230,7 +230,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.UPDATE
+    assert isinstance(returned_action, types_.UpdateAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -264,7 +264,7 @@ def test__local_and_server_directory_same(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.NOOP
+    assert isinstance(returned_action, types_.NoopAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -294,7 +294,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.UPDATE
+    assert isinstance(returned_action, types_.UpdateAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -328,7 +328,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == types_.ActionType.CREATE
+    assert isinstance(returned_action, types_.CreateAction)
     assert returned_action.level == level
     assert returned_action.path == table_path
     # mypy has difficulty with determining which action is returned
@@ -360,13 +360,13 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
     )
 
     assert len(returned_actions) == 2
-    assert returned_actions[0].type_ == types_.ActionType.DELETE
+    assert isinstance(returned_actions[0], types_.DeleteAction)
     assert returned_actions[0].level == level
     assert returned_actions[0].path == table_path
     # mypy has difficulty with determining which action is returned
     assert returned_actions[0].navlink == navlink  # type: ignore
     assert returned_actions[0].content == content  # type: ignore
-    assert returned_actions[1].type_ == types_.ActionType.CREATE
+    assert isinstance(returned_actions[1], types_.CreateAction)
     assert returned_actions[1].level == level
     assert returned_actions[1].path == table_path
     # mypy has difficulty with determining which action is returned
@@ -388,7 +388,7 @@ def test__server_only_file():
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
-    assert returned_action.type_ == types_.ActionType.DELETE
+    assert isinstance(returned_action, types_.DeleteAction)
     assert returned_action.level == table_row.level
     assert returned_action.path == table_row.path
     assert returned_action.navlink == table_row.navlink
@@ -425,7 +425,7 @@ def test__server_only_directory():
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
-    assert returned_action.type_ == types_.ActionType.DELETE
+    assert isinstance(returned_action, types_.DeleteAction)
     assert returned_action.level == table_row.level
     assert returned_action.path == table_row.path
     assert returned_action.navlink == table_row.navlink
@@ -462,14 +462,14 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
 # Pylint diesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "path_info, table_row, expected_action",
+    "path_info, table_row, expected_action_type",
     [
         pytest.param(
             types_.PathInfo(
                 local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
             ),
             None,
-            types_.ActionType.CREATE,
+            types_.CreateAction,
             id="path info defined table row None",
         ),
         pytest.param(
@@ -480,7 +480,7 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
                 navlink_title=(title := "title 1"),
             ),
             types_.TableRow(level=1, path=path, navlink=types_.Navlink(title=title, link=None)),
-            types_.ActionType.NOOP,
+            types_.NoopAction,
             id="path info defined table row defined",
         ),
         pytest.param(
@@ -488,7 +488,7 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
             types_.TableRow(
                 level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
             ),
-            types_.ActionType.DELETE,
+            types_.DeleteAction,
             id="path info None table row defined",
         ),
     ],
@@ -497,13 +497,13 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
 def test__calculate_action(
     path_info: types_.PathInfo | None,
     table_row: types_.TableRow | None,
-    expected_action: types_.ActionType,
+    expected_action_type: type[types_.AnyAction],
     tmp_path: Path,
 ):
     """
     arrange: given path info and table row for a directory and grouping
     act: when _calculate_action is called with the path info and table row
-    assert: then the expected action is returned.
+    assert: then the expected action type is returned.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     if path_info is not None:
@@ -513,13 +513,13 @@ def test__calculate_action(
         path_info=path_info, table_row=table_row, discourse=mock_discourse
     )
 
-    assert returned_action.type_ == expected_action
+    assert isinstance(returned_action, expected_action_type)
 
 
 # Pylint diesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "path_infos, table_rows, expected_actions",
+    "path_infos, table_rows, expected_action_types",
     [
         pytest.param((), (), (), id="empty path infos empty table rows"),
         pytest.param(
@@ -529,7 +529,7 @@ def test__calculate_action(
                 ),
             ),
             (),
-            (types_.ActionType.CREATE,),
+            (types_.CreateAction,),
             id="single path info empty table rows",
         ),
         pytest.param(
@@ -542,7 +542,7 @@ def test__calculate_action(
                 ),
             ),
             (),
-            (types_.ActionType.CREATE, types_.ActionType.CREATE),
+            (types_.CreateAction, types_.CreateAction),
             id="multiple path infos empty table rows",
         ),
         pytest.param(
@@ -552,7 +552,7 @@ def test__calculate_action(
                     level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
                 ),
             ),
-            (types_.ActionType.DELETE,),
+            (types_.DeleteAction,),
             id="empty path infos single table row",
         ),
         pytest.param(
@@ -565,7 +565,7 @@ def test__calculate_action(
                     level=2, path="path 2", navlink=types_.Navlink(title="title 2", link=None)
                 ),
             ),
-            (types_.ActionType.DELETE, types_.ActionType.DELETE),
+            (types_.DeleteAction, types_.DeleteAction),
             id="empty path infos multiple table rows",
         ),
         pytest.param(
@@ -582,7 +582,7 @@ def test__calculate_action(
                     level=level, path=path, navlink=types_.Navlink(title=title, link=None)
                 ),
             ),
-            (types_.ActionType.NOOP,),
+            (types_.NoopAction,),
             id="single path info single table row match",
         ),
         pytest.param(
@@ -595,7 +595,7 @@ def test__calculate_action(
                 ),
             ),
             (types_.TableRow(level=2, path=path, navlink=types_.Navlink(title=title, link=None)),),
-            (types_.ActionType.CREATE, types_.ActionType.DELETE),
+            (types_.CreateAction, types_.DeleteAction),
             id="single path info single table row level mismatch",
         ),
         pytest.param(
@@ -612,7 +612,7 @@ def test__calculate_action(
                     level=level, path="path 2", navlink=types_.Navlink(title=title, link=None)
                 ),
             ),
-            (types_.ActionType.CREATE, types_.ActionType.DELETE),
+            (types_.CreateAction, types_.DeleteAction),
             id="single path info single table row path mismatch",
         ),
     ],
@@ -621,7 +621,7 @@ def test__calculate_action(
 def test_run(
     path_infos: tuple[types_.PathInfo, ...],
     table_rows: tuple[types_.TableRow, ...],
-    expected_actions: tuple[types_.ActionType, ...],
+    expected_action_types: tuple[type[types_.AnyAction], ...],
     tmp_path: Path,
 ):
     """
@@ -636,7 +636,10 @@ def test_run(
         path_infos=path_infos, table_rows=table_rows, discourse=mock_discourse
     )
 
-    assert tuple(returned_action.type_ for returned_action in returned_actions) == expected_actions
+    assert (
+        tuple(type(returned_action) for returned_action in returned_actions)
+        == expected_action_types
+    )
 
 
 # Pylint diesn't understand how the walrus operator works
@@ -652,9 +655,7 @@ def test_run(
             ),
             (),
             types_.CreateIndexAction(
-                type_=types_.ActionType.CREATE,
-                title=local_title,
-                content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
+                title=local_title, content=f"{reconcile.NAVIGATION_TABLE_START.strip()}"
             ),
             id="empty local only empty rows",
         ),
@@ -668,9 +669,7 @@ def test_run(
             ),
             (),
             types_.CreateIndexAction(
-                type_=types_.ActionType.CREATE,
-                title=local_title,
-                content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
+                title=local_title, content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}"
             ),
             id="local only empty rows",
         ),
@@ -690,7 +689,6 @@ def test_run(
                 ),
             ),
             types_.CreateIndexAction(
-                type_=types_.ActionType.CREATE,
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
@@ -720,7 +718,6 @@ def test_run(
                 ),
             ),
             types_.CreateIndexAction(
-                type_=types_.ActionType.CREATE,
                 title=local_title,
                 content=(
                     f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
@@ -741,11 +738,7 @@ def test_run(
                 name="name 1",
             ),
             (),
-            types_.NoopIndexAction(
-                type_=types_.ActionType.NOOP,
-                content=server_content,
-                url=url,
-            ),
+            types_.NoopIndexAction(content=server_content, url=url),
             id="local server same empty rows",
         ),
         pytest.param(
@@ -760,11 +753,7 @@ def test_run(
                 name="name 1",
             ),
             (),
-            types_.NoopIndexAction(
-                type_=types_.ActionType.NOOP,
-                content=server_content[1:],
-                url=url,
-            ),
+            types_.NoopIndexAction(content=server_content[1:], url=url),
             id="local server whitespace different same empty rows",
         ),
         pytest.param(
@@ -780,11 +769,7 @@ def test_run(
                 name="name 1",
             ),
             (),
-            types_.NoopIndexAction(
-                type_=types_.ActionType.NOOP,
-                content=server_content,
-                url=url,
-            ),
+            types_.NoopIndexAction(content=server_content, url=url),
             id="local whitespace server different same empty rows",
         ),
         pytest.param(
@@ -795,7 +780,6 @@ def test_run(
             ),
             (),
             types_.UpdateIndexAction(
-                type_=types_.ActionType.UPDATE,
                 content_change=types_.IndexContentChange(
                     old=server_content,
                     new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
