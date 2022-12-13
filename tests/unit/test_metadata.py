@@ -50,32 +50,46 @@ def test_get_yaml_malformed(
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
+# pylint currently does not understand walrus operator perfectly yet
+# pylint: disable=unused-variable,undefined-variable
 @pytest.mark.parametrize(
-    "metadata_name, metadata_docs_url",
+    "metadata_yaml_content, expected_metadata_name, expected_metadata_docs",
     [
-        pytest.param("name", "", id="name only"),
-        pytest.param("name", "https://discourse.charmhub.io/t/index/1", id="name with docs"),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: {(name := 'name')}",
+            name,
+            None,
+            id="name only",
+        ),
+        pytest.param(
+            f"{metadata.METADATA_NAME_KEY}: {name}\n"
+            f"{metadata.METADATA_DOCS_KEY}: "
+            f"{(docs := 'https://discourse.charmhub.io/t/index/1')}",
+            name,
+            docs,
+            id="name and docs",
+        ),
     ],
 )
-def test_get(metadata_name: str, metadata_docs_url: str, tmp_path: Path):
+def test_get(
+    metadata_yaml_content: str,
+    expected_metadata_name: str,
+    expected_metadata_docs: str | None,
+    tmp_path: Path,
+):
     """
     arrange: given directory with metadata.yaml with valid metadata yaml
     act: when get is called with the directory
     assert: then file contents are returned as a dictionary.
     """
-    metadata_docs_line = (
-        f"{metadata.METADATA_DOCS_KEY}: {metadata_docs_url}\n" if metadata_docs_url else ""
-    )
     create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: {metadata_name}\n"
-        f"{metadata_docs_line}"
-        "key: value",
+        content=metadata_yaml_content,
         path=tmp_path,
     )
 
     data = metadata.get(path=tmp_path)
 
-    assert data == types_.Metadata(name=metadata_name, docs=metadata_docs_url or None)
+    assert data == types_.Metadata(name=expected_metadata_name, docs=expected_metadata_docs)
 
 
 @pytest.mark.parametrize(

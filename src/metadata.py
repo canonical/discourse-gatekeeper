@@ -10,8 +10,8 @@ import yaml
 from . import types_
 from .exceptions import InputError
 
-METADATA_FILENAME = "metadata.yaml"
 METADATA_DOCS_KEY = "docs"
+METADATA_FILENAME = "metadata.yaml"
 METADATA_NAME_KEY = "name"
 
 

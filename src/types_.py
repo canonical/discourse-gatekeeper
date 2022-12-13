@@ -13,18 +13,14 @@ from urllib.parse import urlparse
 class Metadata(typing.NamedTuple):
     """Information within metadata file. Refer to: https://juju.is/docs/sdk/metadata-yaml.
 
+    Only name and docs are the fields of interest for the scope of this module.
+
     Attrs:
         name: Name of the charm.
-
         docs: A link to a documentation cover page on Discourse.
     """
 
-    # Required fields
-    # only name is required for the scope of this module
     name: str
-
-    # Optional fields
-    # only docs is required for the scope of this module
     docs: str | None
 
 
