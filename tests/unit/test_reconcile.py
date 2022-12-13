@@ -92,6 +92,40 @@ def test__local_and_server_error(
         )
 
 
+def test__get_server_content_missing_link():
+    """
+    arrange: given path info with a file and table row with no changes and discourse client that
+        raises an error
+    act: when _get_server_content is called with the path info and table row
+    assert: then ServerError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    navlink = types_.Navlink(title="title 1", link=None)
+    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ReconcilliationError):
+        reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
+
+
+def test__get_server_content_server_error():
+    """
+    arrange: given path info with a file and table row with no changes and discourse client that
+        raises an error
+    act: when _get_server_content is called with the path info and table row
+    assert: then ServerError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    navlink = types_.Navlink(title="title 1", link=(navlink_link := "link 1"))
+    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ServerError) as exc_info:
+        reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
+
+    assert navlink_link in str(exc_info.value)
+
+
 @pytest.mark.parametrize(
     "local_content, server_content",
     [

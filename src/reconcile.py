@@ -35,6 +35,32 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
     )
 
 
+def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str:
+    """Retrieve the content from the server.
+
+    Args:
+        table_row: A row from the navigation table.
+        discourse: A client to the documentation server.
+
+    Returns:
+        The content on the server.
+
+    Raises:
+        ServerError: Retrieving the page contents from the server failed.
+    """
+    if table_row.navlink.link is None:
+        raise exceptions.ReconcilliationError(
+            f"internal error, expecting link on table row, {table_row=!r}"
+        )
+
+    try:
+        return discourse.retrieve_topic(url=table_row.navlink.link).strip()
+    except exceptions.DiscourseError as exc:
+        raise exceptions.ServerError(
+            f"failed to retrieve contents of page, url={table_row.navlink.link}"
+        ) from exc
+
+
 def _local_and_server(
     path_info: types_.PathInfo, table_row: types_.TableRow, discourse: Discourse
 ) -> tuple[
@@ -67,6 +93,7 @@ def _local_and_server(
             row.
         ReconcilliationError: if certain edge cases occur that are not expected, such as
             table_row.navlink.link for a page on the server.
+        ServerError: Retrieving the page contents from the server failed.
     """
     if path_info.level != table_row.level:
         raise exceptions.ReconcilliationError(
@@ -145,14 +172,7 @@ def _local_and_server(
 
     # Is a page locally and on the server
     local_content = path_info.local_path.read_text(encoding="utf-8").strip()
-    # This is an edge case that can't actually occur because table_row.is_group is based on
-    # whether the navlink link is None so this case would have been caught in the local
-    # page and server group case
-    if table_row.navlink.link is None:  # pragma: no cover
-        raise exceptions.ReconcilliationError(
-            f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
-        )
-    server_content = discourse.retrieve_topic(url=table_row.navlink.link).strip()
+    server_content = _get_server_content(table_row=table_row, discourse=discourse)
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
