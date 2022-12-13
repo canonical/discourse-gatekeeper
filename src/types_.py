@@ -123,12 +123,7 @@ TableRowLookup = dict[tuple[Level, TablePath], TableRow]
 
 
 @dataclasses.dataclass
-class BaseAction:
-    """Represents an action on a page."""
-
-
-@dataclasses.dataclass
-class CreateAction(BaseAction):
+class CreateAction:
     """Represents a page to be created.
 
     Attrs:
@@ -145,7 +140,7 @@ class CreateAction(BaseAction):
 
 
 @dataclasses.dataclass
-class CreateIndexAction(BaseAction):
+class CreateIndexAction:
     """Represents an index page to be created.
 
     Attrs:
@@ -158,7 +153,7 @@ class CreateIndexAction(BaseAction):
 
 
 @dataclasses.dataclass
-class NoopAction(BaseAction):
+class NoopAction:
     """Represents a page with no required changes.
 
     Attrs:
@@ -175,7 +170,7 @@ class NoopAction(BaseAction):
 
 
 @dataclasses.dataclass
-class NoopIndexAction(BaseAction):
+class NoopIndexAction:
     """Represents an index page with no required changes.
 
     Attrs:
@@ -224,7 +219,7 @@ class IndexContentChange(typing.NamedTuple):
 
 
 @dataclasses.dataclass
-class UpdateAction(BaseAction):
+class UpdateAction:
     """Represents a page to be updated.
 
     Attrs:
@@ -241,7 +236,7 @@ class UpdateAction(BaseAction):
 
 
 @dataclasses.dataclass
-class UpdateIndexAction(BaseAction):
+class UpdateIndexAction:
     """Represents an index page to be updated.
 
     Attrs:
@@ -254,7 +249,7 @@ class UpdateIndexAction(BaseAction):
 
 
 @dataclasses.dataclass
-class DeleteAction(BaseAction):
+class DeleteAction:
     """Represents a page to be deleted.
 
     Attrs:
