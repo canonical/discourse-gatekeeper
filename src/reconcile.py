@@ -27,7 +27,6 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
         A page create action.
     """
     return types_.CreateAction(
-        type_=types_.ActionType.CREATE,
         level=path_info.level,
         path=path_info.table_path,
         navlink_title=path_info.navlink_title,
@@ -82,7 +81,6 @@ def _local_and_server(
         if table_row.navlink.title == path_info.navlink_title:
             return (
                 types_.NoopAction(
-                    type_=types_.ActionType.NOOP,
                     level=path_info.level,
                     path=path_info.table_path,
                     navlink=table_row.navlink,
@@ -91,7 +89,6 @@ def _local_and_server(
             )
         return (
             types_.UpdateAction(
-                type_=types_.ActionType.UPDATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_change=types_.NavlinkChange(
@@ -114,14 +111,12 @@ def _local_and_server(
             )
         return (
             types_.DeleteAction(
-                type_=types_.ActionType.DELETE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
                 content=discourse.retrieve_topic(url=table_row.navlink.link),
             ),
             types_.CreateAction(
-                type_=types_.ActionType.CREATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_title=path_info.navlink_title,
@@ -135,7 +130,6 @@ def _local_and_server(
     if table_row.is_group:
         return (
             types_.CreateAction(
-                type_=types_.ActionType.CREATE,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink_title=path_info.navlink_title,
@@ -157,7 +151,6 @@ def _local_and_server(
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
             types_.NoopAction(
-                type_=types_.ActionType.NOOP,
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
@@ -166,7 +159,6 @@ def _local_and_server(
         )
     return (
         types_.UpdateAction(
-            type_=types_.ActionType.UPDATE,
             level=path_info.level,
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
@@ -194,7 +186,6 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
     # Group case
     if table_row.is_group:
         return types_.DeleteAction(
-            type_=types_.ActionType.DELETE,
             level=table_row.level,
             path=table_row.path,
             navlink=table_row.navlink,
@@ -208,7 +199,6 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             f"internal error, expecting link on table row, {table_row=!r}"
         )
     return types_.DeleteAction(
-        type_=types_.ActionType.DELETE,
         level=table_row.level,
         path=table_row.path,
         navlink=table_row.navlink,
@@ -312,17 +302,12 @@ def index_page(
     )
 
     if index.server is None:
-        return types_.CreateIndexAction(
-            type_=types_.ActionType.CREATE, content=local_content, title=index.local.title
-        )
+        return types_.CreateIndexAction(content=local_content, title=index.local.title)
 
     server_content = index.server.content.strip()
     if local_content != server_content:
         return types_.UpdateIndexAction(
-            type_=types_.ActionType.UPDATE,
             content_change=types_.IndexContentChange(old=server_content, new=local_content),
             url=index.server.url,
         )
-    return types_.NoopIndexAction(
-        type_=types_.ActionType.NOOP, content=local_content, url=index.server.url
-    )
+    return types_.NoopIndexAction(content=local_content, url=index.server.url)
