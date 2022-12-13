@@ -87,7 +87,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
-    assert_substrings_in_string((index_url, "'update'", "'skip'"), caplog.text)
+    assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
 
     # 3. docs with an index file
     caplog.clear()
@@ -99,7 +99,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{index_content}{reconcile.NAVIGATION_TABLE_START}"
-    assert_substrings_in_string((index_url, "'update'", "'success'"), caplog.text)
+    assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
 
     # 4. docs with a documentation file added in dry run mode
     caplog.clear()
@@ -111,7 +111,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     assert tuple(urls_with_actions) == (index_url,)
-    assert_substrings_in_string(("'create'", "'skip'"), caplog.text)
+    assert_substrings_in_string(("Create", "'skip'"), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_content_1 not in index_topic
 
@@ -127,7 +127,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_content_1}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
-        chain(urls, (doc_table_line_1, "'create'", "'update'", "'success'")), caplog.text
+        chain(urls, (doc_table_line_1, "Create", "Update", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_1 in index_topic
@@ -143,7 +143,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
-    assert_substrings_in_string(chain(urls, (doc_table_line_1, "'update'", "'skip'")), caplog.text)
+    assert_substrings_in_string(chain(urls, (doc_table_line_1, "Update", "'skip'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_1 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
@@ -159,7 +159,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     doc_table_line_2 = f"| 1 | {doc_table_key} | [{doc_content_2}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
-        chain(urls, (doc_table_line_1, doc_table_line_2, "'update'", "'success'")), caplog.text
+        chain(urls, (doc_table_line_1, doc_table_line_2, "Update", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_2 in index_topic
@@ -178,7 +178,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     nested_dir_table_line = f"| 1 | {nested_dir_table_key} | [Nested Dir]() |"
     assert_substrings_in_string(
-        chain(urls, (nested_dir_table_line, "'create'", "'success'")), caplog.text
+        chain(urls, (nested_dir_table_line, "Create", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_table_line in index_topic
@@ -202,7 +202,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
         f" [{nested_dir_doc_content}]({urlparse(nested_dir_doc_url).path}) |"
     )
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "'create'", "'success'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line, "Create", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_doc_table_line in index_topic
@@ -219,7 +219,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "'delete'", "'update'", "'skip'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line, "Delete", "Update", "'skip'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_doc_table_line in index_topic
@@ -236,7 +236,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "'delete'", "'update'", "'skip'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line, "Delete", "Update", "'skip'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_doc_table_line not in index_topic
@@ -253,7 +253,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_table_line, "'delete'", "'update'", "'success'")), caplog.text
+        chain(urls, (nested_dir_table_line, "Delete", "Update", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_table_line not in index_topic
@@ -268,7 +268,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (doc_table_line_2, "'delete'", "'update'", "'success'")), caplog.text
+        chain(urls, (doc_table_line_2, "Delete", "Update", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_2 not in index_topic
@@ -284,6 +284,6 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     assert (urls := tuple(urls_with_actions)) == (index_url,)
-    assert_substrings_in_string(chain(urls, ("'update'", "'success'")), caplog.text)
+    assert_substrings_in_string(chain(urls, ("Update", "'success'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content not in index_topic
