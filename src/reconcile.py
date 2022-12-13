@@ -47,6 +47,7 @@ def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str
 
     Raises:
         ServerError: Retrieving the page contents from the server failed.
+        ReconcilliationError: The URL is missing from the navlink.
     """
     if table_row.navlink.link is None:
         raise exceptions.ReconcilliationError(
@@ -93,7 +94,6 @@ def _local_and_server(
             row.
         ReconcilliationError: if certain edge cases occur that are not expected, such as
             table_row.navlink.link for a page on the server.
-        ServerError: Retrieving the page contents from the server failed.
     """
     if path_info.level != table_row.level:
         raise exceptions.ReconcilliationError(

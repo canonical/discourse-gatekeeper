@@ -255,9 +255,9 @@ def test__check_table_row_write_permission_page_true():
 
 def test_from_page_missing_write_permission():
     """
-    arrange: given page and expected table
+    arrange: given page and mocked discourse server that returns false for the write permission
     act: when from_page is called with the page
-    assert: then the expected rtable is returned.
+    assert: then PagePermissionError is raised.
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.check_topic_write_permission.return_value = False
