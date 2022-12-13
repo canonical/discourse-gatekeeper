@@ -75,7 +75,7 @@ def test_get_invalid_metadata(
     metadata_yaml_content: str, expected_error_msg_contents: tuple[str, ...], tmp_path: Path
 ):
     """
-    arrange: given metadata with missing required keys
+    arrange: given metadata with missing required keys or invalid value
     act: when get is called with the directory
     assert: InputError is raised with missing keys info.
     """
