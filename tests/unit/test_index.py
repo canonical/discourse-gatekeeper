@@ -11,10 +11,10 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, index, metadata
+from src import discourse, index, types_
 from src.exceptions import DiscourseError, ServerError
 
-from .helpers import assert_substrings_in_string, create_metadata_yaml
+from .helpers import assert_substrings_in_string
 
 
 def test__read_docs_index_docs_directory_missing(tmp_path: Path):
@@ -60,16 +60,12 @@ def test_get_metadata_yaml_retrieve_discourse_error(tmp_path: Path):
     act: when get is called with that directory
     assert: then ServerError is raised.
     """
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name\n"
-        f"{metadata.METADATA_DOCS_KEY}: http://server/index-page",
-        path=tmp_path,
-    )
+    meta = types_.Metadata(name="name", docs="http://server/index-page")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
 
     with pytest.raises(ServerError) as exc_info:
-        index.get(base_path=tmp_path, server_client=mocked_server_client)
+        index.get(metadata=meta, base_path=tmp_path, server_client=mocked_server_client)
 
     assert_substrings_in_string(("index page", "retrieval", "failed"), str(exc_info.value).lower())
 
@@ -84,14 +80,13 @@ def test_get_metadata_yaml_retrieve_local_and_server(tmp_path: Path, index_file_
     """
     url = "http://server/index-page"
     name = "name 1"
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_DOCS_KEY}: {url}\n{metadata.METADATA_NAME_KEY}: {name}",
-        path=tmp_path,
-    )
+    meta = types_.Metadata(name=name, docs=url)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = (content := "content 2")
 
-    returned_index = index.get(base_path=tmp_path, server_client=mocked_server_client)
+    returned_index = index.get(
+        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+    )
 
     assert returned_index.server is not None
     assert returned_index.server.url == url
@@ -109,10 +104,12 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     assert: then all information is None except the title.
     """
     name = "name 1"
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {name}", path=tmp_path)
+    meta = types_.Metadata(name=name, docs=None)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
 
-    returned_index = index.get(base_path=tmp_path, server_client=mocked_server_client)
+    returned_index = index.get(
+        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+    )
 
     assert returned_index.server is None
     assert returned_index.local.title == "Name 1 Documentation Overview"

@@ -7,8 +7,7 @@ from pathlib import Path
 
 from .discourse import Discourse
 from .exceptions import DiscourseError, ServerError
-from .metadata import get as get_metadata
-from .types_ import Index, IndexFile, Page
+from .types_ import Index, IndexFile, Metadata, Page
 
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
@@ -32,7 +31,7 @@ def _read_docs_index(base_path: Path) -> str | None:
     return index_file.read_text()
 
 
-def get(base_path: Path, server_client: Discourse) -> Index:
+def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
     """Retrieve the local and server index information.
 
     Args:
@@ -46,8 +45,6 @@ def get(base_path: Path, server_client: Discourse) -> Index:
         ServerError: if interactions with the documentation server occurs.
 
     """
-    metadata = get_metadata(path=base_path)
-
     if metadata.docs is not None:
         index_url = metadata.docs
         try:
