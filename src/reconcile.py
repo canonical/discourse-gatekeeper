@@ -190,6 +190,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
     Raises:
         ReconcilliationError: if the link for a page is None.
+        ServerError: Retrieving the page contents from the server failed.
     """
     # Group case
     if table_row.is_group:
@@ -207,13 +208,18 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
         raise exceptions.ReconcilliationError(
             f"internal error, expecting link on table row, {table_row=!r}"
         )
-    return types_.DeleteAction(
-        type_=types_.ActionType.DELETE,
-        level=table_row.level,
-        path=table_row.path,
-        navlink=table_row.navlink,
-        content=discourse.retrieve_topic(url=table_row.navlink.link),
-    )
+    try:
+        return types_.DeleteAction(
+            type_=types_.ActionType.DELETE,
+            level=table_row.level,
+            path=table_row.path,
+            navlink=table_row.navlink,
+            content=discourse.retrieve_topic(url=table_row.navlink.link),
+        )
+    except exceptions.DiscourseError as exc:
+        raise exceptions.ServerError(
+            f"failed to retrieve contents of page, url={table_row.navlink.link}"
+        ) from exc
 
 
 def _calculate_action(

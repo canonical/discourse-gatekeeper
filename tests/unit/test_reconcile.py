@@ -362,6 +362,23 @@ def test__server_only_file():
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink.link)
 
 
+def test__server_only_file_discourse_error():
+    """
+    arrange: given table row with a file and mocked discourse that raises an error
+    act: when _server_only is called with the table row
+    assert: then ServerError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    navlink = types_.Navlink(title="title 1", link=(link := "link 1"))
+    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ServerError) as exc_info:
+        reconcile._server_only(table_row=table_row, discourse=mock_discourse)
+
+    assert link in str(exc_info.value)
+
+
 def test__server_only_directory():
     """
     arrange: given table row with a directory
