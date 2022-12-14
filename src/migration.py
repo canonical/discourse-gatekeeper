@@ -69,15 +69,6 @@ def _migrate_document(document_meta: types_.DocumentMeta, discourse: Discourse, 
     """
     try:
         content = discourse.retrieve_topic(url=document_meta.link)
-        path = docs_path / document_meta.path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
-        return types_.MigrationReport(
-            table_row=document_meta.table_row,
-            result=types_.ActionResult.SUCCESS,
-            path=path,
-            reason=None,
-        )
     except exceptions.DiscourseError as exc:
         return types_.MigrationReport(
             table_row=document_meta.table_row,
@@ -85,6 +76,15 @@ def _migrate_document(document_meta: types_.DocumentMeta, discourse: Discourse, 
             path=None,
             reason=str(exc),
         )
+    path = docs_path / document_meta.path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return types_.MigrationReport(
+        table_row=document_meta.table_row,
+        result=types_.ActionResult.SUCCESS,
+        path=path,
+        reason=None,
+    )
 
 
 def _run_one(
