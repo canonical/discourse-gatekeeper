@@ -94,13 +94,12 @@ def test__local_and_server_error(
 
 def test__get_server_content_missing_link():
     """
-    arrange: given path info with a file and table row with no changes and discourse client that
-        raises an error
-    act: when _get_server_content is called with the path info and table row
-    assert: then ServerError is raised.
+    arrange: table row with None link
+    act: when _get_server_content is called with table row
+    assert: then ReconcilliationError is raised.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    mock_discourse.retrieve_topic.return_value = "content 1"
     navlink = types_.Navlink(title="title 1", link=None)
     table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
 
@@ -110,9 +109,8 @@ def test__get_server_content_missing_link():
 
 def test__get_server_content_server_error():
     """
-    arrange: given path info with a file and table row with no changes and discourse client that
-        raises an error
-    act: when _get_server_content is called with the path info and table row
+    arrange: given table row and discourse client that raises an error
+    act: when _get_server_content is called with the table row
     assert: then ServerError is raised.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
