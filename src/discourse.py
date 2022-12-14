@@ -354,7 +354,11 @@ class Discourse:
         """
         try:
             post = self._client.create_post(
-                title=title, category_id=self._category_id, tags=self.tags, content=content
+                title=title,
+                category_id=self._category_id,
+                tags=self.tags,
+                content=content,
+                unlist_topic=True,
             )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
