@@ -313,3 +313,30 @@ class ActionReport(typing.NamedTuple):
     url: Url | None
     result: ActionResult
     reason: str | None
+
+
+@dataclasses.dataclass
+class MigrationDocument:
+    """Represents a document to be migrated.
+
+    Attrs:
+        path: The full document path to be written to.
+    """
+
+    path: Path
+
+
+@dataclasses.dataclass
+class GitkeepFile(MigrationDocument):
+    """Represents an empty directory from the index table."""
+
+
+@dataclasses.dataclass
+class DocumentFile(MigrationDocument):
+    """Represents a document to be migrated from the index table.
+
+    Attrs:
+        link: Link to content to read from.
+    """
+
+    link: str

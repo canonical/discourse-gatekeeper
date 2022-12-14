@@ -30,3 +30,7 @@ class ReconcilliationError(BaseError):
 
 class ActionError(BaseError):
     """A problem with the taking an action occurred."""
+
+
+class InvalidTableRowLevelError(BaseError):
+    """A problematic table row is encountered."""
