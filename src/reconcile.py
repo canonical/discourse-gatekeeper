@@ -220,16 +220,14 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             f"internal error, expecting link on table row, {table_row=!r}"
         )
     try:
-        return types_.DeleteAction(
-            level=table_row.level,
-            path=table_row.path,
-            navlink=table_row.navlink,
-            content=discourse.retrieve_topic(url=table_row.navlink.link),
-        )
+        content = discourse.retrieve_topic(url=table_row.navlink.link)
     except exceptions.DiscourseError as exc:
         raise exceptions.ServerError(
             f"failed to retrieve contents of page, url={table_row.navlink.link}"
         ) from exc
+    return types_.DeleteAction(
+        level=table_row.level, path=table_row.path, navlink=table_row.navlink, content=content
+    )
 
 
 def _calculate_action(
