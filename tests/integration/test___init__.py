@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from src import exceptions, index, reconcile, run
+from src import exceptions, index, metadata, reconcile, run
 from src.discourse import Discourse
 
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -58,7 +58,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
         14. an index page is not updated
     """
     caplog.set_level(logging.INFO)
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
 
     # 1. docs empty
     urls_with_actions = run(
@@ -74,7 +74,7 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     # 2. docs with an index file in dry run mode
     caplog.clear()
     create_metadata_yaml(
-        content=f"{index.METADATA_NAME_KEY}: name 1\n{index.METADATA_DOCS_KEY}: {index_url}",
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
         path=tmp_path,
     )
     (docs_dir := tmp_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()

@@ -6,7 +6,7 @@
 import typing
 from pathlib import Path
 
-from src import index
+from src import metadata
 
 
 def create_metadata_yaml(content: str, path: Path) -> None:
@@ -17,7 +17,7 @@ def create_metadata_yaml(content: str, path: Path) -> None:
         path: The directory to create the file in.
 
     """
-    metadata_yaml = path / index.METADATA_FILENAME
+    metadata_yaml = path / metadata.METADATA_FILENAME
     metadata_yaml.write_text(content, encoding="utf-8")
 
 

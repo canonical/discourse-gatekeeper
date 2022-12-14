@@ -11,102 +11,10 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, index
-from src.exceptions import DiscourseError, InputError, ServerError
+from src import discourse, index, types_
+from src.exceptions import DiscourseError, ServerError
 
-from .helpers import assert_substrings_in_string, create_metadata_yaml
-
-
-def test__get_metadata_metadata_yaml_missing(tmp_path: Path):
-    """
-    arrange: given empty directory
-    act: when _get_metadata is called with that directory
-    assert: then InputError is raised.
-    """
-    with pytest.raises(InputError) as exc_info:
-        index._get_metadata(path=tmp_path)
-
-    assert index.METADATA_FILENAME in str(exc_info.value).lower()
-
-
-@pytest.mark.parametrize(
-    "metadata_yaml_content, expected_error_msg_contents",
-    [
-        pytest.param("", ("empty", index.METADATA_FILENAME), id="malformed"),
-        pytest.param("malformed: yaml:", ("malformed", index.METADATA_FILENAME), id="malformed"),
-        pytest.param("value 1", ("not", "mapping", index.METADATA_FILENAME), id="not dict"),
-    ],
-)
-def test__get_metadata_metadata_yaml_malformed(
-    metadata_yaml_content: str, expected_error_msg_contents: tuple[str, ...], tmp_path: Path
-):
-    """
-    arrange: given directory with metadata.yaml that is malformed
-    act: when _get_metadata is called with the directory
-    assert: then InputError is raised.
-    """
-    create_metadata_yaml(content=metadata_yaml_content, path=tmp_path)
-
-    with pytest.raises(InputError) as exc_info:
-        index._get_metadata(path=tmp_path)
-
-    assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
-
-
-def test__get_metadata_metadata(tmp_path: Path):
-    """
-    arrange: given directory with metadata.yaml with valid mapping yaml
-    act: when _get_metadata is called with the directory
-    assert: then file contents are returned as a dictionary.
-    """
-    create_metadata_yaml(content="key: value", path=tmp_path)
-
-    metadata = index._get_metadata(path=tmp_path)
-
-    assert metadata == {"key": "value"}
-
-
-@pytest.mark.parametrize(
-    "metadata, expected_error_msg_content",
-    [
-        pytest.param({}, "not defined", id="empty"),
-        pytest.param({"key": "value"}, "not defined", id="docs not defined"),
-        pytest.param({index.METADATA_DOCS_KEY: ""}, "empty", id="docs empty"),
-        pytest.param({index.METADATA_DOCS_KEY: 5}, "not a string", id="not string"),
-    ],
-)
-def test__get_key_docs_missing_malformed(metadata: dict, expected_error_msg_content: str):
-    """
-    arrange: given malformed metadata
-    act: when _get_key is called with the metadata
-    assert: then InputError is raised.
-    """
-    with pytest.raises(InputError) as exc_info:
-        index._get_key(metadata=metadata, key=index.METADATA_DOCS_KEY)
-
-    assert_substrings_in_string(
-        (
-            f"'{index.METADATA_DOCS_KEY}'",
-            expected_error_msg_content,
-            index.METADATA_FILENAME,
-            f"{metadata=!r}",
-        ),
-        str(exc_info.value).lower(),
-    )
-
-
-def test__get_key():
-    """
-    arrange: given metadata with docs key
-    act: when _get_key is called with the metadata
-    assert: then the docs value is returned.
-    """
-    docs_key = index.METADATA_DOCS_KEY
-    docs_value = "url 1"
-
-    returned_value = index._get_key(metadata={docs_key: docs_value}, key=docs_key)
-
-    assert returned_value == docs_value
+from .helpers import assert_substrings_in_string
 
 
 def test__read_docs_index_docs_directory_missing(tmp_path: Path):
@@ -152,14 +60,12 @@ def test_get_metadata_yaml_retrieve_discourse_error(tmp_path: Path):
     act: when get is called with that directory
     assert: then ServerError is raised.
     """
-    create_metadata_yaml(
-        content=f"{index.METADATA_DOCS_KEY}: http://server/index-page", path=tmp_path
-    )
+    meta = types_.Metadata(name="name", docs="http://server/index-page")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
 
     with pytest.raises(ServerError) as exc_info:
-        index.get(base_path=tmp_path, server_client=mocked_server_client)
+        index.get(metadata=meta, base_path=tmp_path, server_client=mocked_server_client)
 
     assert_substrings_in_string(("index page", "retrieval", "failed"), str(exc_info.value).lower())
 
@@ -174,14 +80,13 @@ def test_get_metadata_yaml_retrieve_local_and_server(tmp_path: Path, index_file_
     """
     url = "http://server/index-page"
     name = "name 1"
-    create_metadata_yaml(
-        content=f"{index.METADATA_DOCS_KEY}: {url}\n{index.METADATA_NAME_KEY}: {name}",
-        path=tmp_path,
-    )
+    meta = types_.Metadata(name=name, docs=url)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = (content := "content 2")
 
-    returned_index = index.get(base_path=tmp_path, server_client=mocked_server_client)
+    returned_index = index.get(
+        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+    )
 
     assert returned_index.server is not None
     assert returned_index.server.url == url
@@ -199,10 +104,12 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     assert: then all information is None except the title.
     """
     name = "name 1"
-    create_metadata_yaml(content=f"{index.METADATA_NAME_KEY}: {name}", path=tmp_path)
+    meta = types_.Metadata(name=name, docs=None)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
 
-    returned_index = index.get(base_path=tmp_path, server_client=mocked_server_client)
+    returned_index = index.get(
+        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+    )
 
     assert returned_index.server is None
     assert returned_index.local.title == "Name 1 Documentation Overview"
