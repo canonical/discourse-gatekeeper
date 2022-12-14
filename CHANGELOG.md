@@ -4,7 +4,7 @@
 
 ### Added
 
-- Toppics are now created unlisted on discourse
+- Topics are now created unlisted on discourse
 
 ## [v0.1.1] - 2022-12-13
 
