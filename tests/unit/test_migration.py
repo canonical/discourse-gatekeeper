@@ -182,7 +182,7 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
                     navlink=((dir_navlink := types_.Navlink(title="title 1", link=None))),
                 ),
             ],
-            [types_.GitkeepFile(path=Path(path_str) / (gitkeep_file := Path(".gitkeep")))],
+            [types_.GitkeepMeta(path=Path(path_str) / (gitkeep_file := Path(".gitkeep")))],
             id="table row no navlink",
         ),
         pytest.param(
@@ -199,8 +199,8 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
                 ),
             ],
             [
-                types_.GitkeepFile(path=Path(path_str) / gitkeep_file),
-                types_.GitkeepFile(path=Path(path_str_2) / gitkeep_file),
+                types_.GitkeepMeta(path=Path(path_str) / gitkeep_file),
+                types_.GitkeepMeta(path=Path(path_str_2) / gitkeep_file),
             ],
             id="multiple empty directories",
         ),
@@ -218,7 +218,7 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
                 ),
             ],
             [
-                types_.GitkeepFile(path=Path(path_str) / Path(path_str_2) / gitkeep_file),
+                types_.GitkeepMeta(path=Path(path_str) / Path(path_str_2) / gitkeep_file),
             ],
             id="nested empty directories",
         ),
@@ -226,14 +226,14 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
 )
 def test_migrate_empty_directory(
     table_rows: Iterable[types_.TableRow],
-    expected_files: List[types_.MigrationDocument],
+    expected_files: List[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows with no navlink(only directories)
     act: when migrate is called
     assert: gitkeep files with respective directories are returned.
     """
-    files = [file for file in migration.migrate(table_rows=table_rows)]
+    files = [file for file in migration.extract_docs(table_rows=table_rows)]
     assert files == expected_files
 
 
@@ -250,7 +250,7 @@ def test_migrate_empty_directory(
                     ),
                 ),
             ],
-            [types_.DocumentFile(path=path_to_markdown(Path(path_str)), link=link)],
+            [types_.DocumentMeta(path=path_to_markdown(Path(path_str)), link=link)],
             id="single file",
         ),
         pytest.param(
@@ -267,7 +267,7 @@ def test_migrate_empty_directory(
                 ),
             ],
             [
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(path_str) / Path(path_str_2)), link=link
                 )
             ],
@@ -287,8 +287,8 @@ def test_migrate_empty_directory(
                 ),
             ],
             [
-                types_.DocumentFile(path=path_to_markdown(Path(path_str)), link=link),
-                types_.DocumentFile(path=path_to_markdown(Path(path_str_2)), link=link),
+                types_.DocumentMeta(path=path_to_markdown(Path(path_str)), link=link),
+                types_.DocumentMeta(path=path_to_markdown(Path(path_str_2)), link=link),
             ],
             id="multiple files",
         ),
@@ -311,10 +311,10 @@ def test_migrate_empty_directory(
                 ),
             ],
             [
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str) / Path(path_str)), link=link
                 ),
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str) / Path(path_str_2)), link=link
                 ),
             ],
@@ -354,16 +354,16 @@ def test_migrate_empty_directory(
                 ),
             ],
             [
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str) / Path(path_str)), link=link
                 ),
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str) / Path(path_str_2)), link=link
                 ),
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str_2) / Path(path_str)), link=link
                 ),
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(Path(base_path_dir_str_2) / Path(path_str_2)), link=link
                 ),
             ],
@@ -388,7 +388,7 @@ def test_migrate_empty_directory(
                 ),
             ],
             [
-                types_.DocumentFile(
+                types_.DocumentMeta(
                     path=path_to_markdown(
                         Path(base_path_dir_str) / Path(path_str) / Path(path_str_2)
                     ),
@@ -401,12 +401,12 @@ def test_migrate_empty_directory(
 )
 def test_migrate_directory(
     table_rows: Iterable[types_.TableRow],
-    expected_files: List[types_.MigrationDocument],
+    expected_files: List[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows
     act: when migrate is called
     assert: document file with correct paths are returned.
     """
-    files = [file for file in migration.migrate(table_rows=table_rows)]
+    files = [file for file in migration.extract_docs(table_rows=table_rows)]
     assert files == expected_files

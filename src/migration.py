@@ -7,6 +7,7 @@ import typing
 from pathlib import Path
 
 from . import exceptions, types_
+from .discourse import Discourse
 
 GITKEEP_FILE = ".gitkeep"
 
@@ -35,14 +36,13 @@ def _validate_row_levels(table_rows: typing.Iterable[types_.TableRow]):
         level = row.level
 
 
-def migrate(
+def extract_docs(
     table_rows: typing.Iterable[types_.TableRow],
-) -> typing.Iterable[types_.MigrationDocument]:
-    """Create migration documents to migrate from server.
+) -> typing.Iterable[types_.MigrationFileMeta]:
+    """Extract necessary migration documents to build docs directory from server.
 
     Args:
         table_rows: Table rows from the index file in the order of directory hierarcy.
-        docs_path: Docs directory base path.
 
     Returns:
         Migration documents with navlink to content.\
@@ -57,7 +57,7 @@ def migrate(
         # Next set of hierarchies, change cwd path
         if row.level <= level:
             if not last_dir_has_file:
-                yield types_.GitkeepFile(path=cwd / GITKEEP_FILE)
+                yield types_.GitkeepMeta(path=cwd / GITKEEP_FILE)
             while row.level <= level:
                 level -= 1
                 cwd = cwd.parent
@@ -69,7 +69,7 @@ def migrate(
             level = row.level
         else:
             last_dir_has_file = True
-            yield types_.DocumentFile(path=cwd / f"{row.path}.md", link=row.navlink.link)
+            yield types_.DocumentMeta(path=cwd / f"{row.path}.md", link=row.navlink.link)
 
     if not last_dir_has_file:
-        yield types_.GitkeepFile(path=cwd / GITKEEP_FILE)
+        yield types_.GitkeepMeta(path=cwd / GITKEEP_FILE)

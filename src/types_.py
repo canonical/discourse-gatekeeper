@@ -316,8 +316,8 @@ class ActionReport(typing.NamedTuple):
 
 
 @dataclasses.dataclass
-class MigrationDocument:
-    """Represents a document to be migrated.
+class MigrationFileMeta:
+    """Metadata about a document to be migrated.
 
     Attrs:
         path: The full document path to be written to.
@@ -327,12 +327,12 @@ class MigrationDocument:
 
 
 @dataclasses.dataclass
-class GitkeepFile(MigrationDocument):
+class GitkeepMeta(MigrationFileMeta):
     """Represents an empty directory from the index table."""
 
 
 @dataclasses.dataclass
-class DocumentFile(MigrationDocument):
+class DocumentMeta(MigrationFileMeta):
     """Represents a document to be migrated from the index table.
 
     Attrs:
