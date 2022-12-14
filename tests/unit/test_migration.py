@@ -8,10 +8,11 @@
 
 from pathlib import Path
 from typing import Iterable, List
+from unittest import mock
 
 import pytest
 
-from src import exceptions, migration, types_
+from src import discourse, exceptions, migration, types_
 
 from .helpers import path_to_markdown
 
@@ -80,7 +81,7 @@ def test__validate_row_levels_invalid_rows(
     act: when _validate_row_levels is called
     assert: InvalidRow exception is raised with excpected error message contents.
     """
-    with pytest.raises(exceptions.InvalidTableRowLevelError) as exc_info:
+    with pytest.raises(exceptions.InvalidTableRowError) as exc_info:
         migration._validate_row_levels(table_rows=table_rows)
 
     exc_str = str(exc_info.value).lower()
@@ -176,62 +177,70 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
     [
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=((path_str := "path 1")),
-                    navlink=((dir_navlink := types_.Navlink(title="title 1", link=None))),
+                (
+                    root_dir_row := types_.TableRow(
+                        level=1,
+                        path="root path 1",
+                        navlink=(dir_navlink := types_.Navlink(title="title 1", link=None)),
+                    )
                 ),
             ],
-            [types_.GitkeepMeta(path=Path(path_str) / (gitkeep_file := Path(".gitkeep")))],
+            [
+                types_.GitkeepMeta(
+                    path=Path(root_dir_row.path) / (gitkeep_file := Path(".gitkeep")),
+                    table_row=root_dir_row,
+                )
+            ],
             id="table row no navlink",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=(path_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
-                    level=1,
-                    path=((path_str_2 := "path 2")),
-                    navlink=(dir_navlink),
+                root_dir_row,
+                (
+                    root_dir_row_2 := types_.TableRow(
+                        level=1,
+                        path="root path 2",
+                        navlink=dir_navlink,
+                    )
                 ),
             ],
             [
-                types_.GitkeepMeta(path=Path(path_str) / gitkeep_file),
-                types_.GitkeepMeta(path=Path(path_str_2) / gitkeep_file),
+                types_.GitkeepMeta(
+                    path=Path(root_dir_row.path) / gitkeep_file, table_row=root_dir_row
+                ),
+                types_.GitkeepMeta(
+                    path=Path(root_dir_row_2.path) / gitkeep_file, table_row=root_dir_row_2
+                ),
             ],
             id="multiple empty directories",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=(path_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
+                root_dir_row,
+                sub_dir_row := types_.TableRow(
                     level=2,
-                    path=(path_str_2),
+                    path="sub path 1",
                     navlink=(dir_navlink),
                 ),
             ],
             [
-                types_.GitkeepMeta(path=Path(path_str) / Path(path_str_2) / gitkeep_file),
+                types_.GitkeepMeta(
+                    path=Path(root_dir_row.path) / Path(sub_dir_row.path) / gitkeep_file,
+                    table_row=sub_dir_row,
+                ),
             ],
             id="nested empty directories",
         ),
     ],
 )
-def test_migrate_empty_directory(
+def test_extract_docs_empty_directory_rows(
     table_rows: Iterable[types_.TableRow],
     expected_files: List[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows with no navlink(only directories)
     act: when migrate is called
-    assert: gitkeep files with respective directories are returned.
+    assert: .gitkeep files with respective directories are returned.
     """
     files = [file for file in migration.extract_docs(table_rows=table_rows)]
     assert files == expected_files
@@ -242,164 +251,151 @@ def test_migrate_empty_directory(
     [
         pytest.param(
             [
-                types_.TableRow(
+                root_file_row := types_.TableRow(
                     level=1,
-                    path=(path_str),
+                    path="root file 1",
                     navlink=(
-                        (file_navlink := types_.Navlink(title="title 1", link=(link := "link 1")))
+                        file_navlink := types_.Navlink(
+                            title="title 1", link=(link_str := "link 1")
+                        )
                     ),
-                ),
+                )
             ],
-            [types_.DocumentMeta(path=path_to_markdown(Path(path_str)), link=link)],
+            [
+                types_.DocumentMeta(
+                    path=path_to_markdown(Path(root_file_row.path)),
+                    link=link_str,
+                    table_row=root_file_row,
+                )
+            ],
             id="single file",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=(path_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
+                root_dir_row,
+                sub_file_row := types_.TableRow(
                     level=2,
-                    path=(path_str_2),
-                    navlink=(file_navlink),
+                    path="sub file 1",
+                    navlink=file_navlink,
                 ),
             ],
             [
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(path_str) / Path(path_str_2)), link=link
+                    path=path_to_markdown(Path(root_dir_row.path) / Path(sub_file_row.path)),
+                    link=link_str,
+                    table_row=sub_file_row,
                 )
             ],
             id="single file in directory",
         ),
         pytest.param(
             [
-                types_.TableRow(
+                root_file_row,
+                root_file_row_2 := types_.TableRow(
                     level=1,
-                    path=(path_str),
-                    navlink=(file_navlink),
-                ),
-                types_.TableRow(
-                    level=1,
-                    path=(path_str_2),
-                    navlink=(file_navlink),
+                    path="root file 2",
+                    navlink=file_navlink,
                 ),
             ],
             [
-                types_.DocumentMeta(path=path_to_markdown(Path(path_str)), link=link),
-                types_.DocumentMeta(path=path_to_markdown(Path(path_str_2)), link=link),
+                types_.DocumentMeta(
+                    path=path_to_markdown(Path(root_file_row.path)),
+                    link=link_str,
+                    table_row=root_file_row,
+                ),
+                types_.DocumentMeta(
+                    path=path_to_markdown(Path(root_file_row_2.path)),
+                    link=link_str,
+                    table_row=root_file_row_2,
+                ),
             ],
             id="multiple files",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=((base_path_dir_str := "base")),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
+                root_dir_row,
+                sub_file_row,
+                sub_file_row_2 := types_.TableRow(
                     level=2,
-                    path=(path_str),
-                    navlink=(file_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str_2),
+                    path="sub file 2",
                     navlink=(file_navlink),
                 ),
             ],
             [
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str) / Path(path_str)), link=link
+                    path=path_to_markdown(Path(root_dir_row.path) / Path(sub_file_row.path)),
+                    link=link_str,
+                    table_row=sub_file_row,
                 ),
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str) / Path(path_str_2)), link=link
+                    path=path_to_markdown(Path(root_dir_row.path) / Path(sub_file_row_2.path)),
+                    link=link_str,
+                    table_row=sub_file_row_2,
                 ),
             ],
             id="multiple files in directory",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=(base_path_dir_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str),
-                    navlink=(file_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str_2),
-                    navlink=(file_navlink),
-                ),
-                types_.TableRow(
-                    level=1,
-                    path=((base_path_dir_str_2 := "base 2")),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str),
-                    navlink=(file_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str_2),
-                    navlink=(file_navlink),
-                ),
+                root_dir_row,
+                sub_file_row,
+                sub_file_row_2,
+                root_dir_row_2,
+                sub_file_row,
+                sub_file_row_2,
             ],
             [
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str) / Path(path_str)), link=link
+                    path=path_to_markdown(Path(root_dir_row.path) / Path(sub_file_row.path)),
+                    link=link_str,
+                    table_row=sub_file_row,
                 ),
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str) / Path(path_str_2)), link=link
+                    path=path_to_markdown(Path(root_dir_row.path) / Path(sub_file_row_2.path)),
+                    link=link_str,
+                    table_row=sub_file_row_2,
                 ),
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str_2) / Path(path_str)), link=link
+                    path=path_to_markdown(Path(root_dir_row_2.path) / Path(sub_file_row.path)),
+                    link=link_str,
+                    table_row=sub_file_row,
                 ),
                 types_.DocumentMeta(
-                    path=path_to_markdown(Path(base_path_dir_str_2) / Path(path_str_2)), link=link
+                    path=path_to_markdown(Path(root_dir_row_2.path) / Path(sub_file_row_2.path)),
+                    link=link_str,
+                    table_row=sub_file_row_2,
                 ),
             ],
             id="multiple files in multiple directory",
         ),
         pytest.param(
             [
-                types_.TableRow(
-                    level=1,
-                    path=(base_path_dir_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
-                    level=2,
-                    path=(path_str),
-                    navlink=(dir_navlink),
-                ),
-                types_.TableRow(
-                    level=3,
-                    path=(path_str_2),
-                    navlink=(file_navlink),
+                root_dir_row,
+                sub_dir_row,
+                (
+                    nested_file_row := types_.TableRow(
+                        level=3,
+                        path="path 3",
+                        navlink=(file_navlink),
+                    )
                 ),
             ],
             [
                 types_.DocumentMeta(
                     path=path_to_markdown(
-                        Path(base_path_dir_str) / Path(path_str) / Path(path_str_2)
+                        Path(root_dir_row.path)
+                        / Path(sub_dir_row.path)
+                        / Path(nested_file_row.path)
                     ),
-                    link=link,
+                    link=link_str,
+                    table_row=nested_file_row,
                 ),
             ],
             id="nested directory file",
         ),
     ],
 )
-def test_migrate_directory(
+def test_extract_docs(
     table_rows: Iterable[types_.TableRow],
     expected_files: List[types_.MigrationFileMeta],
 ):
@@ -410,3 +406,91 @@ def test_migrate_directory(
     """
     files = [file for file in migration.extract_docs(table_rows=table_rows)]
     assert files == expected_files
+
+
+def test__migrate_gitkeep(tmp_path: Path):
+    """
+    arrange: given valid gitkeep metadata
+    act: when _migrate_gitkeep is called
+    assert: migration report is created with responsible table row, written path \
+        and reason.
+    """
+    path = Path("empty/docs/dir/.gitkeep")
+    table_row = types_.TableRow(
+        level=1, path="empty-directory", navlink=types_.Navlink(title="title 1", link=None)
+    )
+    gitkeep_meta = types_.GitkeepMeta(path=path, table_row=table_row)
+
+    migration_report = migration._migrate_gitkeep(gitkeep_meta=gitkeep_meta, docs_path=tmp_path)
+
+    assert (file_path := tmp_path / path).is_file()
+    assert file_path.read_text(encoding="utf-8") == ""
+    assert migration_report.table_row == table_row
+    assert migration_report.result == types_.ActionResult.SUCCESS
+    assert migration_report.reason is not None
+    assert "created due to empty directory" in migration_report.reason
+
+
+def test__migrate_document_fail(tmp_path: Path):
+    """
+    arrange: given valid document metadata and mocked discourse that raises an error
+    act: when _migrate_document is called
+    assert: failed migration report is returned.
+    """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = (error := exceptions.DiscourseError("fail"))
+    table_row = types_.TableRow(
+        level=(level := 1),
+        path=(path_str := "empty-directory"),
+        navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
+    )
+    document_meta = types_.DocumentMeta(
+        path=(path := Path(path_str)), table_row=table_row, link=link_str
+    )
+
+    returned_report = migration._migrate_document(
+        document_meta=document_meta, discourse=mocked_discourse, docs_path=tmp_path
+    )
+
+    assert not (tmp_path / path).exists()
+    mocked_discourse.retrieve_topic.assert_called_once_with(url=link_str)
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path_str
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == link_str
+    assert returned_report.result == types_.ActionResult.FAIL
+    assert returned_report.reason == str(error)
+
+
+def test__migrate_document(tmp_path: Path):
+    """
+    arrange: given valid document metadata
+    act: when _migrate_document is called
+    assert: migration report is created with responsible table row, written path \
+        and reason.
+    """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.return_value = (content := "content")
+    table_row = types_.TableRow(
+        level=(level := 1),
+        path=(path_str := "empty-directory"),
+        navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
+    )
+    document_meta = types_.DocumentMeta(
+        path=(path := Path(path_str)), table_row=table_row, link=link_str
+    )
+
+    returned_report = migration._migrate_document(
+        document_meta=document_meta, discourse=mocked_discourse, docs_path=tmp_path
+    )
+
+    assert (file_path := (tmp_path / path)).is_file()
+    assert file_path.read_text(encoding="utf-8") == content
+    mocked_discourse.retrieve_topic.assert_called_once_with(url=link_str)
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path_str
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == link_str
+    assert returned_report.result == types_.ActionResult.SUCCESS

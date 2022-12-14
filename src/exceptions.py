@@ -32,5 +32,9 @@ class ActionError(BaseError):
     """A problem with the taking an action occurred."""
 
 
-class InvalidTableRowLevelError(BaseError):
+class InvalidTableRowError(BaseError):
     """A problematic table row is encountered."""
+
+
+class MigrationError(BaseError):
+    """A problem with migration occurred."""

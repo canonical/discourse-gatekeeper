@@ -320,10 +320,12 @@ class MigrationFileMeta:
     """Metadata about a document to be migrated.
 
     Attrs:
+        table_row: The navigation table entry.
         path: The full document path to be written to.
     """
 
     path: Path
+    table_row: TableRow
 
 
 @dataclasses.dataclass
@@ -340,3 +342,19 @@ class DocumentMeta(MigrationFileMeta):
     """
 
     link: str
+
+
+class MigrationReport(typing.NamedTuple):
+    """Post execution report for an action.
+
+    Attrs:
+        table_row: The navigation table entry.
+        path: Path the file was written to. None if failed.
+        result: The action execution result.
+        reason: The reason, None for success reports.
+    """
+
+    table_row: TableRow
+    path: Path | None
+    result: ActionResult
+    reason: str | None
