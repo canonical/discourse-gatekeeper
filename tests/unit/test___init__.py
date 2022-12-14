@@ -6,33 +6,29 @@
 from pathlib import Path
 from unittest import mock
 
-from src import discourse, exceptions, metadata, reconcile, run, types_
+import pytest
+
+from src import GETTING_STARTED, discourse, exceptions, metadata, reconcile, run, types_
 
 from .helpers import create_metadata_yaml
 
 
-def test_run_empty_local_server(tmp_path: Path):
+def test__run_reconcile_empty_local_server(tmp_path: Path):
     """
     arrange: given metadata with name but not docs and empty docs folder and mocked discourse
     act: when run is called
-    assert: then an index page is created with empty navigation table.
+    assert: then InputError is raised with a link to getting started guide.
     """
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.create_topic.return_value = (url := "url 1")
 
-    returned_page_interactions = run(
-        base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=True
-    )
+    with pytest.raises(exceptions.InputError) as exc:
+        run(base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=True)
 
-    mocked_discourse.create_topic.assert_called_once_with(
-        title="Name 1 Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
-    )
-    assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
+    assert GETTING_STARTED == str(exc.value)
 
 
-def test_run_local_empty_server(tmp_path: Path):
+def test__run_reconcile_local_empty_server(tmp_path: Path):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when run is called
@@ -71,7 +67,7 @@ def test_run_local_empty_server(tmp_path: Path):
     }
 
 
-def test_run_local_empty_server_dry_run(tmp_path: Path):
+def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when run is called with dry run mode enabled
@@ -88,26 +84,4 @@ def test_run_local_empty_server_dry_run(tmp_path: Path):
     )
 
     mocked_discourse.create_topic.assert_not_called()
-    assert not returned_page_interactions
-
-
-def test_run_local_empty_server_error(tmp_path: Path):
-    """
-    arrange: given metadata with name but not docs and empty docs directory and mocked discourse
-        that raises an exception
-    act: when run is called
-    assert: no pages are created.
-    """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.create_topic.side_effect = exceptions.DiscourseError
-
-    returned_page_interactions = run(
-        base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=True
-    )
-
-    mocked_discourse.create_topic.assert_called_once_with(
-        title="Name 1 Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
-    )
     assert not returned_page_interactions

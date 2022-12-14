@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 
 from . import types_
+from .index import DOCUMENTATION_FOLDER_NAME
 
 
 def _get_directories_files(docs_path: Path) -> list[Path]:
@@ -129,3 +130,15 @@ def read(docs_path: Path) -> typing.Iterator[types_.PathInfo]:
     return map(
         partial(_get_path_info, docs_path=docs_path), _get_directories_files(docs_path=docs_path)
     )
+
+
+def has_docs_directory(base_path: Path):
+    """Return existence of docs directory from base path.
+
+    Args:
+        base_path: Base path of the repository to search the docs directory from
+
+    Returns:
+        True if documentation folder exists, False otherwise
+    """
+    return (base_path / DOCUMENTATION_FOLDER_NAME).is_dir()
