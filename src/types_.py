@@ -320,8 +320,8 @@ class MigrationFileMeta:
     """Metadata about a document to be migrated.
 
     Attrs:
-        table_row: The navigation table entry.
         path: The full document path to be written to.
+        table_row: The navigation table entry.
     """
 
     path: Path
