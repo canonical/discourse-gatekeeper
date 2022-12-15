@@ -89,7 +89,7 @@ class PathInfo(typing.NamedTuple):
     level: Level
     table_path: TablePath
     navlink_title: NavlinkTitle
-    alphabetical_rank: int = 9223372036854775807
+    alphabetical_rank: int
 
 
 PathInfoLookup = dict[tuple[Level, TablePath], PathInfo]
