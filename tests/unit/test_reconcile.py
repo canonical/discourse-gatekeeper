@@ -539,7 +539,7 @@ def test_run(
     """
     arrange: given path infos and table rows
     act: when run is called with the path infos and table rows
-    assert: then the expected actions are returned.
+    assert: then the expected actions are returned in the expected order.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     path_infos = tuple(path_info_mkdir(path_info, base_dir=tmp_path) for path_info in path_infos)
