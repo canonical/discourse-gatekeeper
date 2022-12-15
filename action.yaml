@@ -62,8 +62,8 @@ runs:
         INPUT_DISCOURSE_API_KEY=${{ inputs.discourse_api_key }} \
         ${{ github.action_path }}/main.py
       shell: bash
-    # - uses: peter-evans/create-pull-request@v4
-    #   with:
-    #     branch: "docs/migration-${{ github.sha }}"
-    #     title: "[docs] Documentation migration"
-    #     body: "This is a test for demo purpose, do not merge."
+    - uses: peter-evans/create-pull-request@v4
+      with:
+        branch: "docs/migration-demo"
+        title: "[docs] Documentation migration demo"
+        body: "This is a test for demo purpose, do not merge."
