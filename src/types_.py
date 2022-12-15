@@ -81,12 +81,15 @@ class PathInfo(typing.NamedTuple):
         level: The number of parent directories to the docs folder including the docs folder.
         table_path: The computed table path based on the disk path relative to the docs folder.
         navlink_title: The title of the navlink.
+        alphabetical_rank: The rank of the path info based on alphabetically sorting all relevant
+            path infos.
     """
 
     local_path: Path
     level: Level
     table_path: TablePath
     navlink_title: NavlinkTitle
+    alphabetical_rank: int = 9223372036854775807
 
 
 PathInfoLookup = dict[tuple[Level, TablePath], PathInfo]
