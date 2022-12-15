@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, exceptions, migration, types_
+from src import discourse, exceptions, index, migration, types_
 
 from .helpers import path_to_markdown
 
@@ -177,16 +177,14 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
     [
         pytest.param(
             [
-                (
-                    root_dir_row := types_.TableRow(
-                        level=1,
-                        path="root path 1",
-                        navlink=(dir_navlink := types_.Navlink(title="title 1", link=None)),
-                    )
-                ),
+                root_dir_row := types_.TableRow(
+                    level=1,
+                    path="root path 1",
+                    navlink=(dir_navlink := types_.Navlink(title="title 1", link=None)),
+                )
             ],
             [
-                types_.GitkeepMeta(
+                root_dir_gitkeep := types_.GitkeepMeta(
                     path=Path(root_dir_row.path) / (gitkeep_file := Path(".gitkeep")),
                     table_row=root_dir_row,
                 )
@@ -205,10 +203,8 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
                 ),
             ],
             [
-                types_.GitkeepMeta(
-                    path=Path(root_dir_row.path) / gitkeep_file, table_row=root_dir_row
-                ),
-                types_.GitkeepMeta(
+                root_dir_gitkeep,
+                root_dir_2_gitkeep := types_.GitkeepMeta(
                     path=Path(root_dir_row_2.path) / gitkeep_file, table_row=root_dir_row_2
                 ),
             ],
@@ -233,17 +229,65 @@ def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
         ),
     ],
 )
-def test_extract_docs_empty_directory_rows(
+def test_extract_docs__from_table_rows_empty_directory_rows(
     table_rows: Iterable[types_.TableRow],
     expected_files: List[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows with no navlink(only directories)
     act: when migrate is called
-    assert: .gitkeep files with respective directories are returned.
+    assert: .gitkeep files metadata with respective directories are returned.
     """
-    files = [file for file in migration.extract_docs(table_rows=table_rows)]
+    files = [file for file in migration._extract_docs_from_table_rows(table_rows=table_rows)]
     assert files == expected_files
+
+
+def test__index_file_from_content():
+    """
+    arrange: given content to write to index file
+    act: when _index_file_from_content is called
+    assert: index file metadata is returned.
+    """
+    content = "content 1"
+
+    assert migration._index_file_from_content(content=content) == types_.IndexDocumentMeta(
+        path=Path("index.md"), content=content
+    )
+
+
+@pytest.mark.parametrize(
+    "table_rows, index_content, expected_migration_metadata",
+    [
+        pytest.param(
+            [],
+            content := "content 1",
+            [index_meta := types_.IndexDocumentMeta(path=Path("index.md"), content=content)],
+            id="no table rows",
+        ),
+        pytest.param(
+            [root_dir_row, root_dir_row_2],
+            content,
+            [index_meta, root_dir_gitkeep, root_dir_2_gitkeep],
+            id="multiple table_rows",
+        ),
+    ],
+)
+def test_get_docs_metadata(
+    table_rows: list[types_.TableRow],
+    index_content: str,
+    expected_migration_metadata: list[types_.MigrationFileMeta],
+):
+    """
+    arrange: given document table rows and index file content
+    act: when get_docs_metadata is called
+    assert: expected metadata are returned.
+    """
+    assert [
+        metadata
+        for metadata in migration.get_docs_metadata(
+            table_rows=table_rows, index_content=index_content
+        )
+    ] == expected_migration_metadata
 
 
 @pytest.mark.parametrize(
@@ -404,7 +448,7 @@ def test_extract_docs(
     act: when migrate is called
     assert: document file with correct paths are returned.
     """
-    files = [file for file in migration.extract_docs(table_rows=table_rows)]
+    files = [file for file in migration._extract_docs_from_table_rows(table_rows=table_rows)]
     assert files == expected_files
 
 
@@ -467,8 +511,7 @@ def test__migrate_document(tmp_path: Path):
     """
     arrange: given valid document metadata
     act: when _migrate_document is called
-    assert: migration report is created with responsible table row, written path \
-        and reason.
+    assert: document is created and migration report is returned.
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.return_value = (content := "content")
@@ -494,3 +537,133 @@ def test__migrate_document(tmp_path: Path):
     assert returned_report.table_row.navlink.title == navlink_title
     assert returned_report.table_row.navlink.link == link_str
     assert returned_report.result == types_.ActionResult.SUCCESS
+
+
+def test__migrate_index(tmp_path: Path):
+    """
+    arrange: given valid index document metadata
+    act: when _migrate_index is called
+    assert: index file is created and migration report is returned.
+    """
+    document_meta = types_.IndexDocumentMeta(
+        path=(path := Path("index.md")), content=(content := "content 1")
+    )
+
+    returned_report = migration._migrate_index(index_meta=document_meta, docs_path=tmp_path)
+
+    assert (file_path := (tmp_path / path)).is_file()
+    assert file_path.read_text(encoding="utf-8") == content
+    assert returned_report.table_row is None
+    assert returned_report.result == types_.ActionResult.SUCCESS
+    assert returned_report.path == tmp_path / path
+    assert returned_report.reason is None
+
+
+@pytest.mark.parametrize(
+    "file_meta, expected_report",
+    [
+        pytest.param(
+            gitkeep_meta := types_.GitkeepMeta(
+                path=(gitkeep_path := Path(".gitkeep")),
+                table_row=(
+                    table_row_sample := types_.TableRow(
+                        level=1,
+                        path="tablepath",
+                        navlink=types_.Navlink(title="navlink", link=None),
+                    )
+                ),
+            ),
+            gitkeep_report := types_.MigrationReport(
+                table_row=table_row_sample,
+                path=gitkeep_path,
+                result=types_.ActionResult.SUCCESS,
+                reason=migration.EMPTY_DIR_REASON,
+            ),
+            id="gitkeep file",
+        ),
+        pytest.param(
+            document_meta := types_.DocumentMeta(
+                path=(document_path := Path("document.md")),
+                table_row=table_row_sample,
+                link="samplelink",
+            ),
+            document_report := types_.MigrationReport(
+                table_row=table_row_sample,
+                path=document_path,
+                result=types_.ActionResult.SUCCESS,
+                reason=None,
+            ),
+            id="document file",
+        ),
+        pytest.param(
+            types_.IndexDocumentMeta(
+                path=(index_path := Path("index.md")), content="index content"
+            ),
+            types_.MigrationReport(
+                table_row=None,
+                path=index_path,
+                result=types_.ActionResult.SUCCESS,
+                reason=None,
+            ),
+            id="index file",
+        ),
+    ],
+)
+def test__run_one(
+    file_meta: types_.MigrationFileMeta, expected_report: types_.MigrationReport, tmp_path: Path
+):
+    """
+    arrange: given a migration metadata and mocked discourse
+    act: when _run_one is called
+    assert: a valid migration report is returned and a file is created.
+    """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = "content"
+
+    returned_report = migration._run_one(
+        file_meta=file_meta, discourse=mocked_discourse, docs_path=tmp_path
+    )
+
+    assert returned_report.path is not None
+    assert returned_report.path.is_file()
+    assert expected_report.path is not None
+    assert returned_report.path == tmp_path / expected_report.path
+    assert returned_report.result == expected_report.result
+    assert returned_report.reason == expected_report.reason
+    assert returned_report.table_row == expected_report.table_row
+
+
+@pytest.mark.parametrize(
+    "migration_metas, expected_results",
+    [
+        pytest.param([document_meta], [document_report], id="single"),
+        pytest.param(
+            [document_meta, gitkeep_meta], [document_report, gitkeep_report], id="multiple"
+        ),
+    ],
+)
+def test_run(
+    migration_metas: list[types_.MigrationFileMeta],
+    expected_results: list[types_.MigrationReport],
+    tmp_path: Path,
+):
+    """
+    arrange: given migration metadata and mocked discourse
+    act: when run is called
+    assert: migration reports are returned and files are created.
+    """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = "content"
+
+    returned_reports = migration.run(
+        documents=migration_metas, discourse=mocked_discourse, docs_path=tmp_path
+    )
+
+    for returned, expected in zip(returned_reports, expected_results):
+        assert returned.path is not None
+        assert returned.path.is_file()
+        assert expected.path is not None
+        assert returned.path == tmp_path / expected.path
+        assert returned.result == expected.result
+        assert returned.reason == expected.reason
+        assert returned.table_row == expected.table_row

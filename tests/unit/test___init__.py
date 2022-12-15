@@ -9,7 +9,21 @@
 from pathlib import Path
 from unittest import mock
 
-from src import _run_reconcile, discourse, exceptions, metadata, reconcile, types_
+import pytest
+
+from src import (
+    DOCUMENTATION_FOLDER_NAME,
+    GETTING_STARTED,
+    _run_migrate,
+    _run_reconcile,
+    discourse,
+    exceptions,
+    index,
+    metadata,
+    reconcile,
+    run,
+    types_,
+)
 
 from .helpers import create_metadata_yaml
 
@@ -131,3 +145,180 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
         content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
     )
     assert not returned_page_interactions
+
+
+def test__run_migrate_server_error_index(tmp_path: Path):
+    """
+    arrange: given metadata with name and docs but no docs directory and mocked discourse
+        that raises an exception during index file fetching
+    act: when _run_migrate is called
+    assert: Server error is raised with page retrieval fail.
+    """
+    meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+
+    with pytest.raises(exceptions.ServerError) as exc:
+        _run_migrate(
+            base_path=tmp_path,
+            metadata=meta,
+            discourse=mocked_discourse,
+        )
+
+    assert "Index page retrieval failed" == str(exc.value)
+
+
+def test__run_migrate_server_error_topic(tmp_path: Path):
+    """
+    arrange: given metadata with name and docs but no docs directory and mocked discourse
+        that raises an exception during topic retrieval
+    act: when _run_migrate is called
+    assert: only index document is migrated.
+    """
+    index_url = "http://discourse/t/docs"
+    index_content = """Content Title
+
+    Content description.
+
+    # Navigation
+
+    | Level | Path | Navlink |
+    | -- | -- | -- |
+    | 1 | path 1 | [Link](/t/link-to-1) |
+    """
+    meta = types_.Metadata(name="name 1", docs=index_url)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
+
+    returned_migration_reports = _run_migrate(
+        base_path=tmp_path, metadata=meta, discourse=mocked_discourse
+    )
+
+    assert returned_migration_reports == {
+        str(tmp_path / DOCUMENTATION_FOLDER_NAME / "index.md"): types_.ActionResult.SUCCESS
+    }
+
+
+def test__run_migrate(tmp_path: Path):
+    """
+    arrange: given metadata with name and docs but no docs directory and mocked discourse
+    act: when _run_migrate is called
+    assert: docs are migrated and a report on migrated documents are returned.
+    """
+    index_url = "http://discourse/t/docs"
+    index_content = """Content header.
+
+    Content body.
+    """
+    index_table = """# Navigation
+
+    | Level | Path | Navlink |
+    | -- | -- | -- |
+    | 1 | path-1 | [Tutorials](link-1) |"""
+    index_page = f"{index_content}{index_table}"
+    meta = types_.Metadata(name="name 1", docs=index_url)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = [
+        index_page,
+        (link_content := "link 1 content"),
+    ]
+
+    returned_migration_reports = _run_migrate(
+        base_path=tmp_path, metadata=meta, discourse=mocked_discourse
+    )
+
+    assert returned_migration_reports == {
+        str(
+            index_file := tmp_path / DOCUMENTATION_FOLDER_NAME / "index.md"
+        ): types_.ActionResult.SUCCESS,
+        str(
+            path_file := tmp_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
+        ): types_.ActionResult.SUCCESS,
+    }
+    assert index_file.read_text(encoding="utf-8") == index_content
+    assert path_file.read_text(encoding="utf-8") == link_content
+
+
+def test_run_no_docs_no_dir(tmp_path: Path):
+    """
+    arrange: given a path with a metadata.yaml that has no docs key and no docs directory
+        and mocked discourse
+    act: when run is called
+    assert: InputError is raised with a guide to getting started.
+    """
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    with pytest.raises(exceptions.InputError) as exc:
+        run(base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=False)
+
+    assert str(exc.value) == GETTING_STARTED
+
+
+def test_run_no_docs_empty_dir(tmp_path: Path):
+    """
+    arrange: given a path with a metadata.yaml that has no docs key and has empty docs directory
+        and mocked discourse
+    act: when run is called
+    assert: then an index page is created with empty navigation table.
+    """
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    (tmp_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.create_topic.return_value = (url := "url 1")
+
+    returned_page_interactions = run(
+        base_path=tmp_path,
+        discourse=mocked_discourse,
+        dry_run=False,
+        delete_pages=True,
+    )
+
+    mocked_discourse.create_topic.assert_called_once_with(
+        title="Name 1 Documentation Overview",
+        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
+    )
+    assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
+
+
+def test_run_no_docs_dir(tmp_path: Path):
+    """
+    arrange: given a path with a metadata.yaml that has docs key and no docs directory
+        and mocked discourse
+    act: when run is called
+    assert: then docs from the server is migrated into local docs path and the files created
+        are return as the result.
+    """
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
+        path=tmp_path,
+    )
+    index_content = """Content header.
+
+    Content body.
+    """
+    index_table = """Page title.
+
+    Page description.
+
+    # Navigation
+
+    | Level | Path | Navlink |
+    | -- | -- | -- |
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}\n{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    returned_migration_paths = run(
+        base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=False
+    )
+
+    assert returned_migration_paths == {
+        str(tmp_path / index.DOCUMENTATION_FOLDER_NAME / "index.md"): types_.ActionResult.SUCCESS,
+        str(
+            tmp_path / index.DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+        ): types_.ActionResult.SUCCESS,
+    }

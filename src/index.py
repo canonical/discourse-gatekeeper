@@ -3,12 +3,17 @@
 
 """Execute the uploading of documentation."""
 
+import re
 from pathlib import Path
 
 from .discourse import Discourse
 from .exceptions import DiscourseError, ServerError
 from .types_ import Index, IndexFile, Metadata, Page
 
+_WHITESPACE = r"\s*"
+_NAVIGATION_HEADER_REGEX = rf"{_WHITESPACE}# Navigation"
+_INDEX_CONTENT_REGEX = r"^((.|\n)*)"
+_INDEX_CONTENT_PATTERN = re.compile(rf"{_INDEX_CONTENT_REGEX}(?={_NAVIGATION_HEADER_REGEX})")
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
 
@@ -64,3 +69,21 @@ def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
     )
 
     return Index(server=server, local=local, name=name_value)
+
+
+def contents_from_page(page: str) -> str:
+    """Get index file contents from server page.
+
+    Args:
+        page: Page contents from server.
+
+    Returns:
+        Index file contents.
+    """
+    match = _INDEX_CONTENT_PATTERN.match(page)
+
+    if match is None:
+        return ""
+
+    content = match.group(0)
+    return content

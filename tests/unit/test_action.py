@@ -161,7 +161,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     assert returned_report.reason is None
 
 
-# Pylint diesn't understand how the walrus operator works
+# Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
     "noop_action, expected_table_row",

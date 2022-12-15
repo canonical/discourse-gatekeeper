@@ -3,6 +3,7 @@
 
 """Module for transforming index table rows into local files."""
 
+import itertools
 import typing
 from pathlib import Path
 
@@ -87,6 +88,27 @@ def _migrate_document(document_meta: types_.DocumentMeta, discourse: Discourse, 
     )
 
 
+def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path):
+    """Write index document to docs repository.
+
+    Args:
+        index_meta: Index file metadata.
+        docs_path: The path to the docs directory to migrate all the documentation.
+
+    Returns:
+        Migration report for index file creation.
+    """
+    path = docs_path / index_meta.path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(index_meta.content, encoding="utf-8")
+    return types_.MigrationReport(
+        table_row=None,
+        result=types_.ActionResult.SUCCESS,
+        path=path,
+        reason=None,
+    )
+
+
 def _run_one(
     file_meta: types_.MigrationFileMeta, discourse: Discourse, docs_path: Path
 ) -> types_.MigrationReport:
@@ -109,6 +131,9 @@ def _run_one(
             return _migrate_document(
                 document_meta=file_meta, discourse=discourse, docs_path=docs_path
             )
+        case types_.IndexDocumentMeta:
+            assert isinstance(file_meta, types_.IndexDocumentMeta)
+            return _migrate_index(index_meta=file_meta, docs_path=docs_path)
         # Edge case that should not be possible.
         case _:  # pragma: no cover
             raise exceptions.MigrationError(
@@ -116,7 +141,7 @@ def _run_one(
             )
 
 
-def extract_docs(
+def _extract_docs_from_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
 ) -> typing.Iterable[types_.MigrationFileMeta]:
     """Extract necessary migration documents to build docs directory from server.
@@ -139,6 +164,7 @@ def extract_docs(
         Migration documents with navlink to content.\
             .gitkeep file with no content if empty directory.
     """
+    table_rows = list(table_rows)
     _validate_row_levels(table_rows=table_rows)
 
     level = 0
@@ -168,6 +194,35 @@ def extract_docs(
 
     if not last_dir_has_file and last_dir_row:
         yield types_.GitkeepMeta(path=cwd / GITKEEP_FILE, table_row=last_dir_row)
+
+
+def _index_file_from_content(content: str):
+    """Get index file document metadata.
+
+    Args:
+        content: Index file content.
+
+    Returns:
+        Index file document metadata.
+    """
+    return types_.IndexDocumentMeta(path=Path("index.md"), content=content)
+
+
+def get_docs_metadata(
+    table_rows: typing.Iterable[types_.TableRow], index_content: str
+) -> typing.Iterable[types_.MigrationFileMeta]:
+    """Get metadata for documents to be migrated.
+
+    Args:
+        table_rows: Table rows from the index table.
+        index_content: Index content from index page.
+
+    Returns:
+        Metadata of files to be migrated.
+    """
+    table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
+    index_doc = _index_file_from_content(content=index_content)
+    return itertools.chain([index_doc], table_docs)
 
 
 def run(

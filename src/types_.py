@@ -325,12 +325,13 @@ class MigrationFileMeta:
     """
 
     path: Path
-    table_row: TableRow
 
 
 @dataclasses.dataclass
 class GitkeepMeta(MigrationFileMeta):
     """Represents an empty directory from the index table."""
+
+    table_row: TableRow
 
 
 @dataclasses.dataclass
@@ -342,19 +343,31 @@ class DocumentMeta(MigrationFileMeta):
     """
 
     link: str
+    table_row: TableRow
+
+
+@dataclasses.dataclass
+class IndexDocumentMeta(MigrationFileMeta):
+    """Represents an index file document.
+
+    Attrs:
+        content: Contents to write to index file.
+    """
+
+    content: str
 
 
 class MigrationReport(typing.NamedTuple):
     """Post execution report for an action.
 
     Attrs:
-        table_row: The navigation table entry.
+        table_row: The navigation table entry. None if index file.
         path: Path the file was written to. None if failed.
         result: The action execution result.
         reason: The reason, None for success reports.
     """
 
-    table_row: TableRow
+    table_row: TableRow | None
     path: Path | None
     result: ActionResult
     reason: str | None
