@@ -46,5 +46,16 @@ outputs:
       The configuration used by the action to interact with the discourse
       server.
 runs:
-  using: docker
-  image: Dockerfile
+  using: composite
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - run: python main.py
+      shell: bash
+    - uses: peter-evans/create-pull-request@v4
+      with:
+        branch: "docs/migration-${{ github.sha }}"
+        title: "[docs] Documentation migration"
+        body: "This is a test for demo purpose, do not merge."
