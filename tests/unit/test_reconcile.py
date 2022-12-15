@@ -468,53 +468,97 @@ def test__calculate_action(
 # Pylint diesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "path_infos, table_rows, expected_action_types",
+    "path_infos, table_rows, expected_action_types, expected_level_paths",
     [
-        pytest.param((), (), (), id="empty path infos empty table rows"),
+        pytest.param((), (), (), (), id="empty path infos empty table rows"),
         pytest.param(
             (
                 types_.PathInfo(
-                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                    local_path=Path("dir1"),
+                    level=(level_1 := 1),
+                    table_path=(path_1 := "path 1"),
+                    navlink_title="title 1",
+                    alphabetical_rank=1,
                 ),
             ),
             (),
             (types_.CreateAction,),
+            ((level_1, path_1),),
             id="single path info empty table rows",
         ),
         pytest.param(
             (
                 types_.PathInfo(
-                    local_path=Path("dir1"), level=1, table_path="path 1", navlink_title="title 1"
+                    local_path=Path("dir1"),
+                    level=(level_1 := 1),
+                    table_path=(path_1 := "path 1"),
+                    navlink_title="title 1",
+                    alphabetical_rank=1,
                 ),
                 types_.PathInfo(
-                    local_path=Path("dir2"), level=2, table_path="path 2", navlink_title="title 2"
+                    local_path=Path("dir2"),
+                    level=(level_2 := 2),
+                    table_path=(path_2 := "path 2"),
+                    navlink_title="title 2",
+                    alphabetical_rank=2,
                 ),
             ),
             (),
             (types_.CreateAction, types_.CreateAction),
+            ((level_1, path_1), (level_2, path_2)),
             id="multiple path infos empty table rows",
+        ),
+        pytest.param(
+            (
+                types_.PathInfo(
+                    local_path=Path("dir1"),
+                    level=(level_1 := 1),
+                    table_path=(path_1 := "path 1"),
+                    navlink_title="title 1",
+                    alphabetical_rank=2,
+                ),
+                types_.PathInfo(
+                    local_path=Path("dir2"),
+                    level=(level_2 := 2),
+                    table_path=(path_2 := "path 2"),
+                    navlink_title="title 2",
+                    alphabetical_rank=1,
+                ),
+            ),
+            (),
+            (types_.CreateAction, types_.CreateAction),
+            ((level_2, path_2), (level_1, path_1)),
+            id="multiple path infos empty table rows alternate order",
         ),
         pytest.param(
             (),
             (
                 types_.TableRow(
-                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                    level=(level_1 := 1),
+                    path=(path_1 := "path 1"),
+                    navlink=types_.Navlink(title="title 1", link=None),
                 ),
             ),
             (types_.DeleteAction,),
+            ((level_1, path_1),),
             id="empty path infos single table row",
         ),
         pytest.param(
             (),
             (
                 types_.TableRow(
-                    level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                    level=(level_1 := 1),
+                    path=(path_1 := "path 1"),
+                    navlink=types_.Navlink(title="title 1", link=None),
                 ),
                 types_.TableRow(
-                    level=2, path="path 2", navlink=types_.Navlink(title="title 2", link=None)
+                    level=(level_2 := 2),
+                    path=(path_2 := "path 2"),
+                    navlink=types_.Navlink(title="title 2", link=None),
                 ),
             ),
             (types_.DeleteAction, types_.DeleteAction),
+            ((level_1, path_1), (level_2, path_2)),
             id="empty path infos multiple table rows",
         ),
         pytest.param(
@@ -524,6 +568,7 @@ def test__calculate_action(
                     level=(level := 1),
                     table_path=(path := "path 1"),
                     navlink_title=(title := "title 1"),
+                    alphabetical_rank=1,
                 ),
             ),
             (
@@ -532,19 +577,28 @@ def test__calculate_action(
                 ),
             ),
             (types_.NoopAction,),
+            ((level, path),),
             id="single path info single table row match",
         ),
         pytest.param(
             (
                 types_.PathInfo(
                     local_path=Path("dir1"),
-                    level=1,
+                    level=(path_info_level := 1),
                     table_path=(path := "path 1"),
                     navlink_title=(title := "title 1"),
+                    alphabetical_rank=1,
                 ),
             ),
-            (types_.TableRow(level=2, path=path, navlink=types_.Navlink(title=title, link=None)),),
+            (
+                types_.TableRow(
+                    level=(table_row_level := 2),
+                    path=path,
+                    navlink=types_.Navlink(title=title, link=None),
+                ),
+            ),
             (types_.CreateAction, types_.DeleteAction),
+            ((path_info_level, path), (table_row_level, path)),
             id="single path info single table row level mismatch",
         ),
         pytest.param(
@@ -552,16 +606,20 @@ def test__calculate_action(
                 types_.PathInfo(
                     local_path=Path("dir1"),
                     level=(level := 1),
-                    table_path="path 1",
+                    table_path=(path_info_path := "path 1"),
                     navlink_title=(title := "title 1"),
+                    alphabetical_rank=1,
                 ),
             ),
             (
                 types_.TableRow(
-                    level=level, path="path 2", navlink=types_.Navlink(title=title, link=None)
+                    level=level,
+                    path=(table_row_path := "path 2"),
+                    navlink=types_.Navlink(title=title, link=None),
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),
+            ((level, path_info_path), (level, table_row_path)),
             id="single path info single table row path mismatch",
         ),
     ],
@@ -571,6 +629,7 @@ def test_run(
     path_infos: tuple[types_.PathInfo, ...],
     table_rows: tuple[types_.TableRow, ...],
     expected_action_types: tuple[type[types_.AnyAction], ...],
+    expected_level_paths: tuple[tuple[types_.Level, types_.TablePath], ...],
     tmp_path: Path,
 ):
     """
@@ -581,13 +640,19 @@ def test_run(
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     path_infos = tuple(path_info_mkdir(path_info, base_dir=tmp_path) for path_info in path_infos)
 
-    returned_actions = reconcile.run(
-        path_infos=path_infos, table_rows=table_rows, discourse=mock_discourse
+    returned_actions = list(
+        reconcile.run(path_infos=path_infos, table_rows=table_rows, discourse=mock_discourse)
     )
 
     assert (
         tuple(type(returned_action) for returned_action in returned_actions)
         == expected_action_types
+    )
+    assert (
+        tuple(
+            (returned_action.level, returned_action.path) for returned_action in returned_actions
+        )
+        == expected_level_paths
     )
 
 
