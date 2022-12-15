@@ -5,7 +5,7 @@ on:
 
 jobs:
   unit-tests:
-    uses: canonical/operator-workflows/.github/workflows/test.yaml@allow-no-metadata-yaml
+    uses: canonical/operator-workflows/.github/workflows/test.yaml@main
     secrets: inherit
   look-for-outdated-code:
     runs-on: ubuntu-22.04
