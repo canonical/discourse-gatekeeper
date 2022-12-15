@@ -294,12 +294,11 @@ def run(
         (table_row.level, table_row.path): table_row for table_row in table_rows
     }
 
-    # Need to process items only on the server last. path_info_lookup.keys() is used first to keep
-    # the path_infos ordering. The items only in table_row_lookup do not need their ordering
-    # maintained.
-    keys = itertools.chain(
-        path_info_lookup.keys(), table_row_lookup.keys() - path_info_lookup.keys()
+    sorted_path_info_keys = sorted(
+        path_info_lookup, key=lambda key: path_info_lookup[key].alphabetical_rank
     )
+    sorted_remaining_table_row_keys = sorted(table_row_lookup.keys() - path_info_lookup.keys())
+    keys = itertools.chain(sorted_path_info_keys, sorted_remaining_table_row_keys)
     return itertools.chain.from_iterable(
         _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
         for key in keys
