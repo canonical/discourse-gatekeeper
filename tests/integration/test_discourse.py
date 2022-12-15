@@ -57,6 +57,7 @@ async def test_create_retrieve_update_delete_topic(
     assert (
         topic["category_id"] == discourse_category_id
     ), "post was not created with the correct category id"
+    assert topic["visible"] is False, "topic is listed"
 
     # Check permissions
     assert discourse_api.check_topic_read_permission(
