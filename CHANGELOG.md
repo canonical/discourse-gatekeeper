@@ -10,6 +10,10 @@
 
 ### Fixed
 
+- Resolve bug where the presence of a topic on the server was not checked
+
+### Fixed
+
 - Allow redirects for topic retrieval which is useful if the slug is
   incorrectly or not defined
 

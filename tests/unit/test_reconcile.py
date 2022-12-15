@@ -92,6 +92,38 @@ def test__local_and_server_error(
         )
 
 
+def test__get_server_content_missing_link():
+    """
+    arrange: table row with None link
+    act: when _get_server_content is called with table row
+    assert: then ReconcilliationError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.return_value = "content 1"
+    navlink = types_.Navlink(title="title 1", link=None)
+    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ReconcilliationError):
+        reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
+
+
+def test__get_server_content_server_error():
+    """
+    arrange: given table row and discourse client that raises an error
+    act: when _get_server_content is called with the table row
+    assert: then ServerError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    navlink = types_.Navlink(title="title 1", link=(navlink_link := "link 1"))
+    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ServerError) as exc_info:
+        reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
+
+    assert navlink_link in str(exc_info.value)
+
+
 @pytest.mark.parametrize(
     "local_content, server_content",
     [
@@ -360,6 +392,23 @@ def test__server_only_file():
     assert returned_action.navlink == table_row.navlink
     assert returned_action.content == content
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink.link)
+
+
+def test__server_only_file_discourse_error():
+    """
+    arrange: given table row with a file and mocked discourse that raises an error
+    act: when _server_only is called with the table row
+    assert: then ServerError is raised.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    navlink = types_.Navlink(title="title 1", link=(link := "link 1"))
+    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+
+    with pytest.raises(exceptions.ServerError) as exc_info:
+        reconcile._server_only(table_row=table_row, discourse=mock_discourse)
+
+    assert link in str(exc_info.value)
 
 
 def test__server_only_directory():
