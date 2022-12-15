@@ -6,7 +6,7 @@
 import typing
 from pathlib import Path
 
-from src import metadata, types_
+from src import metadata
 
 
 def create_metadata_yaml(content: str, path: Path) -> None:

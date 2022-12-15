@@ -3,9 +3,9 @@
 
 """Class for reading the docs directory."""
 
-from itertools import count
 import typing
 from functools import partial
+from itertools import count
 from pathlib import Path
 
 from . import types_
