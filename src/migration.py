@@ -124,15 +124,16 @@ def _run_one(
     """
     match type(file_meta):
         case types_.GitkeepMeta:
-            assert isinstance(file_meta, types_.GitkeepMeta)
+            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
+            assert isinstance(file_meta, types_.GitkeepMeta)  # nosec
             return _migrate_gitkeep(gitkeep_meta=file_meta, docs_path=docs_path)
         case types_.DocumentMeta:
-            assert isinstance(file_meta, types_.DocumentMeta)
+            assert isinstance(file_meta, types_.DocumentMeta)  # nosec
             return _migrate_document(
                 document_meta=file_meta, discourse=discourse, docs_path=docs_path
             )
         case types_.IndexDocumentMeta:
-            assert isinstance(file_meta, types_.IndexDocumentMeta)
+            assert isinstance(file_meta, types_.IndexDocumentMeta)  # nosec
             return _migrate_index(index_meta=file_meta, docs_path=docs_path)
         # Edge case that should not be possible.
         case _:  # pragma: no cover
@@ -158,7 +159,7 @@ def _extract_docs_from_table_rows(
         2. If last table row was a directory and yielded no DocumentMeta, yield GitkeepMeta.
 
     Args:
-        table_rows: Table rows from the index file in the order of directory hierarcy.
+        table_rows: Table rows from the index file in the order of directory hierarchy.
 
     Returns:
         Migration documents with navlink to content.\

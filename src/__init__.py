@@ -119,7 +119,7 @@ def run(
     has_docs_dir = has_docs_directory(base_path=base_path)
     if metadata.docs and not has_docs_dir:
         return _run_migrate(base_path=base_path, metadata=metadata, discourse=discourse)
-    elif has_docs_dir:
+    if has_docs_dir:
         return _run_reconcile(
             base_path=base_path,
             metadata=metadata,

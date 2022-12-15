@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, exceptions, index, migration, types_
+from src import discourse, exceptions, migration, types_
 
 from .helpers import path_to_markdown
 
@@ -79,7 +79,7 @@ def test__validate_row_levels_invalid_rows(
     """
     arrange: given table rows with invalid levels
     act: when _validate_row_levels is called
-    assert: InvalidRow exception is raised with excpected error message contents.
+    assert: InvalidRow exception is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InvalidTableRowError) as exc_info:
         migration._validate_row_levels(table_rows=table_rows)
@@ -238,8 +238,7 @@ def test_extract_docs__from_table_rows_empty_directory_rows(
     act: when migrate is called
     assert: .gitkeep files metadata with respective directories are returned.
     """
-    files = [file for file in migration._extract_docs_from_table_rows(table_rows=table_rows)]
-    assert files == expected_files
+    assert list(migration._extract_docs_from_table_rows(table_rows=table_rows)) == expected_files
 
 
 def test__index_file_from_content():
@@ -282,12 +281,10 @@ def test_get_docs_metadata(
     act: when get_docs_metadata is called
     assert: expected metadata are returned.
     """
-    assert [
-        metadata
-        for metadata in migration.get_docs_metadata(
-            table_rows=table_rows, index_content=index_content
-        )
-    ] == expected_migration_metadata
+    assert (
+        list(migration.get_docs_metadata(table_rows=table_rows, index_content=index_content))
+        == expected_migration_metadata
+    )
 
 
 @pytest.mark.parametrize(
@@ -448,8 +445,7 @@ def test_extract_docs(
     act: when migrate is called
     assert: document file with correct paths are returned.
     """
-    files = [file for file in migration._extract_docs_from_table_rows(table_rows=table_rows)]
-    assert files == expected_files
+    assert list(migration._extract_docs_from_table_rows(table_rows=table_rows)) == expected_files
 
 
 def test__migrate_gitkeep(tmp_path: Path):
