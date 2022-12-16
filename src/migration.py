@@ -14,7 +14,7 @@ EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILE = ".gitkeep"
 
 
-def _validate_row_levels(table_rows: typing.Iterable[types_.TableRow]):
+def _validate_row_levels(table_rows: list[types_.TableRow]):
     """Check for invalid row levels.
 
     Args:
@@ -24,7 +24,7 @@ def _validate_row_levels(table_rows: typing.Iterable[types_.TableRow]):
         InvalidRow exception if invalid row level is encountered.
     """
     level = 0
-    for row in table_rows:
+    for i, row in enumerate(table_rows):
         if row.level <= 0:
             raise exceptions.InvalidTableRowError(f"Invalid level {row.level} in {row!=row.level}")
         # Level increase of more than 1 is not possible.
@@ -32,6 +32,10 @@ def _validate_row_levels(table_rows: typing.Iterable[types_.TableRow]):
             raise exceptions.InvalidTableRowError(
                 f"Level difference of {difference} encountered in {row=!r}"
             )
+        # Subdirectory but previous row is not a file.
+        if row.level > level and i > 0 and table_rows[i - 1].navlink.link:
+            raise exceptions.InvalidTableRowError(f"Invalid parent row for {row=!r}")
+
         # Level decrease or same level is fine.
         level = row.level
 

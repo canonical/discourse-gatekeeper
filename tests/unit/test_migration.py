@@ -27,7 +27,7 @@ from .helpers import path_to_markdown
                 types_.TableRow(
                     level=-1,
                     path=(test_path := "path 1"),
-                    navlink=(test_navlink := types_.Navlink(title="title 1", link=None)),
+                    navlink=(directory_navlink := types_.Navlink(title="title 1", link=None)),
                 )
             ],
             (invalid_msg := "invalid level"),
@@ -38,7 +38,7 @@ from .helpers import path_to_markdown
                 types_.TableRow(
                     level=0,
                     path=(test_path),
-                    navlink=(test_navlink),
+                    navlink=directory_navlink,
                 )
             ],
             invalid_msg,
@@ -49,7 +49,7 @@ from .helpers import path_to_markdown
                 types_.TableRow(
                     level=2,
                     path=(test_path),
-                    navlink=(test_navlink),
+                    navlink=directory_navlink,
                 )
             ],
             (level_difference_msg := "level difference"),
@@ -60,21 +60,37 @@ from .helpers import path_to_markdown
                 types_.TableRow(
                     level=1,
                     path=(test_path),
-                    navlink=(test_navlink),
+                    navlink=directory_navlink,
                 ),
                 types_.TableRow(
                     level=3,
                     path=(test_path),
-                    navlink=(test_navlink),
+                    navlink=directory_navlink,
                 ),
             ],
             level_difference_msg,
             id="invalid table row level change",
         ),
+        pytest.param(
+            [
+                types_.TableRow(
+                    level=1,
+                    path=(test_path),
+                    navlink=(file_navlink := types_.Navlink(title="title 1", link="link 1")),
+                ),
+                types_.TableRow(
+                    level=2,
+                    path=(test_path),
+                    navlink=(file_navlink := types_.Navlink(title="title 1", link="link 1")),
+                ),
+            ],
+            "invalid parent row",
+            id="invalid parent directory",
+        ),
     ],
 )
 def test__validate_row_levels_invalid_rows(
-    table_rows: Iterable[types_.TableRow], expected_error_msg_contents: str
+    table_rows: list[types_.TableRow], expected_error_msg_contents: str
 ):
     """
     arrange: given table rows with invalid levels
@@ -146,7 +162,7 @@ def test__validate_row_levels_invalid_rows(
                 types_.TableRow(
                     level=2,
                     path=("path 2"),
-                    navlink=(types_.Navlink(title="title 2", link="link 1")),
+                    navlink=(types_.Navlink(title="title 2", link=None)),
                 ),
                 types_.TableRow(
                     level=3,
@@ -163,7 +179,7 @@ def test__validate_row_levels_invalid_rows(
         ),
     ],
 )
-def test__validate_row_levels(table_rows: Iterable[types_.TableRow]):
+def test__validate_row_levels(table_rows: list[types_.TableRow]):
     """
     arrange: given table rows with valid levels
     act: when __validate_row_levels is called
