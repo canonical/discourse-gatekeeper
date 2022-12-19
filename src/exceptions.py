@@ -38,3 +38,7 @@ class InvalidTableRowError(BaseError):
 
 class MigrationError(BaseError):
     """A problem with migration occurred."""
+
+
+class GitError(BaseError):
+    """A problem with git occurred."""
