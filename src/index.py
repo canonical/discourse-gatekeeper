@@ -12,7 +12,7 @@ from .types_ import Index, IndexFile, Metadata, Page
 
 _WHITESPACE = r"\s*"
 _NAVIGATION_HEADER_REGEX = rf"{_WHITESPACE}# Navigation"
-_INDEX_CONTENT_REGEX = r"^((.|\n)*)"
+_INDEX_CONTENT_REGEX = r"^((.|\n)*\n)"
 _INDEX_CONTENT_PATTERN = re.compile(rf"{_INDEX_CONTENT_REGEX}(?={_NAVIGATION_HEADER_REGEX})")
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"

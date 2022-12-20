@@ -8,6 +8,8 @@ charmhub.
 
 ## Getting Started
 
+### Sync docs
+
 1. Create the `docs` folder in the repository.
 2. Optionally, create a file `docs/index.md` for any content you would like to
     display above the navigation table on discourse. This content does not get
@@ -53,6 +55,7 @@ charmhub.
               discourse_host: discourse.charmhub.io
               discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
               discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+              github_token: ${{ secrets.GITHUB_TOKEN }}
           - name: Show index page
             run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```
@@ -74,6 +77,13 @@ charmhub.
 6. Check the logs for the URL to the index topic that the action created. This
     is also available under the `index_url` output of the action. This needs to
     be added to the `metadata.yaml` under the `docs` key.
+
+### Migrate docs
+
+1. Create a `docs` key in `metadata.yaml` with the link to the documentation on
+    charmhub.
+2. Add the action to your desired workflow as mentioned in step 5 of
+    [Sync docs section](#sync-docs)
 
 The action will now compare the discourse topics with the files and directories
 under the `docs` directory and make any changes based on differences.

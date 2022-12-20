@@ -6,9 +6,11 @@
 # pylint: disable=redefined-outer-name
 
 from pathlib import Path
+from unittest import mock
 
 import pytest
-from git.repo import Repo
+from github.PullRequest import PullRequest
+from github.Requester import Requester
 
 from src import index
 from src.discourse import Discourse
@@ -38,34 +40,12 @@ def index_file_content(tmp_path: Path):
 
 
 @pytest.fixture()
-def upstream_repository(tmp_path: Path) -> tuple[Repo, Path]:
-    """Create upstream repository."""
-    upstream_path = tmp_path / "upstream"
-    upstream_path.mkdir()
-    upstream = Repo.init(upstream_path)
-    upstream.git.checkout("-b", "main")
-    (upstream_path / "index.md").touch()
-    upstream.git.add(".")
-    upstream.git.commit("-m", "'initial commit'")
-
-    return (upstream, upstream_path)
-
-
-@pytest.fixture()
-def temp_repository(upstream_repository: tuple[Repo, Path], tmp_path: Path) -> tuple[Repo, Path]:
-    """Create temporary repository."""
-    (_, upstream_path) = upstream_repository
-    repo_path = tmp_path / "temp"
-    repo_path.mkdir()
-    repo = Repo.clone_from(url=upstream_path, to_path=repo_path)
-    return (repo, repo_path)
-
-
-@pytest.fixture()
-def repository(upstream_repository: tuple[Repo, Path], tmp_path: Path) -> tuple[Repo, Path]:
-    """Create repository with mocked upstream."""
-    (_, upstream_path) = upstream_repository
-    repo_path = tmp_path / "mocked"
-    repo_path.mkdir()
-    repo = Repo.clone_from(url=upstream_path, to_path=repo_path)
-    return (repo, repo_path)
+def mock_pull_request() -> PullRequest:
+    """Create mock pull request."""
+    mock_requester = mock.MagicMock(spec=Requester)
+    return PullRequest(
+        requester=mock_requester,
+        headers={},
+        attributes={"url": "test_url"},
+        completed=False,
+    )

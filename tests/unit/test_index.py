@@ -133,7 +133,11 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
             "",
             id="navigation table only",
         ),
-        pytest.param((content := "Page content"), "", id="page content only"),
+        pytest.param(
+            (content := "Page content\n"),
+            "",
+            id="page content only",
+        ),
         pytest.param(
             f"{content}"
             """# Navigation

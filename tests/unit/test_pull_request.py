@@ -17,7 +17,6 @@ from git.repo import Repo
 from github import Github
 from github.PullRequest import PullRequest
 from github.Repository import Repository
-from github.Requester import Requester
 
 from src import pull_request
 from src.exceptions import GitError, InputError
@@ -40,7 +39,7 @@ def test_get_repository_name_invalid(remote_url: str):
     assert: GitError is raised.
     """
     with pytest.raises(GitError):
-        pull_request._get_repository_name(remote_url=remote_url)
+        pull_request.get_repository_name(remote_url=remote_url)
 
 
 # Pylint doesn't understand how the walrus operator works
@@ -67,10 +66,10 @@ def test_get_repository_name(remote_url: str, expected_repository_name: str):
     act: when _get_repository_name is called
     assert: GitError is raised.
     """
-    assert pull_request._get_repository_name(remote_url=remote_url) == expected_repository_name
+    assert pull_request.get_repository_name(remote_url=remote_url) == expected_repository_name
 
 
-def test_check_branch_exists_error(tmp_path: Path):
+def test__check_branch_exists_error(tmp_path: Path):
     """
     arrange: given an invalid repository with no origin upstream
     act: when _check_branch_exists is called with a branch_name that doesn't exist
@@ -82,7 +81,7 @@ def test_check_branch_exists_error(tmp_path: Path):
         pull_request._check_branch_exists(repo, branch_name)
 
 
-def test_check_branch_exists_not_exist(repository: tuple[Repo, Path]):
+def test__check_branch_exists_not_exist(repository: tuple[Repo, Path]):
     """
     arrange: given a git repository
     act: when _check_branch_exists is called with a branch_name that does not exist
@@ -93,7 +92,7 @@ def test_check_branch_exists_not_exist(repository: tuple[Repo, Path]):
     assert not pull_request._check_branch_exists(repo, branch_name)
 
 
-def test_check_branch_exists(
+def test__check_branch_exists(
     upstream_repository: tuple[Repo, Path], repository: tuple[Repo, Path]
 ):
     """
@@ -128,7 +127,7 @@ def test_check_branch_exists(
         ),
     ],
 )
-def test_merge_existing_branch(
+def test__merge_existing_branch(
     existing_files: list[tuple[Path, str]],
     new_files: list[tuple[Path, str]],
     expected_files: list[tuple[Path, str]],
@@ -179,7 +178,7 @@ def test_merge_existing_branch(
         ),
     ],
 )
-def test_create_branch(
+def test__create_branch(
     new_files: list[tuple[Path, str]],
     upstream_repository: tuple[Repo, Path],
     repository: tuple[Repo, Path],
@@ -233,7 +232,7 @@ def test_create_github_instance_error(
     assert: InputError is raised with invalid access token info.
     """
     with pytest.raises(InputError) as exc_info:
-        pull_request.create_github_instance(access_token=access_token)
+        pull_request.create_github(access_token=access_token)
 
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
@@ -246,7 +245,7 @@ def test_create_github_instance():
     """
     # bandit will not let hardcoded passwords pass
     access_token = "valid-access-token"  # nosec
-    assert isinstance(pull_request.create_github_instance(access_token=access_token), Github)
+    assert isinstance(pull_request.create_github(access_token=access_token), Github)
 
 
 def test_create_pull_request_invalid_branch(tmp_path: Path):
@@ -291,7 +290,7 @@ def test_create_pull_request_no_change(repository: tuple[Repo, Path]):
         repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
     )
 
-    assert returned_pr is None
+    assert returned_pr == pull_request.PR_LINK_NO_CHANGE
 
 
 def test_create_pull_request_existing_branch(
@@ -366,7 +365,9 @@ def test_create_pull_request(
 
 
 def test_create_pull_request_existing_pr(
-    repository: tuple[Repo, Path], upstream_repository: tuple[Repo, Path]
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given a mocked repository with a new file and a mocked github repository \
@@ -375,22 +376,11 @@ def test_create_pull_request_existing_pr(
     assert: a github PR link is returned.
     """
     branch_name = "test_branch_name"
-    test_url = "pull_request_url"
     (repo, repo_path) = repository
     test_file = "file.md"
     (repo_path / test_file).touch()
     mocked_github_repo = mock.MagicMock(spec=Repository)
-    mock_requester = mock.MagicMock(spec=Requester)
-    mocked_github_repo.get_pulls.side_effect = [
-        [
-            PullRequest(
-                requester=mock_requester,
-                headers={},
-                attributes={"url": test_url},
-                completed=False,
-            )
-        ]
-    ]
+    mocked_github_repo.get_pulls.side_effect = [[mock_pull_request]]
 
     pr_link = pull_request.create_pull_request(
         repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
@@ -399,7 +389,7 @@ def test_create_pull_request_existing_pr(
     (upstream, upstream_path) = upstream_repository
     upstream.git.checkout(branch_name)
     (upstream_path / test_file).is_file()
-    assert pr_link == test_url
+    assert pr_link == mock_pull_request.url
     mocked_github_repo.get_pulls.assert_called_once_with(
         state="open",
         head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",

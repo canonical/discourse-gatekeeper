@@ -10,6 +10,9 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from git.repo import Repo
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 
 from src import (
     DOCUMENTATION_FOLDER_NAME,
@@ -24,6 +27,7 @@ from src import (
     run,
     types_,
 )
+from src.pull_request import DEFAULT_BRANCH_NAME
 
 from .helpers import create_metadata_yaml
 
@@ -147,7 +151,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
     assert not returned_page_interactions
 
 
-def test__run_migrate_server_error_index(tmp_path: Path):
+def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo, Path]):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during index file fetching
@@ -156,19 +160,28 @@ def test__run_migrate_server_error_index(tmp_path: Path):
     """
     meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    mocked_discourse.retrieve_topic.side_effect = [exceptions.DiscourseError]
+    mocked_github_repo = mock.MagicMock(spec=Repository)
+    (repo, _) = repository
 
     with pytest.raises(exceptions.ServerError) as exc:
         _run_migrate(
             base_path=tmp_path,
             metadata=meta,
             discourse=mocked_discourse,
+            repo=repo,
+            github_repo=mocked_github_repo,
+            branch_name=None,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
 
 
-def test__run_migrate_server_error_topic(tmp_path: Path):
+def test__run_migrate_server_error_topic(
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_pull_request: PullRequest,
+):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during topic retrieval
@@ -189,89 +202,129 @@ def test__run_migrate_server_error_topic(tmp_path: Path):
     meta = types_.Metadata(name="name 1", docs=index_url)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
+    mocked_github_repo = mock.MagicMock(spec=Repository)
+    mocked_github_repo.create_pull.return_value = mock_pull_request
+    (repo, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
-        base_path=tmp_path, metadata=meta, discourse=mocked_discourse
+        base_path=repo_path,
+        metadata=meta,
+        discourse=mocked_discourse,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
-    assert returned_migration_reports == {
-        str(tmp_path / DOCUMENTATION_FOLDER_NAME / "index.md"): types_.ActionResult.SUCCESS
-    }
+    (upstream_repo, upstream_path) = upstream_repository
+    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert (upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
+    assert not (upstream_path / DOCUMENTATION_FOLDER_NAME / "path 1").exists()
 
 
-def test__run_migrate(tmp_path: Path):
+# pylint: disable=too-many-locals
+def test__run_migrate(
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_pull_request: PullRequest,
+):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
     act: when _run_migrate is called
     assert: docs are migrated and a report on migrated documents are returned.
     """
-    index_url = "http://discourse/t/docs"
     index_content = """Content header.
 
-    Content body.
-    """
+    Content body.\n"""
     index_table = """# Navigation
 
     | Level | Path | Navlink |
     | -- | -- | -- |
     | 1 | path-1 | [Tutorials](link-1) |"""
     index_page = f"{index_content}{index_table}"
-    meta = types_.Metadata(name="name 1", docs=index_url)
+    meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [
         index_page,
         (link_content := "link 1 content"),
     ]
+    mocked_github_repo = mock.MagicMock(spec=Repository)
+    mocked_github_repo.create_pull.return_value = mock_pull_request
+    (repo, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
-        base_path=tmp_path, metadata=meta, discourse=mocked_discourse
+        base_path=repo_path,
+        metadata=meta,
+        discourse=mocked_discourse,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
-    assert returned_migration_reports == {
-        str(
-            index_file := tmp_path / DOCUMENTATION_FOLDER_NAME / "index.md"
-        ): types_.ActionResult.SUCCESS,
-        str(
-            path_file := tmp_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
-        ): types_.ActionResult.SUCCESS,
-    }
+    (upstream_repo, upstream_path) = upstream_repository
+    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
+    assert (path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1.md").is_file()
     assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
-def test_run_no_docs_no_dir(tmp_path: Path):
+# pylint: enable=too-many-locals
+
+
+def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
     """
     arrange: given a path with a metadata.yaml that has no docs key and no docs directory
         and mocked discourse
     act: when run is called
     assert: InputError is raised with a guide to getting started.
     """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    (repo, repo_path) = repository
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     with pytest.raises(exceptions.InputError) as exc:
-        run(base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=False)
+        # run is repeated in unit tests / integration tests
+        # pylint: disable=duplicate-code
+        _ = run(
+            base_path=repo_path,
+            discourse=mocked_discourse,
+            dry_run=False,
+            delete_pages=False,
+            repo=repo,
+            github_repo=mocked_github_repo,
+            branch_name=None,
+        )
 
     assert str(exc.value) == GETTING_STARTED
 
 
-def test_run_no_docs_empty_dir(tmp_path: Path):
+def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
     """
     arrange: given a path with a metadata.yaml that has no docs key and has empty docs directory
         and mocked discourse
     act: when run is called
     assert: then an index page is created with empty navigation table.
     """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
-    (tmp_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repo, repo_path) = repository
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
+    (repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
+    mocked_github_repo = mock.MagicMock(spec=Repository)
 
+    # run is repeated in unit tests / integration tests
+    # pylint: disable=duplicate-code
     returned_page_interactions = run(
-        base_path=tmp_path,
+        base_path=repo_path,
         discourse=mocked_discourse,
         dry_run=False,
         delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
@@ -281,7 +334,12 @@ def test_run_no_docs_empty_dir(tmp_path: Path):
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
-def test_run_no_docs_dir(tmp_path: Path):
+# pylint: disable=too-many-locals
+def test_run_no_docs_dir(
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_pull_request: PullRequest,
+):
     """
     arrange: given a path with a metadata.yaml that has docs key and no docs directory
         and mocked discourse
@@ -289,36 +347,46 @@ def test_run_no_docs_dir(tmp_path: Path):
     assert: then docs from the server is migrated into local docs path and the files created
         are return as the result.
     """
+    (repo, repo_path) = repository
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
-        path=tmp_path,
+        path=repo_path,
     )
     index_content = """Content header.
 
-    Content body.
-    """
-    index_table = """Page title.
-
-    Page description.
-
-    # Navigation
+    Content body.\n"""
+    index_table = """# Navigation
 
     | Level | Path | Navlink |
     | -- | -- | -- |
     | 1 | path-1 | [empty-navlink]() |
     | 2 | file-1 | [file-navlink](/file-navlink) |"""
-    index_page = f"{index_content}\n{index_table}"
+    index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+    mocked_github_repo = mock.MagicMock(spec=Repository)
+    mocked_github_repo.create_pull.return_value = mock_pull_request
 
-    returned_migration_paths = run(
-        base_path=tmp_path, discourse=mocked_discourse, dry_run=False, delete_pages=False
+    # run is repeated in unit tests / integration tests
+    # pylint: disable=duplicate-code
+    returned_migration_reports = run(
+        base_path=repo_path,
+        discourse=mocked_discourse,
+        dry_run=False,
+        delete_pages=False,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
+    # pylint: enable=duplicate-code
 
-    assert returned_migration_paths == {
-        str(tmp_path / index.DOCUMENTATION_FOLDER_NAME / "index.md"): types_.ActionResult.SUCCESS,
-        str(
-            tmp_path / index.DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
-        ): types_.ActionResult.SUCCESS,
-    }
+    (upstream_repo, upstream_path) = upstream_repository
+    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
+    assert (
+        path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+    ).is_file()
+    assert index_file.read_text(encoding="utf-8") == index_content
+    assert path_file.read_text(encoding="utf-8") == navlink_page

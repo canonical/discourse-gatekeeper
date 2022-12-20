@@ -9,9 +9,12 @@
 import logging
 from itertools import chain
 from pathlib import Path
+from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
+from git.repo import Repo
+from github.Repository import Repository
 
 from src import exceptions, index, metadata, reconcile, run
 from src.discourse import Discourse
@@ -22,7 +25,11 @@ pytestmark = pytest.mark.init
 
 
 @pytest.mark.asyncio
-async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogCaptureFixture):
+async def test_run(
+    discourse_api: Discourse,
+    caplog: pytest.LogCaptureFixture,
+    repository: tuple[Repo, Path],
+):
     """
     arrange: given running discourse server
     act: when run is called with:
@@ -57,12 +64,20 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
         13. the documentation page is deleted
         14. an index page is not updated
     """
+    (repo, repo_path) = repository
+    mocked_github_repo = mock.MagicMock(spec=Repository)
     caplog.set_level(logging.INFO)
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
 
     # 1. docs empty
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert len(urls_with_actions) == 1
@@ -75,13 +90,19 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=tmp_path,
+        path=repo_path,
     )
-    (docs_dir := tmp_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_dir := repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -93,7 +114,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -107,7 +134,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -119,7 +152,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert len(urls_with_actions) == 2
@@ -139,7 +178,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     doc_file.write_text(doc_content_2 := "doc content 2")
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -153,7 +198,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -172,7 +223,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -191,7 +248,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     )
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert len(urls_with_actions) == 3
@@ -214,7 +277,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     nested_dir_doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=True, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -231,7 +300,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=False
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=False,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -248,7 +323,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     nested_dir.rmdir()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -263,7 +344,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -280,7 +367,13 @@ async def test_run(discourse_api: Discourse, tmp_path: Path, caplog: pytest.LogC
     index_file.unlink()
 
     urls_with_actions = run(
-        base_path=tmp_path, discourse=discourse_api, dry_run=False, delete_pages=True
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mocked_github_repo,
+        branch_name=None,
     )
 
     assert (urls := tuple(urls_with_actions)) == (index_url,)

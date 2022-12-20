@@ -11,10 +11,14 @@ import os
 import pathlib
 from functools import partial
 
+from git.repo import Repo
+
 from src import run
 from src.discourse import create_discourse
+from src.pull_request import create_github, get_repository_name
 
 
+# pylint: disable=too-many-locals
 def main():
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
@@ -26,6 +30,8 @@ def main():
     discourse_category_id = os.getenv("INPUT_DISCOURSE_CATEGORY_ID")
     discourse_api_username = os.getenv("INPUT_DISCOURSE_API_USERNAME")
     discourse_api_key = os.getenv("INPUT_DISCOURSE_API_KEY")
+    github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
+    branch_name = os.getenv("INPUT_BRANCH_NAME")
 
     # Execute action
     create_discourse_kwargs = {
@@ -34,12 +40,20 @@ def main():
         "api_username": discourse_api_username,
         "api_key": discourse_api_key,
     }
+    base_path = pathlib.Path()
     discourse = create_discourse(**create_discourse_kwargs)
+    repo = Repo(path=base_path)
+    repository = get_repository_name(repo.remote().url)
+    github = create_github(access_token=github_access_token)
+    github_repo = github.get_repo(repository)
     urls_with_actions_dict = run(
-        base_path=pathlib.Path(),
+        base_path=base_path,
         discourse=discourse,
         dry_run=dry_run,
         delete_pages=delete_topics,
+        repo=repo,
+        github_repo=github_repo,
+        branch_name=branch_name,
     )
 
     # Write output
