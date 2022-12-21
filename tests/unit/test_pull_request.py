@@ -24,6 +24,21 @@ from src.exceptions import GitError, InputError
 from .helpers import assert_substrings_in_string
 
 
+def test__configure_user(repository: tuple[Repo, Path]):
+    """
+    arrange: given a git repository without profile
+    act: when _configure_user is called
+    assert: default user and email are configured as profile.
+    """
+    (repo, _) = repository
+
+    pull_request._configure_user(repo)
+
+    reader = repo.config_reader()
+    assert reader.get_value("user", "name") == pull_request.ACTIONS_USER_NAME
+    assert reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
+
+
 @pytest.mark.parametrize(
     "remote_url",
     [
