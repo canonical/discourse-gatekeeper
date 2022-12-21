@@ -15,6 +15,10 @@ def fixture_upstream_repository(tmp_path: Path) -> tuple[Repo, Path]:
     upstream_path = tmp_path / "upstream"
     upstream_path.mkdir()
     upstream = Repo.init(upstream_path)
+    writer = upstream.config_writer()
+    writer.set_value("user", "name", "upstream_user")
+    writer.set_value("user", "email", "upstream_email")
+    writer.release()
     upstream.git.checkout("-b", "main")
     (upstream_path / ".gitkeep").touch()
     upstream.git.add(".")

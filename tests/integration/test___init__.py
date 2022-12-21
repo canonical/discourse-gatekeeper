@@ -16,7 +16,7 @@ import pytest
 from git.repo import Repo
 from github.Repository import Repository
 
-from src import exceptions, index, metadata, reconcile, run
+from src import GETTING_STARTED, exceptions, index, metadata, reconcile, run
 from src.discourse import Discourse
 
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -66,28 +66,30 @@ async def test_run(
     """
     (repo, repo_path) = repository
     mocked_github_repo = mock.MagicMock(spec=Repository)
+    document_name = "name 1"
     caplog.set_level(logging.INFO)
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
 
     # 1. docs empty
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_repo=mocked_github_repo,
-        branch_name=None,
-    )
+    with pytest.raises(exceptions.InputError) as exc_info:
+        urls_with_actions = run(
+            base_path=repo_path,
+            discourse=discourse_api,
+            dry_run=False,
+            delete_pages=True,
+            repo=repo,
+            github_repo=mocked_github_repo,
+            branch_name=None,
+        )
 
-    assert len(urls_with_actions) == 1
-    index_url = next(iter(urls_with_actions.keys()))
-    index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
-    assert index_url in caplog.text
+    assert str(exc_info.value) == GETTING_STARTED
 
     # 2. docs with an index file in dry run mode
     caplog.clear()
+    index_url = discourse_api.create_topic(
+        title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
+        content=f"{reconcile.NAVIGATION_TABLE_START}".strip(),
+    )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
         path=repo_path,
