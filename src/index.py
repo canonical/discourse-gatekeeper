@@ -3,17 +3,13 @@
 
 """Execute the uploading of documentation."""
 
-import re
 from pathlib import Path
 
 from .discourse import Discourse
 from .exceptions import DiscourseError, ServerError
+from .reconcile import NAVIGATION_TABLE_START
 from .types_ import Index, IndexFile, Metadata, Page
 
-_WHITESPACE = r"\s*"
-_NAVIGATION_HEADER_REGEX = rf"{_WHITESPACE}# Navigation"
-_INDEX_CONTENT_REGEX = r"^((.|\n)*\n)"
-_INDEX_CONTENT_PATTERN = re.compile(rf"{_INDEX_CONTENT_REGEX}(?={_NAVIGATION_HEADER_REGEX})")
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"
 
@@ -80,10 +76,7 @@ def contents_from_page(page: str) -> str:
     Returns:
         Index file contents.
     """
-    match = _INDEX_CONTENT_PATTERN.match(page)
-
-    if match is None:
+    contents = page.split(NAVIGATION_TABLE_START)
+    if not contents or (len(contents) == 1 and contents[0] == NAVIGATION_TABLE_START):
         return ""
-
-    content = match.group(0)
-    return content
+    return contents[0]

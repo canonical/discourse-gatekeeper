@@ -123,30 +123,39 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     "page, expected_content",
     [
         pytest.param(
-            (
-                nav_table := """# Navigation
-
-                | Level | Path | Navlink |
-                | -- | -- | -- |
-                """
-            ),
+            index.NAVIGATION_TABLE_START,
             "",
             id="navigation table only",
         ),
         pytest.param(
-            (content := "Page content\n"),
-            "",
+            (content := "Page content"),
+            content,
             id="page content only",
         ),
         pytest.param(
-            f"{content}"
-            """# Navigation
-
-            | Level | Path | Navlink |
-            | -- | -- | -- |
-            """,
+            (multiline_content := "Page content\nWithMultiline"),
+            multiline_content,
+            id="multiline content only",
+        ),
+        pytest.param(
+            f"{content}{index.NAVIGATION_TABLE_START}",
             content,
             id="page with content and navigation table",
+        ),
+        pytest.param(
+            f"{multiline_content}{index.NAVIGATION_TABLE_START}",
+            multiline_content,
+            id="page with multiline content and navigation table",
+        ),
+        pytest.param(
+            (separated_multiline_content := "Page content\n\nManyMultiline"),
+            separated_multiline_content,
+            id="page with seperated multiline content",
+        ),
+        pytest.param(
+            f"{separated_multiline_content}{index.NAVIGATION_TABLE_START}",
+            separated_multiline_content,
+            id="page with seperated multiline content and navigation table",
         ),
     ],
 )
