@@ -4,6 +4,7 @@
 """Module for transforming index table rows into local files."""
 
 import itertools
+import logging
 import typing
 from pathlib import Path
 
@@ -50,6 +51,8 @@ def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path):
     Returns:
         Migration report for gitkeep file creation.
     """
+    logging.info("migrate meta: %s", gitkeep_meta)
+
     path = docs_path / gitkeep_meta.path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.touch()
@@ -72,6 +75,8 @@ def _migrate_document(document_meta: types_.DocumentMeta, discourse: Discourse, 
     Returns:
         Migration report for document file creation.
     """
+    logging.info("migrate meta: %s", document_meta)
+
     try:
         content = discourse.retrieve_topic(url=document_meta.link)
     except exceptions.DiscourseError as exc:
@@ -102,6 +107,8 @@ def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path):
     Returns:
         Migration report for index file creation.
     """
+    logging.info("migrate meta: %s", index_meta)
+
     path = docs_path / index_meta.path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(index_meta.content, encoding="utf-8")
@@ -130,20 +137,23 @@ def _run_one(
         case types_.GitkeepMeta:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(file_meta, types_.GitkeepMeta)  # nosec
-            return _migrate_gitkeep(gitkeep_meta=file_meta, docs_path=docs_path)
+            report = _migrate_gitkeep(gitkeep_meta=file_meta, docs_path=docs_path)
         case types_.DocumentMeta:
             assert isinstance(file_meta, types_.DocumentMeta)  # nosec
-            return _migrate_document(
+            report = _migrate_document(
                 document_meta=file_meta, discourse=discourse, docs_path=docs_path
             )
         case types_.IndexDocumentMeta:
             assert isinstance(file_meta, types_.IndexDocumentMeta)  # nosec
-            return _migrate_index(index_meta=file_meta, docs_path=docs_path)
+            report = _migrate_index(index_meta=file_meta, docs_path=docs_path)
         # Edge case that should not be possible.
         case _:  # pragma: no cover
             raise exceptions.MigrationError(
                 f"internal error, no implementation for migration file, {file_meta=!r}"
             )
+
+    logging.info("report: %s", report)
+    return report
 
 
 def _extract_docs_from_table_rows(
