@@ -6,6 +6,8 @@
 import typing
 from pathlib import Path
 
+from git.repo import Repo
+
 from src import metadata
 
 
@@ -43,3 +45,11 @@ def path_to_markdown(path: Path) -> Path:
         Path with last path being a markdown file.
     """
     return Path(f"{path}.md")
+
+
+def create_repository_author(repo: Repo) -> None:
+    """Create repository author"""
+    writer = repo.config_writer()
+    writer.set_value("user", "name", "repo_user")
+    writer.set_value("user", "email", "repo_email")
+    writer.release()

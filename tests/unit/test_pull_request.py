@@ -21,7 +21,7 @@ from github.Repository import Repository
 from src import pull_request
 from src.exceptions import GitError, InputError
 
-from .helpers import assert_substrings_in_string
+from .helpers import assert_substrings_in_string, create_repository_author
 
 
 def test__configure_user(repository: tuple[Repo, Path]):
@@ -170,8 +170,8 @@ def test__merge_existing_branch(
     for (file, content) in new_files:
         (repo_path / file).touch()
         (repo_path / file).write_text(content, encoding="utf-8")
-        print(f"{repo_path/file}")
     repo.git.fetch("origin", branch_name)
+    create_repository_author(repo)
 
     pull_request._merge_existing_branch(
         repository=repo, branch_name=branch_name, commit_msg=commit_message
@@ -210,6 +210,7 @@ def test__create_branch(
         Path(dirname(repo_path / file)).mkdir(parents=True, exist_ok=True)
         (repo_path / file).touch()
         (repo_path / file).write_text(content, encoding="utf-8")
+    create_repository_author(repo)
 
     pull_request._create_branch(repository=repo, branch_name=branch_name, commit_msg="test_commit")
 
@@ -263,7 +264,7 @@ def test_create_github_instance():
     assert isinstance(pull_request.create_github(access_token=access_token), Github)
 
 
-def test_create_pull_request_invalid_branch(tmp_path: Path):
+def test_create_pull_request_invalid_branch(tmp_path: Path, mock_github_repo: Repository):
     """
     arrange: given a repository and a mocked github repository and a branch_name that is equal
         to the base branch
@@ -274,16 +275,16 @@ def test_create_pull_request_invalid_branch(tmp_path: Path):
     # Setting up an exiting branch requires a head in an empty repository.
     # Committing an empty file allows so.
     repo = Repo.init(tmp_path)
+    create_repository_author(repo)
     (tmp_path / "test.txt").touch()
     repo.git.add(".")
     repo.git.commit("-m", "test commit")
     current_branch = repo.create_head(branch_name)
     current_branch.checkout()
-    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     with pytest.raises(InputError) as exc_info:
         pull_request.create_pull_request(
-            repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
+            repository=repo, github_repository=mock_github_repo, branch_name=branch_name
         )
 
     assert_substrings_in_string(
@@ -291,7 +292,9 @@ def test_create_pull_request_invalid_branch(tmp_path: Path):
     )
 
 
-def test_create_pull_request_no_change(repository: tuple[Repo, Path]):
+def test_create_pull_request_no_change(
+    repository: tuple[Repo, Path], mock_github_repo: Repository
+):
     """
     arrange: given a repository and a mocked github repository with no changed file
     act: when create_pull_request is called
@@ -299,17 +302,18 @@ def test_create_pull_request_no_change(repository: tuple[Repo, Path]):
     """
     branch_name = "test_branch_name"
     (repo, _) = repository
-    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     returned_pr = pull_request.create_pull_request(
-        repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
     )
 
     assert returned_pr == pull_request.PR_LINK_NO_CHANGE
 
 
 def test_create_pull_request_existing_branch(
-    repository: tuple[Repo, Path], upstream_repository: tuple[Repo, Path]
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_github_repo: Repository,
 ):
     """
     arrange: given a mocked repository with a new file and a mocked github repository \
@@ -323,20 +327,20 @@ def test_create_pull_request_existing_branch(
     (repo_path / test_file).touch()
     (upstream, upstream_path) = upstream_repository
     upstream.create_head(branch_name)
-    mocked_github_repo = mock.MagicMock(spec=Repository)
+    mock_github_repo = mock.MagicMock(spec=Repository)
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
     )
 
     upstream.git.checkout(branch_name)
     (upstream_path / test_file).is_file()
     assert pr_link is not None
-    mocked_github_repo.get_pulls.assert_called_once_with(
+    mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
         head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
     )
-    mocked_github_repo.create_pull.assert_called_once_with(
+    mock_github_repo.create_pull.assert_called_once_with(
         title=pull_request.ACTIONS_PULL_REQUEST_TITLE,
         body=pull_request.ACTIONS_PULL_REQUEST_BODY,
         base="main",
@@ -345,7 +349,9 @@ def test_create_pull_request_existing_branch(
 
 
 def test_create_pull_request(
-    repository: tuple[Repo, Path], upstream_repository: tuple[Repo, Path]
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_github_repo: Repository,
 ):
     """
     arrange: given a mocked repository with a new file and a mocked github repository \
@@ -357,21 +363,20 @@ def test_create_pull_request(
     (repo, repo_path) = repository
     test_file = "file.md"
     (repo_path / test_file).touch()
-    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
     )
 
     (upstream, upstream_path) = upstream_repository
     upstream.git.checkout(branch_name)
     (upstream_path / test_file).is_file()
     assert pr_link is not None
-    mocked_github_repo.get_pulls.assert_called_once_with(
+    mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
         head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
     )
-    mocked_github_repo.create_pull.assert_called_once_with(
+    mock_github_repo.create_pull.assert_called_once_with(
         title=pull_request.ACTIONS_PULL_REQUEST_TITLE,
         body=pull_request.ACTIONS_PULL_REQUEST_BODY,
         base="main",
@@ -382,6 +387,7 @@ def test_create_pull_request(
 def test_create_pull_request_existing_pr(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
+    mock_github_repo: Repository,
     mock_pull_request: PullRequest,
 ):
     """
@@ -392,20 +398,20 @@ def test_create_pull_request_existing_pr(
     """
     branch_name = "test_branch_name"
     (repo, repo_path) = repository
+    create_repository_author(repo)
     test_file = "file.md"
     (repo_path / test_file).touch()
-    mocked_github_repo = mock.MagicMock(spec=Repository)
-    mocked_github_repo.get_pulls.side_effect = [[mock_pull_request]]
+    mock_github_repo.get_pulls.side_effect = [[mock_pull_request]]
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mocked_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
     )
 
     (upstream, upstream_path) = upstream_repository
     upstream.git.checkout(branch_name)
     (upstream_path / test_file).is_file()
     assert pr_link == mock_pull_request.url
-    mocked_github_repo.get_pulls.assert_called_once_with(
+    mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
         head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
     )

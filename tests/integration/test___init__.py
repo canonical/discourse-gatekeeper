@@ -7,16 +7,17 @@
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
+import shutil
 from itertools import chain
 from pathlib import Path
-from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
 from git.repo import Repo
+from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from src import GETTING_STARTED, exceptions, index, metadata, reconcile, run
+from src import GETTING_STARTED, exceptions, index, metadata, pull_request, reconcile, run
 from src.discourse import Discourse
 
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -29,6 +30,8 @@ async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository: tuple[Repo, Path],
+    mock_github_repo: Repository,
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given running discourse server
@@ -65,7 +68,6 @@ async def test_run(
         14. an index page is not updated
     """
     (repo, repo_path) = repository
-    mocked_github_repo = mock.MagicMock(spec=Repository)
     document_name = "name 1"
     caplog.set_level(logging.INFO)
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
@@ -78,7 +80,7 @@ async def test_run(
             dry_run=False,
             delete_pages=True,
             repo=repo,
-            github_repo=mocked_github_repo,
+            github_repo=mock_github_repo,
             branch_name=None,
         )
 
@@ -103,7 +105,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -121,7 +123,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -141,7 +143,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -159,7 +161,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -185,7 +187,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -205,7 +207,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -230,7 +232,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -255,7 +257,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -284,7 +286,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -307,7 +309,7 @@ async def test_run(
         dry_run=False,
         delete_pages=False,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -330,7 +332,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -351,7 +353,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -374,7 +376,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
     )
 
@@ -382,3 +384,69 @@ async def test_run(
     assert_substrings_in_string(chain(urls, ("Update", "'success'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content not in index_topic
+
+    # 15. with docs dir removed on no custom branchname
+    caplog.clear()
+    doc_table_key_2 = "docs-2"
+    nested_dir_table_key_2 = "nested-dir-doc-2"
+    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
+    (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
+    (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
+    (nested_dir_doc_file := nested_dir / "doc.md").write_text(
+        (nested_dir_doc_content_2 := "nested dir doc content 2")
+    )
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mock_github_repo,
+        branch_name=None,
+    )
+    shutil.rmtree(docs_dir)
+
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mock_github_repo,
+        branch_name=None,
+    )
+
+    repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    assert tuple(urls_with_actions) == (mock_pull_request.url,)
+    assert index_file.read_text(encoding="utf-8") == index_content
+    assert doc_file.read_text(encoding="utf-8") == doc_content_3
+    assert (nested_dir / f"{nested_dir_table_key_2}-doc.md").read_text(
+        encoding="utf-8"
+    ) == nested_dir_doc_content_2
+
+    # 15. with docs dir removed on custom branchname
+    caplog.clear()
+    repo.git.checkout("main")
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
+        path=repo_path,
+    )
+    custom_branchname = "branchname-1"
+
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_repo=mock_github_repo,
+        branch_name=custom_branchname,
+    )
+
+    repo.git.checkout(custom_branchname)
+    assert tuple(urls_with_actions) == (mock_pull_request.url,)
+    assert index_file.read_text(encoding="utf-8") == index_content
+    assert doc_file.read_text(encoding="utf-8") == doc_content_3
+    assert (nested_dir / f"{nested_dir_table_key_2}-doc.md").read_text(
+        encoding="utf-8"
+    ) == nested_dir_doc_content_2

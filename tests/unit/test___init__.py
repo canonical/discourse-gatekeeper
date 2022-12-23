@@ -235,11 +235,8 @@ def test__run_migrate(
     """
     index_content = """Content header.
 
-    Content body.\n"""
-    index_table = """# Navigation
-
-    | Level | Path | Navlink |
-    | -- | -- | -- |
+    Content body."""
+    index_table = f"""{index.NAVIGATION_TABLE_START}
     | 1 | path-1 | [Tutorials](link-1) |"""
     index_page = f"{index_content}{index_table}"
     meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
@@ -355,10 +352,7 @@ def test_run_no_docs_dir(
     index_content = """Content header.
 
     Content body.\n"""
-    index_table = """# Navigation
-
-    | Level | Path | Navlink |
-    | -- | -- | -- |
+    index_table = f"""{index.NAVIGATION_TABLE_START}
     | 1 | path-1 | [empty-navlink]() |
     | 2 | file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
