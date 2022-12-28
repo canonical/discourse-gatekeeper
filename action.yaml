@@ -58,24 +58,5 @@ outputs:
       The configuration used by the action to interact with the discourse
       server.
 runs:
-  using: composite
-  steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-    - run: |
-        python -m pip install -r ${{ github.action_path }}/requirements.txt && \
-        INPUT_DRY_RUN=${{ inputs.dry_run }} \
-        INPUT_DELETE_TOPICS=${{ inputs.delete_topics }} \
-        INPUT_DISCOURSE_HOST=${{ inputs.discourse_host }} \
-        INPUT_DISCOURSE_CATEGORY_ID=${{ inputs.discourse_category_id }} \
-        INPUT_DISCOURSE_API_USERNAME=${{ inputs.discourse_api_username }} \
-        INPUT_DISCOURSE_API_KEY=${{ inputs.discourse_api_key }} \
-        ${{ github.action_path }}/main.py
-      shell: bash
-    - uses: peter-evans/create-pull-request@v4
-      with:
-        branch: "docs/migration-demo"
-        title: "[docs] Documentation migration demo"
-        body: "This is a test for demo purpose, do not merge."
+  using: docker
+  image: Dockerfile
