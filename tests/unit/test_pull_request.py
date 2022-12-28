@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+import logging
 import typing
 from os.path import dirname
 from pathlib import Path
@@ -39,6 +40,29 @@ def test__configure_user(repository: tuple[Repo, Path]):
     assert reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
 
 
+def test__create_pull_request_dry_run(
+    mock_github_repo: Repository,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given a mocked github repository client and a mocked pull request
+    act: when _create_pull_request is called with dry_run True,
+    assert: a dry run pull request link is returned.
+    """
+    caplog.set_level(logging.INFO)
+    assert (
+        pull_request._create_pull_request(
+            github_repository=mock_github_repo,
+            branch_name="branch-1",
+            base="base-1",
+            dry_run=True,
+        )
+        == pull_request.PR_LINK_DRY_RUN
+    )
+    assert "create pull request" in caplog.text
+    assert f"dry run: {True}" in caplog.text
+
+
 def test__create_pull_request(mock_pull_request: PullRequest, mock_github_repo: Repository):
     """
     arrange: given a mocked github repository client and a mocked pull request
@@ -53,23 +77,6 @@ def test__create_pull_request(mock_pull_request: PullRequest, mock_github_repo: 
             dry_run=False,
         )
         == mock_pull_request.url
-    )
-
-
-def test__create_pull_request_dry_run(mock_github_repo: Repository):
-    """
-    arrange: given a mocked github repository client and a mocked pull request
-    act: when _create_pull_request is called with dry_run True,
-    assert: a dry run pull request link is returned.
-    """
-    assert (
-        pull_request._create_pull_request(
-            github_repository=mock_github_repo,
-            branch_name="branch-1",
-            base="base-1",
-            dry_run=True,
-        )
-        == pull_request.PR_LINK_DRY_RUN
     )
 
 
@@ -157,6 +164,60 @@ def test__check_branch_exists(
 
 
 @pytest.mark.parametrize(
+    "existing_files, new_files",
+    [
+        pytest.param(
+            [original_file := (Path("text.txt"), "original")],
+            [test_file := (Path("test.txt"), "test")],
+            id="simple merge",
+        ),
+    ],
+)
+def test__merge_existing_branch_dry_run(
+    existing_files: list[tuple[Path, str]],
+    new_files: list[tuple[Path, str]],
+    upstream_repository: tuple[Repo, Path],
+    repository: tuple[Repo, Path],
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given a local git repository with changes and \
+        a remote repository with existing branch with existing files
+    act: when _merge_existing_branch is called with existing branch name \
+        in dry run mode
+    assert: then no changes are merged, and the action is logged.
+    """
+    caplog.set_level(logging.INFO)
+    branch_name = "test_branch"
+    commit_message = "test_message"
+    (upstream, upstream_path) = upstream_repository
+    upstream_head = upstream.create_head(branch_name)
+    upstream_head.checkout()
+    for (file, content) in existing_files:
+        (upstream_path / file).touch()
+        (upstream_path / file).write_text(content, encoding="utf-8")
+    upstream.git.add(".")
+    upstream.git.commit("-m", "'add upstream'")
+    upstream.git.checkout("main")
+    (repo, repo_path) = repository
+    for (file, content) in new_files:
+        (repo_path / file).touch()
+        (repo_path / file).write_text(content, encoding="utf-8")
+    repo.git.fetch("origin", branch_name)
+    create_repository_author(repo)
+
+    pull_request._merge_existing_branch(
+        repository=repo, branch_name=branch_name, commit_msg=commit_message, dry_run=True
+    )
+
+    upstream.git.checkout(branch_name)
+    assert f"dry run: {True}" in caplog.text
+    assert "merge to existing branch" in caplog.text
+    for (file, content) in new_files:
+        assert not (upstream_path / file).is_file()
+
+
+@pytest.mark.parametrize(
     "existing_files, new_files, expected_files",
     [
         pytest.param(
@@ -215,6 +276,50 @@ def test__merge_existing_branch(
     for (file, content) in expected_files:
         assert (upstream_path / file).is_file()
         assert (upstream_path / file).read_text(encoding="utf-8") == content
+
+
+@pytest.mark.parametrize(
+    "new_files",
+    [
+        pytest.param([test_file], id="single file"),
+        pytest.param(
+            [test_file, nested_file := (Path("nested/file.txt"), "nested file content")],
+            id="nested file",
+        ),
+    ],
+)
+def test__create_branch_dry_run(
+    new_files: list[tuple[Path, str]],
+    upstream_repository: tuple[Repo, Path],
+    repository: tuple[Repo, Path],
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given a local git repository with new files
+    act: when _create_branch is called with new branch name in dry run mode
+    assert: new files are created upstream.
+    """
+    caplog.set_level(logging.INFO)
+    branch_name = "test_branch"
+    (upstream, upstream_path) = upstream_repository
+    (repo, repo_path) = repository
+    for (file, content) in new_files:
+        Path(dirname(repo_path / file)).mkdir(parents=True, exist_ok=True)
+        (repo_path / file).touch()
+        (repo_path / file).write_text(content, encoding="utf-8")
+    create_repository_author(repo)
+
+    pull_request._create_branch(
+        repository=repo, branch_name=branch_name, commit_msg="test_commit", dry_run=True
+    )
+
+    assert f"dry run: {True}" in caplog.text
+    assert "create new branch" in caplog.text
+    with pytest.raises(GitCommandError) as exc_info:
+        upstream.git.checkout(branch_name)
+    assert_substrings_in_string(
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+    )
 
 
 @pytest.mark.parametrize(
