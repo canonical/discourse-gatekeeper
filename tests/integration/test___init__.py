@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
+from git.exc import GitCommandError
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
@@ -25,10 +26,12 @@ pytestmark = pytest.mark.init
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
     mock_pull_request: PullRequest,
 ):
     """
@@ -49,6 +52,12 @@ async def test_run(
         12. with the nested directory removed
         13. with the documentation file removed
         14. with the index file removed
+        15. with no docs dir and no custom branchname provided in dry run mode
+        16. with no docs dir and no custom branchname provided
+        17. with no docs dir and custom branchname provided in dry run mode
+        18. with no docs dir and custom branchname provided
+        19. with no changes applied after migration in dry run mode
+        20. with no changes applied after migration
     assert: then:
         1. an index page is created with an empty navigation table
         2. an index page is not updated
@@ -64,6 +73,12 @@ async def test_run(
         12. the nested directory is removed from the navigation table
         13. the documentation page is deleted
         14. an index page is not updated
+        15. the documentation files are not pushed to default branch
+        16. the documentation files are pushed to default branch
+        17. the documentation files are not pushed to custom branch
+        18. the documentation files are pushed to custom branch
+        19. no operations are taken place
+        20. no operations are taken place
     """
     (repo, repo_path) = repository
     document_name = "name 1"
@@ -383,7 +398,47 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content not in index_topic
 
-    # 15. with docs dir removed on no custom branchname
+    # 15. with no docs dir and no custom branchname provided in dry run mode
+    caplog.clear()
+    (upstream_repo, _) = upstream_repository
+    doc_table_key_2 = "docs-2"
+    nested_dir_table_key_2 = "nested-dir-2"
+    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
+    (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
+    (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
+    (nested_dir_doc_file := nested_dir / "doc.md").write_text(
+        (nested_dir_doc_content_2 := "nested dir doc content 2")
+    )
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_access_token="test-access-token",
+        branch_name=None,
+    )
+    urls = tuple(urls_with_actions)
+    shutil.rmtree(docs_dir)
+
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=True,
+        delete_pages=True,
+        repo=repo,
+        github_access_token="test-access-token",
+        branch_name=None,
+    )
+
+    with pytest.raises(GitCommandError) as exc_info:
+        upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    assert_substrings_in_string(
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+    )
+    assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
+
+    # 16. with no docs dir and no custom branchname provided
     caplog.clear()
     doc_table_key_2 = "docs-2"
     nested_dir_table_key_2 = "nested-dir-2"
@@ -415,14 +470,16 @@ async def test_run(
         branch_name=None,
     )
 
+    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert tuple(urls_with_actions) == (mock_pull_request.url,)
     assert index_file.read_text(encoding="utf-8") == index_content
     assert doc_file.read_text(encoding="utf-8") == doc_content_3
     assert nested_dir_doc_file.read_text(encoding="utf-8") == nested_dir_doc_content_2
 
-    # 16. with docs dir removed on custom branchname
+    # 17. with no docs dir and custom branchname provided in dry run mode
     caplog.clear()
+    upstream_repo.git.checkout("main")
     repo.git.checkout("main")
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
@@ -440,13 +497,61 @@ async def test_run(
         branch_name=custom_branchname,
     )
 
+    with pytest.raises(GitCommandError) as exc_info:
+        upstream_repo.git.checkout(custom_branchname)
+    assert_substrings_in_string(
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+    )
+    assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
+
+    # 18. with no docs dir and custom branchname provided
+    caplog.clear()
+    upstream_repo.git.checkout("main")
+    repo.git.checkout("main")
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
+        path=repo_path,
+    )
+    custom_branchname = "branchname-1"
+
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_access_token="test-access-token",
+        branch_name=custom_branchname,
+    )
+
+    upstream_repo.git.checkout(custom_branchname)
     repo.git.checkout(custom_branchname)
     assert tuple(urls_with_actions) == (mock_pull_request.url,)
     assert index_file.read_text(encoding="utf-8") == index_content
     assert doc_file.read_text(encoding="utf-8") == doc_content_3
     assert (nested_dir / "doc.md").read_text(encoding="utf-8") == nested_dir_doc_content_2
 
-    # 17. with no changes applied after migration
+    # 19. with no changes applied after migration in dry run mode
+    caplog.clear()
+
+    urls_with_actions = run(
+        base_path=repo_path,
+        discourse=discourse_api,
+        dry_run=False,
+        delete_pages=True,
+        repo=repo,
+        github_access_token="test-access-token",
+        branch_name=custom_branchname,
+    )
+
+    with pytest.raises(GitCommandError) as exc_info:
+        upstream_repo.git.checkout(custom_branchname)
+    assert_substrings_in_string(
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+    )
+    assert_substrings_in_string(chain(urls, ("Noop", "Noop", "Noop", "'success'")), caplog.text)
+
+    # 20. with no changes applied after migration
     caplog.clear()
 
     urls_with_actions = run(
