@@ -41,7 +41,7 @@ def _calculate_level(path_relative_to_docs: Path) -> types_.Level:
     return len(path_relative_to_docs.parents)
 
 
-def _calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
+def calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
     """Calculate the table path of a path.
 
     Args:
@@ -102,7 +102,7 @@ def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:
     return types_.PathInfo(
         local_path=path,
         level=_calculate_level(path_relative_to_docs=path_relative_to_docs),
-        table_path=_calculate_table_path(path_relative_to_docs=path_relative_to_docs),
+        table_path=calculate_table_path(path_relative_to_docs=path_relative_to_docs),
         navlink_title=_calculate_navlink_title(path=path),
     )
 

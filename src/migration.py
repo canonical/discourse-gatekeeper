@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import exceptions, types_
 from .discourse import Discourse
+from .docs_directory import calculate_table_path
 
 EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILE = ".gitkeep"
@@ -156,6 +157,20 @@ def _run_one(
     return report
 
 
+def _calculate_file_name(current_directory: Path, table_path: types_.TablePath) -> str:
+    """Calculate file name given table path from the index file and current path \
+        relative to the docs directory.
+
+    Args:
+        current_directory: current directory of the file relative to the docs directory.
+        table_path: table path of the file from the index file, of format path-to-file-filename.
+
+    Returns:
+        The filename derived by removing the directory path from given table path of the file.
+    """
+    return table_path.removeprefix(f"{calculate_table_path(current_directory)}-")
+
+
 def _extract_docs_from_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
 ) -> typing.Iterable[types_.MigrationFileMeta]:
@@ -203,8 +218,9 @@ def _extract_docs_from_table_rows(
             level = row.level
         else:
             last_dir_has_file = True
+            file_name = _calculate_file_name(cwd, row.path)
             yield types_.DocumentMeta(
-                path=cwd / f"{row.path}.md", link=row.navlink.link, table_row=row
+                path=cwd / f"{file_name}.md", link=row.navlink.link, table_row=row
             )
 
     if not last_dir_has_file and last_dir_row:

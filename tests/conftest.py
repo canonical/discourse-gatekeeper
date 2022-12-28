@@ -3,14 +3,18 @@
 
 """Fixtures for all tests."""
 
+import typing
 from pathlib import Path
 from unittest import mock
 
 import pytest
 from git.repo import Repo
+from github import Github
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 from github.Requester import Requester
+
+import src
 
 
 @pytest.fixture(name="upstream_repository")
@@ -63,3 +67,32 @@ def fixture_mock_github_repo(mock_pull_request: PullRequest):
     mocked_repo = mock.MagicMock(spec=Repository)
     mocked_repo.create_pull.return_value = mock_pull_request
     return mocked_repo
+
+
+@pytest.fixture(name="mock_github")
+def fixture_mock_github(mock_github_repo: Repository):
+    """Create a mock github instance."""
+    mocked_github = mock.MagicMock(spec=Github)
+    mocked_github.get_repo.return_value = mock_github_repo
+    return mocked_github
+
+
+@pytest.fixture(name="patch_get_repository_name")
+def fixture_patch_get_repository_name(monkeypatch: pytest.MonkeyPatch):
+    """Replace get_repository_name operation to pass."""
+
+    def mock_get_repository_name(remote_url: str):
+        return remote_url
+
+    monkeypatch.setattr(src, "get_repository_name", mock_get_repository_name)
+
+
+@pytest.fixture(name="patch_create_github")
+def fixture_patch_create_github(monkeypatch: pytest.MonkeyPatch, mock_github: Github):
+    """Replace create_github operation to return a mocked github client."""
+
+    def mock_create_github(access_token: typing.Any):
+        del access_token
+        return mock_github
+
+    monkeypatch.setattr(src, "create_github", mock_create_github)

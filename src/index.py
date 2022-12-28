@@ -77,6 +77,4 @@ def contents_from_page(page: str) -> str:
         Index file contents.
     """
     contents = page.split(NAVIGATION_TABLE_START)
-    if not contents or (len(contents) == 1 and contents[0] == NAVIGATION_TABLE_START):
-        return ""
     return contents[0]

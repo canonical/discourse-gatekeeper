@@ -39,6 +39,40 @@ def test__configure_user(repository: tuple[Repo, Path]):
     assert reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
 
 
+def test__create_pull_request(mock_pull_request: PullRequest, mock_github_repo: Repository):
+    """
+    arrange: given a mocked github repository client and a mocked pull request
+    act: when _create_pull_request is called with dry_run False,
+    assert: a pull request link is returned.
+    """
+    assert (
+        pull_request._create_pull_request(
+            github_repository=mock_github_repo,
+            branch_name="branch-1",
+            base="base-1",
+            dry_run=False,
+        )
+        == mock_pull_request.url
+    )
+
+
+def test__create_pull_request_dry_run(mock_github_repo: Repository):
+    """
+    arrange: given a mocked github repository client and a mocked pull request
+    act: when _create_pull_request is called with dry_run True,
+    assert: a dry run pull request link is returned.
+    """
+    assert (
+        pull_request._create_pull_request(
+            github_repository=mock_github_repo,
+            branch_name="branch-1",
+            base="base-1",
+            dry_run=True,
+        )
+        == pull_request.PR_LINK_DRY_RUN
+    )
+
+
 @pytest.mark.parametrize(
     "remote_url",
     [
@@ -174,7 +208,7 @@ def test__merge_existing_branch(
     create_repository_author(repo)
 
     pull_request._merge_existing_branch(
-        repository=repo, branch_name=branch_name, commit_msg=commit_message
+        repository=repo, branch_name=branch_name, commit_msg=commit_message, dry_run=False
     )
 
     upstream.git.checkout(branch_name)
@@ -212,7 +246,9 @@ def test__create_branch(
         (repo_path / file).write_text(content, encoding="utf-8")
     create_repository_author(repo)
 
-    pull_request._create_branch(repository=repo, branch_name=branch_name, commit_msg="test_commit")
+    pull_request._create_branch(
+        repository=repo, branch_name=branch_name, commit_msg="test_commit", dry_run=False
+    )
 
     upstream.git.checkout(branch_name)
     for (file, content) in new_files:
@@ -284,7 +320,10 @@ def test_create_pull_request_invalid_branch(tmp_path: Path, mock_github_repo: Re
 
     with pytest.raises(InputError) as exc_info:
         pull_request.create_pull_request(
-            repository=repo, github_repository=mock_github_repo, branch_name=branch_name
+            repository=repo,
+            github_repository=mock_github_repo,
+            branch_name=branch_name,
+            dry_run=False,
         )
 
     assert_substrings_in_string(
@@ -304,7 +343,7 @@ def test_create_pull_request_no_change(
     (repo, _) = repository
 
     returned_pr = pull_request.create_pull_request(
-        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name, dry_run=False
     )
 
     assert returned_pr == pull_request.PR_LINK_NO_CHANGE
@@ -330,7 +369,7 @@ def test_create_pull_request_existing_branch(
     mock_github_repo = mock.MagicMock(spec=Repository)
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name, dry_run=False
     )
 
     upstream.git.checkout(branch_name)
@@ -365,7 +404,7 @@ def test_create_pull_request(
     (repo_path / test_file).touch()
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name, dry_run=False
     )
 
     (upstream, upstream_path) = upstream_repository
@@ -404,7 +443,7 @@ def test_create_pull_request_existing_pr(
     mock_github_repo.get_pulls.side_effect = [[mock_pull_request]]
 
     pr_link = pull_request.create_pull_request(
-        repository=repo, github_repository=mock_github_repo, branch_name=branch_name
+        repository=repo, github_repository=mock_github_repo, branch_name=branch_name, dry_run=False
     )
 
     (upstream, upstream_path) = upstream_repository

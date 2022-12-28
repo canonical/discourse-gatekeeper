@@ -37,8 +37,9 @@ inputs:
   github_token:
     description: |
       The github access token (${{ secrets.GITHUB_TOKEN }}) to create pull request on Github.
+      Required if running in migration mode.
     default: ${{ github.token }}
-    required: true
+    required: false
     type: string
   branch_name:
     description: Branch name to create pull request branch.

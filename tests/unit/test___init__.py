@@ -23,11 +23,11 @@ from src import (
     exceptions,
     index,
     metadata,
+    pull_request,
     reconcile,
     run,
     types_,
 )
-from src.pull_request import DEFAULT_BRANCH_NAME
 
 from .helpers import create_metadata_yaml
 
@@ -38,7 +38,6 @@ def test__run_reconcile_empty_local_server(tmp_path: Path):
     act: when _run_reconcile is called
     assert: then an index page is created with empty navigation table.
     """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=tmp_path)
     meta = types_.Metadata(name="name 1", docs=None)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
@@ -172,6 +171,7 @@ def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo,
             repo=repo,
             github_repo=mocked_github_repo,
             branch_name=None,
+            dry_run=False,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
@@ -181,6 +181,7 @@ def test__run_migrate_server_error_topic(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
     mock_pull_request: PullRequest,
+    mock_github_repo: Repository,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -202,8 +203,6 @@ def test__run_migrate_server_error_topic(
     meta = types_.Metadata(name="name 1", docs=index_url)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
-    mocked_github_repo = mock.MagicMock(spec=Repository)
-    mocked_github_repo.create_pull.return_value = mock_pull_request
     (repo, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
@@ -211,12 +210,13 @@ def test__run_migrate_server_error_topic(
         metadata=meta,
         discourse=mocked_discourse,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
+        dry_run=False,
     )
 
     (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
     assert (upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert not (upstream_path / DOCUMENTATION_FOLDER_NAME / "path 1").exists()
@@ -227,6 +227,7 @@ def test__run_migrate(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
     mock_pull_request: PullRequest,
+    mock_github_repo: Repository,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -245,8 +246,6 @@ def test__run_migrate(
         index_page,
         (link_content := "link 1 content"),
     ]
-    mocked_github_repo = mock.MagicMock(spec=Repository)
-    mocked_github_repo.create_pull.return_value = mock_pull_request
     (repo, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
@@ -254,12 +253,13 @@ def test__run_migrate(
         metadata=meta,
         discourse=mocked_discourse,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_repo=mock_github_repo,
         branch_name=None,
+        dry_run=False,
     )
 
     (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
     assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1.md").is_file()
@@ -280,7 +280,6 @@ def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
     (repo, repo_path) = repository
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     with pytest.raises(exceptions.InputError) as exc:
         # run is repeated in unit tests / integration tests
@@ -291,7 +290,7 @@ def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
             dry_run=False,
             delete_pages=False,
             repo=repo,
-            github_repo=mocked_github_repo,
+            github_access_token="test-github-token",
             branch_name=None,
         )
 
@@ -310,7 +309,6 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
     (repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
-    mocked_github_repo = mock.MagicMock(spec=Repository)
 
     # run is repeated in unit tests / integration tests
     # pylint: disable=duplicate-code
@@ -320,7 +318,7 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_access_token="test-github-token",
         branch_name=None,
     )
 
@@ -332,6 +330,8 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
 
 
 # pylint: disable=too-many-locals
+@pytest.mark.usefixtures("patch_get_repository_name")
+@pytest.mark.usefixtures("patch_create_github")
 def test_run_no_docs_dir(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
@@ -359,8 +359,6 @@ def test_run_no_docs_dir(
     navlink_page = "file-navlink-content"
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
-    mocked_github_repo = mock.MagicMock(spec=Repository)
-    mocked_github_repo.create_pull.return_value = mock_pull_request
 
     # run is repeated in unit tests / integration tests
     # pylint: disable=duplicate-code
@@ -370,13 +368,13 @@ def test_run_no_docs_dir(
         dry_run=False,
         delete_pages=False,
         repo=repo,
-        github_repo=mocked_github_repo,
+        github_access_token="test-github-token",
         branch_name=None,
     )
     # pylint: enable=duplicate-code
 
     (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
     assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (

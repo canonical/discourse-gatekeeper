@@ -15,7 +15,6 @@ from git.repo import Repo
 
 from src import run
 from src.discourse import create_discourse
-from src.pull_request import create_github, get_repository_name
 
 
 # pylint: disable=too-many-locals
@@ -43,16 +42,13 @@ def main():
     base_path = pathlib.Path()
     discourse = create_discourse(**create_discourse_kwargs)
     repo = Repo(path=base_path)
-    repository = get_repository_name(repo.remote().url)
-    github = create_github(access_token=github_access_token)
-    github_repo = github.get_repo(repository)
     urls_with_actions_dict = run(
         base_path=base_path,
         discourse=discourse,
         dry_run=dry_run,
         delete_pages=delete_topics,
         repo=repo,
-        github_repo=github_repo,
+        github_access_token=github_access_token,
         branch_name=branch_name,
     )
 
