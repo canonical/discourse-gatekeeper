@@ -150,12 +150,12 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
         pytest.param(
             (separated_multiline_content := "Page content\n\nManyMultiline"),
             separated_multiline_content,
-            id="page with seperated multiline content",
+            id="page with separated multiline content",
         ),
         pytest.param(
             f"{separated_multiline_content}{index.NAVIGATION_TABLE_START}",
             separated_multiline_content,
-            id="page with seperated multiline content and navigation table",
+            id="page with separated multiline content and navigation table",
         ),
     ],
 )
