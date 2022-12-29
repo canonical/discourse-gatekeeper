@@ -215,7 +215,7 @@ def create_pull_request(
     repository.git.checkout(base)
 
     open_pulls = github_repository.get_pulls(
-        state="open", head=f"{ACTIONS_USER_NAME}/{branch_name}"
+        state="open", base=f"{ACTIONS_USER_NAME}/{branch_name}"
     )
     if not list(open_pulls):
         pr_url = _create_pull_request(
