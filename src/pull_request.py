@@ -88,6 +88,7 @@ def _create_branch(repository: Repo, branch_name: str, commit_msg: str, dry_run:
         repository: Current repository.
         branch_name: New branch name.
         commit_msg: Commit message for current changes.
+        dry_run: If enabled, only log the action that would be taken.
     """
     logging.info("dry run: %s, create new branch %s", dry_run, branch_name)
     repository.git.checkout("-b", branch_name)
@@ -180,6 +181,7 @@ def create_pull_request(
         access_token: Github access token.
         repository_path: Repository root where .git resides.
         branch_name: Pull request branch name.
+        dry_run: If enabled, only log the action that would be taken.
 
     Raises:
         InputError: if branch name configuration is invalid.
