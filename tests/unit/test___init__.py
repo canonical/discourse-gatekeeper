@@ -278,6 +278,8 @@ def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
     assert: InputError is raised with a guide to getting started.
     """
     (repo, repo_path) = repository
+    # this is an access token string for testing purposes.
+    test_access_token = "test-access-token"  # nosec
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
 
@@ -290,7 +292,7 @@ def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
             dry_run=False,
             delete_pages=False,
             repo=repo,
-            github_access_token="test-github-token",
+            github_access_token=test_access_token,
             branch_name=None,
         )
 
@@ -305,6 +307,8 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
     assert: then an index page is created with empty navigation table.
     """
     (repo, repo_path) = repository
+    # this is an access token string for testing purposes.
+    test_access_token = "test-access-token"  # nosec
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     (repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
@@ -318,7 +322,7 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-github-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -330,8 +334,7 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
 
 
 # pylint: disable=too-many-locals
-@pytest.mark.usefixtures("patch_get_repository_name")
-@pytest.mark.usefixtures("patch_create_github")
+@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
 def test_run_no_docs_dir(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
@@ -345,6 +348,8 @@ def test_run_no_docs_dir(
         are return as the result.
     """
     (repo, repo_path) = repository
+    # this is an access token string for testing purposes.
+    test_access_token = "test-access-token"  # nosec
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
         path=repo_path,
@@ -368,7 +373,7 @@ def test_run_no_docs_dir(
         dry_run=False,
         delete_pages=False,
         repo=repo,
-        github_access_token="test-github-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
     # pylint: enable=duplicate-code

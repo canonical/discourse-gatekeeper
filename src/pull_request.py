@@ -72,10 +72,10 @@ def _merge_existing_branch(repository: Repo, branch_name: str, commit_msg: str, 
 
     repository.git.checkout(branch_name)
     repository.git.pull()
-    repository.git.merge(temp_branch, "-Xtheirs", "--squash", "--no-edit")
-    repository.git.commit("-m", f"'{commit_msg}'")
 
     if not dry_run:
+        repository.git.merge(temp_branch, "-Xtheirs", "--squash", "--no-edit")
+        repository.git.commit("-m", f"'{commit_msg}'")
         repository.git.push("-u", "origin", branch_name)
 
     repository.git.branch("-D", temp_branch)
@@ -91,11 +91,10 @@ def _create_branch(repository: Repo, branch_name: str, commit_msg: str, dry_run:
         dry_run: If enabled, only log the action that would be taken.
     """
     logging.info("dry run: %s, create new branch %s", dry_run, branch_name)
-    repository.git.checkout("-b", branch_name)
-    repository.git.add(".")
-    repository.git.commit("-m", f"'{commit_msg}'")
-
     if not dry_run:
+        repository.git.checkout("-b", branch_name)
+        repository.git.add(".")
+        repository.git.commit("-m", f"'{commit_msg}'")
         repository.git.push("-u", "origin", branch_name)
 
 

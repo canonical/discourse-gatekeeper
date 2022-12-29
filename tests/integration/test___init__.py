@@ -81,6 +81,8 @@ async def test_run(
         20. no operations are taken place
     """
     (repo, repo_path) = repository
+    # this is an access token string for testing purposes.
+    test_access_token = "test-access-token"  # nosec
     document_name = "name 1"
     caplog.set_level(logging.INFO)
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
@@ -93,7 +95,7 @@ async def test_run(
             dry_run=False,
             delete_pages=True,
             repo=repo,
-            github_access_token="test-access-token",
+            github_access_token=test_access_token,
             branch_name=None,
         )
 
@@ -118,7 +120,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -136,7 +138,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -156,7 +158,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -174,7 +176,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -200,7 +202,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -220,7 +222,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -245,7 +247,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -270,7 +272,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -299,7 +301,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -322,7 +324,7 @@ async def test_run(
         dry_run=False,
         delete_pages=False,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -345,7 +347,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -366,7 +368,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -389,7 +391,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -415,7 +417,7 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
     urls = tuple(urls_with_actions)
@@ -427,19 +429,24 @@ async def test_run(
         dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
-    with pytest.raises(GitCommandError) as exc_info:
+    with pytest.raises(GitCommandError) as exc:
         upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert_substrings_in_string(
-        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc.value)
     )
     assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
 
     # 16. with no docs dir and no custom branchname provided
     caplog.clear()
+    repo.git.checkout("--", ".")
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
+        path=repo_path,
+    )
     doc_table_key_2 = "docs-2"
     nested_dir_table_key_2 = "nested-dir-2"
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
@@ -454,7 +461,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
     urls = tuple(urls_with_actions)
@@ -466,7 +473,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=None,
     )
 
@@ -479,6 +486,7 @@ async def test_run(
 
     # 17. with no docs dir and custom branchname provided in dry run mode
     caplog.clear()
+    shutil.rmtree(docs_dir)
     upstream_repo.git.checkout("main")
     repo.git.checkout("main")
     create_metadata_yaml(
@@ -490,22 +498,23 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
+        dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=custom_branchname,
     )
 
-    with pytest.raises(GitCommandError) as exc_info:
+    with pytest.raises(GitCommandError) as exc:
         upstream_repo.git.checkout(custom_branchname)
     assert_substrings_in_string(
-        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
+        ("error: pathspec", "did not match any file(s) known to git"), str(exc.value)
     )
     assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
 
     # 18. with no docs dir and custom branchname provided
     caplog.clear()
+    shutil.rmtree(docs_dir)
     upstream_repo.git.checkout("main")
     repo.git.checkout("main")
     create_metadata_yaml(
@@ -520,7 +529,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=custom_branchname,
     )
 
@@ -537,18 +546,13 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
+        dry_run=True,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=custom_branchname,
     )
 
-    with pytest.raises(GitCommandError) as exc_info:
-        upstream_repo.git.checkout(custom_branchname)
-    assert_substrings_in_string(
-        ("error: pathspec", "did not match any file(s) known to git"), str(exc_info.value)
-    )
     assert_substrings_in_string(chain(urls, ("Noop", "Noop", "Noop", "'success'")), caplog.text)
 
     # 20. with no changes applied after migration
@@ -560,7 +564,7 @@ async def test_run(
         dry_run=False,
         delete_pages=True,
         repo=repo,
-        github_access_token="test-access-token",
+        github_access_token=test_access_token,
         branch_name=custom_branchname,
     )
 

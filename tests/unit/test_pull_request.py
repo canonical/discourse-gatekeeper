@@ -495,7 +495,7 @@ def test_create_pull_request_existing_branch(
 def test_create_pull_request(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
-    mock_github_repo: Repository,
+    mock_github_repo: mock.MagicMock,
 ):
     """
     arrange: given a mocked repository with a new file and a mocked github repository \
@@ -531,7 +531,7 @@ def test_create_pull_request(
 def test_create_pull_request_existing_pr(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
-    mock_github_repo: Repository,
+    mock_github_repo: mock.MagicMock,
     mock_pull_request: PullRequest,
 ):
     """
