@@ -2,7 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Topics are now created unlisted on discourse
+
 ## [v0.1.1] - 2022-12-13
+
+### Fixed
+
+- Resolve bug where the presence of a topic on the server was not checked
 
 ### Fixed
 

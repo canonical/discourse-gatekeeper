@@ -273,40 +273,69 @@ def test__get_path_info(tmp_path: Path):
     assert: then the expected local path, level, table path and navlink title is returned.
     """
     (path := tmp_path / "dir1").mkdir()
+    alphabetical_rank = 1
 
-    returned_path_info = docs_directory._get_path_info(path=path, docs_path=tmp_path)
+    returned_path_info = docs_directory._get_path_info(
+        path=path, alphabetical_rank=alphabetical_rank, docs_path=tmp_path
+    )
 
-    assert returned_path_info == (path, 1, "dir1", "Dir1")
+    assert returned_path_info == (path, 1, "dir1", "Dir1", alphabetical_rank)
 
 
+# Pylint diesn't understand how the walrus operator works
+# pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
     "directories, files, expected_path_infos",
     [
         pytest.param((), (), [], id="empty"),
-        pytest.param((("dir1",),), (), [(("dir1",), 1, "dir1", "Dir1")], id="single directory"),
         pytest.param(
-            (("dir1",), ("dir2",)),
+            ((dir_1 := "dir1",),),
             (),
-            [(("dir1",), 1, "dir1", "Dir1"), (("dir2",), 1, "dir2", "Dir2")],
+            [((dir_1,), 1, dir_1, dir_1.title(), 0)],
+            id="single directory",
+        ),
+        pytest.param(
+            ((dir_1 := "dir1",), (dir_2 := "dir2",)),
+            (),
+            [((dir_1,), 1, dir_1, dir_1.title(), 0), ((dir_2,), 1, dir_2, dir_2.title(), 1)],
             id="multiple directories",
         ),
         pytest.param(
-            (), (("file1.md",),), [(("file1.md",), 1, "file1", "File1")], id="single file"
+            ((dir_2 := "dir2",), (dir_1 := "dir1",)),
+            (),
+            [((dir_1,), 1, dir_1, dir_1.title(), 0), ((dir_2,), 1, dir_2, dir_2.title(), 1)],
+            id="multiple directories alternate order",
         ),
         pytest.param(
-            (("dir1",),),
-            (("dir1", "file1.md"),),
-            [(("dir1",), 1, "dir1", "Dir1"), (("dir1", "file1.md"), 2, "dir1-file1", "File1")],
+            (),
+            ((file_1 := "file1.md",),),
+            [((file_1,), 1, "file1", "File1", 0)],
+            id="single file",
+        ),
+        pytest.param(
+            ((dir_1 := "dir1",),),
+            ((dir_1, file_1 := "file1.md"),),
+            [
+                ((dir_1,), 1, dir_1, dir_1.title(), 0),
+                ((dir_1, file_1), 2, "dir1-file1", "File1", 1),
+            ],
             id="single file in directory",
         ),
         pytest.param(
             (),
-            (("file1.md",), ("file2.md",)),
-            [(("file1.md",), 1, "file1", "File1"), (("file2.md",), 1, "file2", "File2")],
+            ((file_1 := "file1.md",), (file_2 := "file2.md",)),
+            [((file_1,), 1, "file1", "File1", 0), ((file_2,), 1, "file2", "File2", 1)],
             id="multiple files",
+        ),
+        pytest.param(
+            (),
+            ((file_2 := "file2.md",), (file_1 := "file1.md",)),
+            [((file_1,), 1, "file1", "File1", 0), ((file_2,), 1, "file2", "File2", 1)],
+            id="multiple files alternate order",
         ),
     ],
 )
+# pylint: enable=undefined-variable,unused-variable
 def test_read(
     directories: tuple[tuple[str, ...], ...],
     files: tuple[tuple[str, ...], ...],
@@ -364,24 +393,26 @@ def test_read_indoco(tmp_path: Path):
     returned_path_infos = docs_directory.read(docs_path=tmp_path)
 
     assert list(returned_path_infos) == [
-        (explanation, 1, "explanation", "Explanation"),
-        (charm_architecture, 2, "explanation-charm-architecture", "Charm Architecture"),
-        (how_to_guides, 1, "how-to-guides", "How To Guides"),
-        (contributing, 2, "how-to-guides-contributing", "Contributing"),
+        (explanation, 1, "explanation", "Explanation", 0),
+        (charm_architecture, 2, "explanation-charm-architecture", "Charm Architecture", 1),
+        (how_to_guides, 1, "how-to-guides", "How To Guides", 2),
+        (contributing, 2, "how-to-guides-contributing", "Contributing", 3),
         (
             cross_model_db_relations,
             2,
             "how-to-guides-cross-model-db-relations",
             "Cross-model DB Relations",
+            4,
         ),
         (
             refresh_external_resources,
             2,
             "how-to-guides-refresh-external-resources",
             "Refreshing external resources",
+            5,
         ),
-        (reference, 1, "reference", "Reference"),
-        (plugins, 2, "reference-plugins", "Plugins"),
-        (theme_customisation, 2, "reference-theme-customisation", "Theme Customisation"),
-        (tutorials, 1, "tutorials", "Tutorials"),
+        (reference, 1, "reference", "Reference", 6),
+        (plugins, 2, "reference-plugins", "Plugins", 7),
+        (theme_customisation, 2, "reference-theme-customisation", "Theme Customisation", 8),
+        (tutorials, 1, "tutorials", "Tutorials", 9),
     ]

@@ -8,7 +8,8 @@ import string
 import typing
 
 from . import types_
-from .exceptions import NavigationTableParseError
+from .discourse import Discourse
+from .exceptions import DiscourseError, NavigationTableParseError, PagePermissionError, ServerError
 
 _WHITESPACE = r"\s*"
 _TABLE_HEADER_REGEX = (
@@ -79,7 +80,36 @@ def _line_to_row(line: str) -> types_.TableRow:
     )
 
 
-def from_page(page: str) -> typing.Iterator[types_.TableRow]:
+def _check_table_row_write_permission(
+    table_row: types_.TableRow, discourse: Discourse
+) -> types_.TableRow:
+    """Check that the user has write permissions to the topic linked in the table row.
+
+    Args:
+        table_row: The table row to check.
+        discourse: API to the Discourse server.
+
+    Returns:
+        The table row.
+
+    Raises:
+        PagePermissionError: The user does not have write permission for the linked topic.
+        ServerError: The interaction with discourse failed.
+    """
+    if table_row.navlink.link is None:
+        return table_row
+
+    url = table_row.navlink.link
+    try:
+        if discourse.check_topic_write_permission(url=url):
+            return table_row
+    except DiscourseError as exc:
+        raise ServerError(f"failed to retrieve {url}") from exc
+
+    raise PagePermissionError(f"missing write permission for page, {url=}")
+
+
+def from_page(page: str, discourse: Discourse) -> typing.Iterator[types_.TableRow]:
     """Create an instance based on a markdown page.
 
     Algorithm:
@@ -92,6 +122,7 @@ def from_page(page: str) -> typing.Iterator[types_.TableRow]:
 
     Args:
         page: The page to extract the rows from.
+        discourse: API to the Discourse server.
 
     Returns:
         The parsed rows from the table.
@@ -102,4 +133,8 @@ def from_page(page: str) -> typing.Iterator[types_.TableRow]:
         return iter([])
 
     table = match.group(0)
-    return (_line_to_row(line) for line in table.splitlines() if not _filter_line(line))
+    return (
+        _check_table_row_write_permission(_line_to_row(line), discourse=discourse)
+        for line in table.splitlines()
+        if not _filter_line(line)
+    )

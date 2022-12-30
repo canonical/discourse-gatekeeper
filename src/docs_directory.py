@@ -5,6 +5,7 @@
 
 import typing
 from functools import partial
+from itertools import count
 from pathlib import Path
 
 from . import types_
@@ -88,11 +89,12 @@ def _calculate_navlink_title(path: Path) -> types_.NavlinkTitle:
     return path.stem.replace("-", " ").replace("_", " ").title()
 
 
-def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:
+def _get_path_info(path: Path, alphabetical_rank: int, docs_path: Path) -> types_.PathInfo:
     """Get the information for a path.
 
     Args:
         path: The path to calculate the information for.
+        alphabetical_rank: The rank to assign to the path info.
         docs_path: The path to the docs directory.
 
     Returns:
@@ -104,6 +106,7 @@ def _get_path_info(path: Path, docs_path: Path) -> types_.PathInfo:
         level=_calculate_level(path_relative_to_docs=path_relative_to_docs),
         table_path=calculate_table_path(path_relative_to_docs=path_relative_to_docs),
         navlink_title=_calculate_navlink_title(path=path),
+        alphabetical_rank=alphabetical_rank,
     )
 
 
@@ -128,7 +131,9 @@ def read(docs_path: Path) -> typing.Iterator[types_.PathInfo]:
         Information about each directory and documentation file in the docs folder.
     """
     return map(
-        partial(_get_path_info, docs_path=docs_path), _get_directories_files(docs_path=docs_path)
+        partial(_get_path_info, docs_path=docs_path),
+        _get_directories_files(docs_path=docs_path),
+        count(),
     )
 
 

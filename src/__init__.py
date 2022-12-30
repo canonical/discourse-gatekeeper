@@ -54,7 +54,7 @@ def _run_reconcile(
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    table_rows = navigation_table_from_page(page=server_content)
+    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
     actions = run_reconcile(path_infos=path_infos, table_rows=table_rows, discourse=discourse)
     reports = run_all_actions(
         actions=actions,

@@ -16,6 +16,10 @@ class ServerError(BaseError):
     """A problem with the server storing the documentation occurred."""
 
 
+class PagePermissionError(BaseError):
+    """A required permission is not available on a page."""
+
+
 class DiscourseError(BaseError):
     """Parent exception for all Discourse errors."""
 
