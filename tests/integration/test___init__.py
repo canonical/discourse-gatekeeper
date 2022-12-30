@@ -479,7 +479,7 @@ async def test_run(
 
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert tuple(urls_with_actions) == (mock_pull_request.url,)
+    assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert index_file.read_text(encoding="utf-8") == index_content
     assert doc_file.read_text(encoding="utf-8") == doc_content_3
     assert nested_dir_doc_file.read_text(encoding="utf-8") == nested_dir_doc_content_2
@@ -535,7 +535,7 @@ async def test_run(
 
     upstream_repo.git.checkout(custom_branchname)
     repo.git.checkout(custom_branchname)
-    assert tuple(urls_with_actions) == (mock_pull_request.url,)
+    assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert index_file.read_text(encoding="utf-8") == index_content
     assert doc_file.read_text(encoding="utf-8") == doc_content_3
     assert (nested_dir / "doc.md").read_text(encoding="utf-8") == nested_dir_doc_content_2

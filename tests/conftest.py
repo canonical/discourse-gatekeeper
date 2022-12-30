@@ -56,7 +56,7 @@ def fixture_mock_pull_request() -> PullRequest:
     return PullRequest(
         requester=mock_requester,
         headers={},
-        attributes={"url": "test_url"},
+        attributes={"html_url": "test_url"},
         completed=False,
     )
 
@@ -66,6 +66,7 @@ def fixture_mock_github_repo(mock_pull_request: PullRequest):
     """Create a mock github repository instance."""
     mocked_repo = mock.MagicMock(spec=Repository)
     mocked_repo.create_pull.return_value = mock_pull_request
+    mocked_repo.full_name = "test/repository"
     return mocked_repo
 
 

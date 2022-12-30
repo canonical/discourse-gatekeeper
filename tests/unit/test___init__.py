@@ -217,7 +217,7 @@ def test__run_migrate_server_error_topic(
 
     (upstream_repo, upstream_path) = upstream_repository
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert not (upstream_path / DOCUMENTATION_FOLDER_NAME / "path 1").exists()
 
@@ -260,7 +260,7 @@ def test__run_migrate(
 
     (upstream_repo, upstream_path) = upstream_repository
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1.md").is_file()
     assert index_file.read_text(encoding="utf-8") == index_content
@@ -380,7 +380,7 @@ def test_run_no_docs_dir(
 
     (upstream_repo, upstream_path) = upstream_repository
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (
         path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"

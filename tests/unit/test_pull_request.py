@@ -76,7 +76,7 @@ def test__create_pull_request(mock_pull_request: PullRequest, mock_github_repo: 
             base="base-1",
             dry_run=False,
         )
-        == mock_pull_request.url
+        == mock_pull_request.html_url
     )
 
 
@@ -482,7 +482,7 @@ def test_create_pull_request_existing_branch(
     assert pr_link is not None
     mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
-        head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
+        head=f"{mock_github_repo.full_name}:{branch_name}",
     )
     mock_github_repo.create_pull.assert_called_once_with(
         title=pull_request.ACTIONS_PULL_REQUEST_TITLE,
@@ -518,7 +518,7 @@ def test_create_pull_request(
     assert pr_link is not None
     mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
-        head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
+        head=f"{mock_github_repo.full_name}:{branch_name}",
     )
     mock_github_repo.create_pull.assert_called_once_with(
         title=pull_request.ACTIONS_PULL_REQUEST_TITLE,
@@ -554,8 +554,8 @@ def test_create_pull_request_existing_pr(
     (upstream, upstream_path) = upstream_repository
     upstream.git.checkout(branch_name)
     (upstream_path / test_file).is_file()
-    assert pr_link == mock_pull_request.url
+    assert pr_link == mock_pull_request.html_url
     mock_github_repo.get_pulls.assert_called_once_with(
         state="open",
-        head=f"{pull_request.ACTIONS_USER_NAME}/{branch_name}",
+        head=f"{mock_github_repo.full_name}:{branch_name}",
     )
