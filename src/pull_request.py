@@ -122,7 +122,7 @@ def _create_pull_request(
         )
     else:
         pull_request = None
-    return pull_request.url if pull_request is not None else PR_LINK_DRY_RUN
+    return pull_request.html_url if pull_request is not None else PR_LINK_DRY_RUN
 
 
 def get_repository_name(remote_url: str):
@@ -215,7 +215,7 @@ def create_pull_request(
     repository.git.checkout(base)
 
     open_pulls = github_repository.get_pulls(
-        state="open", base=f"{ACTIONS_USER_NAME}/{branch_name}"
+        state="open", head=f"{github_repository.full_name}:{branch_name}"
     )
     if not list(open_pulls):
         pr_url = _create_pull_request(
@@ -225,6 +225,6 @@ def create_pull_request(
             dry_run=dry_run,
         )
     else:
-        pr_url = open_pulls[0].url
+        pr_url = open_pulls[0].html_url
 
     return pr_url
