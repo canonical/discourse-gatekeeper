@@ -7,7 +7,8 @@
 # pylint: disable=protected-access
 
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
+from collections.abc import Iterable
 from unittest import mock
 
 import pytest
@@ -247,7 +248,7 @@ def test__validate_row_levels(table_rows: list[types_.TableRow]):
 )
 def test_extract_docs__from_table_rows_empty_directory_rows(
     table_rows: Iterable[types_.TableRow],
-    expected_files: List[types_.MigrationFileMeta],
+    expected_files: list[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows with no navlink(only directories)
@@ -454,7 +455,7 @@ def test_get_docs_metadata(
 )
 def test_extract_docs(
     table_rows: Iterable[types_.TableRow],
-    expected_files: List[types_.MigrationFileMeta],
+    expected_files: list[types_.MigrationFileMeta],
 ):
     """
     arrange: given valid table rows

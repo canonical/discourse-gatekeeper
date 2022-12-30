@@ -409,7 +409,7 @@ async def test_run(
     (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
     (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
     (nested_dir_doc_file := nested_dir / "doc.md").write_text(
-        (nested_dir_doc_content_2 := "nested dir doc content 2")
+        nested_dir_doc_content_2 := "nested dir doc content 2"
     )
     urls_with_actions = run(
         base_path=repo_path,
@@ -453,7 +453,7 @@ async def test_run(
     (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
     (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
     (nested_dir_doc_file := nested_dir / "doc.md").write_text(
-        (nested_dir_doc_content_2 := "nested dir doc content 2")
+        nested_dir_doc_content_2 := "nested dir doc content 2"
     )
     urls_with_actions = run(
         base_path=repo_path,
