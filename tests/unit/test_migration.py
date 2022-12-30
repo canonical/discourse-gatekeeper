@@ -6,9 +6,8 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
-from pathlib import Path
-from typing import List
 from collections.abc import Iterable
+from pathlib import Path
 from unittest import mock
 
 import pytest
