@@ -101,7 +101,7 @@ def _run_migrate(
         index.server.content if index.server is not None and index.server.content else ""
     )
     index_content = contents_from_page(server_content)
-    table_rows = navigation_table_from_page(page=server_content)
+    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
     file_metadata = get_docs_metadata(table_rows=table_rows, index_content=index_content)
     run_migrate(
         documents=file_metadata,
