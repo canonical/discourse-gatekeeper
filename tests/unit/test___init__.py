@@ -179,15 +179,13 @@ def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo,
 
 def test__run_migrate_server_error_topic(
     repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
-    mock_pull_request: PullRequest,
     mock_github_repo: Repository,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during topic retrieval
     act: when _run_migrate is called
-    assert: only index document is migrated.
+    assert: MigrationError is raised.
     """
     index_url = "http://discourse/t/docs"
     index_content = """Content Title
@@ -198,28 +196,23 @@ def test__run_migrate_server_error_topic(
 
     | Level | Path | Navlink |
     | -- | -- | -- |
-    | 1 | path 1 | [Link](/t/link-to-1) |
+    | 1 | path-1 | [Link](/t/link-to-1) |
     """
     meta = types_.Metadata(name="name 1", docs=index_url)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
     (repo, repo_path) = repository
 
-    returned_migration_reports = _run_migrate(
-        base_path=repo_path,
-        metadata=meta,
-        discourse=mocked_discourse,
-        repo=repo,
-        github_repo=mock_github_repo,
-        branch_name=None,
-        dry_run=False,
-    )
-
-    (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
-    assert (upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
-    assert not (upstream_path / DOCUMENTATION_FOLDER_NAME / "path 1").exists()
+    with pytest.raises(exceptions.MigrationError):
+        _run_migrate(
+            base_path=repo_path,
+            metadata=meta,
+            discourse=mocked_discourse,
+            repo=repo,
+            github_repo=mock_github_repo,
+            branch_name=None,
+            dry_run=False,
+        )
 
 
 # pylint: disable=too-many-locals

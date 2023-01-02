@@ -251,8 +251,8 @@ def get_docs_metadata(
     Returns:
         Metadata of files to be migrated.
     """
-    table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
     index_doc = _index_file_from_content(content=index_content)
+    table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
     return itertools.chain([index_doc], table_docs)
 
 
@@ -265,8 +265,26 @@ def run(
         documents: metadata about a file to be migrated to local docs directory.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory containing all the documentation.
+
+    Returns:
+        Migration result reports containing action result and failure reason if any.
     """
     return [
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)
         for document in documents
     ]
+
+
+def assert_migration_success(migration_results: typing.Iterable[types_.MigrationReport]) -> None:
+    """Assert all documents have been successfully migrated.
+
+    Args:
+        migration_results: Migration results from server to local.
+
+    Returns:
+        None if success, raises MigrationError otherwise.
+    """
+    if [result for result in migration_results if result.result is types_.ActionResult.FAIL]:
+        raise exceptions.MigrationError(
+            "Error migrating the docs, please check the logs for more detail."
+        )

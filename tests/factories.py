@@ -27,3 +27,31 @@ class PathInfoFactory(factory.Factory):
     table_path = factory.Sequence(lambda n: f"path {n}")
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     alphabetical_rank = factory.Sequence(lambda n: n)
+
+
+class MigrationReportFactory(factory.Factory):
+    """Generate Migration reports."""
+
+    class Meta:
+        """Configuration for factory."""
+
+        model = types_.MigrationReport
+        abstract = False
+
+    class Params:
+        """Variable factory params for generating different status report."""
+
+        is_success = factory.Trait(result=types_.ActionResult.SUCCESS, reason=None)
+        is_skipped = factory.Trait(result=types_.ActionResult.SKIP, reason="skipped")
+        is_failed = factory.Trait(result=types_.ActionResult.FAIL, reason="failed")
+
+    table_row = factory.Sequence(
+        lambda n: types_.TableRow(
+            level=n,
+            path=f"path {n}",
+            navlink=types_.Navlink(title=f"title {n}", link=f"link {n}"),
+        )
+    )
+    path = factory.Sequence(lambda n: Path(f"dir{n}"))
+    result = None
+    reason = None

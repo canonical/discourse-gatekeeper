@@ -17,7 +17,7 @@ from .exceptions import InputError
 from .index import DOCUMENTATION_FOLDER_NAME, contents_from_page
 from .index import get as get_index
 from .metadata import get as get_metadata
-from .migration import get_docs_metadata
+from .migration import assert_migration_success, get_docs_metadata
 from .migration import run as run_migrate
 from .navigation_table import from_page as navigation_table_from_page
 from .pull_request import create_github, create_pull_request, get_repository_name
@@ -103,11 +103,12 @@ def _run_migrate(
     index_content = contents_from_page(server_content)
     table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
     file_metadata = get_docs_metadata(table_rows=table_rows, index_content=index_content)
-    run_migrate(
+    migration_results = run_migrate(
         documents=file_metadata,
         discourse=discourse,
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
+    assert_migration_success(migration_results=migration_results)
 
     pr_link = create_pull_request(
         repository=repo, github_repository=github_repo, branch_name=branch_name, dry_run=dry_run

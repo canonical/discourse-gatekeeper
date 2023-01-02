@@ -14,6 +14,7 @@ import pytest
 
 from src import discourse, exceptions, migration, types_
 
+from .. import factories
 from .helpers import path_to_markdown
 
 
@@ -679,3 +680,57 @@ def test_run(
         assert returned.result == expected.result
         assert returned.reason == expected.reason
         assert returned.table_row == expected.table_row
+
+
+@pytest.mark.parametrize(
+    "migration_results",
+    [
+        pytest.param(
+            [failed_result := factories.MigrationReportFactory(is_failed=True)], id="failed result"
+        ),
+        pytest.param(
+            [success_result := factories.MigrationReportFactory(is_success=True), failed_result],
+            id="mixed result",
+        ),
+    ],
+)
+def test_asssert_migration_fail(migration_results: list[types_.MigrationReport]):
+    """
+    arrange: given at least one failed result in migration results
+    act: when assert_migration_success is called
+    assert: MigrationError exception is raised.
+
+    """
+    with pytest.raises(exceptions.MigrationError):
+        migration.assert_migration_success(migration_results=migration_results)
+
+
+@pytest.mark.parametrize(
+    "migration_results",
+    [
+        pytest.param(
+            [success_result],
+            id="success result",
+        ),
+        pytest.param(
+            [skipped_result := factories.MigrationReportFactory(is_skipped=True)],
+            id="skipped result",
+        ),
+        pytest.param([success_result, success_result], id="success results"),
+        pytest.param([skipped_result, skipped_result], id="skipped results"),
+        pytest.param(
+            [
+                success_result,
+                skipped_result,
+            ],
+            id="mixed results",
+        ),
+    ],
+)
+def test_assert_migration_success(migration_results: list[types_.MigrationReport]):
+    """
+    arrange: given successful migration results
+    act: when assert_migration_success is called
+    assert: no exceptions are raised.
+    """
+    migration.assert_migration_success(migration_results=migration_results)
