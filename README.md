@@ -27,13 +27,12 @@ charmhub.
     If you have existing documentation on discourse, you can retrieve the
     markdown version by changing the link to the topic in your browser from
     `https://discourse.charmhub.io/t/<slug>/<topic id>` to
-    `https://discourse.charmhub.io/raw/<topic id>`. _Future plans for this
+    `https://discourse.charmhub.io/raw/<topic id>`. *Future plans for this
     action include automating this migration by pulling the content down and
-    creating a PR for you to review in the repository._
+    creating a PR for you to review in the repository.*
 
     Note that the action may change the order of how groups and pages are
     displayed in the navigation pane. The action will sort them alphabetically.
-
 4. Optionally, remove the current `docs` key from `metadata.yaml` if you would
     like the action to create its own topics on discourse rather than re-use
     any existing topics. This means that if, for some reason, you don't like
