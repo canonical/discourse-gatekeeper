@@ -694,7 +694,7 @@ def test_run(
         ),
     ],
 )
-def test_asssert_migration_fail(migration_results: list[types_.MigrationReport]):
+def test_assert_migration_fail(migration_results: list[types_.MigrationReport]):
     """
     arrange: given at least one failed result in migration results
     act: when assert_migration_success is called
