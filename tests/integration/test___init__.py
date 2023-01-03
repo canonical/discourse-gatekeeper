@@ -7,19 +7,27 @@
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
-import shutil
 from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
-from git.exc import GitCommandError
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import GETTING_STARTED, exceptions, index, metadata, pull_request, reconcile, run
+from src import (
+    GETTING_STARTED,
+    exceptions,
+    index,
+    metadata,
+    migration,
+    pull_request,
+    reconcile,
+    run,
+)
 from src.discourse import Discourse
 
+from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
 pytestmark = pytest.mark.init
@@ -31,8 +39,6 @@ async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
-    mock_pull_request: PullRequest,
 ):
     """
     arrange: given running discourse server
@@ -52,12 +58,9 @@ async def test_run(
         12. with the nested directory removed
         13. with the documentation file removed
         14. with the index file removed
-        15. with no docs dir and no custom branchname provided in dry run mode
-        16. with no docs dir and no custom branchname provided
-        17. with no docs dir and custom branchname provided in dry run mode
-        18. with no docs dir and custom branchname provided
-        19. with no changes applied after migration in dry run mode
-        20. with no changes applied after migration
+        15. with no docs dir and no custom branchname provided
+        16. with no docs dir and custom branchname provided
+        17. with no changes applied after migration
     assert: then:
         1. an index page is created with an empty navigation table
         2. an index page is not updated
@@ -73,12 +76,9 @@ async def test_run(
         12. the nested directory is removed from the navigation table
         13. the documentation page is deleted
         14. an index page is not updated
-        15. the documentation files are not pushed to default branch
-        16. the documentation files are pushed to default branch
-        17. the documentation files are not pushed to custom branch
-        18. the documentation files are pushed to custom branch
-        19. no operations are taken place
-        20. no operations are taken place
+        15. the documentation files are pushed to default branch
+        16. the documentation files are pushed to custom branch
+        17. no operations are taken place
     """
     (repo, repo_path) = repository
     # this is an access token string for testing purposes.
@@ -400,72 +400,81 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content not in index_topic
 
-    # 15. with no docs dir and no custom branchname provided in dry run mode
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
+async def test_run_migrate(
+    discourse_api: Discourse,
+    caplog: pytest.LogCaptureFixture,
+    repository: tuple[Repo, Path],
+    upstream_repository: tuple[Repo, Path],
+    mock_pull_request: PullRequest,
+):
+    """
+    arrange: given running discourse server
+    act: when run is called with:
+        1. with no docs dir and no custom branchname provided
+        2. with no docs dir and custom branchname provided
+        3. with no changes applied after migration
+    assert: then:
+        1. the documentation files are pushed to default branch
+        2. the documentation files are pushed to custom branch
+        3. no operations are taken place
+    """
+    document_name = "migration name 1"
+    discourse_prefix = "http://discourse"
+    (repo, repo_path) = repository
+    (upstream_repo, upstream_repo_path) = upstream_repository
+    # this is an access token string for testing purposes.
+    test_access_token = "test-access-token"  # nosec
+    content_page_1 = factories.ContentPageFactory()
+    content_page_1_url = discourse_api.create_topic(
+        title=content_page_1.title,
+        content=content_page_1.content,
+    ).removeprefix(discourse_prefix)
+    content_page_2 = factories.ContentPageFactory()
+    content_page_2_url = discourse_api.create_topic(
+        title=content_page_2.title,
+        content=content_page_2.content,
+    ).removeprefix(discourse_prefix)
+    content_page_3 = factories.ContentPageFactory()
+    content_page_3_url = discourse_api.create_topic(
+        title=content_page_3.title,
+        content=content_page_3.content,
+    ).removeprefix(discourse_prefix)
+    content_page_4 = factories.ContentPageFactory()
+    content_page_4_url = discourse_api.create_topic(
+        title=content_page_4.title,
+        content=content_page_4.content,
+    ).removeprefix(discourse_prefix)
+    index_page_content = f"""Testing index page.
+
+    Testing index page content.
+
+    # Navigation
+
+    | Level | Path | Navlink |
+    | -- | -- | -- |
+    | 1 | group-1 | [Group 1]() |
+    | 1 | group-2 | [Group 2]() |
+    | 2 | group-2-content-1 | [Content Link 1]({content_page_1_url}) |
+    | 2 | group-2-content-2 | [Content Link 2]({content_page_2_url}) |
+    | 1 | group-3 | [Group 3]() |
+    | 2 | group-3-group-4 | [Group 4]() |
+    | 3 | group-3-group-4-content-3 | [Content Link 3]({content_page_3_url}) |
+    | 2 | group-3-content-4 | [Content Link 4]({content_page_4_url}) |
+    | 1 | group-5 | [Group 5]() |"""
+    index_url = discourse_api.create_topic(
+        title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
+        content=index_page_content,
+    )
+
+    # 1. with no docs dir and no custom branchname provided
     caplog.clear()
-    (upstream_repo, _) = upstream_repository
-    doc_table_key_2 = "docs-2"
-    nested_dir_table_key_2 = "nested-dir-2"
-    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
-    (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
-    (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
-    (nested_dir_doc_file := nested_dir / "doc.md").write_text(
-        nested_dir_doc_content_2 := "nested dir doc content 2"
-    )
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
-    )
-    urls = tuple(urls_with_actions)
-    shutil.rmtree(docs_dir)
-
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
-    )
-
-    with pytest.raises(GitCommandError) as exc:
-        upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    assert_substrings_in_string(
-        ("error: pathspec", "did not match any file(s) known to git"), str(exc.value)
-    )
-    assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
-
-    # 16. with no docs dir and no custom branchname provided
-    caplog.clear()
-    repo.git.checkout("--", ".")
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
         path=repo_path,
     )
-    doc_table_key_2 = "docs-2"
-    nested_dir_table_key_2 = "nested-dir-2"
-    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
-    (doc_file := docs_dir / f"{doc_table_key_2}.md").write_text(doc_content_3 := "doc content 3")
-    (nested_dir := docs_dir / nested_dir_table_key_2).mkdir()
-    (nested_dir_doc_file := nested_dir / "doc.md").write_text(
-        nested_dir_doc_content_2 := "nested dir doc content 2"
-    )
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
-    )
-    urls = tuple(urls_with_actions)
-    shutil.rmtree(docs_dir)
 
     urls_with_actions = run(
         base_path=repo_path,
@@ -478,43 +487,24 @@ async def test_run(
     )
 
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_doc_dir = upstream_repo_path / index.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
-    assert index_file.read_text(encoding="utf-8") == index_content
-    assert doc_file.read_text(encoding="utf-8") == doc_content_3
-    assert nested_dir_doc_file.read_text(encoding="utf-8") == nested_dir_doc_content_2
+    assert ((group_1_path := upstream_doc_dir / "group-1")).is_dir()
+    assert ((group_1_gitkeep_path := group_1_path / migration.GITKEEP_FILE)).is_file()
+    assert ((group_2_path := upstream_doc_dir / "group-2")).is_dir()
+    assert ((group_2_content_1_path := group_2_path / "content-1.md")).read_text(
+        encoding="utf-8"
+    ) == content_page_1.content
+    assert (group_2_path / "content-2.md").read_text(encoding="utf-8") == content_page_2.content
+    assert ((group_3_path := upstream_doc_dir / "group-3")).is_dir()
+    assert ((group_4_path := group_3_path / "group-4")).is_dir()
+    assert (group_4_path / "content-3.md").read_text(encoding="utf-8") == content_page_3.content
+    assert (group_3_path / "content-4.md").read_text(encoding="utf-8") == content_page_4.content
+    assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
+    assert group_5_path.is_dir()
 
-    # 17. with no docs dir and custom branchname provided in dry run mode
+    # 2. with no docs dir and custom branchname provided
     caplog.clear()
-    shutil.rmtree(docs_dir)
-    upstream_repo.git.checkout("main")
-    repo.git.checkout("main")
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repo_path,
-    )
-    custom_branchname = "branchname-1"
-
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=custom_branchname,
-    )
-
-    with pytest.raises(GitCommandError) as exc:
-        upstream_repo.git.checkout(custom_branchname)
-    assert_substrings_in_string(
-        ("error: pathspec", "did not match any file(s) known to git"), str(exc.value)
-    )
-    assert tuple(urls_with_actions) == (pull_request.PR_LINK_DRY_RUN,)
-
-    # 18. with no docs dir and custom branchname provided
-    caplog.clear()
-    shutil.rmtree(docs_dir)
     upstream_repo.git.checkout("main")
     repo.git.checkout("main")
     create_metadata_yaml(
@@ -536,26 +526,19 @@ async def test_run(
     upstream_repo.git.checkout(custom_branchname)
     repo.git.checkout(custom_branchname)
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
-    assert index_file.read_text(encoding="utf-8") == index_content
-    assert doc_file.read_text(encoding="utf-8") == doc_content_3
-    assert (nested_dir / "doc.md").read_text(encoding="utf-8") == nested_dir_doc_content_2
+    assert group_1_path.is_dir()
+    assert group_1_gitkeep_path.is_file()
+    assert group_2_path.is_dir()
+    assert group_2_content_1_path.read_text(encoding="utf-8") == content_page_1.content
+    assert (group_2_path / "content-2.md").read_text(encoding="utf-8") == content_page_2.content
+    assert ((group_3_path := upstream_doc_dir / "group-3")).is_dir()
+    assert ((group_4_path := group_3_path / "group-4")).is_dir()
+    assert (group_4_path / "content-3.md").read_text(encoding="utf-8") == content_page_3.content
+    assert (group_3_path / "content-4.md").read_text(encoding="utf-8") == content_page_4.content
+    assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
+    assert group_5_path.is_dir()
 
-    # 19. with no changes applied after migration in dry run mode
-    caplog.clear()
-
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=custom_branchname,
-    )
-
-    assert_substrings_in_string(chain(urls, ("Noop", "Noop", "Noop", "'success'")), caplog.text)
-
-    # 20. with no changes applied after migration
+    # 3. with no changes applied after migration
     caplog.clear()
 
     urls_with_actions = run(
@@ -568,4 +551,6 @@ async def test_run(
         branch_name=custom_branchname,
     )
 
-    assert_substrings_in_string(chain(urls, ("Noop", "Noop", "Noop", "'success'")), caplog.text)
+    assert_substrings_in_string(
+        chain(urls_with_actions, ("Noop", "Noop", "Noop", "'success'")), caplog.text
+    )

@@ -12,6 +12,8 @@ import factory
 
 from src import types_
 
+from . import types
+
 
 class PathInfoFactory(factory.Factory):
     """Generate PathInfos."""
@@ -55,3 +57,16 @@ class MigrationReportFactory(factory.Factory):
     path = factory.Sequence(lambda n: Path(f"dir{n}"))
     result = None
     reason = None
+
+
+class ContentPageFactory(factory.Factory):
+    """Generate discourse content page."""
+
+    class Meta:
+        """Configuration for factory."""
+
+        model = types.DiscoursePageMeta
+        abstract = False
+
+    title = factory.Sequence(lambda n: f"Content title {n}")
+    content = factory.Sequence(lambda n: f"Content {n}")
