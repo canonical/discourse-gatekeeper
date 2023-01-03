@@ -80,7 +80,6 @@ def _run_migrate(
     repo: Repo,
     github_repo: Repository,
     branch_name: str | None,
-    dry_run: bool,
 ) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
@@ -91,7 +90,6 @@ def _run_migrate(
         repo: A git-binding for the current repository.
         github_repo: A client for communicating with github.
         branch_name: The branch name to base the pull request from.
-        dry_run: If enabled, only log the action that would be taken.
 
     Returns:
         A Pull Request link to the Github repository.
@@ -111,7 +109,7 @@ def _run_migrate(
     assert_migration_success(migration_results=migration_results)
 
     pr_link = create_pull_request(
-        repository=repo, github_repository=github_repo, branch_name=branch_name, dry_run=dry_run
+        repository=repo, github_repository=github_repo, branch_name=branch_name
     )
 
     return {pr_link: ActionResult.SUCCESS}
@@ -153,7 +151,6 @@ def run(
             repo=repo,
             github_repo=github_repo,
             branch_name=branch_name,
-            dry_run=dry_run,
         )
     if has_docs_dir:
         return _run_reconcile(

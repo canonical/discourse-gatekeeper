@@ -171,7 +171,6 @@ def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo,
             repo=repo,
             github_repo=mocked_github_repo,
             branch_name=None,
-            dry_run=False,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
@@ -211,7 +210,6 @@ def test__run_migrate_server_error_topic(
             repo=repo,
             github_repo=mock_github_repo,
             branch_name=None,
-            dry_run=False,
         )
 
 
@@ -248,7 +246,6 @@ def test__run_migrate(
         repo=repo,
         github_repo=mock_github_repo,
         branch_name=None,
-        dry_run=False,
     )
 
     (upstream_repo, upstream_path) = upstream_repository
