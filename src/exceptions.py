@@ -44,5 +44,5 @@ class MigrationError(BaseError):
     """A problem with migration occurred."""
 
 
-class GitError(BaseError):
-    """A problem with git occurred."""
+class RepositoryClientError(BaseError):
+    """A problem with git repository client occurred."""

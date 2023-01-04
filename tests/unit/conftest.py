@@ -8,8 +8,10 @@
 from pathlib import Path
 
 import pytest
+from git.repo import Repo
+from github.Repository import Repository
 
-from src import index
+from src import index, pull_request
 from src.discourse import Discourse
 
 
@@ -34,3 +36,10 @@ def index_file_content(tmp_path: Path):
     content = "content 1"
     index_file.write_text(content, encoding="utf-8")
     return content
+
+
+@pytest.fixture()
+def repository_client(repository: tuple[Repo, Path], mock_github_repo: Repository):
+    """Get repository client."""
+    (repo, _) = repository
+    return pull_request.RepositoryClient(repository=repo, github_repository=mock_github_repo)
