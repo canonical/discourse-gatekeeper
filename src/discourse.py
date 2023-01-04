@@ -169,6 +169,17 @@ class Discourse:
         """
         return f"{self._base_path}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
 
+    def _apply_topic_default_config(self, url: str, topic: dict) -> None:
+        """Check the topic configuration and apply defaults if not already applied.
+
+        Args:
+            url: The link to the topic.
+            topic: The pydiscourse dictionary representing the topic.
+        """
+        import pytest
+
+        pytest.set_trace()
+
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.
 

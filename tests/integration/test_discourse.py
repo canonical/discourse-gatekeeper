@@ -54,6 +54,7 @@ async def test_create_retrieve_update_delete_topic(
     slug = url_path_components[-2]
     topic_id = url_path_components[-1]
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    assert topic, "topic not created"
     assert (
         topic["category_id"] == discourse_category_id
     ), "post was not created with the correct category id"
@@ -78,6 +79,7 @@ async def test_create_retrieve_update_delete_topic(
     discourse_api.delete_topic(url=url)
 
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    assert topic, "topic not created"
     assert "withdrawn" in topic["post_stream"]["posts"][0]["cooked"], "topic not deleted"
     assert topic["post_stream"]["posts"][0]["user_deleted"], "topic not deleted"
 
@@ -166,6 +168,21 @@ async def test_create_topic_auth_error(
 
     with pytest.raises(DiscourseError):
         discourse.create_topic(title=title, content=content_1)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_not_default_config(
+    discourse_api: Discourse, discourse_client: pydiscourse.DiscourseClient, category_id: int
+):
+    """
+    arrange: given running discourse server with a topic that does not have the default
+        configuration applied
+    act: when a topic is retrieved
+    assert: then the topic configuration is updated to the default configuration.
+    """
+    title = "title 1 padding so it is long enough test_retrieve_not_default_config"
+    content = "content 1 padding so it is long enough test_retrieve_not_default_config"
+    url = discourse_api.create_topic(title=title, content=content)
 
 
 @pytest.mark.asyncio
