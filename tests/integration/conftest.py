@@ -234,6 +234,7 @@ async def discourse_client(discourse_main_api_key, discourse_hostname: str):
 async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
     """Create the category for topics."""
     category = discourse_client.create_category(name="docs", color="FFFFFF")
+    assert category
     return category["category"]["id"]
 
 

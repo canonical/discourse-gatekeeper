@@ -182,6 +182,9 @@ class Discourse:
         visible = self._get_record_value(record=topic, key="visible", expected_type=bool)
         if visible:
             try:
+                import pytest
+
+                pytest.set_trace()
                 self._client.update_topic_status(
                     topic_id=topic_info.id_, status="visible", enabled=False
                 )

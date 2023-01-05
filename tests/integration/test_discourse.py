@@ -4,7 +4,6 @@
 """Integration tests for discourse."""
 
 import re
-from urllib import parse
 
 import pydiscourse
 import pytest
@@ -42,8 +41,8 @@ async def test_create_retrieve_update_delete_topic(
     assert: then all the sequential actions succeed and the topic is deleted in the end.
     """
     # Create topic
-    title = "title 1 padding so it is long enough test_crud_topic"
-    content_1 = "content 1 padding so it is long enough test_crud_topic"
+    title = "title 1 test_crud_topic"
+    content_1 = "content 1 test_crud_topic"
 
     url = discourse_api.create_topic(title=title, content=content_1)
     returned_content = discourse_api.retrieve_topic(url=url)
@@ -67,7 +66,7 @@ async def test_create_retrieve_update_delete_topic(
     ), "user could not write topic they created"
 
     # Update topic
-    content_2 = "content 2 padding so it is long enough  test_crud_topic"
+    content_2 = "content 2  test_crud_topic"
     discourse_api.update_topic(url=url, content=content_2)
     returned_content = discourse_api.retrieve_topic(url=url)
 
@@ -92,8 +91,8 @@ async def test_retrieve_wrong_slug(discourse_api: Discourse):
     act: when a topic is created and retrieved with the wrong slug
     assert: then the correct content is returned.
     """
-    title = "title 1 padding so it is long enough test_retrieve_wrong_slug"
-    content = "content 1 padding so it is long enough test_retrieve_wrong_slug"
+    title = "title 1 test_retrieve_wrong_slug"
+    content = "content 1 test_retrieve_wrong_slug"
     url = discourse_api.create_topic(title=title, content=content)
 
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
@@ -109,12 +108,12 @@ async def test_update_wrong_slug(discourse_api: Discourse):
     act: when a topic is created and updated with the wrong slug
     assert: then the topic is updated.
     """
-    title = "title 1 padding so it is long enough test_update_wrong_slug"
-    content_1 = "content 1 padding so it is long enough test_update_wrong_slug"
+    title = "title 1 test_update_wrong_slug"
+    content_1 = "content 1 test_update_wrong_slug"
     url = discourse_api.create_topic(title=title, content=content_1)
 
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
-    content_2 = "content 2 padding so it is long enough test_update_wrong_slug"
+    content_2 = "content 2 test_update_wrong_slug"
     discourse_api.update_topic(url=url_incorrect_slug, content=content_2)
 
     returned_content = discourse_api.retrieve_topic(url=url)
@@ -128,8 +127,8 @@ async def test_delete_wrong_slug(discourse_api: Discourse):
     act: when a topic is created and deleted with the wrong slug
     assert: then the topic is deleted.
     """
-    title = "title 1 padding so it is long enough test_delete_wrong_slug"
-    content = "content 1 padding so it is long enough test_delete_wrong_slug"
+    title = "title 1 test_delete_wrong_slug"
+    content = "content 1 test_delete_wrong_slug"
     url = discourse_api.create_topic(title=title, content=content)
 
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
@@ -161,36 +160,36 @@ async def test_create_topic_auth_error(
     )
 
     # Create topic
-    title = "title 1 padding so it is long enough test_create_topic_auth_error"
-    content_1 = "content 1 padding so it is long enough test_create_topic_auth_error"
+    title = "title 1 test_create_topic_auth_error"
+    content_1 = "content 1 test_create_topic_auth_error"
 
     with pytest.raises(DiscourseError):
         discourse.create_topic(title=title, content=content_1)
 
 
 @pytest.mark.asyncio
-async def test_update_not_default_config(
-    discourse_api: Discourse, discourse_client: pydiscourse.DiscourseClient
-):
+async def test_update_not_default_config(discourse_api: Discourse):
     """
     arrange: given running discourse server with a topic that does not have the default
         configuration applied
     act: when a topic is updated
     assert: then the topic configuration is updated to the default configuration.
     """
-    title = "title 1 padding so it is long enough test_update_not_default_config"
-    content_1 = "content 1 padding so it is long enough test_update_not_default_config"
+    title = "title 1 test_update_not_default_config"
+    content_1 = "content 1 test_update_not_default_config"
     url = discourse_api.create_topic(title=title, content=content_1)
     topic_info = discourse_api._url_to_topic_info(url=url)
-    discourse_client.update_topic_status(topic_id=topic_info.id_, status="visible", enabled=True)
+    discourse_api._client.update_topic_status(
+        topic_id=topic_info.id_, status="visible", enabled=True
+    )
     topic_info = discourse_api._url_to_topic_info(url=url)
-    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+    topic = discourse_api._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
     assert topic and topic["visible"]
-    content_2 = "content 2 padding so it is long enough test_update_not_default_config"
+    content_2 = "content 2 test_update_not_default_config"
 
     discourse_api.update_topic(url=url, content=content_2)
 
-    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+    topic = discourse_api._client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
     assert topic and not topic["visible"]
 
 
@@ -206,8 +205,8 @@ async def test_retrieve_topic_auth_error(
     act: when a topic is created and then retrieved with an incorrect API key
     assert: then DiscourseError is raised.
     """
-    title = "title 1 padding so it is long enough test_retrieve_topic_auth_error"
-    content_1 = "content 1 padding so it is long enough test_retrieve_topic_auth_error"
+    title = "title 1 test_retrieve_topic_auth_error"
+    content_1 = "content 1 test_retrieve_topic_auth_error"
 
     url = discourse_api.create_topic(title=title, content=content_1)
 
@@ -235,8 +234,8 @@ async def test_update_topic_auth_error(
     assert: then DiscourseError is raised.
     """
     # Create topic
-    title = "title 1 padding so it is long enough test_update_topic_auth_error"
-    content_1 = "content 1 padding so it is long enough test_update_topic_auth_error"
+    title = "title 1 test_update_topic_auth_error"
+    content_1 = "content 1 test_update_topic_auth_error"
 
     url = discourse_api.create_topic(title=title, content=content_1)
 
@@ -246,7 +245,7 @@ async def test_update_topic_auth_error(
         api_key="invalid key",
         category_id=discourse_category_id,
     )
-    content_2 = "content 2 padding so it is long enough test_update_topic_auth_error"
+    content_2 = "content 2 test_update_topic_auth_error"
 
     with pytest.raises(DiscourseError):
         unauth_discourse.update_topic(url=url, content=content_2)
@@ -265,8 +264,8 @@ async def test_delete_topic_auth_error(
     assert: then DiscourseError is raised.
     """
     # Create topic
-    title = "title 1 padding so it is long enough test_delete_topic_auth_error"
-    content_1 = "content 1 padding so it is long enough test_delete_topic_auth_error"
+    title = "title 1 test_delete_topic_auth_error"
+    content_1 = "content 1 test_delete_topic_auth_error"
 
     url = discourse_api.create_topic(title=title, content=content_1)
 
@@ -297,8 +296,8 @@ async def test_read_write_permission(
     assert: then the alternate user has the read but not write permission for the topic.
     """
     # Create topic
-    title = "title 1 padding so it is long enough test_read_write_permission"
-    content_1 = "content 1 padding so it is long enough test_read_write_permission"
+    title = "title 1 test_read_write_permission"
+    content_1 = "content 1 test_read_write_permission"
 
     url = discourse_api.create_topic(title=title, content=content_1)
 
