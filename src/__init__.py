@@ -5,9 +5,6 @@
 
 from pathlib import Path
 
-from git.repo import Repo
-from github.Repository import Repository
-
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .discourse import Discourse
@@ -20,9 +17,9 @@ from .metadata import get as get_metadata
 from .migration import assert_migration_success, get_docs_metadata
 from .migration import run as run_migrate
 from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import create_github, create_pull_request, get_repository_name
+from .pull_request import RepositoryClient, create_pull_request, create_repository_client
 from .reconcile import run as run_reconcile
-from .types_ import ActionResult, Metadata
+from .types_ import ActionResult, Metadata, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
@@ -74,12 +71,7 @@ def _run_reconcile(
 
 # pylint: disable=too-many-arguments
 def _run_migrate(
-    base_path: Path,
-    metadata: Metadata,
-    discourse: Discourse,
-    repo: Repo,
-    github_repo: Repository,
-    branch_name: str | None,
+    base_path: Path, metadata: Metadata, discourse: Discourse, repository: RepositoryClient
 ) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
@@ -87,9 +79,7 @@ def _run_migrate(
         base_path: The base path to look for the metadata file in.
         metadata: A metadata file with a link to the docs url.
         discourse: A client to the documentation server.
-        repo: A git-binding for the current repository.
-        github_repo: A client for communicating with github.
-        branch_name: The branch name to base the pull request from.
+        repository: Repository client for managing both local and remote git repositories.
 
     Returns:
         A Pull Request link to the Github repository.
@@ -108,32 +98,18 @@ def _run_migrate(
     )
     assert_migration_success(migration_results=migration_results)
 
-    pr_link = create_pull_request(
-        repository=repo, github_repository=github_repo, branch_name=branch_name
-    )
+    pr_link = create_pull_request(repository=repository)
 
     return {pr_link: ActionResult.SUCCESS}
 
 
-def run(
-    base_path: Path,
-    discourse: Discourse,
-    dry_run: bool,
-    delete_pages: bool,
-    repo: Repo,
-    github_access_token: str | None,
-    branch_name: str | None,
-) -> dict[str, str]:
+def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[str, str]:
     """Interact with charmhub to upload documentation or migrate to local repository.
 
     Args:
         base_path: The base path to look for the metadata file in.
         discourse: A client to the documentation server.
-        dry_run: If enabled, only log the action that would be taken.
-        delete_pages: Whether to delete pages that are no longer needed.
-        repo: A git-binding client for current repository.
-        github_access_token: A Personal Access Token(PAT) or access token with repository access.
-        branch_name: A branch name for creating a Pull Request.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         All the URLs that had an action with the result of that action.
@@ -141,23 +117,21 @@ def run(
     metadata = get_metadata(base_path)
     has_docs_dir = has_docs_directory(base_path=base_path)
     if metadata.docs and not has_docs_dir:
-        repository = get_repository_name(repo.remote().url)
-        github = create_github(access_token=github_access_token)
-        github_repo = github.get_repo(repository)
+        repository = create_repository_client(
+            access_token=user_inputs.github_access_token, base_path=base_path
+        )
         return _run_migrate(
             base_path=base_path,
             metadata=metadata,
             discourse=discourse,
-            repo=repo,
-            github_repo=github_repo,
-            branch_name=branch_name,
+            repository=repository,
         )
     if has_docs_dir:
         return _run_reconcile(
             base_path=base_path,
             metadata=metadata,
             discourse=discourse,
-            dry_run=dry_run,
-            delete_pages=delete_pages,
+            dry_run=user_inputs.dry_run,
+            delete_pages=user_inputs.delete_pages,
         )
     raise InputError(GETTING_STARTED)

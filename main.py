@@ -11,14 +11,12 @@ import os
 import pathlib
 from functools import partial
 
-from git.repo import Repo
-
-from src import run
+from src import run, types_
 from src.discourse import create_discourse
 
 
 # pylint: disable=too-many-locals
-def main():
+def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
 
@@ -30,7 +28,6 @@ def main():
     discourse_api_username = os.getenv("INPUT_DISCOURSE_API_USERNAME")
     discourse_api_key = os.getenv("INPUT_DISCOURSE_API_KEY")
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    branch_name = os.getenv("INPUT_BRANCH_NAME")
 
     # Execute action
     create_discourse_kwargs = {
@@ -41,19 +38,16 @@ def main():
     }
     base_path = pathlib.Path()
     discourse = create_discourse(**create_discourse_kwargs)
-    repo = Repo(path=base_path)
     urls_with_actions_dict = run(
         base_path=base_path,
         discourse=discourse,
-        dry_run=dry_run,
-        delete_pages=delete_topics,
-        repo=repo,
-        github_access_token=github_access_token,
-        branch_name=branch_name,
+        user_inputs=types_.UserInputs(
+            dry_run=dry_run, delete_pages=delete_topics, github_access_token=github_access_token
+        ),
     )
 
     # Write output
-    github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT"))
+    github_output = pathlib.Path(os.getenv("GITHUB_OUTPUT", ""))
     compact_json = partial(json.dumps, separators=(",", ":"))
     urls_with_actions = compact_json(urls_with_actions_dict)
     if urls_with_actions_dict:

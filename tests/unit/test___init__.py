@@ -12,7 +12,6 @@ from unittest import mock
 import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
-from github.Repository import Repository
 
 from src import (
     DOCUMENTATION_FOLDER_NAME,
@@ -29,6 +28,7 @@ from src import (
     types_,
 )
 
+from .. import factories
 from .helpers import create_metadata_yaml
 
 
@@ -150,7 +150,9 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
     assert not returned_page_interactions
 
 
-def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo, Path]):
+def test__run_migrate_server_error_index(
+    tmp_path: Path, repository_client: pull_request.RepositoryClient
+):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during index file fetching
@@ -160,17 +162,13 @@ def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo,
     meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [exceptions.DiscourseError]
-    mocked_github_repo = mock.MagicMock(spec=Repository)
-    (repo, _) = repository
 
     with pytest.raises(exceptions.ServerError) as exc:
         _run_migrate(
             base_path=tmp_path,
             metadata=meta,
             discourse=mocked_discourse,
-            repo=repo,
-            github_repo=mocked_github_repo,
-            branch_name=None,
+            repository=repository_client,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
@@ -178,7 +176,7 @@ def test__run_migrate_server_error_index(tmp_path: Path, repository: tuple[Repo,
 
 def test__run_migrate_server_error_topic(
     repository: tuple[Repo, Path],
-    mock_github_repo: Repository,
+    repository_client: pull_request.RepositoryClient,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -200,16 +198,14 @@ def test__run_migrate_server_error_topic(
     meta = types_.Metadata(name="name 1", docs=index_url)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
-    (repo, repo_path) = repository
+    (_, repo_path) = repository
 
     with pytest.raises(exceptions.MigrationError):
         _run_migrate(
             base_path=repo_path,
             metadata=meta,
             discourse=mocked_discourse,
-            repo=repo,
-            github_repo=mock_github_repo,
-            branch_name=None,
+            repository=repository_client,
         )
 
 
@@ -217,8 +213,8 @@ def test__run_migrate_server_error_topic(
 def test__run_migrate(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
+    repository_client: pull_request.RepositoryClient,
     mock_pull_request: PullRequest,
-    mock_github_repo: Repository,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -237,15 +233,13 @@ def test__run_migrate(
         index_page,
         (link_content := "link 1 content"),
     ]
-    (repo, repo_path) = repository
+    (_, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
         base_path=repo_path,
         metadata=meta,
         discourse=mocked_discourse,
-        repo=repo,
-        github_repo=mock_github_repo,
-        branch_name=None,
+        repository=repository_client,
     )
 
     (upstream_repo, upstream_path) = upstream_repository
@@ -267,24 +261,15 @@ def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
     act: when run is called
     assert: InputError is raised with a guide to getting started.
     """
-    (repo, repo_path) = repository
-    # this is an access token string for testing purposes.
-    test_access_token = "test-access-token"  # nosec
+    (_, repo_path) = repository
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    user_input = factories.UserInputFactory()
 
     with pytest.raises(exceptions.InputError) as exc:
         # run is repeated in unit tests / integration tests
         # pylint: disable=duplicate-code
-        _ = run(
-            base_path=repo_path,
-            discourse=mocked_discourse,
-            dry_run=False,
-            delete_pages=False,
-            repo=repo,
-            github_access_token=test_access_token,
-            branch_name=None,
-        )
+        _ = run(base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input)
 
     assert str(exc.value) == GETTING_STARTED
 
@@ -296,24 +281,17 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
     act: when run is called
     assert: then an index page is created with empty navigation table.
     """
-    (repo, repo_path) = repository
-    # this is an access token string for testing purposes.
-    test_access_token = "test-access-token"  # nosec
+    (_, repo_path) = repository
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
     (repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
+    user_input = factories.UserInputFactory()
 
     # run is repeated in unit tests / integration tests
     # pylint: disable=duplicate-code
     returned_page_interactions = run(
-        base_path=repo_path,
-        discourse=mocked_discourse,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
@@ -324,7 +302,7 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
 
 
 # pylint: disable=too-many-locals
-@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
+@pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
     repository: tuple[Repo, Path],
     upstream_repository: tuple[Repo, Path],
@@ -337,9 +315,7 @@ def test_run_no_docs_dir(
     assert: then docs from the server is migrated into local docs path and the files created
         are return as the result.
     """
-    (repo, repo_path) = repository
-    # this is an access token string for testing purposes.
-    test_access_token = "test-access-token"  # nosec
+    (_, repo_path) = repository
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
         path=repo_path,
@@ -354,17 +330,12 @@ def test_run_no_docs_dir(
     navlink_page = "file-navlink-content"
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+    user_input = factories.UserInputFactory()
 
     # run is repeated in unit tests / integration tests
     # pylint: disable=duplicate-code
     returned_migration_reports = run(
-        base_path=repo_path,
-        discourse=mocked_discourse,
-        dry_run=False,
-        delete_pages=False,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input
     )
     # pylint: enable=duplicate-code
 

@@ -3,7 +3,6 @@
 
 """Fixtures for all tests."""
 
-import typing
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +14,7 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
+from src import pull_request
 
 
 @pytest.fixture(name="upstream_repository")
@@ -62,7 +62,7 @@ def fixture_mock_pull_request() -> PullRequest:
 
 
 @pytest.fixture(name="mock_github_repo")
-def fixture_mock_github_repo(mock_pull_request: PullRequest):
+def fixture_mock_github_repo(mock_pull_request: PullRequest) -> Repository:
     """Create a mock github repository instance."""
     mocked_repo = mock.MagicMock(spec=Repository)
     mocked_repo.create_pull.return_value = mock_pull_request
@@ -71,29 +71,33 @@ def fixture_mock_github_repo(mock_pull_request: PullRequest):
 
 
 @pytest.fixture(name="mock_github")
-def fixture_mock_github(mock_github_repo: Repository):
+def fixture_mock_github(mock_github_repo: Repository) -> Github:
     """Create a mock github instance."""
     mocked_github = mock.MagicMock(spec=Github)
     mocked_github.get_repo.return_value = mock_github_repo
     return mocked_github
 
 
-@pytest.fixture(name="patch_get_repository_name")
-def fixture_patch_get_repository_name(monkeypatch: pytest.MonkeyPatch):
-    """Replace get_repository_name operation to pass."""
+@pytest.fixture(name="repository_client")
+def fixture_repository_client(
+    repository: tuple[Repo, Path], mock_github_repo: Repository
+) -> pull_request.RepositoryClient:
+    """Get repository client."""
+    (repo, _) = repository
+    return pull_request.RepositoryClient(repository=repo, github_repository=mock_github_repo)
 
-    def mock_get_repository_name(remote_url: str):
-        return remote_url
 
-    monkeypatch.setattr(src, "get_repository_name", mock_get_repository_name)
+@pytest.fixture(name="patch_create_repository_client")
+def fixture_patch_create_repository_client(
+    monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
+) -> None:
+    """Patch create_repository_client to return a mocked RepositoryClient."""
 
-
-@pytest.fixture(name="patch_create_github")
-def fixture_patch_create_github(monkeypatch: pytest.MonkeyPatch, mock_github: Github):
-    """Replace create_github operation to return a mocked github client."""
-
-    def mock_create_github(access_token: typing.Any):
+    def mock_create_repository_client(access_token: str | None, base_path: Path):
+        # to accept keywords as arguments
         del access_token
-        return mock_github
+        del base_path
 
-    monkeypatch.setattr(src, "create_github", mock_create_github)
+        return repository_client
+
+    monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)

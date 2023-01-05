@@ -34,7 +34,7 @@ class RepositoryClient:
         """Construct.
 
         Args:
-            repo: Client for interacting with local git repository.
+            repository: Client for interacting with local git repository.
             github_repository: Client for interacting with remote github repository.
         """
         self._git_repo = repository
@@ -52,7 +52,7 @@ class RepositoryClient:
         # there is no context manager, config writer must be manually released.
         config_writer.release()
 
-    def _check_branch_exists(self, branch_name: str) -> bool:
+    def check_branch_exists(self, branch_name: str) -> bool:
         """Check if branch exists on remote.
 
         Args:
@@ -71,7 +71,7 @@ class RepositoryClient:
                 f"Unexpected error checking existing branch. {exc=!r}"
             ) from exc
 
-    def _create_branch(self, branch_name: str, commit_msg: str) -> None:
+    def create_branch(self, branch_name: str, commit_msg: str) -> None:
         """Create new branch with existing changes.
 
         Args:
@@ -87,7 +87,7 @@ class RepositoryClient:
         except GitCommandError as exc:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
-    def _create_github_pull_request(self, branch_name: str, base: str) -> str:
+    def create_github_pull_request(self, branch_name: str, base: str) -> str:
         """Create a pull request from given branch to base.
 
         Args:
@@ -112,44 +112,68 @@ class RepositoryClient:
 
         return pull_request.html_url
 
-    def create_pull_request(
-        self,
-    ) -> str:
-        """Create pull request for changes in given repository path.
-
-        Raises:
-            InputError: if pull request branch name is invalid or the a branch
-            with same name already exists.
+    def is_dirty(self) -> bool:
+        """Check if repository path has any changes including new files.
 
         Returns:
-            Pull request URL string. None if no pull request was created/modified.
+            True if any changes have occurred.
         """
-        base = self._git_repo.active_branch.name
-        if base == DEFAULT_BRANCH_NAME:
-            raise InputError(
-                f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
-                "Please try again after changing the branch name."
-            )
-        if not self._git_repo.is_dirty(untracked_files=True):
-            raise InputError("No files seem to be migrated. Please add contents upstream first.")
-        if self._check_branch_exists(branch_name=DEFAULT_BRANCH_NAME):
-            raise InputError(
-                f"Branch {DEFAULT_BRANCH_NAME} already exists."
-                f"Please try again after removing {DEFAULT_BRANCH_NAME}."
-            )
+        return self._git_repo.is_dirty(untracked_files=True)
 
-        self._create_branch(
-            branch_name=DEFAULT_BRANCH_NAME,
-            commit_msg=ACTIONS_COMMIT_MESSAGE,
+    def get_active_branch(self) -> str:
+        """Get name of currently active branch on local git repository.
+
+        Returns:
+            Name of currently active branch.
+        """
+        return self._git_repo.active_branch.name
+
+    def set_active_branch(self, branch_name: str) -> None:
+        """Set current active branch to an given branch that already exists."""
+        self._git_repo.git.checkout(branch_name)
+
+
+def create_pull_request(repository: RepositoryClient) -> str:
+    """Create pull request for changes in given repository path.
+
+    Raises:
+        InputError: if pull request branch name is invalid or the a branch
+        with same name already exists.
+
+    Returns:
+        Pull request URL string. None if no pull request was created/modified.
+    """
+    base = repository.get_active_branch()
+    if base == DEFAULT_BRANCH_NAME:
+        raise InputError(
+            f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
+            "Please try again after changing the branch name."
+        )
+    if not repository.is_dirty():
+        raise InputError("No files seem to be migrated. Please add contents upstream first.")
+    if repository.check_branch_exists(branch_name=DEFAULT_BRANCH_NAME):
+        raise InputError(
+            f"Branch {DEFAULT_BRANCH_NAME} already exists."
+            f"Please try again after removing {DEFAULT_BRANCH_NAME}."
         )
 
-        return self._create_github_pull_request(
-            branch_name=DEFAULT_BRANCH_NAME,
-            base=base,
-        )
+    repository.create_branch(
+        branch_name=DEFAULT_BRANCH_NAME,
+        commit_msg=ACTIONS_COMMIT_MESSAGE,
+    )
+    pull_request_web_link = repository.create_github_pull_request(
+        branch_name=DEFAULT_BRANCH_NAME,
+        base=base,
+    )
+
+    # reset active branch back to original branch to ensure following actions
+    # do not run on an newly created branch
+    repository.set_active_branch(branch_name=base)
+
+    return pull_request_web_link
 
 
-def _get_repository_name_from_git_url(remote_url: str):
+def _get_repository_name_from_git_url(remote_url: str) -> str:
     """Get repository name from git remote URL.
 
     Args:
@@ -168,7 +192,7 @@ def _get_repository_name_from_git_url(remote_url: str):
     return matched_repository.group(1)
 
 
-def create_repository_client(access_token: str, base_path: Path):
+def create_repository_client(access_token: str | None, base_path: Path) -> RepositoryClient:
     """Create a Github instance to handle communication with Github server.
 
     Args:

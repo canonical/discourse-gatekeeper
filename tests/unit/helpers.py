@@ -6,8 +6,6 @@
 import typing
 from pathlib import Path
 
-from git.repo import Repo
-
 from src import metadata
 
 

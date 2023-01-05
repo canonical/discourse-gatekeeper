@@ -13,7 +13,7 @@ from .discourse import Discourse
 from .docs_directory import calculate_table_path
 
 EMPTY_DIR_REASON = "<created due to empty directory>"
-GITKEEP_FILE = ".gitkeep"
+GITKEEP_FILENAME = ".gitkeep"
 
 
 def _validate_row_levels(table_rows: list[types_.TableRow]):

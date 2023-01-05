@@ -10,6 +10,35 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
+@dataclasses.dataclass
+class MigrationInputs:
+    """Configurable parameters for migration mode.
+
+    Attrs:
+        github_access_token: A Personal Access Token(PAT) or access token with repository access.
+    """
+
+    github_access_token: str | None
+
+
+@dataclasses.dataclass
+class ReconcileInputs:
+    """Configurable parameters for reconcile mode.
+
+    Attrs:
+        dry_run: If enabled, only log the action that would be taken.
+        delete_pages: Whether to delete pages that are no longer needed.
+    """
+
+    dry_run: bool
+    delete_pages: bool
+
+
+@dataclasses.dataclass
+class UserInputs(ReconcileInputs, MigrationInputs):
+    """Parsed user input values used to run upload-charm-docs."""
+
+
 class Metadata(typing.NamedTuple):
     """Information within metadata file. Refer to: https://juju.is/docs/sdk/metadata-yaml.
 

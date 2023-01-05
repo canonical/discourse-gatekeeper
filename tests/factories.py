@@ -70,3 +70,18 @@ class ContentPageFactory(factory.Factory):
 
     title = factory.Sequence(lambda n: f"Content title {n}")
     content = factory.Sequence(lambda n: f"Content {n}")
+
+
+class UserInputFactory(factory.Factory):
+    """Generate user input tuple."""
+
+    class Meta:
+        """Configuration for factory."""
+
+        model = types_.UserInputs
+        abstract = False
+
+    # the following token is a test variable for testing.
+    github_access_token = "test-token"  # nosec
+    dry_run = False
+    delete_pages = False

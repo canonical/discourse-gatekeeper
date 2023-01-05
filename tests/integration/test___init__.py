@@ -34,7 +34,7 @@ pytestmark = pytest.mark.init
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
+@pytest.mark.usefixtures("patch_create_repository_client")
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
@@ -58,9 +58,6 @@ async def test_run(
         12. with the nested directory removed
         13. with the documentation file removed
         14. with the index file removed
-        15. with no docs dir and no custom branchname provided
-        16. with no docs dir and custom branchname provided
-        17. with no changes applied after migration
     assert: then:
         1. an index page is created with an empty navigation table
         2. an index page is not updated
@@ -76,13 +73,8 @@ async def test_run(
         12. the nested directory is removed from the navigation table
         13. the documentation page is deleted
         14. an index page is not updated
-        15. the documentation files are pushed to default branch
-        16. the documentation files are pushed to custom branch
-        17. no operations are taken place
     """
-    (repo, repo_path) = repository
-    # this is an access token string for testing purposes.
-    test_access_token = "test-access-token"  # nosec
+    (_, repo_path) = repository
     document_name = "name 1"
     caplog.set_level(logging.INFO)
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
@@ -92,11 +84,10 @@ async def test_run(
         urls_with_actions = run(
             base_path=repo_path,
             discourse=discourse_api,
-            dry_run=False,
-            delete_pages=True,
-            repo=repo,
-            github_access_token=test_access_token,
-            branch_name=None,
+            user_inputs=factories.UserInputFactory(
+                dry_run=False,
+                delete_pages=True,
+            ),
         )
 
     assert str(exc_info.value) == GETTING_STARTED
@@ -117,11 +108,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=True,
+            delete_pages=True,
+        ),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -135,11 +125,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -155,11 +144,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=True,
+            delete_pages=True,
+        ),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -173,11 +161,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert len(urls_with_actions) == 2
@@ -199,11 +186,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=True,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -219,11 +205,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -244,11 +229,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -269,11 +253,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert len(urls_with_actions) == 3
@@ -298,11 +281,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=True,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=True,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -321,11 +303,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=False,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=False,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -344,11 +325,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -365,11 +345,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -388,11 +367,10 @@ async def test_run(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(
+            dry_run=False,
+            delete_pages=True,
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (index_url,)
@@ -402,8 +380,9 @@ async def test_run(
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("patch_get_repository_name", "patch_create_github")
+@pytest.mark.usefixtures("patch_create_repository_client")
 async def test_run_migrate(
+    discourse_hostname: str,
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository: tuple[Repo, Path],
@@ -422,11 +401,9 @@ async def test_run_migrate(
         3. no operations are taken place
     """
     document_name = "migration name 1"
-    discourse_prefix = "http://discourse"
+    discourse_prefix = f"http://{discourse_hostname}"
     (repo, repo_path) = repository
     (upstream_repo, upstream_repo_path) = upstream_repository
-    # this is an access token string for testing purposes.
-    test_access_token = "test-access-token"  # nosec
     content_page_1 = factories.ContentPageFactory()
     content_page_1_url = discourse_api.create_topic(
         title=content_page_1.title,
@@ -469,7 +446,7 @@ async def test_run_migrate(
         content=index_page_content,
     )
 
-    # 1. with no docs dir and no custom branchname provided
+    # 1. with no docs dir and a metadata.yaml with docs key
     caplog.clear()
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
@@ -479,22 +456,16 @@ async def test_run_migrate(
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=None,
+        user_inputs=factories.UserInputFactory(),
     )
 
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repo_path / index.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert ((group_1_path := upstream_doc_dir / "group-1")).is_dir()
-    assert ((group_1_gitkeep_path := group_1_path / migration.GITKEEP_FILE)).is_file()
+    assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
     assert ((group_2_path := upstream_doc_dir / "group-2")).is_dir()
-    assert ((group_2_content_1_path := group_2_path / "content-1.md")).read_text(
-        encoding="utf-8"
-    ) == content_page_1.content
+    assert (group_2_path / "content-1.md").read_text(encoding="utf-8") == content_page_1.content
     assert (group_2_path / "content-2.md").read_text(encoding="utf-8") == content_page_2.content
     assert ((group_3_path := upstream_doc_dir / "group-3")).is_dir()
     assert ((group_4_path := group_3_path / "group-4")).is_dir()
@@ -503,52 +474,14 @@ async def test_run_migrate(
     assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
     assert group_5_path.is_dir()
 
-    # 2. with no docs dir and custom branchname provided
+    # 2. with no changes applied after migration
     caplog.clear()
-    upstream_repo.git.checkout("main")
-    repo.git.checkout("main")
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repo_path,
-    )
-    custom_branchname = "branchname-1"
+    repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
     urls_with_actions = run(
         base_path=repo_path,
         discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=custom_branchname,
-    )
-
-    upstream_repo.git.checkout(custom_branchname)
-    repo.git.checkout(custom_branchname)
-    assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
-    assert group_1_path.is_dir()
-    assert group_1_gitkeep_path.is_file()
-    assert group_2_path.is_dir()
-    assert group_2_content_1_path.read_text(encoding="utf-8") == content_page_1.content
-    assert (group_2_path / "content-2.md").read_text(encoding="utf-8") == content_page_2.content
-    assert ((group_3_path := upstream_doc_dir / "group-3")).is_dir()
-    assert ((group_4_path := group_3_path / "group-4")).is_dir()
-    assert (group_4_path / "content-3.md").read_text(encoding="utf-8") == content_page_3.content
-    assert (group_3_path / "content-4.md").read_text(encoding="utf-8") == content_page_4.content
-    assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
-    assert group_5_path.is_dir()
-
-    # 3. with no changes applied after migration
-    caplog.clear()
-
-    urls_with_actions = run(
-        base_path=repo_path,
-        discourse=discourse_api,
-        dry_run=False,
-        delete_pages=True,
-        repo=repo,
-        github_access_token=test_access_token,
-        branch_name=custom_branchname,
+        user_inputs=factories.UserInputFactory(),
     )
 
     assert_substrings_in_string(
