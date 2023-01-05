@@ -125,7 +125,11 @@ async def discourse(ops_test: OpsTest, discourse_hostname: str):
     # Need to wait for the waiting status to be resolved
 
     async def get_discourse_status():
-        """Get the status of discourse."""
+        """Get the status of discourse.
+
+        Returns:
+            The status of discourse.
+        """
         return (await ops_test.model.get_status())["applications"]["discourse-k8s"].status[
             "status"
         ]
