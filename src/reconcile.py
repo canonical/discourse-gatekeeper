@@ -240,10 +240,13 @@ def _calculate_action(
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
 
+    Returns:
+        The action to take for the page.
+
     Raises:
         ReconcilliationError: if both path_info and table_row are None.
     """
-    if path_info is None and table_row is None:
+    if path_info is table_row is None:
         raise exceptions.ReconcilliationError(
             "internal error, both path info and table row are None"
         )
@@ -313,7 +316,6 @@ def index_page(
 
     Args:
         index: Information about the index on the server and locally.
-        server_table_rows: The current navigation table rows on the server.
         table_rows: The current navigation table rows based on local files.
 
     Returns:

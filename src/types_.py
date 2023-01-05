@@ -114,6 +114,7 @@ class TableRow(typing.NamedTuple):
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the row.
         navlink: The title and relative URL to the documentation page.
+        is_group: Whether the row is the parent of zero or more other rows.
     """
 
     level: Level

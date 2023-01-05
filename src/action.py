@@ -19,7 +19,7 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
     """Get the absolute URL.
 
     Args:
-        url The url to convert.
+        url: The url to convert.
         discourse: A client to the documentation server.
 
     Returns:
@@ -214,7 +214,7 @@ def _run_one(
     """Take the actions against the server.
 
     Args:
-        actions: The actions to take.
+        action: The details of the action to take.
         discourse: A client to the documentation server.
         name: The charm name to prefix to the created pages title.
         dry_run: If enabled, only log the action that would be taken.
