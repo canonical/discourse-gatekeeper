@@ -246,7 +246,7 @@ def _calculate_action(
     Raises:
         ReconcilliationError: if both path_info and table_row are None.
     """
-    if path_info is None and table_row is None:
+    if path_info is table_row is None:
         raise exceptions.ReconcilliationError(
             "internal error, both path info and table row are None"
         )
