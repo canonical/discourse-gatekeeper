@@ -137,7 +137,7 @@ def read(docs_path: Path) -> typing.Iterator[types_.PathInfo]:
     )
 
 
-def has_docs_directory(base_path: Path):
+def has_docs_directory(base_path: Path) -> bool:
     """Return existence of docs directory from base path.
 
     Args:
