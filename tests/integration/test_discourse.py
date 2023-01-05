@@ -50,10 +50,8 @@ async def test_create_retrieve_update_delete_topic(
 
     assert returned_content == content_1, "post was created with the wrong content"
     # Check that the category is correct
-    url_path_components = parse.urlparse(url=url).path.split("/")
-    slug = url_path_components[-2]
-    topic_id = url_path_components[-1]
-    topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    topic_info = discourse_api._url_to_topic_info(url=url)
+    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
     assert topic, "topic not created"
     assert (
         topic["category_id"] == discourse_category_id
@@ -78,7 +76,7 @@ async def test_create_retrieve_update_delete_topic(
     # Delete topic
     discourse_api.delete_topic(url=url)
 
-    topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
     assert topic, "topic not created"
     assert "withdrawn" in topic["post_stream"]["posts"][0]["cooked"], "topic not deleted"
     assert topic["post_stream"]["posts"][0]["user_deleted"], "topic not deleted"
@@ -171,18 +169,29 @@ async def test_create_topic_auth_error(
 
 
 @pytest.mark.asyncio
-async def test_retrieve_not_default_config(
-    discourse_api: Discourse, discourse_client: pydiscourse.DiscourseClient, category_id: int
+async def test_update_not_default_config(
+    discourse_api: Discourse, discourse_client: pydiscourse.DiscourseClient
 ):
     """
     arrange: given running discourse server with a topic that does not have the default
         configuration applied
-    act: when a topic is retrieved
+    act: when a topic is updated
     assert: then the topic configuration is updated to the default configuration.
     """
-    title = "title 1 padding so it is long enough test_retrieve_not_default_config"
-    content = "content 1 padding so it is long enough test_retrieve_not_default_config"
-    url = discourse_api.create_topic(title=title, content=content)
+    title = "title 1 padding so it is long enough test_update_not_default_config"
+    content_1 = "content 1 padding so it is long enough test_update_not_default_config"
+    url = discourse_api.create_topic(title=title, content=content_1)
+    topic_info = discourse_api._url_to_topic_info(url=url)
+    discourse_client.update_topic_status(topic_id=topic_info.id_, status="visible", enabled=True)
+    topic_info = discourse_api._url_to_topic_info(url=url)
+    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+    assert topic and topic["visible"]
+    content_2 = "content 2 padding so it is long enough test_update_not_default_config"
+
+    discourse_api.update_topic(url=url, content=content_2)
+
+    topic = discourse_client.topic(slug=topic_info.slug, topic_id=topic_info.id_)
+    assert topic and not topic["visible"]
 
 
 @pytest.mark.asyncio

@@ -169,31 +169,41 @@ class Discourse:
         """
         return f"{self._base_path}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
 
-    def _apply_topic_default_config(self, url: str, topic: dict) -> None:
+    def _ensure_topic_default_config(
+        self, topic: dict, topic_info: _DiscourseTopicInfo, url: str
+    ) -> None:
         """Check the topic configuration and apply defaults if not already applied.
 
         Args:
-            url: The link to the topic.
             topic: The pydiscourse dictionary representing the topic.
+            topic_info: The information about the topic.
+            url: The URL to the topic, used for the error message.
         """
-        import pytest
+        visible = self._get_record_value(record=topic, key="visible", expected_type=bool)
+        if visible:
+            try:
+                self._client.update_topic_status(
+                    topic_id=topic_info.id_, status="visible", enabled=False
+                )
+            except pydiscourse.exceptions.DiscourseError as discourse_error:
+                raise DiscourseError(
+                    f"Error updating topic configuration, {url=!r}, {discourse_error=}"
+                ) from discourse_error
 
-        pytest.set_trace()
-
-    def _retrieve_topic_first_post(self, url: str) -> dict:
-        """Retrieve the first post from a topic based on the URL to the topic.
+    def _retrieve_topic(self, topic_info: _DiscourseTopicInfo, url: str) -> dict:
+        """Retrieve the topic based on the information about the topic.
 
         Args:
-            usl: The URL to the topic.
+            topic_info: The information about the topic.
+            url: The URL to the topic, used for the error message.
 
         Returns:
-            The first post from the topic.
+            The the topic.
 
         Raises:
-            DiscourseError: if pydiscourse raises an error or if the topic has been deleted.
+            DiscourseError: if pydiscourse raises an error or if it returns invalid data.
 
         """
-        topic_info = self._url_to_topic_info(url=url)
         try:
             topic = self._client.topic(
                 slug=topic_info.slug,
@@ -205,6 +215,28 @@ class Discourse:
                 f"Error retrieving topic, {url=!r}, {discourse_error=}"
             ) from discourse_error
 
+        if not isinstance(topic, dict):
+            raise DiscourseError(
+                "Error retrieving topic, the documentation server returned unexpected data, "
+                f"{url=!r}, {topic=}"
+            )
+
+        return topic
+
+    def _get_topic_first_post(self, topic: dict, url: str) -> dict:
+        """Get the first post from a topic.
+
+        Args:
+            topic: The topic information.
+            url: The URL to the topic, used for the error message.
+
+        Returns:
+            The first post from the topic.
+
+        Raises:
+            DiscourseError: if the topic has been deleted.
+
+        """
         try:
             first_post = next(
                 filter(lambda post: post["post_number"] == 1, topic["post_stream"]["posts"])
@@ -215,20 +247,37 @@ class Discourse:
             ) from exc
 
         # Check for deleted topic
-        user_deleted = self._get_post_value(
-            post=first_post, key="user_deleted", expected_type=bool
+        user_deleted = self._get_record_value(
+            record=first_post, key="user_deleted", expected_type=bool
         )
         if user_deleted:
             raise DiscourseError(f"topic has been deleted, {url=}")
 
         return first_post
 
-    @staticmethod
-    def _get_post_value(post: dict, key: str, expected_type: type[KeyT]) -> KeyT:
-        """Get a value by key from the first post checking the value is the correct type.
+    def _retrieve_topic_first_post(self, url: str) -> dict:
+        """Retrieve the first post from a topic based on the URL to the topic.
 
         Args:
-            post: The first post to retrieve the value from.
+            url: The URL to the topic.
+
+        Returns:
+            The first post from the topic.
+
+        Raises:
+            DiscourseError: if pydiscourse raises an error or if the topic has been deleted.
+
+        """
+        topic_info = self._url_to_topic_info(url=url)
+        topic = self._retrieve_topic(topic_info=topic_info, url=url)
+        return self._get_topic_first_post(topic=topic, url=url)
+
+    @staticmethod
+    def _get_record_value(record: dict, key: str, expected_type: type[KeyT]) -> KeyT:
+        """Get a value by key from the record checking the value is the correct type.
+
+        Args:
+            record: The record to retrieve the value from.
             key: The key to the value.
             expected_type: The expected type of the value.
 
@@ -240,13 +289,13 @@ class Discourse:
 
         """
         try:
-            value = post[key]
+            value = record[key]
             # It is ok for optimised code to ignore this
             assert isinstance(value, expected_type)  # nosec
             return value
         except (TypeError, KeyError, AssertionError) as exc:
             raise DiscourseError(
-                f"The documentation server returned unexpected data, {post=!r}"
+                f"The documentation server returned unexpected data, {record=!r}"
             ) from exc
 
     def absolute_url(self, url: str) -> str:
@@ -276,7 +325,7 @@ class Discourse:
 
         """
         first_post = self._retrieve_topic_first_post(url=url)
-        return self._get_post_value(post=first_post, key="can_edit", expected_type=bool)
+        return self._get_record_value(record=first_post, key="can_edit", expected_type=bool)
 
     def check_topic_read_permission(self, url: str) -> bool:
         """Check whether the credentials have read permission on a topic.
@@ -376,8 +425,14 @@ class Discourse:
                 f"Error creating the topic, {title=!r}, {content=!r}, {discourse_error=}"
             ) from discourse_error
 
-        topic_slug = self._get_post_value(post=post, key="topic_slug", expected_type=str)
-        topic_id = self._get_post_value(post=post, key="topic_id", expected_type=int)
+        if not isinstance(post, dict):
+            raise DiscourseError(
+                "Error creating topic, the documentation server returned unexpected data, "
+                f"{title=!r}, {content=!r}, {post=}"
+            )
+
+        topic_slug = self._get_record_value(record=post, key="topic_slug", expected_type=str)
+        topic_id = self._get_record_value(record=post, key="topic_id", expected_type=int)
         return self._topic_info_to_absolute_url(_DiscourseTopicInfo(slug=topic_slug, id_=topic_id))
 
     def delete_topic(self, url: str) -> str:
@@ -415,9 +470,12 @@ class Discourse:
                 in the topic or if the topic is not found.
 
         """
-        first_post = self._retrieve_topic_first_post(url=url)
+        topic_info = self._url_to_topic_info(url=url)
+        topic = self._retrieve_topic(topic_info=topic_info, url=url)
+        self._ensure_topic_default_config(topic=topic, topic_info=topic_info, url=url)
+        first_post = self._get_topic_first_post(topic=topic, url=url)
 
-        post_id = self._get_post_value(post=first_post, key="id", expected_type=int)
+        post_id = self._get_record_value(record=first_post, key="id", expected_type=int)
         try:
             self._client.update_post(post_id=post_id, content=content, edit_reason=edit_reason)
         except pydiscourse.exceptions.DiscourseError as discourse_error:

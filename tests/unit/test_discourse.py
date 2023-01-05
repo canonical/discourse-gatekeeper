@@ -441,11 +441,28 @@ def test_delete_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse
     "topic_data",
     [
         pytest.param(
-            {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False}]}},
+            {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}},
+            id="visible missing",
+        ),
+        pytest.param(
+            {
+                "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]},
+                "visible": "False",
+            },
+            id="visible not bool",
+        ),
+        pytest.param(
+            {
+                "post_stream": {"posts": [{"post_number": 1, "user_deleted": False}]},
+                "visible": False,
+            },
             id="id missing",
         ),
         pytest.param(
-            {"post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": "1"}]}},
+            {
+                "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": "1"}]},
+                "visible": False,
+            },
             id="id not integer",
         ),
     ],
@@ -454,7 +471,7 @@ def test_update_topic_malformed(
     monkeypatch: pytest.MonkeyPatch, topic_data, discourse: Discourse, base_path: str
 ):
     """
-    arrange: given a mocked discourse client that returns given data for a topic bafter it is
+    arrange: given a mocked discourse client that returns given data for a topic after it is
         updated
     act: when update_topic is called
     assert: then DiscourseError is raised.
@@ -473,17 +490,45 @@ def test_update_topic_malformed(
     assert "data" in exc_str
 
 
-def test_update_topic_discourse_error(
+def test_update_topic_discourse_update_topic_status_error(
     monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
 ):
     """
-    arrange: given mocked discourse client that raises an error
-    act: when the given update_topic is called
+    arrange: given mocked discourse client that raises an error for the update_topic_status call
+    act: when update_topic is called
     assert: then DiscourseError is raised.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
     mocked_client.topic.return_value = {
-        "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
+        "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]},
+        "visible": True,
+    }
+    mocked_client.update_topic_status.side_effect = pydiscourse.exceptions.DiscourseError
+    monkeypatch.setattr(discourse, "_client", mocked_client)
+
+    url = f"{base_path}{_URL_PATH_PREFIX}slug/1"
+    content = "content 1"
+    with pytest.raises(DiscourseError) as exc_info:
+        discourse.update_topic(url=url, content=content)
+
+    exc_message = str(exc_info.value).lower()
+    assert "updating" in exc_message
+    assert "url" in exc_message
+    assert url in exc_message
+
+
+def test_update_topic_discourse_update_error(
+    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
+):
+    """
+    arrange: given mocked discourse client that raises an error for the update call
+    act: when update_topic is called
+    assert: then DiscourseError is raised.
+    """
+    mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
+    mocked_client.topic.return_value = {
+        "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]},
+        "visible": False,
     }
     mocked_client.update_post.side_effect = pydiscourse.exceptions.DiscourseError
     monkeypatch.setattr(discourse, "_client", mocked_client)
@@ -501,7 +546,13 @@ def test_update_topic_discourse_error(
     assert content in exc_message
 
 
-def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str):
+@pytest.mark.parametrize(
+    "visible",
+    [pytest.param(True, id="topic visible"), pytest.param(False, id="topic not visible")],
+)
+def test_update_topic(
+    visible: bool, monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str
+):
     """
     arrange: given a mocked discourse client that returns valid data for a topic
     act: when given update_topic is called without base path and then with
@@ -509,7 +560,8 @@ def test_update_topic(monkeypatch: pytest.MonkeyPatch, discourse: Discourse, bas
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
     mocked_client.topic.return_value = {
-        "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
+        "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]},
+        "visible": visible,
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
     url_path = f"{_URL_PATH_PREFIX}slug/1"
