@@ -355,7 +355,6 @@ class MigrationFileMeta:
 
     Attrs:
         path: The full document path to be written to.
-        table_row: The navigation table entry.
     """
 
     path: Path
@@ -363,7 +362,11 @@ class MigrationFileMeta:
 
 @dataclasses.dataclass
 class GitkeepMeta(MigrationFileMeta):
-    """Represents an empty directory from the index table."""
+    """Represents an empty directory from the index table.
+
+    Attrs:
+        table_row: Empty group row that is the source of .gitkeep file.
+    """
 
     table_row: TableRow
 
@@ -374,6 +377,7 @@ class DocumentMeta(MigrationFileMeta):
 
     Attrs:
         link: Link to content to read from.
+        table_row: Document row that is the source of document file.
     """
 
     link: str

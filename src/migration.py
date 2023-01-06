@@ -41,7 +41,7 @@ def _assert_valid_row(group_level: int, row: types_.TableRow, is_first_row: bool
         is_first_row: True if current row is the first row in table.
 
     Raises:
-        InputError on invalid row level or invalid row level sequence.
+        InputError: on invalid row level or invalid row level sequence.
     """
     if is_first_row:
         if row.level != 1:
@@ -125,6 +125,12 @@ def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMe
     Args:
         row: Row containing link to document and path information.
         path: Relative path to where the document should reside.
+
+    Raises:
+        MigrationError: if the table row that was passed in does not cantain a link to document.
+
+    Returns:
+        Information required to migrate document.
     """
     # this is to help mypy understand that link is not None.
     # this case cannot be possible since this is called for group rows only.
@@ -142,6 +148,9 @@ def _create_gitkeep_meta(row: types_.TableRow, path: Path) -> types_.GitkeepMeta
     Args:
         row: An empty group row.
         path: Relative path to where the document should reside.
+
+    Returns:
+        Information required to migrate empty group.
     """
     return types_.GitkeepMeta(path=path / GITKEEP_FILENAME, table_row=row)
 
@@ -165,9 +174,6 @@ def _extract_docs_from_table_rows(
 
     Args:
         table_rows: Table rows from the index file in the order of group hierarchy.
-
-    Raises:
-        InputError if invalid row level or invalid sequence of row level is found.
 
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
@@ -317,6 +323,9 @@ def _run_one(
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory to migrate all the documentation.
 
+    Raises:
+        MigrationError: if file_meta is of invalid metadata type.
+
     Returns:
         Migration report containing migration result.
     """
@@ -364,10 +373,10 @@ def _assert_migration_success(migration_reports: typing.Iterable[types_.ActionRe
     """Assert all documents have been successfully migrated.
 
     Args:
-        migration_results: Report containing migration details from server to local repository.
+        migration_reports: Report containing migration details from server to local repository.
 
-    Returns:
-        None if success, raises MigrationError otherwise.
+    Raises:
+        MigrationError: if any migration report has failed.
     """
     if any(result for result in migration_reports if result.result is types_.ActionResult.FAIL):
         raise exceptions.MigrationError(
@@ -385,14 +394,9 @@ def run(
 
     Args:
         table_rows: Iterable sequence of documentation structure to be migrated.
+        index_content: Main content describing the charm.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory containing all the documentation.
-
-    Raises:
-        MigrationError if any migration error occurred during migration.
-
-    Returns:
-        Migration result reports containing action result and failure reason if any.
     """
     migration_reports = (
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)

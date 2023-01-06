@@ -94,10 +94,11 @@ def fixture_patch_create_repository_client(
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
     def mock_create_repository_client(access_token: str | None, base_path: Path):
+        """Mock create_repository_client patch function."""  # noqa: DCO020
         # to accept keywords as arguments
         del access_token
         del base_path
 
-        return repository_client
+        return repository_client  # noqa: DCO030
 
     monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)

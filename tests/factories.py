@@ -33,16 +33,16 @@ class PathInfoFactory(factory.Factory):
 
 
 class ActionReportFactory(factory.Factory):
-    """Generate Action reports."""
+    """Generate Action reports."""  # noqa: DCO060
 
     class Meta:
-        """Configuration for factory."""
+        """Configuration for factory."""  # noqa: DCO060
 
         model = types_.ActionReport
         abstract = False
 
     class Params:
-        """Variable factory params for generating different status report."""
+        """Variable factory params for generating different status report."""  # noqa: DCO060
 
         is_success = factory.Trait(result=types_.ActionResult.SUCCESS, reason=None)
         is_skipped = factory.Trait(result=types_.ActionResult.SKIP, reason="skipped")
@@ -62,10 +62,10 @@ class ActionReportFactory(factory.Factory):
 
 
 class ContentPageFactory(factory.Factory):
-    """Generate discourse content page."""
+    """Generate discourse content page."""  # noqa: DCO060
 
     class Meta:
-        """Configuration for factory."""
+        """Configuration for factory."""  # noqa: DCO060
 
         model = types.DiscoursePageMeta
         abstract = False
@@ -75,10 +75,10 @@ class ContentPageFactory(factory.Factory):
 
 
 class UserInputFactory(factory.Factory):
-    """Generate user input tuple."""
+    """Generate user input tuple."""  # noqa: DCO060
 
     class Meta:
-        """Configuration for factory."""
+        """Configuration for factory."""  # noqa: DCO060
 
         model = types_.UserInputs
         abstract = False
@@ -90,16 +90,16 @@ class UserInputFactory(factory.Factory):
 
 
 class TableRowFactory(factory.Factory):
-    """Generate table row."""
+    """Generate table row."""  # noqa: DCO060
 
     class Meta:
-        """Configuration for factory."""
+        """Configuration for factory."""  # noqa: DCO060
 
         model = types_.TableRow
         abstract = False
 
     class Params:
-        """Variable factory params for generating different type of table row."""
+        """Variable factory params for generating different type of table row."""  # noqa: DCO060
 
         is_group = factory.Trait(
             navlink=factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=None))

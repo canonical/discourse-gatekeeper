@@ -110,6 +110,9 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
         discourse: A client to the documentation server.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
+    Raises:
+        InputError: if no valid running condition is matched.
+
     Returns:
         All the URLs that had an action with the result of that action.
     """

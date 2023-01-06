@@ -61,6 +61,9 @@ class RepositoryClient:
         Args:
             branch_name: Branch name to check on remote.
 
+        Raises:
+            RepositoryClientError: if unexpected error occurred during git operation.
+
         Returns:
             True if branch already exists, False otherwise.
         """
@@ -80,6 +83,9 @@ class RepositoryClient:
         Args:
             branch_name: New branch name.
             commit_msg: Commit message for current changes.
+
+        Raises:
+            RepositoryClientError: if unexpected error occurred during git operation.
         """
         logging.info("create new branch %s", branch_name)
         try:
@@ -96,6 +102,9 @@ class RepositoryClient:
         Args:
             branch_name: Branch name from which the pull request will be created.
             base: Base branch to which the pull request will be created.
+
+        Raises:
+            RepositoryClientError: if unexpected error occurred during git operation.
 
         Returns:
             The web url to pull request page.
@@ -132,12 +141,19 @@ class RepositoryClient:
         return self._git_repo.active_branch.name
 
     def set_active_branch(self, branch_name: str) -> None:
-        """Set current active branch to an given branch that already exists."""
+        """Set current active branch to an given branch that already exists.
+
+        Args:
+            branch_name: target branch that already exists in git.
+        """
         self._git_repo.git.checkout(branch_name)
 
 
 def create_pull_request(repository: RepositoryClient) -> str:
     """Create pull request for changes in given repository path.
+
+    Args:
+        repository: A git client to interact with local and remote git repository.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -184,7 +200,7 @@ def _get_repository_name_from_git_url(remote_url: str) -> str:
         e.g. https://github.com/canonical/upload-charm-docs.git
 
     Raises:
-        GitError if invalid remote url.
+        InputError: if invalid repository url was given.
 
     Returns:
         Git repository name. e.g. canonical/upload-charm-docs.
@@ -203,7 +219,7 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Repos
         base_path: Path where local .git resides in.
 
     Raises:
-        InputError: if invalid inputs are provided.
+        InputError: if invalid access token or invalid git remote URL is provided.
 
     Returns:
         A Github repository instance.

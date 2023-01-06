@@ -7,7 +7,12 @@ from typing import NamedTuple
 
 
 class DiscoursePageMeta(NamedTuple):
-    """Metadata for creating a discourse page."""
+    """Metadata for creating a discourse page.
+
+    Attrs:
+        title: Page title.
+        content: Page content.
+    """
 
     title: str
     content: str
