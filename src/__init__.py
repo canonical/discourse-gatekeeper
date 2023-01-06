@@ -82,7 +82,7 @@ def _run_migrate(
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
-        migrated documentation as key and sucessful action result as value.
+        migrated documentation as key and successful action result as value.
     """
     index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
     server_content = (
