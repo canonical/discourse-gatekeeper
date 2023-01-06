@@ -212,7 +212,7 @@ def test_create_pull_request_no_dirty_files(
         pull_request.create_pull_request(repository=repository_client)
 
     assert_substrings_in_string(
-        ("no files seem to be migrated. please add contents upstream first."),
+        ("no files seem to be migrated. please add contents upstream first.",),
         str(exc.value).lower(),
     )
 
@@ -294,7 +294,7 @@ def test_get_repository_name_invalid(remote_url: str):
         pull_request._get_repository_name_from_git_url(remote_url=remote_url)
 
     assert_substrings_in_string(
-        ("invalid remote repository url"),
+        ("invalid remote repository url",),
         str(exc.value).lower(),
     )
 
