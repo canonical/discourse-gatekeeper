@@ -46,7 +46,7 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
 
 
 @pytest.mark.parametrize(
-    "depth, row, is_first_row, expected_message_contents",
+    "level, row, is_first_row, expected_message_contents",
     [
         pytest.param(
             0,
@@ -86,21 +86,21 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
     ],
 )
 def test__assert_valid_row_error(
-    depth: int, row: types_.TableRow, is_first_row: bool, expected_message_contents: Iterable[str]
+    level: int, row: types_.TableRow, is_first_row: bool, expected_message_contents: Iterable[str]
 ):
     """
-    arrange: given an invalid group depth(level), table row and is_first_row combinations
+    arrange: given an invalid group level, table row and is_first_row combinations
     act: when _assert_valid_row is called
     assert: InputError is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InputError) as exc:
-        migration._assert_valid_row(group_level=depth, row=row, is_first_row=is_first_row)
+        migration._assert_valid_row(group_level=level, row=row, is_first_row=is_first_row)
 
     assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
 
 
 @pytest.mark.parametrize(
-    "depth, row, is_first_row",
+    "level, row, is_first_row",
     [
         pytest.param(
             0,
@@ -128,13 +128,13 @@ def test__assert_valid_row_error(
         ),
     ],
 )
-def test__assert_valid_row(depth: int, row: types_.TableRow, is_first_row: bool):
+def test__assert_valid_row(level: int, row: types_.TableRow, is_first_row: bool):
     """
-    arrange: given a valid group depth(level), table row and is_first_row combinations
+    arrange: given a valid group level, table row and is_first_row combinations
     act: when _assert_valid_row is called
     assert: No exceptions are raised.
     """
-    migration._assert_valid_row(group_level=depth, row=row, is_first_row=is_first_row)
+    migration._assert_valid_row(group_level=level, row=row, is_first_row=is_first_row)
 
 
 @pytest.mark.parametrize(
@@ -174,7 +174,7 @@ def test__assert_valid_row(depth: int, row: types_.TableRow, is_first_row: bool)
                 factories.TableRowFactory(level=2, is_document=True),
                 factories.TableRowFactory(level=3, is_group=True),
             ),
-            id="document group sequence level increase(doc doesn't increase group depth)",
+            id="document group sequence level increase(doc doesn't increase group level)",
         ),
     ],
 )
@@ -392,7 +392,7 @@ def test__extract_docs_from_table_rows(
 
 
 @pytest.mark.parametrize(
-    "row, group_path, group_level, expected_path_depth_pair",
+    "row, group_path, group_level, expected_path_level_pair",
     [
         pytest.param(
             factories.TableRowFactory(level=1, path="test-1", is_document=True),
@@ -456,16 +456,16 @@ def test__get_next_group_info(
     row: types_.TableRow,
     group_path: Path,
     group_level: int,
-    expected_path_depth_pair: tuple[Path, int],
+    expected_path_level_pair: tuple[Path, int],
 ):
     """
-    arrange: given table row, group path and group depth
+    arrange: given table row, group path and group level
     act: when _get_next_group_info is called
-    assert: expected path with corresponding depth is returned.
+    assert: expected path with corresponding level is returned.
     """
     assert (
         migration._get_next_group_info(row=row, group_path=group_path, group_level=group_level)
-        == expected_path_depth_pair
+        == expected_path_level_pair
     )
 
 
@@ -801,7 +801,7 @@ def test__assert_migration_success_failed_result(migration_results: Iterable[typ
     assert: Migration error is raised.
     """
     with pytest.raises(exceptions.MigrationError):
-        migration._assert_migration_success(migration_results=migration_results)
+        migration._assert_migration_success(migration_reports=migration_results)
 
 
 @pytest.mark.parametrize(
@@ -829,7 +829,7 @@ def test__assert_migration_success(migration_results: Iterable[types_.ActionRepo
     act: when _assert_migration_success is called
     assert: No exceptions are raised.
     """
-    migration._assert_migration_success(migration_results=migration_results)
+    migration._assert_migration_success(migration_reports=migration_results)
 
 
 @pytest.mark.parametrize(

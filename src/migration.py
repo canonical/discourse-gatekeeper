@@ -67,18 +67,18 @@ def _assert_valid_row(group_level: int, row: types_.TableRow, is_first_row: bool
 def _get_next_group_info(
     row: types_.TableRow, group_path: Path, group_level: int
 ) -> tuple[Path, int]:
-    """Get next directory path representation of a group with it's depth.
+    """Get next directory path representation of a group with it's level.
 
     Algorithm:
-        1. Set target group depth as one above current row level.
-        2. While current group depth is not equal to target group depth
-            2.1. If current group depth is lower than target,
+        1. Set target group level as one above current row level.
+        2. While current group level is not equal to target group level
+            2.1. If current group level is lower than target,
                 should not be possible since it should have been caught during validation step.
                 target_group_level being bigger than group_level means traversing more than 1 level
                 at a given step.
-            2.2. If current group depth is higher than target, decrement depth and adjust path by
+            2.2. If current group level is higher than target, decrement level and adjust path by
                 moving to parent path.
-        3. If row is a group row, increment depth and adjust path by appending extracted row name.
+        3. If row is a group row, increment level and adjust path by appending extracted row name.
 
     Args:
         row: Table row in which to move the path to.
@@ -86,7 +86,7 @@ def _get_next_group_info(
         group_level: Current group level.
 
     Returns:
-        A tuple consisting of next directory path representation of group and next group depth.
+        A tuple consisting of next directory path representation of group and next group level.
     """
     target_group_level = row.level - 1
 
@@ -103,20 +103,20 @@ def _get_next_group_info(
     return (group_path, group_level)
 
 
-def _should_yield_gitkeep(row: types_.TableRow, next_depth: int, depth: int) -> bool:
-    """Determine whether to yield a gitkeep file depending on depth traversal.
+def _should_yield_gitkeep(row: types_.TableRow, next_level: int, level: int) -> bool:
+    """Determine whether to yield a gitkeep file depending on level traversal.
 
     It is important to note that the previous row must have been an empty a group row.
 
     Args:
         row: Current table row to evaluate whether a gitkeep should be yielded first.
-        next_depth: Incoming group depth of current table row.
-        depth: Current depth being evaluated.
+        next_level: Incoming group level of current table row.
+        level: Current level being evaluated.
 
     Returns:
         True if gitkeep file should be yielded first before processing the row further.
     """
-    return (row.is_group and next_depth <= depth) or (not row.is_group and next_depth < depth)
+    return (row.is_group and next_level <= level) or (not row.is_group and next_level < level)
 
 
 def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMeta:
@@ -153,13 +153,13 @@ def _extract_docs_from_table_rows(
 
     Algorithm:
         1. For each row:
-            1.1. Check if the row is valid with respect to current group depth.
-            1.2. Calculate next group depth and next group path from row.
+            1.1. Check if the row is valid with respect to current group level.
+            1.2. Calculate next group level and next group path from row.
             1.3. If previous row was a group and
                 the current row is a document and we're traversing up the path OR
                 the current row is a folder and we're in the in the same path or above,
                 yield a gitkeep meta.
-            1.4. Update current group depth and current group path.
+            1.4. Update current group level and current group path.
             1.5. If current row is a document, yield document meta.
         2. If last row was a group, yield gitkeep meta.
 
@@ -182,11 +182,11 @@ def _extract_docs_from_table_rows(
             group_path=current_path, row=row, group_level=group_level
         )
         # if previously processed row was a group and it had nothing in it
-        # we should yield a .gitkeep file to denote empty group.
+        # it should yield a .gitkeep file to denote empty group.
         if (
             previous_row
             and previous_row.is_group
-            and _should_yield_gitkeep(row=row, next_depth=next_group_level, depth=group_level)
+            and _should_yield_gitkeep(row=row, next_level=next_group_level, level=group_level)
         ):
             yield _create_gitkeep_meta(row=previous_row, path=current_path)
 
@@ -214,11 +214,26 @@ def _index_file_from_content(content: str) -> types_.IndexDocumentMeta:
     return types_.IndexDocumentMeta(path=Path("index.md"), content=content)
 
 
+def _build_path(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Path:
+    """Construct path leading to document to be created.
+
+    Args:
+        docs_path: Path to documentation directory.
+        document_meta: Information about document to be migrated.
+
+    Returns:
+        Full path to document to be migrated.
+    """
+    path = docs_path / document_meta.path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path) -> types_.ActionReport:
     """Write gitkeep file to docs directory.
 
     Args:
-        gitkeep_meta: Gitkeep metadata from empty directory table row.
+        gitkeep_meta: Information about gitkeep file to be migrated.
         docs_path: Documentation folder path.
 
     Returns:
@@ -226,13 +241,11 @@ def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path) -> types
     """
     logging.info("migrate meta: %s", gitkeep_meta)
 
-    path = docs_path / gitkeep_meta.path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.touch()
+    full_path = _build_path(docs_path=docs_path, document_meta=gitkeep_meta)
     return types_.ActionReport(
         table_row=gitkeep_meta.table_row,
         result=types_.ActionResult.SUCCESS,
-        location=path,
+        location=full_path,
         reason=EMPTY_DIR_REASON,
     )
 
@@ -243,7 +256,7 @@ def _migrate_document(
     """Write document file with content to docs directory.
 
     Args:
-        document_meta: Document metadata from directory table row with link.
+        document_meta: Information about document file to be migrated.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory to migrate all the documentation.
 
@@ -261,13 +274,12 @@ def _migrate_document(
             location=None,
             reason=str(exc),
         )
-    path = docs_path / document_meta.path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    full_path = _build_path(docs_path=docs_path, document_meta=document_meta)
+    full_path.write_text(content, encoding="utf-8")
     return types_.ActionReport(
         table_row=document_meta.table_row,
         result=types_.ActionResult.SUCCESS,
-        location=path,
+        location=full_path,
         reason=None,
     )
 
@@ -276,7 +288,7 @@ def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> typ
     """Write index document to docs repository.
 
     Args:
-        index_meta: Index file metadata.
+        index_meta: Information about index file to be migrated.
         docs_path: The path to the docs directory to migrate all the documentation.
 
     Returns:
@@ -284,13 +296,12 @@ def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> typ
     """
     logging.info("migrate meta: %s", index_meta)
 
-    path = docs_path / index_meta.path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(index_meta.content, encoding="utf-8")
+    full_path = _build_path(docs_path=docs_path, document_meta=index_meta)
+    full_path.write_text(index_meta.content, encoding="utf-8")
     return types_.ActionReport(
         table_row=None,
         result=types_.ActionResult.SUCCESS,
-        location=path,
+        location=full_path,
         reason=None,
     )
 
@@ -301,7 +312,7 @@ def _run_one(
     """Write document content relative to docs directory.
 
     Args:
-        file_meta: Migration file metadata corresponding to a row in index table.
+        file_meta: Information about migration file corresponding to a row in index table.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory to migrate all the documentation.
 
@@ -345,19 +356,19 @@ def _get_docs_metadata(
     """
     index_doc = _index_file_from_content(content=index_content)
     table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
-    return itertools.chain([index_doc], table_docs)
+    return itertools.chain((index_doc,), table_docs)
 
 
-def _assert_migration_success(migration_results: typing.Iterable[types_.ActionReport]) -> None:
+def _assert_migration_success(migration_reports: typing.Iterable[types_.ActionReport]) -> None:
     """Assert all documents have been successfully migrated.
 
     Args:
-        migration_results: Migration results from server to local.
+        migration_results: Report containing migration details from server to local repository.
 
     Returns:
         None if success, raises MigrationError otherwise.
     """
-    if any(result for result in migration_results if result.result is types_.ActionResult.FAIL):
+    if any(result for result in migration_reports if result.result is types_.ActionResult.FAIL):
         raise exceptions.MigrationError(
             "Error migrating the docs, please check the logs for more detail."
         )
@@ -372,7 +383,7 @@ def run(
     """Write document content to docs_path.
 
     Args:
-        documents: metadata about a file to be migrated to local docs directory.
+        table_rows: Iterable sequence of documentation structure to be migrated.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory containing all the documentation.
 
@@ -386,4 +397,4 @@ def run(
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)
         for document in _get_docs_metadata(table_rows=table_rows, index_content=index_content)
     )
-    _assert_migration_success(migration_results=migration_reports)
+    _assert_migration_success(migration_reports=migration_reports)
