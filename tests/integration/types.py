@@ -7,7 +7,13 @@ from typing import NamedTuple
 
 
 class Credentials(NamedTuple):
-    """Credentials to login to an application."""
+    """Credentials to login to an application.
+
+    Attrs:
+        email: The contact information to use to login.
+        username: The identification to use to login.
+        password: The secret to use to login.
+    """
 
     email: str
     username: str

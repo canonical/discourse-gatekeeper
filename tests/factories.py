@@ -15,11 +15,12 @@ from src import types_
 from . import types
 
 
+# The attributes of these classes are generators for the attributes of the meta class
 class PathInfoFactory(factory.Factory):
-    """Generate PathInfos."""
+    """Generate PathInfos."""  # noqa: DCO060
 
     class Meta:
-        """Configuration for factory."""
+        """Configuration for factory."""  # noqa: DCO060
 
         model = types_.PathInfo
         abstract = False

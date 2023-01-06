@@ -35,7 +35,11 @@ class Action(str, Enum):
 
 
 def main() -> None:
-    """Clean up created Discourse pages."""
+    """Clean up created Discourse pages.
+
+    Raises:
+        NotImplementedError: if an action was received for which there is no imlpementation.
+    """
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
