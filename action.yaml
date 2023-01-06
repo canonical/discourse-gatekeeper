@@ -40,12 +40,6 @@ inputs:
       Required if running in migration mode.
     required: false
     type: string
-  branch_name:
-    description: |
-      Branch name to create pull request branch. Defaults to
-      upload-charm-docs/migrate.
-    required: false
-    type: string
 outputs:
   urls_with_actions:
     description: |

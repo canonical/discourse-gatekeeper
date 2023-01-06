@@ -103,7 +103,8 @@ charmhub.
             run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```
 
-    additional branch_name input can be specified to create a pull request from a specific branch name.
+    a branch name with `upload-charm-docs/migrate` will be created and a pull request named `[upload-charm-docs] Migrate charm docs` will be created towards the working branch the workflow was triggered with. 
+    In order to ensure that the branches can be created successfully, please make sure that there are no existing branches clashing with the name above.
 
 The action will now compare the discourse topics with the files and directories
 under the `docs` directory and make any changes based on differences.
