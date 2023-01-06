@@ -36,7 +36,7 @@ class ReconcileInputs:
 
 @dataclasses.dataclass
 class UserInputs(ReconcileInputs, MigrationInputs):
-    """Parsed user input values used to run upload-charm-docs."""
+    """Configurable user input values used to run upload-charm-docs."""
 
 
 class Metadata(typing.NamedTuple):
