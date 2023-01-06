@@ -242,6 +242,7 @@ def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path) -> types
     logging.info("migrate meta: %s", gitkeep_meta)
 
     full_path = _build_path(docs_path=docs_path, document_meta=gitkeep_meta)
+    full_path.touch()
     return types_.ActionReport(
         table_row=gitkeep_meta.table_row,
         result=types_.ActionResult.SUCCESS,
