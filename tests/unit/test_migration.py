@@ -94,7 +94,7 @@ def test__assert_valid_row_error(
     assert: InputError is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InputError) as exc:
-        migration._assert_valid_row(group_depth=depth, row=row, is_first_row=is_first_row)
+        migration._assert_valid_row(group_level=depth, row=row, is_first_row=is_first_row)
 
     assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
 
@@ -134,7 +134,7 @@ def test__assert_valid_row(depth: int, row: types_.TableRow, is_first_row: bool)
     act: when _assert_valid_row is called
     assert: No exceptions are raised.
     """
-    migration._assert_valid_row(group_depth=depth, row=row, is_first_row=is_first_row)
+    migration._assert_valid_row(group_level=depth, row=row, is_first_row=is_first_row)
 
 
 @pytest.mark.parametrize(
@@ -392,7 +392,7 @@ def test__extract_docs_from_table_rows(
 
 
 @pytest.mark.parametrize(
-    "row, group_path, group_depth, expected_path_depth_pair",
+    "row, group_path, group_level, expected_path_depth_pair",
     [
         pytest.param(
             factories.TableRowFactory(level=1, path="test-1", is_document=True),
@@ -455,7 +455,7 @@ def test__extract_docs_from_table_rows(
 def test__get_next_group_info(
     row: types_.TableRow,
     group_path: Path,
-    group_depth: int,
+    group_level: int,
     expected_path_depth_pair: tuple[Path, int],
 ):
     """
@@ -464,7 +464,7 @@ def test__get_next_group_info(
     assert: expected path with corresponding depth is returned.
     """
     assert (
-        migration._get_next_group_info(row=row, group_path=group_path, group_depth=group_depth)
+        migration._get_next_group_info(row=row, group_path=group_path, group_level=group_level)
         == expected_path_depth_pair
     )
 

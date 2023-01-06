@@ -32,11 +32,11 @@ def _extract_name_from_paths(current_path: Path, table_path: types_.TablePath) -
     return table_path.removeprefix(f"{calculate_table_path(current_path)}-")
 
 
-def _assert_valid_row(group_depth: int, row: types_.TableRow, is_first_row: bool) -> None:
+def _assert_valid_row(group_level: int, row: types_.TableRow, is_first_row: bool) -> None:
     """Chekcs validity of the row with respect to group level.
 
     Args:
-        group_depth: Group depth in which the previous row was evaluated in.
+        group_level: Group level in which the previous row was evaluated in.
         row: Current row to be evaluated.
         is_first_row: True if current row is the first row in table.
 
@@ -56,16 +56,16 @@ def _assert_valid_row(group_depth: int, row: types_.TableRow, is_first_row: bool
             "Zero or negative level value is invalid."
             f"Row: {row=!r}"
         )
-    if row.level > group_depth + 1:
+    if row.level > group_level + 1:
         raise exceptions.InputError(
             "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
-            f"Did you mean level {group_depth+1}?"
+            f"Did you mean level {group_level+1}?"
             f"Row: {row=!r}"
         )
 
 
 def _get_next_group_info(
-    row: types_.TableRow, group_path: Path, group_depth: int
+    row: types_.TableRow, group_path: Path, group_level: int
 ) -> tuple[Path, int]:
     """Get next directory path representation of a group with it's depth.
 
@@ -74,7 +74,7 @@ def _get_next_group_info(
         2. While current group depth is not equal to target group depth
             2.1. If current group depth is lower than target,
                 should not be possible since it should have been caught during validation step.
-                target_group_depth being bigger than group_depth means traversing more than 1 level
+                target_group_level being bigger than group_level means traversing more than 1 level
                 at a given step.
             2.2. If current group depth is higher than target, decrement depth and adjust path by
                 moving to parent path.
@@ -83,24 +83,24 @@ def _get_next_group_info(
     Args:
         row: Table row in which to move the path to.
         group_path: Path representation of current group.
-        group_depth: Current group depth.
+        group_level: Current group level.
 
     Returns:
         A tuple consisting of next directory path representation of group and next group depth.
     """
-    target_group_depth = row.level - 1
+    target_group_level = row.level - 1
 
-    while group_depth != target_group_depth:
-        group_depth -= 1
+    while group_level != target_group_level:
+        group_level -= 1
         group_path = group_path.parent
 
     if row.is_group:
-        group_depth += 1
+        group_level += 1
         group_path = group_path / _extract_name_from_paths(
             current_path=group_path, table_path=row.path
         )
 
-    return (group_path, group_depth)
+    return (group_path, group_level)
 
 
 def _should_yield_gitkeep(row: types_.TableRow, next_depth: int, depth: int) -> bool:
@@ -172,25 +172,25 @@ def _extract_docs_from_table_rows(
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
     """
-    group_depth = 0
+    group_level = 0
     current_path = Path()
     previous_row: types_.TableRow | None = None
 
     for row in table_rows:
-        _assert_valid_row(group_depth=group_depth, row=row, is_first_row=previous_row is None)
-        (next_group_path, next_group_depth) = _get_next_group_info(
-            group_path=current_path, row=row, group_depth=group_depth
+        _assert_valid_row(group_level=group_level, row=row, is_first_row=previous_row is None)
+        (next_group_path, next_group_level) = _get_next_group_info(
+            group_path=current_path, row=row, group_level=group_level
         )
         # if previously processed row was a group and it had nothing in it
         # we should yield a .gitkeep file to denote empty group.
         if (
             previous_row
             and previous_row.is_group
-            and _should_yield_gitkeep(row=row, next_depth=next_group_depth, depth=group_depth)
+            and _should_yield_gitkeep(row=row, next_depth=next_group_level, depth=group_level)
         ):
             yield _create_gitkeep_meta(row=previous_row, path=current_path)
 
-        group_depth = next_group_depth
+        group_level = next_group_level
         current_path = next_group_path
         if not row.is_group:
             yield _create_document_meta(row=row, path=current_path)
