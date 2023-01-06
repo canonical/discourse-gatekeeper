@@ -86,3 +86,29 @@ class UserInputFactory(factory.Factory):
     github_access_token = "test-token"  # nosec
     dry_run = False
     delete_pages = False
+
+
+class TableRowFactory(factory.Factory):
+    """Generate table row."""
+
+    class Meta:
+        """Configuration for factory."""
+
+        model = types_.TableRow
+        abstract = False
+
+    class Params:
+        """Variable factory params for generating different type of table row."""
+
+        is_group = factory.Trait(
+            navlink=factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=None))
+        )
+        is_document = factory.Trait(
+            navlink=factory.Sequence(
+                lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}")
+            )
+        )
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path-{n}")
+    navlink = factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}"))
