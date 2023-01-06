@@ -61,11 +61,11 @@ def _run_reconcile(
         delete_pages=delete_pages,
     )
     return {
-        report.url: report.result
+        str(report.location): report.result
         for report in reports
-        if report.url is not None
-        and report.url != DRY_RUN_NAVLINK_LINK
-        and report.url != FAIL_NAVLINK_LINK
+        if report.location is not None
+        and report.location != DRY_RUN_NAVLINK_LINK
+        and report.location != FAIL_NAVLINK_LINK
     }
 
 

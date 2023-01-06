@@ -335,14 +335,15 @@ class ActionReport(typing.NamedTuple):
 
     Attrs:
         table_row: The navigation table entry, None for delete or index actions.
-        url: The URL that the action operated on, None for groups or if a create action was
-            skipped.
+        location: The URL that the action operated on, None for groups or if a create action was
+            skipped, if running in reconcile mode.
+            Path to migrated file, if running in migration mode. None on action failure.
         result: The action execution result.
         reason: The reason, None for success reports.
     """
 
     table_row: TableRow | None
-    url: Url | None
+    location: Url | Path | None
     result: ActionResult
     reason: str | None
 
@@ -387,19 +388,3 @@ class IndexDocumentMeta(MigrationFileMeta):
     """
 
     content: str
-
-
-class MigrationReport(typing.NamedTuple):
-    """Post execution report for an action.
-
-    Attrs:
-        table_row: The navigation table entry. None if index file.
-        path: Path the file was written to. None if failed.
-        result: The action execution result.
-        reason: The reason, None for success reports.
-    """
-
-    table_row: TableRow | None
-    path: Path | None
-    result: ActionResult
-    reason: str | None
