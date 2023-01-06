@@ -73,7 +73,6 @@ charmhub.
     There is a nice parameter, `dry_run`, which will do everything except
     make changes on discourse and log what would have happened. This will help
     you see what the action would have done.
-
 6. Check the logs for the URL to the index topic that the action created. This
     is also available under the `index_url` output of the action. This needs to
     be added to the `metadata.yaml` under the `docs` key.
