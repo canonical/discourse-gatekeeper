@@ -36,7 +36,7 @@ def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
     """Retrieve the local and server index information.
 
     Args:
-        metadata: Parsed Metadata.yaml contents
+        metadata: Information about the charm.
         base_path: The base path to look for the metadata file in.
         server_client: A client to the documentation server.
 

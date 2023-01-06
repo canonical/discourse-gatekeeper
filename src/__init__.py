@@ -36,7 +36,8 @@ def _run_reconcile(
     """Upload the documentation to charmhub.
 
     Args:
-        base_path: The base path to look for the metadata file in.
+        base_path: The base path of the repository.
+        metadata: Information about the charm.
         discourse: A client to the documentation server.
         dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
@@ -75,12 +76,13 @@ def _run_migrate(
 
     Args:
         base_path: The base path to look for the metadata file in.
-        metadata: A metadata file with a link to the docs url.
+        metadata: Information about the charm.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
 
     Returns:
-        A Pull Request link to the Github repository.
+        A single key-value pair dictionary containing a link to the Pull Request containing
+        migrated documentation as key and sucessful action result as value.
     """
     index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
     server_content = (
