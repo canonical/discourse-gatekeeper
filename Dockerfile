@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends git=2.34
+RUN apt-get update && apt-get install -y --no-install-recommends git=1:2.30.2-1
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
