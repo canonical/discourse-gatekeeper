@@ -108,13 +108,13 @@ async def test_run_migrate(
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repo_path / index.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
-    assert ((group_1_path := upstream_doc_dir / "group-1")).is_dir()
+    assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
-    assert ((group_2_path := upstream_doc_dir / "group-2")).is_dir()
+    assert (group_2_path := upstream_doc_dir / "group-2").is_dir()
     assert (group_2_path / "content-1.md").read_text(encoding="utf-8") == content_page_1.content
     assert (group_2_path / "content-2.md").read_text(encoding="utf-8") == content_page_2.content
-    assert ((group_3_path := upstream_doc_dir / "group-3")).is_dir()
-    assert ((group_4_path := group_3_path / "group-4")).is_dir()
+    assert (group_3_path := upstream_doc_dir / "group-3").is_dir()
+    assert (group_4_path := group_3_path / "group-4").is_dir()
     assert (group_4_path / "content-3.md").read_text(encoding="utf-8") == content_page_3.content
     assert (group_3_path / "content-4.md").read_text(encoding="utf-8") == content_page_4.content
     assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
