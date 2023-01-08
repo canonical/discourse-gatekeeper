@@ -20,10 +20,10 @@ from src.discourse import Discourse
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
-pytestmark = pytest.mark.init_migrate
+pytestmark = pytest.mark.migrate
 
 
-@pytest.mark.init_run_migrate
+@pytest.mark.migrate
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("patch_create_repository_client")
 async def test_run_migrate(
