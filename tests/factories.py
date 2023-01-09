@@ -17,6 +17,8 @@ from . import types
 
 # The attributes of these classes are generators for the attributes of the meta class
 class PathInfoFactory(factory.Factory):
+    # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
+    # can be skipped.
     """Generate PathInfos."""  # noqa: DCO060
 
     class Meta:
@@ -42,7 +44,15 @@ class ActionReportFactory(factory.Factory):
         abstract = False
 
     class Params:
-        """Variable factory params for generating different status report."""  # noqa: DCO060
+        """Variable factory params for generating different status report.
+
+        Attrs:
+            is_success: flag to instantiate successful action result.
+            is_skipped: flag to instantiate skipped action result.
+            is_failed: flag to instantiate failed action result.
+            is_migrate: flag to instantiate migration action result. Generates reconcile action
+                reports by default.
+        """
 
         is_success = factory.Trait(result=types_.ActionResult.SUCCESS, reason=None)
         is_skipped = factory.Trait(result=types_.ActionResult.SKIP, reason="skipped")
@@ -99,7 +109,12 @@ class TableRowFactory(factory.Factory):
         abstract = False
 
     class Params:
-        """Variable factory params for generating different type of table row."""  # noqa: DCO060
+        """Variable factory params for generating different type of table row.
+
+        Attrs:
+            is_group: flag to instantiate a table row representing a group.
+            is_document: flag to instantiate a table row representing a document(Default).
+        """
 
         is_group = factory.Trait(
             navlink=factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=None))
