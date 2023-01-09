@@ -48,19 +48,19 @@ def _assert_valid_row(group_level: int, row: types_.TableRow, is_first_row: bool
             raise exceptions.InputError(
                 "Invalid starting row level. A table row must start with level value 1. "
                 "Please fix the upstream first and re-run."
-                f"Row: {row=!r}"
+                f"Row: {row.to_markdown()}"
             )
     if row.level < 1:
         raise exceptions.InputError(
             f"Invalid row level: {row.level=!r}."
             "Zero or negative level value is invalid."
-            f"Row: {row=!r}"
+            f"Row: {row.to_markdown()}"
         )
     if row.level > group_level + 1:
         raise exceptions.InputError(
             "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
             f"Did you mean level {group_level+1}?"
-            f"Row: {row=!r}"
+            f"Row: {row.to_markdown()}"
         )
 
 
