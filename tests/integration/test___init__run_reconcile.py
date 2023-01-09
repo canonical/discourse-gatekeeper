@@ -20,7 +20,7 @@ from src.discourse import Discourse
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
-pytestmark = pytest.mark.init
+pytestmark = pytest.mark.reconcile
 
 
 @pytest.mark.asyncio

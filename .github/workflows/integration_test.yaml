@@ -9,7 +9,7 @@ jobs:
     secrets: inherit
     with:
       pre-run-script: tests/integration/pre_run.sh
-      modules: '["discourse", "init"]'
+      modules: '["discourse", "reconcile", "migrate"]'
   self-tests:
     runs-on: ubuntu-22.04
     steps:
