@@ -103,7 +103,7 @@ def _change_group_path(
         # move one level of nesting into new group path
         return group_path / _extract_name_from_paths(current_path=group_path, table_path=row.path)
 
-    # working group path belongs in the group 1 level above
+    # working group path belongs in the group 1 level above current row's level.
     # i.e. group-1/document-1, group path is group-1
     # group-1/group-2, group-path is group-1/group-2 but both cases require
     # moving to group-1 first to either generate document or group afterwards.
@@ -114,6 +114,9 @@ def _change_group_path(
         current_group_level -= 1
         group_path = group_path.parent
 
+    # current state of group_path is 1 level above current row's level.
+    # move working group path to current group
+    # i.e. current: group-1, destination: group-1/group-2, row: group-1-group-2
     if row.is_group:
         group_path = group_path / _extract_name_from_paths(
             current_path=group_path, table_path=row.path
