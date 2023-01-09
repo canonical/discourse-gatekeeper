@@ -87,7 +87,6 @@ class RepositoryClient:
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
         """
-        logging.info("create new branch %s", branch_name)
         try:
             self._git_repo.git.checkout("-b", branch_name)
             self._git_repo.git.add(".")
@@ -109,7 +108,6 @@ class RepositoryClient:
         Returns:
             The web url to pull request page.
         """
-        logging.info("create pull request %s", branch_name)
         try:
             pull_request = self._github_repo.create_pull(
                 title=ACTIONS_PULL_REQUEST_TITLE,
@@ -176,10 +174,12 @@ def create_pull_request(repository: RepositoryClient) -> str:
             f"Please try again after removing {DEFAULT_BRANCH_NAME}."
         )
 
+    logging.info("create new branch %s", DEFAULT_BRANCH_NAME)
     repository.create_branch(
         branch_name=DEFAULT_BRANCH_NAME,
         commit_msg=ACTIONS_COMMIT_MESSAGE,
     )
+    logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
     pull_request_web_link = repository.create_github_pull_request(
         branch_name=DEFAULT_BRANCH_NAME,
         base=base,
