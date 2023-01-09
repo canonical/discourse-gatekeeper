@@ -32,91 +32,94 @@ def _extract_name_from_paths(current_path: Path, table_path: types_.TablePath) -
     return table_path.removeprefix(f"{calculate_table_path(current_path)}-")
 
 
-def _assert_valid_row(group_level: int, row: types_.TableRow, is_first_row: bool) -> None:
-    """Chekcs validity of the row with respect to group level.
+def _validate_table_rows(
+    table_rows: typing.Iterable[types_.TableRow],
+) -> typing.Iterable[types_.TableRow]:
+    """Check whether a table row is valid in regards to the levels and grouping.
 
     Args:
-        group_level: Group level in which the previous row was evaluated in.
-        row: Current row to be evaluated.
-        is_first_row: True if current row is the first row in table.
+        table_rows: Parsed rows from the index table.
 
     Raises:
-        InputError: on invalid row level or invalid row level sequence.
+        InputError: if the row is the first row but the value of level is not 1 or
+            the level smaller than 1 or
+            if the level increment is greater than one.
+
+    Yields:
+        Valid table row.
     """
-    if is_first_row:
-        if row.level != 1:
+    is_first_row = True
+    current_group_level = 0
+    for row in table_rows:
+        if is_first_row:
+            if row.level != 1:
+                raise exceptions.InputError(
+                    "Invalid starting row level. A table row must start with level value 1. "
+                    "Please fix the upstream first and re-run."
+                    f"Row: {row.to_markdown()}"
+                )
+        if row.level < 1:
             raise exceptions.InputError(
-                "Invalid starting row level. A table row must start with level value 1. "
-                "Please fix the upstream first and re-run."
+                f"Invalid row level: {row.level=!r}."
+                "Zero or negative level value is invalid."
                 f"Row: {row.to_markdown()}"
             )
-    if row.level < 1:
-        raise exceptions.InputError(
-            f"Invalid row level: {row.level=!r}."
-            "Zero or negative level value is invalid."
-            f"Row: {row.to_markdown()}"
-        )
-    if row.level > group_level + 1:
-        raise exceptions.InputError(
-            "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
-            f"Did you mean level {group_level+1}?"
-            f"Row: {row.to_markdown()}"
-        )
+        if row.level > current_group_level + 1:
+            raise exceptions.InputError(
+                "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
+                f"Did you mean level {current_group_level+1}?"
+                f"Row: {row.to_markdown()}"
+            )
+
+        yield row
+
+        is_first_row = False
+        current_group_level = row.level if row.is_group else row.level - 1
 
 
-def _get_next_group_info(
-    row: types_.TableRow, group_path: Path, group_level: int
-) -> tuple[Path, int]:
-    """Get next directory path representation of a group with it's level.
+def _change_group_path(
+    group_path: Path, previous_row: types_.TableRow | None, row: types_.TableRow
+) -> Path:
+    """Get path to row's working group.
 
-    Algorithm:
-        1. Set target group level as one above current row level.
-        2. While current group level is not equal to target group level
-            2.1. If current group level is lower than target,
-                should not be possible since it should have been caught during validation step.
-                target_group_level being bigger than group_level means traversing more than 1 level
-                at a given step.
-            2.2. If current group level is higher than target, decrement level and adjust path by
-                moving to parent path.
-        3. If row is a group row, increment level and adjust path by appending extracted row name.
+    If row is a document, it's working group is the group one level below.
+    If row is a group, it should be the new working group.
 
     Args:
-        row: Table row in which to move the path to.
-        group_path: Path representation of current group.
-        group_level: Current group level.
+        group_path: the path of the group in which the last execution was run, it should be the
+            equivalent to previous_row's group path.
+        previous_row: table row evaluated before the current. None if current row is the first row
+            in execution.
+        row: A single row from table rows.
 
     Returns:
-        A tuple consisting of next directory path representation of group and next group level.
+        A path to the group where the row or contents of row should reside in.
     """
-    target_group_level = row.level - 1
+    # if it's the first row or the row level has increased from group row
+    if not previous_row:
+        # document belongs in current group path
+        if not row.is_group:
+            return group_path
+        # move one level of nesting into new group path
+        return group_path / _extract_name_from_paths(current_path=group_path, table_path=row.path)
 
-    while group_level != target_group_level:
-        group_level -= 1
+    # working group path belongs in the group 1 level above
+    # i.e. group-1/document-1, group path is group-1
+    # group-1/group-2, group-path is group-1/group-2 but both cases require
+    # moving to group-1 first to either generate document or group afterwards.
+    destination_group_level = row.level - 1
+    current_group_level = previous_row.level if previous_row.is_group else previous_row.level - 1
+
+    while current_group_level != destination_group_level:
+        current_group_level -= 1
         group_path = group_path.parent
 
     if row.is_group:
-        group_level += 1
         group_path = group_path / _extract_name_from_paths(
             current_path=group_path, table_path=row.path
         )
 
-    return (group_path, group_level)
-
-
-def _should_yield_gitkeep(row: types_.TableRow, next_level: int, level: int) -> bool:
-    """Determine whether to yield a gitkeep file depending on level traversal.
-
-    It is important to note that the previous row must have been an empty a group row.
-
-    Args:
-        row: Current table row to evaluate whether a gitkeep should be yielded first.
-        next_level: Incoming group level of current table row.
-        level: Current level being evaluated.
-
-    Returns:
-        True if gitkeep file should be yielded first before processing the row further.
-    """
-    return (row.is_group and next_level <= level) or (not row.is_group and next_level < level)
+    return group_path
 
 
 def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMeta:
@@ -162,15 +165,11 @@ def _extract_docs_from_table_rows(
 
     Algorithm:
         1. For each row:
-            1.1. Check if the row is valid with respect to current group level.
-            1.2. Calculate next group level and next group path from row.
-            1.3. If previous row was a group and
-                the current row is a document and we're traversing up the path OR
-                the current row is a folder and we're in the in the same path or above,
-                yield a gitkeep meta.
-            1.4. Update current group level and current group path.
-            1.5. If current row is a document, yield document meta.
-        2. If last row was a group, yield gitkeep meta.
+            1.1. If previous row was a group and the level is equal to or lower than current
+                level, yield gitkeep meta
+            1.2. Adjust current group path according to previous row path.
+            1.3. If current row is a document, yield document meta.
+            1.4. Set previous row as current row since we're done processing it.
 
     Args:
         table_rows: Table rows from the index file in the order of group hierarchy.
@@ -178,34 +177,34 @@ def _extract_docs_from_table_rows(
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
     """
-    group_level = 0
-    current_path = Path()
+    current_group_path = Path()
     previous_row: types_.TableRow | None = None
+    previous_path: Path | None = None
 
     for row in table_rows:
-        _assert_valid_row(group_level=group_level, row=row, is_first_row=previous_row is None)
-        (next_group_path, next_group_level) = _get_next_group_info(
-            group_path=current_path, row=row, group_level=group_level
-        )
         # if previously processed row was a group and it had nothing in it
         # it should yield a .gitkeep file to denote empty group.
         if (
             previous_row
+            and previous_path
             and previous_row.is_group
-            and _should_yield_gitkeep(row=row, next_level=next_group_level, level=group_level)
+            and row.level <= previous_row.level
         ):
-            yield _create_gitkeep_meta(row=previous_row, path=current_path)
+            yield _create_gitkeep_meta(row=previous_row, path=previous_path)
 
-        group_level = next_group_level
-        current_path = next_group_path
+        current_group_path = _change_group_path(
+            group_path=current_group_path, previous_row=previous_row, row=row
+        )
+
         if not row.is_group:
-            yield _create_document_meta(row=row, path=current_path)
+            yield _create_document_meta(row=row, path=current_group_path)
 
         previous_row = row
+        previous_path = current_group_path
 
     # last group without documents yields gitkeep meta.
     if previous_row is not None and previous_row.is_group:
-        yield _create_gitkeep_meta(row=previous_row, path=current_path)
+        yield _create_gitkeep_meta(row=previous_row, path=current_group_path)
 
 
 def _index_file_from_content(content: str) -> types_.IndexDocumentMeta:
@@ -398,8 +397,13 @@ def run(
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory containing all the documentation.
     """
+    valid_table_rows = (
+        valid_table_row for valid_table_row in _validate_table_rows(table_rows=table_rows)
+    )
     migration_reports = (
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)
-        for document in _get_docs_metadata(table_rows=table_rows, index_content=index_content)
+        for document in _get_docs_metadata(
+            table_rows=valid_table_rows, index_content=index_content
+        )
     )
     _assert_migration_success(migration_reports=migration_reports)

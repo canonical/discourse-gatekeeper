@@ -46,12 +46,10 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
 
 
 @pytest.mark.parametrize(
-    "level, row, is_first_row, expected_message_contents",
+    "table_rows, expected_message_contents",
     [
         pytest.param(
-            0,
-            factories.TableRowFactory(level=2),
-            True,
+            (factories.TableRowFactory(level=2),),
             (
                 "invalid starting row level",
                 "a table row must start with level value 1",
@@ -60,90 +58,37 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
             id="Invalid starting row",
         ),
         pytest.param(
-            1,
-            factories.TableRowFactory(level=0),
-            False,
+            (
+                factories.TableRowFactory(level=1),
+                factories.TableRowFactory(level=0),
+            ),
             ("invalid row level", "zero or negative level value is invalid."),
             id="Invalid level(0)",
         ),
         pytest.param(
-            1,
-            factories.TableRowFactory(level=-1),
-            False,
+            (
+                factories.TableRowFactory(level=1),
+                factories.TableRowFactory(level=-1),
+            ),
             ("invalid row level", "zero or negative level value is invalid."),
             id="Invalid level(negative value)",
         ),
         pytest.param(
-            1,
-            factories.TableRowFactory(level=3),
-            False,
+            (factories.TableRowFactory(level=1), factories.TableRowFactory(level=3)),
             (
                 "invalid row level value sequence",
                 "level sequence jumps of more than 1 is invalid.",
             ),
             id="Invalid level sequence jump",
         ),
-    ],
-)
-def test__assert_valid_row_error(
-    level: int, row: types_.TableRow, is_first_row: bool, expected_message_contents: Iterable[str]
-):
-    """
-    arrange: given an invalid group level, table row and is_first_row combinations
-    act: when _assert_valid_row is called
-    assert: InputError is raised with expected error message contents.
-    """
-    with pytest.raises(exceptions.InputError) as exc:
-        migration._assert_valid_row(group_level=level, row=row, is_first_row=is_first_row)
-
-    assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
-
-
-@pytest.mark.parametrize(
-    "level, row, is_first_row",
-    [
-        pytest.param(
-            0,
-            factories.TableRowFactory(level=1),
-            True,
-            id="Valid starting row",
-        ),
-        pytest.param(
-            1,
-            factories.TableRowFactory(level=2),
-            False,
-            id="Valid row sequence(increase)",
-        ),
-        pytest.param(
-            3,
-            factories.TableRowFactory(level=2),
-            False,
-            id="Valid row sequence(decrease)",
-        ),
-        pytest.param(
-            3,
-            factories.TableRowFactory(level=1),
-            False,
-            id="Valid row sequence(decrease multi)",
-        ),
-    ],
-)
-def test__assert_valid_row(level: int, row: types_.TableRow, is_first_row: bool):
-    """
-    arrange: given a valid group level, table row and is_first_row combinations
-    act: when _assert_valid_row is called
-    assert: No exceptions are raised.
-    """
-    migration._assert_valid_row(group_level=level, row=row, is_first_row=is_first_row)
-
-
-@pytest.mark.parametrize(
-    "table_rows",
-    [
         pytest.param(
             (
                 factories.TableRowFactory(level=1, is_document=True),
                 factories.TableRowFactory(level=2, is_document=True),
+            ),
+            (
+                "invalid row level value sequence",
+                "level sequence jumps of more than 1 is invalid.",
             ),
             id="document sequence level increase(no group)",
         ),
@@ -152,6 +97,10 @@ def test__assert_valid_row(level: int, row: types_.TableRow, is_first_row: bool)
                 factories.TableRowFactory(level=1, is_document=True),
                 factories.TableRowFactory(level=3, is_document=True),
             ),
+            (
+                "invalid row level value sequence",
+                "level sequence jumps of more than 1 is invalid.",
+            ),
             id="document sequence level increase(skip level)",
         ),
         pytest.param(
@@ -159,12 +108,20 @@ def test__assert_valid_row(level: int, row: types_.TableRow, is_first_row: bool)
                 factories.TableRowFactory(level=1, is_group=True),
                 factories.TableRowFactory(level=3, is_group=True),
             ),
+            (
+                "invalid row level value sequence",
+                "level sequence jumps of more than 1 is invalid.",
+            ),
             id="group sequence level increase(skip level)",
         ),
         pytest.param(
             (
                 factories.TableRowFactory(level=1, is_document=True),
                 factories.TableRowFactory(level=2, is_group=True),
+            ),
+            (
+                "invalid row level value sequence",
+                "level sequence jumps of more than 1 is invalid.",
             ),
             id="document group sequence level increase(no group)",
         ),
@@ -174,22 +131,69 @@ def test__assert_valid_row(level: int, row: types_.TableRow, is_first_row: bool)
                 factories.TableRowFactory(level=2, is_document=True),
                 factories.TableRowFactory(level=3, is_group=True),
             ),
+            (
+                "invalid row level value sequence",
+                "level sequence jumps of more than 1 is invalid.",
+            ),
             id="document group sequence level increase(doc doesn't increase group level)",
         ),
     ],
 )
-def test__extract_docs_from_table_rows_invalid_sequence(table_rows: Iterable[types_.TableRow]):
+def test__validate_table_rows_invalid_rows(
+    table_rows: Iterable[types_.TableRow], expected_message_contents: Iterable[str]
+):
     """
-    arrange: given an invalid table row sequence
-    act: when _extract_docs_from_table_rows is called
-    assert: InputError is raised with invalid level value sequence error message.
+    arrange: given invalid table_rows sequence
+    act: when _validate_table_rows is called
+    assert: InputError is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InputError) as exc:
-        all(migration._extract_docs_from_table_rows(table_rows=table_rows))
+        tuple(row for row in migration._validate_table_rows(table_rows=table_rows))
 
-    assert_substrings_in_string(
-        ("invalid row level value sequence", "level sequence jumps of more than 1 is invalid"),
-        str(exc.value).lower(),
+    assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
+
+
+@pytest.mark.parametrize(
+    "table_rows",
+    [
+        pytest.param(
+            (factories.TableRowFactory(level=1),),
+            id="Valid starting row",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(level=1, is_group=True),
+                factories.TableRowFactory(level=2, is_group=True),
+            ),
+            id="Valid row sequence(increase)",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(level=1, is_group=True),
+                factories.TableRowFactory(level=2, is_group=True),
+                factories.TableRowFactory(level=1, is_group=True),
+            ),
+            id="Valid row sequence(decrease)",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(level=1, is_group=True),
+                factories.TableRowFactory(level=2, is_group=True),
+                factories.TableRowFactory(level=3, is_group=True),
+                factories.TableRowFactory(level=1, is_group=True),
+            ),
+            id="Valid row sequence(decrease multi)",
+        ),
+    ],
+)
+def test__validate_table_rows(table_rows: Iterable[types_.TableRow]):
+    """
+    arrange: given table rows of valid sequence
+    act: when _validate_table_rows is called
+    assert: an iterable with original sequence preserved is returned.
+    """
+    assert tuple(row for row in migration._validate_table_rows(table_rows=table_rows)) == tuple(
+        row for row in table_rows
     )
 
 
@@ -198,6 +202,7 @@ def test__extract_docs_from_table_rows_invalid_sequence(table_rows: Iterable[typ
 @pytest.mark.parametrize(
     "table_rows, expected_metas",
     [
+        pytest.param((), (), id="no table rows"),
         pytest.param(
             (doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),),
             (
@@ -362,6 +367,48 @@ def test__extract_docs_from_table_rows_invalid_sequence(table_rows: Iterable[typ
                 nested_group_row_1 := factories.TableRowFactory(
                     level=2, path="group-1-group-2", is_group=True
                 ),
+                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
+            ),
+            (
+                types_.GitkeepMeta(
+                    path=Path("group-1/group-2/.gitkeep"), table_row=nested_group_row_1
+                ),
+                types_.DocumentMeta(
+                    path=Path("doc-1.md"),
+                    link=doc_row_1.navlink.link,
+                    table_row=doc_row_1,
+                ),
+            ),
+            id="multi rows 2 separately nested(group, nested-group, doc)",
+        ),
+        pytest.param(
+            (
+                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                nested_group_row_1 := factories.TableRowFactory(
+                    level=2, path="group-1-group-2", is_group=True
+                ),
+                nested_doc_row_1 := factories.TableRowFactory(
+                    level=2, path="group-1-doc-1", is_document=True
+                ),
+            ),
+            (
+                types_.GitkeepMeta(
+                    path=Path("group-1/group-2/.gitkeep"), table_row=nested_group_row_1
+                ),
+                types_.DocumentMeta(
+                    path=Path("group-1/doc-1.md"),
+                    link=nested_doc_row_1.navlink.link,
+                    table_row=nested_doc_row_1,
+                ),
+            ),
+            id="multi rows 2 separately nested(group, nested-group, nested-doc)",
+        ),
+        pytest.param(
+            (
+                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                nested_group_row_1 := factories.TableRowFactory(
+                    level=2, path="group-1-group-2", is_group=True
+                ),
                 nested_doc_row_1 := factories.TableRowFactory(
                     level=3, path="group-1-group-2-doc-1", is_document=True
                 ),
@@ -388,84 +435,6 @@ def test__extract_docs_from_table_rows(
     assert (
         tuple(row for row in migration._extract_docs_from_table_rows(table_rows=table_rows))
         == expected_metas
-    )
-
-
-@pytest.mark.parametrize(
-    "row, group_path, group_level, expected_path_level_pair",
-    [
-        pytest.param(
-            factories.TableRowFactory(level=1, path="test-1", is_document=True),
-            Path(),
-            0,
-            (Path(), 0),
-            id="single initial document",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=1, path="group-1", is_group=True),
-            Path(),
-            0,
-            (Path("group-1"), 1),
-            id="single initial group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-test-1", is_document=True),
-            Path("group-1"),
-            1,
-            (Path("group-1"), 1),
-            id="document in group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-group-2", is_group=True),
-            Path("group-1"),
-            1,
-            (Path("group-1/group-2"), 2),
-            id="group in group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-test-1", is_document=True),
-            Path("group-1/group-2"),
-            2,
-            (Path("group-1"), 1),
-            id="document in same level group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-group-4", is_group=True),
-            Path("group-1/group-2"),
-            2,
-            (Path("group-1/group-4"), 2),
-            id="group in same level group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-test-1", is_document=True),
-            Path("group-1/group-2/group-3"),
-            3,
-            (Path("group-1"), 1),
-            id="document in lower level group",
-        ),
-        pytest.param(
-            factories.TableRowFactory(level=2, path="group-1-group-4", is_group=True),
-            Path("group-1/group-2/group-3"),
-            3,
-            (Path("group-1/group-4"), 2),
-            id="group in lower level group",
-        ),
-    ],
-)
-def test__get_next_group_info(
-    row: types_.TableRow,
-    group_path: Path,
-    group_level: int,
-    expected_path_level_pair: tuple[Path, int],
-):
-    """
-    arrange: given table row, group path and group level
-    act: when _get_next_group_info is called
-    assert: expected path with corresponding level is returned.
-    """
-    assert (
-        migration._get_next_group_info(row=row, group_path=group_path, group_level=group_level)
-        == expected_path_level_pair
     )
 
 
