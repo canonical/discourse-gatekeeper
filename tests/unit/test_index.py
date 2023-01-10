@@ -138,24 +138,14 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
             id="multiline content only",
         ),
         pytest.param(
-            f"{content}{index.NAVIGATION_TABLE_START}",
+            f"{(content := 'Page content')}{index.NAVIGATION_TABLE_START}",
             content,
             id="page with content and navigation table",
         ),
         pytest.param(
-            f"{multiline_content}{index.NAVIGATION_TABLE_START}",
-            multiline_content,
-            id="page with multiline content and navigation table",
-        ),
-        pytest.param(
-            (separated_multiline_content := "Page content\n\nManyMultiline"),
-            separated_multiline_content,
-            id="page with separated multiline content",
-        ),
-        pytest.param(
-            f"{separated_multiline_content}{index.NAVIGATION_TABLE_START}",
-            separated_multiline_content,
-            id="page with separated multiline content and navigation table",
+            f"{(content := 'page content')}{index.NAVIGATION_TABLE_START}\ncontent-afterwards",
+            content,
+            id="page with content after the navigation table",
         ),
     ],
 )
