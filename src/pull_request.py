@@ -95,7 +95,7 @@ class RepositoryClient:
         except GitCommandError as exc:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
-    def create_github_pull_request(self, branch_name: str, base: str) -> str:
+    def create_pull_request(self, branch_name: str, base: str) -> str:
         """Create a pull request from given branch to base.
 
         Args:
@@ -164,6 +164,7 @@ def create_pull_request(repository: RepositoryClient) -> str:
     if base == DEFAULT_BRANCH_NAME:
         raise InputError(
             f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
+            f"Branch name {DEFAULT_BRANCH_NAME} is reserved for creating a migration branch."
             "Please try again after changing the branch name."
         )
     if not repository.is_dirty():
@@ -180,7 +181,7 @@ def create_pull_request(repository: RepositoryClient) -> str:
         commit_msg=ACTIONS_COMMIT_MESSAGE,
     )
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
-    pull_request_web_link = repository.create_github_pull_request(
+    pull_request_web_link = repository.create_pull_request(
         branch_name=DEFAULT_BRANCH_NAME,
         base=base,
     )

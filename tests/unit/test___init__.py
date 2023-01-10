@@ -161,7 +161,7 @@ def test__run_migrate_server_error_index(
     """
     meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = [exceptions.DiscourseError]
+    mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
 
     with pytest.raises(exceptions.ServerError) as exc:
         _run_migrate(
@@ -333,11 +333,9 @@ def test_run_no_docs_dir(
     user_input = factories.UserInputFactory()
 
     # run is repeated in unit tests / integration tests
-    # pylint: disable=duplicate-code
     returned_migration_reports = run(
         base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input
-    )
-    # pylint: enable=duplicate-code
+    )  # pylint: disable=duplicate-code
 
     (upstream_repo, upstream_path) = upstream_repository
     upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)

@@ -21,19 +21,15 @@ from .helpers import assert_substrings_in_string
 @pytest.mark.parametrize(
     "path, table_path, expected",
     [
-        pytest.param(Path(""), types_.TablePath("test"), "test", id="table path only"),
-        pytest.param(
-            Path("group-1"), types_.TablePath("group-1-test"), "test", id="test in group"
-        ),
+        pytest.param(Path(""), "test", "test", id="table path only"),
+        pytest.param(Path("group-1"), "group-1-test", "test", id="test in group"),
         pytest.param(
             Path("group-1/nested/path"),
-            types_.TablePath("group-1-nested-path-test"),
+            "group-1-nested-path-test",
             "test",
             id="test in group",
         ),
-        pytest.param(
-            Path("not/matching/group"), types_.TablePath("test"), "test", id="non-prefix path"
-        ),
+        pytest.param(Path("not/matching/group"), "test", "test", id="non-prefix path"),
     ],
 )
 def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expected: str):

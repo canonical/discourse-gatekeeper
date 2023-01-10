@@ -137,12 +137,12 @@ def test__create_branch(
     )
 
 
-def test__create_github_pull_request_error(
+def test__create_pull_request_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
     arrange: given RepositoryClient with a mocked github repository client that raises an exception
-    act: when _create_github_pull_request is called
+    act: when _create_pull_request is called
     assert: RepositoryClientError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
@@ -152,24 +152,20 @@ def test__create_github_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_github_pull_request(
-            branch_name="branchname-1", base="base-branchname"
-        )
+        repository_client.create_pull_request(branch_name="branchname-1", base="base-branchname")
 
     assert_substrings_in_string(
         ("unexpected error creating pull request", "githubexception"), str(exc.value).lower()
     )
 
 
-def test__create_github_pull_request(
-    repository_client: RepositoryClient, mock_pull_request: PullRequest
-):
+def test__create_pull_request(repository_client: RepositoryClient, mock_pull_request: PullRequest):
     """
     arrange: given RepositoryClient with a mocked github client that returns a mocked pull request
-    act: when _create_github_pull_request is called
+    act: when _create_pull_request is called
     assert: a pull request's page link is returned.
     """
-    returned_url = repository_client.create_github_pull_request("branchname-1", "base-branchname")
+    returned_url = repository_client.create_pull_request("branchname-1", "base-branchname")
 
     assert returned_url == mock_pull_request.html_url
 
