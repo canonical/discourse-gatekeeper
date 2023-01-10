@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+import difflib
 import logging
 import types
 from unittest import mock
@@ -14,6 +15,8 @@ import pytest
 
 from src import action, discourse, exceptions
 from src import types_ as src_types
+
+from .helpers import assert_substrings_in_string
 
 
 @pytest.mark.parametrize(
@@ -277,15 +280,25 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old="content 1", new="content 2"),
+        content_change=src_types.ContentChange(
+            old=(old_content := "content 1"), new=(new_content := "content 2")
+        ),
     )
 
     returned_report = action._update(
         action=update_action, discourse=mocked_discourse, dry_run=True
     )
 
-    assert str(update_action) in caplog.text
-    assert f"dry run: {True}" in caplog.text
+    assert_substrings_in_string(
+        (
+            str(update_action),
+            f"dry run: {True}",
+            old_content,
+            new_content,
+            "\n".join(difflib.Differ().compare(old_content, new_content)),
+        ),
+        caplog.text,
+    )
     mocked_discourse.update_topic.assert_not_called()
     assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
@@ -321,8 +334,15 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
         action=update_action, discourse=mocked_discourse, dry_run=False
     )
 
-    assert str(update_action) in caplog.text
-    assert f"dry run: {False}" in caplog.text
+    assert_substrings_in_string(
+        (
+            str(update_action),
+            f"dry run: {False}",
+            content,
+            "\n".join(difflib.Differ().compare(content, content)),
+        ),
+        caplog.text,
+    )
     mocked_discourse.update_topic.assert_not_called()
     assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
@@ -352,15 +372,25 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old="content 1", new="content 2"),
+        content_change=src_types.ContentChange(
+            old=(old_content := "content 1"), new=(new_content := "content 2")
+        ),
     )
 
     returned_report = action._update(
         action=update_action, discourse=mocked_discourse, dry_run=False
     )
 
-    assert str(update_action) in caplog.text
-    assert f"dry run: {False}" in caplog.text
+    assert_substrings_in_string(
+        (
+            str(update_action),
+            f"dry run: {False}",
+            old_content,
+            new_content,
+            "\n".join(difflib.Differ().compare(old_content, new_content)),
+        ),
+        caplog.text,
+    )
     assert update_action.content_change is not None
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new
@@ -391,15 +421,25 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old="content 1", new="content 2"),
+        content_change=src_types.ContentChange(
+            old=(old_content := "content 1"), new=(new_content := "content 2")
+        ),
     )
 
     returned_report = action._update(
         action=update_action, discourse=mocked_discourse, dry_run=False
     )
 
-    assert str(update_action) in caplog.text
-    assert f"dry run: {False}" in caplog.text
+    assert_substrings_in_string(
+        (
+            str(update_action),
+            f"dry run: {False}",
+            old_content,
+            new_content,
+            "\n".join(difflib.Differ().compare(old_content, new_content)),
+        ),
+        caplog.text,
+    )
     assert update_action.content_change is not None
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content=update_action.content_change.new

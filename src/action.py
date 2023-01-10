@@ -3,6 +3,7 @@
 
 """Module for taking the required actions to match the server state with the local state."""
 
+import difflib
 import logging
 import typing
 
@@ -125,6 +126,18 @@ def _update(
         and action.content_change.new is None
     ):
         raise exceptions.ActionError(f"internal error, new content for page is None, {action=!r}")
+
+    if (
+        action.content_change is not None
+        and action.content_change.old is not None
+        and action.content_change.new is not None
+    ):
+        logging.info(
+            "content change: %s",
+            "\n".join(
+                difflib.Differ().compare(action.content_change.old, action.content_change.new)
+            ),
+        )
 
     if (
         not dry_run
