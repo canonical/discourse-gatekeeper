@@ -59,7 +59,7 @@ def _write_github_output(
             f"This action is intended to run inside github-actions. {GETTING_STARTED}"
         )
 
-    github_output_path = pathlib.Path()
+    github_output_path = pathlib.Path(github_output)
     compact_json = partial(json.dumps, separators=(",", ":"))
     urls_with_actions = compact_json(urls_with_actions_dict)
     if urls_with_actions_dict:
