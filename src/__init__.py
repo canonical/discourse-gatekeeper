@@ -75,7 +75,7 @@ def _run_migrate(
     """Migrate existing docs from charmhub to local repository.
 
     Args:
-        base_path: The base path to look for the metadata file in.
+        base_path: The base path of the repository.
         metadata: Information about the charm.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
@@ -111,7 +111,7 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
         user_inputs: Configurable inputs for running upload-charm-docs.
 
     Raises:
-        InputError: if no valid running condition is matched.
+        InputError: if no valid running mode is matched.
 
     Returns:
         All the URLs that had an action with the result of that action.

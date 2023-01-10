@@ -163,7 +163,7 @@ def _create_gitkeep_meta(row: types_.TableRow, path: Path) -> types_.GitkeepMeta
 
 def _extract_docs_from_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
-) -> typing.Generator[types_.MigrationFileMeta, None, None]:
+) -> typing.Iterable[types_.MigrationFileMeta]:
     """Extract necessary migration documents to build docs directory from server.
 
     Algorithm:
@@ -222,7 +222,7 @@ def _index_file_from_content(content: str) -> types_.IndexDocumentMeta:
     return types_.IndexDocumentMeta(path=Path("index.md"), content=content)
 
 
-def _build_path(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Path:
+def make_parent(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Path:
     """Construct path leading to document to be created.
 
     Args:
@@ -230,7 +230,7 @@ def _build_path(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Pat
         document_meta: Information about document to be migrated.
 
     Returns:
-        Full path to document to be migrated.
+        Full path to the parent directory of the document to be migrated.
     """
     path = docs_path / document_meta.path
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -238,7 +238,7 @@ def _build_path(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Pat
 
 
 def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path) -> types_.ActionReport:
-    """Write gitkeep file to docs directory.
+    """Write gitkeep file to a path inside docs directory.
 
     Args:
         gitkeep_meta: Information about gitkeep file to be migrated.
@@ -249,7 +249,7 @@ def _migrate_gitkeep(gitkeep_meta: types_.GitkeepMeta, docs_path: Path) -> types
     """
     logging.info("migrate meta: %s", gitkeep_meta)
 
-    full_path = _build_path(docs_path=docs_path, document_meta=gitkeep_meta)
+    full_path = make_parent(docs_path=docs_path, document_meta=gitkeep_meta)
     full_path.touch()
     return types_.ActionReport(
         table_row=gitkeep_meta.table_row,
@@ -283,7 +283,7 @@ def _migrate_document(
             location=None,
             reason=str(exc),
         )
-    full_path = _build_path(docs_path=docs_path, document_meta=document_meta)
+    full_path = make_parent(docs_path=docs_path, document_meta=document_meta)
     full_path.write_text(content, encoding="utf-8")
     return types_.ActionReport(
         table_row=document_meta.table_row,
@@ -305,7 +305,7 @@ def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> typ
     """
     logging.info("migrate meta: %s", index_meta)
 
-    full_path = _build_path(docs_path=docs_path, document_meta=index_meta)
+    full_path = make_parent(docs_path=docs_path, document_meta=index_meta)
     full_path.write_text(index_meta.content, encoding="utf-8")
     return types_.ActionReport(
         table_row=None,
@@ -392,7 +392,7 @@ def run(
     discourse: Discourse,
     docs_path: Path,
 ) -> None:
-    """Write document content to docs_path.
+    """Write table contents to the document directory.
 
     Args:
         table_rows: Iterable sequence of documentation structure to be migrated.
