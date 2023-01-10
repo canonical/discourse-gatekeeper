@@ -11,32 +11,29 @@ from urllib.parse import urlparse
 
 
 @dataclasses.dataclass
-class MigrationInputs:
-    """Configurable parameters for migration mode.
+class UserInputs:
+    """Configurable user input values used to run upload-charm-docs.
 
     Attrs:
+        discourse_hostname: The discourse hostname.
+        discourse_category_id: The category identifier to use on discourse for all topics.
+        discourse_api_username: The discourse API username to use for interactions with the server.
+        discourse_api_key: The discourse API key to use for interactions with the server.
+        dry_run: If enabled, only log the action that would be taken. Has no effect in migration
+            mode.
+        delete_pages: Whether to delete pages that are no longer needed. Has no effect in
+            migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
+            Required in migration mode.
     """
 
-    github_access_token: str | None
-
-
-@dataclasses.dataclass
-class ReconcileInputs:
-    """Configurable parameters for reconcile mode.
-
-    Attrs:
-        dry_run: If enabled, only log the action that would be taken.
-        delete_pages: Whether to delete pages that are no longer needed.
-    """
-
+    discourse_hostname: str
+    discourse_category_id: str
+    discourse_api_username: str
+    discourse_api_key: str
     dry_run: bool
     delete_pages: bool
-
-
-@dataclasses.dataclass
-class UserInputs(ReconcileInputs, MigrationInputs):
-    """Configurable user input values used to run upload-charm-docs."""
+    github_access_token: str | None
 
 
 class Metadata(typing.NamedTuple):

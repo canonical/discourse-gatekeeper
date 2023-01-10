@@ -93,8 +93,11 @@ class UserInputFactory(factory.Factory):
         model = types_.UserInputs
         abstract = False
 
-    # the following token is a test variable for testing.
-    github_access_token = "test-token"  # nosec
+    discourse_hostname = "http://discourse"
+    discourse_category_id = factory.Sequence(lambda n: n)
+    discourse_api_username = "discourse-test-user"
+    discourse_api_key = "discourse-test-key"
+    github_access_token = "test-token"  # nosec the following token is a test variable.
     dry_run = False
     delete_pages = False
 
