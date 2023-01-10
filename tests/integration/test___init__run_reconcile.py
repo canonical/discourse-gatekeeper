@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 import pytest
 from git.repo import Repo
 
-from src import GETTING_STARTED, exceptions, index, metadata, reconcile, run
+from src import exceptions, index, metadata, reconcile, run
 from src.discourse import Discourse
 
 from .. import factories
@@ -33,56 +33,41 @@ async def test_run(
     """
     arrange: given running discourse server
     act: when run is called with:
-        1. docs empty
-        2. docs with an index file in dry run mode
-        3. docs with an index file
-        4. docs with a documentation file added in dry run mode
-        5. docs with a documentation file added
-        6. docs with a documentation file updated in dry run mode
-        7. docs with a documentation file updated
-        8. docs with a nested directory added
-        9. docs with a documentation file added in the nested directory
-        10. docs with the documentation file in the nested directory removed in dry run mode
-        11. docs with the documentation file in the nested directory removed with page deletion
+        1. docs with an index file in dry run mode
+        2. docs with an index file
+        3. docs with a documentation file added in dry run mode
+        4. docs with a documentation file added
+        5. docs with a documentation file updated in dry run mode
+        6. docs with a documentation file updated
+        7. docs with a nested directory added
+        8. docs with a documentation file added in the nested directory
+        9. docs with the documentation file in the nested directory removed in dry run mode
+        10. docs with the documentation file in the nested directory removed with page deletion
             disabled
-        12. with the nested directory removed
-        13. with the documentation file removed
-        14. with the index file removed
+        11. with the nested directory removed
+        12. with the documentation file removed
+        13. with the index file removed
     assert: then:
-        1. an index page is created with an empty navigation table
-        2. an index page is not updated
-        3. an index page is updated
-        4. the documentation page is not created
-        5. the documentation page is created
-        6. the documentation page is not updated
-        7. the documentation page is updated
-        8. the nested directory is added to the navigation table
-        9. the documentation file in the nested directory is created
+        1. an index page is not updated
+        2. an index page is updated
+        3. the documentation page is not created
+        4. the documentation page is created
+        5. the documentation page is not updated
+        6. the documentation page is updated
+        7. the nested directory is added to the navigation table
+        8. the documentation file in the nested directory is created
+        9. the documentation file in the nested directory is not removed
         10. the documentation file in the nested directory is not removed
-        11. the documentation file in the nested directory is not removed
-        12. the nested directory is removed from the navigation table
-        13. the documentation page is deleted
-        14. an index page is not updated
+        11. the nested directory is removed from the navigation table
+        12. the documentation page is deleted
+        13. an index page is not updated
     """
     (_, repo_path) = repository
     document_name = "name 1"
     caplog.set_level(logging.INFO)
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
 
-    # 1. docs empty
-    with pytest.raises(exceptions.InputError) as exc_info:
-        urls_with_actions = run(
-            base_path=repo_path,
-            discourse=discourse_api,
-            user_inputs=factories.UserInputFactory(
-                dry_run=False,
-                delete_pages=True,
-            ),
-        )
-
-    assert str(exc_info.value) == GETTING_STARTED
-
-    # 2. docs with an index file in dry run mode
+    # 1. docs with an index file in dry run mode
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
@@ -109,7 +94,7 @@ async def test_run(
     assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
     assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
 
-    # 3. docs with an index file
+    # 2. docs with an index file
     caplog.clear()
 
     urls_with_actions = run(
@@ -126,7 +111,7 @@ async def test_run(
     assert index_topic == f"{index_content}{reconcile.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
 
-    # 4. docs with a documentation file added in dry run mode
+    # 3. docs with a documentation file added in dry run mode
     caplog.clear()
     doc_table_key = "doc"
     (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
@@ -145,7 +130,7 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_content_1 not in index_topic
 
-    # 5. docs with a documentation file added
+    # 4. docs with a documentation file added
     caplog.clear()
 
     urls_with_actions = run(
@@ -169,7 +154,7 @@ async def test_run(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_1
 
-    # 6. docs with a documentation file updated in dry run mode
+    # 5. docs with a documentation file updated in dry run mode
     caplog.clear()
     doc_file.write_text(doc_content_2 := "doc content 2")
 
@@ -189,7 +174,7 @@ async def test_run(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_1
 
-    # 7. docs with a documentation file updated
+    # 6. docs with a documentation file updated
     caplog.clear()
 
     urls_with_actions = run(
@@ -211,7 +196,7 @@ async def test_run(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_2
 
-    # 8. docs with a nested directory added
+    # 7. docs with a nested directory added
     caplog.clear()
     nested_dir_table_key = "nested-dir"
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
@@ -233,7 +218,7 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_table_line in index_topic
 
-    # 9. docs with a documentation file added in the nested directory
+    # 8. docs with a documentation file added in the nested directory
     caplog.clear()
     nested_dir_doc_table_key = "nested-dir-doc"
     (nested_dir_doc_file := nested_dir / "doc.md").write_text(
@@ -264,7 +249,7 @@ async def test_run(
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 10. docs with the documentation file in the nested directory removed in dry run mode
+    # 9. docs with the documentation file in the nested directory removed in dry run mode
     caplog.clear()
     nested_dir_doc_file.unlink()
 
@@ -286,7 +271,7 @@ async def test_run(
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 11. docs with the documentation file in the nested directory removed with page deletion
+    # 10. docs with the documentation file in the nested directory removed with page deletion
     #     disabled
     caplog.clear()
 
@@ -308,7 +293,7 @@ async def test_run(
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 12. with the nested directory removed
+    # 11. with the nested directory removed
     caplog.clear()
     nested_dir.rmdir()
 
@@ -328,7 +313,7 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert nested_dir_table_line not in index_topic
 
-    # 13. with the documentation file removed
+    # 12. with the documentation file removed
     caplog.clear()
     doc_file.unlink()
 
@@ -350,7 +335,7 @@ async def test_run(
     with pytest.raises(exceptions.DiscourseError):
         discourse_api.retrieve_topic(url=doc_url)
 
-    # 14. with the index file removed
+    # 13. with the index file removed
     caplog.clear()
     index_file.unlink()
 
