@@ -16,7 +16,7 @@ from src.discourse import create_discourse
 
 
 def _parse_env_vars() -> types_.UserInputs:
-    """Parse user inputs from environment variables.
+    """Instantiate user inputs from environment variables.
 
     Returns:
         Wrapped user input variables.

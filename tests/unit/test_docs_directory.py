@@ -183,12 +183,12 @@ def test__calculate_level(
         ),
     ],
 )
-def test__calculate_table_path(
+def test_calculate_table_path(
     directories: tuple[str, ...], file: str | None, expected_table_path: str, tmp_path: Path
 ):
     """
     arrange: given docs directory with given directories and file created
-    act: when _calculate_table_path is called with the docs directory
+    act: when calculate_table_path is called with the docs directory
     assert: then the expected table path is returned.
     """
     path = create_nested_directories_file(base_path=tmp_path, directories=directories, file=file)

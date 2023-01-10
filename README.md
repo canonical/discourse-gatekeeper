@@ -99,8 +99,6 @@ charmhub.
               discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
               discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
               github_token: ${{ secrets.GITHUB_TOKEN }}
-          - name: Show index page
-            run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```
 
     a branch name with `upload-charm-docs/migrate` will be created and a pull 

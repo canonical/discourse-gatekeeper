@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Module for transforming index table rows into local files."""
+"""Module for migrating remote documentation into local git repository."""
 
 import itertools
 import logging
@@ -16,10 +16,10 @@ EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILENAME = ".gitkeep"
 
 
-def _extract_name_from_paths(current_group_path: Path, table_path: types_.TablePath) -> str:
+def _extract_name(current_group_path: Path, table_path: types_.TablePath) -> str:
     """Extract name given a current working directory and table path.
 
-    If there is a matching prefix in table path's prefix generated from the current directory,
+    If there is a matching prefix in table path's prefix generated from the current group path,
     the prefix is removed and the remaining segment is returned as the extracted name.
 
     Args:
@@ -35,7 +35,10 @@ def _extract_name_from_paths(current_group_path: Path, table_path: types_.TableP
 def _validate_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
 ) -> typing.Iterable[types_.TableRow]:
-    """Check whether a table row is valid in regards to the levels and grouping.
+    """Check whether a table row is valid in regards to the sequence.
+
+    By tracking the current group level for each row, it validates whether a given row is valid
+    among the sequence of rows given.
 
     Args:
         table_rows: Parsed rows from the index table.
@@ -77,23 +80,22 @@ def _validate_table_rows(
         current_group_level = row.level if row.is_group else row.level - 1
 
 
-def _change_group_path(
+def _get_row_group_path(
     group_path: Path, previous_row: types_.TableRow | None, row: types_.TableRow
 ) -> Path:
     """Get path to row's working group.
 
-    If row is a document, it's working group is the group one level below.
-    If row is a group, it should be the new working group.
+    If given row is a document row, it's working group is the group one level below.
+    If given row is a group row, it's working group should be the path to row's group.
 
     Args:
-        group_path: the path of the group in which the last execution was run, it should be the
+        group_path: The path of the group in which the previous row was in, it should be the
             equivalent to previous_row's group path.
-        previous_row: table row evaluated before the current. None if current row is the first row
-            in execution.
-        row: A single row from table rows.
+        previous_row: Previous row in the sequence. None if row is the first in sequence.
+        row: Target row to adjust group path to.
 
     Returns:
-        A path to the group where the row or contents of row should reside in.
+        A path to the group where the row belongs.
     """
     # if it's the first row or the row level has increased from group row
     if not previous_row:
@@ -101,9 +103,7 @@ def _change_group_path(
         if not row.is_group:
             return group_path
         # move one level of nesting into new group path
-        return group_path / _extract_name_from_paths(
-            current_group_path=group_path, table_path=row.path
-        )
+        return group_path / _extract_name(current_group_path=group_path, table_path=row.path)
 
     # working group path belongs in the group 1 level above current row's level.
     # i.e. group-1/document-1, group path is group-1
@@ -120,9 +120,7 @@ def _change_group_path(
     # move working group path to current group
     # i.e. current: group-1, destination: group-1/group-2, row: group-1-group-2
     if row.is_group:
-        group_path = group_path / _extract_name_from_paths(
-            current_group_path=group_path, table_path=row.path
-        )
+        group_path = group_path / _extract_name(current_group_path=group_path, table_path=row.path)
 
     return group_path
 
@@ -146,7 +144,7 @@ def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMe
         raise exceptions.MigrationError(
             "Internal error, no implementation for creating document meta with missing link in row."
         )
-    name = _extract_name_from_paths(current_group_path=path, table_path=row.path)
+    name = _extract_name(current_group_path=path, table_path=row.path)
     return types_.DocumentMeta(path=path / f"{name}.md", link=row.navlink.link, table_row=row)
 
 
@@ -166,7 +164,7 @@ def _create_gitkeep_meta(row: types_.TableRow, path: Path) -> types_.GitkeepMeta
 def _extract_docs_from_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
 ) -> typing.Iterable[types_.MigrationFileMeta]:
-    """Extract necessary migration documents to build docs directory from server.
+    """Extract necessary migration documents to build docs directory.
 
     Algorithm:
         1. For each row:
@@ -197,7 +195,7 @@ def _extract_docs_from_table_rows(
         ):
             yield _create_gitkeep_meta(row=previous_row, path=previous_path)
 
-        current_group_path = _change_group_path(
+        current_group_path = _get_row_group_path(
             group_path=current_group_path, previous_row=previous_row, row=row
         )
 
@@ -320,7 +318,7 @@ def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> typ
 def _run_one(
     file_meta: types_.MigrationFileMeta, discourse: Discourse, docs_path: Path
 ) -> types_.ActionReport:
-    """Write document content relative to docs directory.
+    """Write document content inside the docs directory.
 
     Args:
         file_meta: Information about migration file corresponding to a row in index table.
@@ -359,7 +357,7 @@ def _run_one(
 def _get_docs_metadata(
     table_rows: typing.Iterable[types_.TableRow], index_content: str
 ) -> itertools.chain[types_.MigrationFileMeta]:
-    """Get metadata for documents to be migrated.
+    """Get metadata for all documents to be migrated.
 
     Args:
         table_rows: Table rows from the index table.
@@ -371,21 +369,6 @@ def _get_docs_metadata(
     index_doc = _index_file_from_content(content=index_content)
     table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
     return itertools.chain((index_doc,), table_docs)
-
-
-def _assert_migration_success(migration_reports: typing.Iterable[types_.ActionReport]) -> None:
-    """Assert all documents have been successfully migrated.
-
-    Args:
-        migration_reports: Report containing migration details from server to local repository.
-
-    Raises:
-        MigrationError: if any migration report has failed.
-    """
-    if any(result for result in migration_reports if result.result is types_.ActionResult.FAIL):
-        raise exceptions.MigrationError(
-            "Error migrating the docs, please check the logs for more detail."
-        )
 
 
 def run(
@@ -401,6 +384,9 @@ def run(
         index_content: Main content describing the charm.
         discourse: Client to the documentation server.
         docs_path: The path to the docs directory containing all the documentation.
+
+    Raises:
+        MigrationError: if any migration report has failed.
     """
     valid_table_rows = (
         valid_table_row for valid_table_row in _validate_table_rows(table_rows=table_rows)
@@ -411,4 +397,8 @@ def run(
             table_rows=valid_table_rows, index_content=index_content
         )
     )
-    _assert_migration_success(migration_reports=migration_reports)
+
+    if any(result for result in migration_reports if result.result is types_.ActionResult.FAIL):
+        raise exceptions.MigrationError(
+            "Error migrating the docs, please check the logs for more detail."
+        )

@@ -32,16 +32,13 @@ from .helpers import assert_substrings_in_string
         pytest.param(Path("not/matching/group"), "test", "test", id="non-prefix path"),
     ],
 )
-def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expected: str):
+def test__extract_name(path: Path, table_path: types_.TablePath, expected: str):
     """
     arrange: given a path and table path composed from groups
-    act: when _extract_name_from_paths is called
+    act: when _extract_name is called
     assert: the name part is extracted from table path.
     """
-    assert (
-        migration._extract_name_from_paths(current_group_path=path, table_path=table_path)
-        == expected
-    )
+    assert migration._extract_name(current_group_path=path, table_path=table_path) == expected
 
 
 @pytest.mark.parametrize(
@@ -726,74 +723,24 @@ def test__get_docs_metadata():
     assert isinstance(returned_docs_metadata[1], types_.MigrationFileMeta)
 
 
-@pytest.mark.parametrize(
-    "migration_results",
-    [
-        pytest.param(
-            (factories.ActionReportFactory(is_failed=True, is_migrate=True),),
-            id="single failed result",
-        ),
-        pytest.param(
-            (
-                factories.ActionReportFactory(is_success=True, is_migrate=True),
-                factories.ActionReportFactory(is_failed=True, is_migrate=True),
-            ),
-            id="single failed result in successful result",
-        ),
-        pytest.param(
-            (
-                factories.ActionReportFactory(is_skipped=True, is_migrate=True),
-                factories.ActionReportFactory(is_failed=True, is_migrate=True),
-            ),
-            id="single failed result in skipped result",
-        ),
-        pytest.param(
-            (
-                factories.ActionReportFactory(is_success=True, is_migrate=True),
-                factories.ActionReportFactory(is_failed=True, is_migrate=True),
-                factories.ActionReportFactory(is_skipped=True, is_migrate=True),
-                factories.ActionReportFactory(is_failed=True, is_migrate=True),
-            ),
-            id="multiple failed results in multiple result types",
-        ),
-    ],
-)
-def test__assert_migration_success_failed_result(migration_results: Iterable[types_.ActionReport]):
+def test_run_error(tmp_path: Path):
     """
-    arrange: given an migration results iterable with a failed result
-    act: when _assert_migration_success is called
-    assert: Migration error is raised.
+    arrange: given table rows, index content, mocked discourse that throws an exception and a
+        temporary docs path
+    act: when run is called
+    assert: table rows are successfully migrated
     """
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    table_rows = (factories.TableRowFactory(level=1),)
+
     with pytest.raises(exceptions.MigrationError):
-        migration._assert_migration_success(migration_reports=migration_results)
-
-
-@pytest.mark.parametrize(
-    "migration_results",
-    [
-        pytest.param(
-            (factories.ActionReportFactory(is_success=True, is_migrate=True),),
-            id="successful result",
-        ),
-        pytest.param(
-            (factories.ActionReportFactory(is_skipped=True, is_migrate=True),), id="skipped result"
-        ),
-        pytest.param(
-            (
-                factories.ActionReportFactory(is_success=True, is_migrate=True),
-                factories.ActionReportFactory(is_skipped=True, is_migrate=True),
-            ),
-            id="non-failed results",
-        ),
-    ],
-)
-def test__assert_migration_success(migration_results: Iterable[types_.ActionReport]):
-    """
-    arrange: given an migration results iterable with no failed result
-    act: when _assert_migration_success is called
-    assert: No exceptions are raised.
-    """
-    migration._assert_migration_success(migration_reports=migration_results)
+        migration.run(
+            table_rows=table_rows,
+            index_content="content-1",
+            discourse=mocked_discourse,
+            docs_path=tmp_path,
+        )
 
 
 @pytest.mark.parametrize(

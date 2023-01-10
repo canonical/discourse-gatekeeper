@@ -208,7 +208,6 @@ def test__run_migrate_server_error_topic(
         )
 
 
-# pylint: disable=too-many-locals
 def test__run_migrate(
     repository_path: Path,
     upstream_repository: Repo,
@@ -253,9 +252,6 @@ def test__run_migrate(
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
-# pylint: enable=too-many-locals
-
-
 def test_run_no_docs_no_dir(repository_path: Path):
     """
     arrange: given a path with a metadata.yaml that has no docs key and no docs directory
@@ -269,8 +265,9 @@ def test_run_no_docs_no_dir(repository_path: Path):
 
     with pytest.raises(exceptions.InputError) as exc:
         # run is repeated in unit tests / integration tests
-        # pylint: disable=duplicate-code
-        _ = run(base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input)
+        _ = run(
+            base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
+        )  # pylint: disable=duplicate-code
 
     assert str(exc.value) == GETTING_STARTED
 
@@ -289,10 +286,9 @@ def test_run_no_docs_empty_dir(repository_path: Path):
     user_input = factories.UserInputFactory()
 
     # run is repeated in unit tests / integration tests
-    # pylint: disable=duplicate-code
     returned_page_interactions = run(
         base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
-    )
+    )  # pylint: disable=duplicate-code
 
     mocked_discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
@@ -301,7 +297,6 @@ def test_run_no_docs_empty_dir(repository_path: Path):
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
-# pylint: disable=too-many-locals
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
     repository_path: Path,

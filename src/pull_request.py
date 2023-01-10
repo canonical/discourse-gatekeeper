@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Module for handling git repository."""
+"""Module for handling interactions with git repository."""
 
 import logging
 import re
