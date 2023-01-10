@@ -177,6 +177,90 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
 # Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
+    "row, path, expected_meta",
+    [
+        pytest.param(
+            doc_row := factories.TableRowFactory(is_document=True, path="doc-1"),
+            Path(),
+            types_.DocumentMeta(
+                path=Path("doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+            ),
+            id="single doc file",
+        ),
+        pytest.param(
+            doc_row := factories.TableRowFactory(is_document=True, path="group-1-doc-1"),
+            Path("group-1"),
+            types_.DocumentMeta(
+                path=Path("group-1/doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+            ),
+            id="nested doc file",
+        ),
+        pytest.param(
+            doc_row := factories.TableRowFactory(is_document=True, path="group-2-doc-1"),
+            Path("group-1"),
+            types_.DocumentMeta(
+                path=Path("group-1/group-2-doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+            ),
+            id="typo in nested doc file path",
+        ),
+    ],
+)
+def test__create_document_meta(
+    row: types_.TableRow, path: Path, expected_meta: types_.DocumentMeta
+):
+    """
+    arrange: given a document table row
+    act: when _create_document_meta is called
+    assert: document meta with path to file is returned.
+    """
+    assert migration._create_document_meta(row=row, path=path) == expected_meta
+
+
+@pytest.mark.parametrize(
+    "row, path, expected_meta",
+    [
+        pytest.param(
+            group_row := factories.TableRowFactory(is_group=True, path="group-1"),
+            Path("group-1"),
+            types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row),
+            id="single group row",
+        ),
+        pytest.param(
+            group_row := factories.TableRowFactory(is_group=True, path="group-1-group-2"),
+            Path("group-1/group-2"),
+            types_.GitkeepMeta(path=Path("group-1/group-2/.gitkeep"), table_row=group_row),
+            id="nested group row with correct current path",
+        ),
+    ],
+)
+def test__create_gitkeep_meta(row: types_.TableRow, path: Path, expected_meta: types_.GitkeepMeta):
+    """
+    arrange: given a empty group table row
+    act: when _create_gitkeep_meta is called
+    assert: gitkeep meta denoting empty group is returned.
+    """
+    assert migration._create_gitkeep_meta(row=row, path=path) == expected_meta
+
+
+@pytest.mark.parametrize(
+    "content, expected_meta",
+    [
+        pytest.param(
+            content := "content-1",
+            types_.IndexDocumentMeta(path=Path("index.md"), content=content),
+        ),
+    ],
+)
+def test__index_file_from_content(content: str, expected_meta: types_.IndexDocumentMeta):
+    """
+    arrange: given an index file content
+    act: when _index_file_from_content is called
+    assert: expected index document metadata is returned.
+    """
+    assert migration._index_file_from_content(content) == expected_meta
+
+
+@pytest.mark.parametrize(
     "table_rows, expected_metas",
     [
         pytest.param((), (), id="no table rows"),
@@ -341,6 +425,30 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
         pytest.param(
             (
                 group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                nested_doc_row_1 := factories.TableRowFactory(
+                    level=2, path="group-1-doc-1", is_document=True
+                ),
+                nested_doc_row_2 := factories.TableRowFactory(
+                    level=2, path="group-1-doc-2", is_document=True
+                ),
+            ),
+            (
+                types_.DocumentMeta(
+                    path=Path("group-1/doc-1.md"),
+                    link=nested_doc_row_1.navlink.link,
+                    table_row=nested_doc_row_1,
+                ),
+                types_.DocumentMeta(
+                    path=Path("group-1/doc-2.md"),
+                    link=nested_doc_row_2.navlink.link,
+                    table_row=nested_doc_row_2,
+                ),
+            ),
+            id="multi rows 2 nested in group(group, nested-doc, nested-doc)",
+        ),
+        pytest.param(
+            (
+                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
                 nested_group_row_1 := factories.TableRowFactory(
                     level=2, path="group-1-group-2", is_group=True
                 ),
@@ -402,7 +510,7 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
     ],
 )
 def test__extract_docs_from_table_rows(
-    table_rows: tuple[types_.TableRow, ...], expected_metas: Iterable[types_.DocumentMeta]
+    table_rows: tuple[types_.TableRow, ...], expected_metas: tuple[types_.DocumentMeta, ...]
 ):
     """
     arrange: given an valid table row sequences
@@ -413,90 +521,6 @@ def test__extract_docs_from_table_rows(
         tuple(row for row in migration._extract_docs_from_table_rows(table_rows=table_rows))
         == expected_metas
     )
-
-
-@pytest.mark.parametrize(
-    "row, path, expected_meta",
-    [
-        pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="doc-1"),
-            Path(),
-            types_.DocumentMeta(
-                path=Path("doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
-            ),
-            id="single doc file",
-        ),
-        pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="group-1-doc-1"),
-            Path("group-1"),
-            types_.DocumentMeta(
-                path=Path("group-1/doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
-            ),
-            id="nested doc file",
-        ),
-        pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="group-2-doc-1"),
-            Path("group-1"),
-            types_.DocumentMeta(
-                path=Path("group-1/group-2-doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
-            ),
-            id="typo in nested doc file path",
-        ),
-    ],
-)
-def test__create_document_meta(
-    row: types_.TableRow, path: Path, expected_meta: types_.DocumentMeta
-):
-    """
-    arrange: given a document table row
-    act: when _create_document_meta is called
-    assert: document meta with path to file is returned.
-    """
-    assert migration._create_document_meta(row=row, path=path) == expected_meta
-
-
-@pytest.mark.parametrize(
-    "row, path, expected_meta",
-    [
-        pytest.param(
-            group_row := factories.TableRowFactory(is_group=True, path="group-1"),
-            Path("group-1"),
-            types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row),
-            id="single group row",
-        ),
-        pytest.param(
-            group_row := factories.TableRowFactory(is_group=True, path="group-1-group-2"),
-            Path("group-1/group-2"),
-            types_.GitkeepMeta(path=Path("group-1/group-2/.gitkeep"), table_row=group_row),
-            id="nested group row with correct current path",
-        ),
-    ],
-)
-def test__create_gitkeep_meta(row: types_.TableRow, path: Path, expected_meta: types_.GitkeepMeta):
-    """
-    arrange: given a empty group table row
-    act: when _create_gitkeep_meta is called
-    assert: gitkeep meta denoting empty group is returned.
-    """
-    assert migration._create_gitkeep_meta(row=row, path=path) == expected_meta
-
-
-@pytest.mark.parametrize(
-    "content, expected_meta",
-    [
-        pytest.param(
-            content := "content-1",
-            types_.IndexDocumentMeta(path=Path("index.md"), content=content),
-        ),
-    ],
-)
-def test__index_file_from_content(content: str, expected_meta: types_.IndexDocumentMeta):
-    """
-    arrange: given an index file content
-    act: when _index_file_from_content is called
-    assert: expected index document metadata is returned.
-    """
-    assert migration._index_file_from_content(content) == expected_meta
 
 
 @pytest.mark.parametrize(
