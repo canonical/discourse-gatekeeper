@@ -16,20 +16,20 @@ EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILENAME = ".gitkeep"
 
 
-def _extract_name_from_paths(current_path: Path, table_path: types_.TablePath) -> str:
+def _extract_name_from_paths(current_group_path: Path, table_path: types_.TablePath) -> str:
     """Extract name given a current working directory and table path.
 
     If there is a matching prefix in table path's prefix generated from the current directory,
     the prefix is removed and the remaining segment is returned as the extracted name.
 
     Args:
-        current_path: current path of the file relative to the directory.
+        current_group_path: current path of the file relative to the group's path directory.
         table_path: table path of the file from the index file, of format path-to-file-filename.
 
     Returns:
         The filename derived by removing the directory path from given table path of the file.
     """
-    return table_path.removeprefix(f"{calculate_table_path(current_path)}-")
+    return table_path.removeprefix(f"{calculate_table_path(current_group_path)}-")
 
 
 def _validate_table_rows(
@@ -101,7 +101,9 @@ def _change_group_path(
         if not row.is_group:
             return group_path
         # move one level of nesting into new group path
-        return group_path / _extract_name_from_paths(current_path=group_path, table_path=row.path)
+        return group_path / _extract_name_from_paths(
+            current_group_path=group_path, table_path=row.path
+        )
 
     # working group path belongs in the group 1 level above current row's level.
     # i.e. group-1/document-1, group path is group-1
@@ -119,7 +121,7 @@ def _change_group_path(
     # i.e. current: group-1, destination: group-1/group-2, row: group-1-group-2
     if row.is_group:
         group_path = group_path / _extract_name_from_paths(
-            current_path=group_path, table_path=row.path
+            current_group_path=group_path, table_path=row.path
         )
 
     return group_path
@@ -144,7 +146,7 @@ def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMe
         raise exceptions.MigrationError(
             "Internal error, no implementation for creating document meta with missing link in row."
         )
-    name = _extract_name_from_paths(current_path=path, table_path=row.path)
+    name = _extract_name_from_paths(current_group_path=path, table_path=row.path)
     return types_.DocumentMeta(path=path / f"{name}.md", link=row.navlink.link, table_row=row)
 
 

@@ -42,7 +42,10 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
     act: when _extract_name_from_paths is called
     assert: the name part is extracted from table path.
     """
-    assert migration._extract_name_from_paths(current_path=path, table_path=table_path) == expected
+    assert (
+        migration._extract_name_from_paths(current_group_path=path, table_path=table_path)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
