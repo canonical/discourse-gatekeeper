@@ -12,7 +12,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
-from git.repo import Repo
 
 from src import exceptions, index, metadata, reconcile, run
 from src.discourse import Discourse
@@ -28,7 +27,7 @@ pytestmark = pytest.mark.reconcile
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
-    repository: tuple[Repo, Path],
+    repository_path: Path,
 ):
     """
     arrange: given running discourse server
@@ -62,10 +61,11 @@ async def test_run(
         12. the documentation page is deleted
         13. an index page is not updated
     """
-    (_, repo_path) = repository
     document_name = "name 1"
     caplog.set_level(logging.INFO)
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repo_path)
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
+    )
 
     # 1. docs with an index file in dry run mode
     caplog.clear()
@@ -75,13 +75,13 @@ async def test_run(
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repo_path,
+        path=repository_path,
     )
-    (docs_dir := repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_dir := repository_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=True,
@@ -98,7 +98,7 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -117,7 +117,7 @@ async def test_run(
     (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=True,
@@ -134,7 +134,7 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -159,7 +159,7 @@ async def test_run(
     doc_file.write_text(doc_content_2 := "doc content 2")
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=True,
@@ -178,7 +178,7 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -202,7 +202,7 @@ async def test_run(
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -226,7 +226,7 @@ async def test_run(
     )
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -254,7 +254,7 @@ async def test_run(
     nested_dir_doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=True,
@@ -276,7 +276,7 @@ async def test_run(
     caplog.clear()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -298,7 +298,7 @@ async def test_run(
     nested_dir.rmdir()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -318,7 +318,7 @@ async def test_run(
     doc_file.unlink()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,
@@ -340,7 +340,7 @@ async def test_run(
     index_file.unlink()
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(
             dry_run=False,

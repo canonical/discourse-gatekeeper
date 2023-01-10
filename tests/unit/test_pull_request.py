@@ -24,16 +24,14 @@ from src.pull_request import RepositoryClient
 from .helpers import assert_substrings_in_string
 
 
-def test___init__(repository: tuple[Repo, Path], mock_github_repo: Repository):
+def test___init__(repository: Repo, mock_github_repo: Repository):
     """
     arrange: given a local git repository client and mock github repository client
     act: when RepositoryClient is initialized
     assert: RepositoryClient is created and git user is configured.
     """
-    (repo, _) = repository
-
     repository_client = pull_request.RepositoryClient(
-        repository=repo, github_repository=mock_github_repo
+        repository=repository, github_repository=mock_github_repo
     )
 
     config_reader = repository_client._git_repo.config_reader()
@@ -73,20 +71,19 @@ def test__check_branch_not_exists(repository_client: RepositoryClient):
 
 
 def test__check_branch_exists(
-    repository_client: RepositoryClient, upstream_repository: tuple[Repo, Path]
+    repository_client: RepositoryClient, upstream_repository: Repo, upstream_repository_path: Path
 ):
     """
     arrange: given RepositoryClient with an upstream repository with check-branch-exists branch
     act: when _check_branch_exists is called
     assert: True is returned.
     """
-    (upstream_repo, upstream_path) = upstream_repository
     branch_name = "check-branch-exists"
-    head = upstream_repo.create_head(branch_name)
+    head = upstream_repository.create_head(branch_name)
     head.checkout()
-    (upstream_path / "filler-file").touch()
-    upstream_repo.git.add(".")
-    upstream_repo.git.commit("-m", "test")
+    (upstream_repository_path / "filler-file").touch()
+    upstream_repository.git.add(".")
+    upstream_repository.git.commit("-m", "test")
 
     assert repository_client.check_branch_exists(branch_name)
 
@@ -114,26 +111,26 @@ def test__create_branch_error(
 
 def test__create_branch(
     repository_client: RepositoryClient,
-    repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
+    repository_path: Path,
+    upstream_repository: Repo,
 ):
     """
     arrange: given RepositoryClient and newly created files in repo directory
     act: when _create_branch is called
     assert: a new branch is successfully created upstream.
     """
-    (_, repo_path) = repository
     testfile = "testfile.txt"
     testfile_content = "test"
-    (repo_path / testfile).write_text(testfile_content)
-    (upstream_repo, _) = upstream_repository
+    (repository_path / testfile).write_text(testfile_content)
     branch_name = "test-create-branch"
 
     repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
 
     # mypy false positive in lib due to getter/setter not being next to each other.
     assert any(
-        branch for branch in upstream_repo.branches if branch.name == branch_name  # type: ignore
+        branch
+        for branch in upstream_repository.branches  # type: ignore
+        if branch.name == branch_name
     )
 
 
@@ -171,7 +168,7 @@ def test__create_pull_request(repository_client: RepositoryClient, mock_pull_req
 
 
 def test_create_pull_request_on_default_branchname(
-    repository: tuple[Repo, Path],
+    repository: Repo,
     repository_client: RepositoryClient,
 ):
     """
@@ -179,8 +176,7 @@ def test_create_pull_request_on_default_branchname(
     act: when create_pull_request is called
     assert: InputError is raised.
     """
-    (repo, _) = repository
-    head = repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head = repository.create_head(pull_request.DEFAULT_BRANCH_NAME)
     head.checkout()
 
     with pytest.raises(InputError) as exc:
@@ -215,23 +211,23 @@ def test_create_pull_request_no_dirty_files(
 
 def test_create_pull_request_existing_branch(
     repository_client: RepositoryClient,
-    upstream_repository: tuple[Repo, Path],
-    repository: tuple[Repo, Path],
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
+    repository_path: Path,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
     act: when create_pull_request is called
     assert: InputError is raised.
     """
-    (_, repo_path) = repository
-    (repo_path / "filler-file").write_text("filler-content")
-    (upstream_repo, upstream_path) = upstream_repository
+    (repository_path / "filler-file").write_text("filler-content")
+
     branch_name = pull_request.DEFAULT_BRANCH_NAME
-    head = upstream_repo.create_head(branch_name)
+    head = upstream_repository.create_head(branch_name)
     head.checkout()
-    (upstream_path / "filler-file").touch()
-    upstream_repo.git.add(".")
-    upstream_repo.git.commit("-m", "test")
+    (upstream_repository_path / "filler-file").touch()
+    upstream_repository.git.add(".")
+    upstream_repository.git.commit("-m", "test")
 
     with pytest.raises(InputError) as exc:
         pull_request.create_pull_request(repository=repository_client)
@@ -249,8 +245,9 @@ def test_create_pull_request_existing_branch(
 
 def test_create_pull_request(
     repository_client: RepositoryClient,
-    upstream_repository: tuple[Repo, Path],
-    repository: tuple[Repo, Path],
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
+    repository_path: Path,
     mock_pull_request: PullRequest,
 ):
     """
@@ -258,18 +255,16 @@ def test_create_pull_request(
     act: when create_pull_request is called
     assert: changes are pushed to default branch and pull request link is returned.
     """
-    (_, repo_path) = repository
     filler_filename = "filler-file"
-    filler_file = repo_path / filler_filename
+    filler_file = repository_path / filler_filename
     filler_text = "filler-text"
     filler_file.write_text(filler_text)
 
     returned_pr_link = pull_request.create_pull_request(repository=repository_client)
 
-    (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
-    assert (upstream_path / filler_filename).read_text() == filler_text
+    assert (upstream_repository_path / filler_filename).read_text() == filler_text
 
 
 @pytest.mark.parametrize(
@@ -322,18 +317,19 @@ def test_get_repository_name(remote_url: str, expected_repository_name: str):
     )
 
 
-def test_create_repository_client_no_token(repository: tuple[Repo, Path]):
+def test_create_repository_client_no_token(
+    repository_path: Path,
+):
     """
     arrange: given valid repository path and empty access_token
     act: when create_repository_client is called
     assert: InputError is raised.
     """
-    (_, repo_path) = repository
     # the following token is for testing purposes only.
     test_token = ""  # nosec
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_repository_client(access_token=test_token, base_path=repo_path)
+        pull_request.create_repository_client(access_token=test_token, base_path=repository_path)
 
     assert_substrings_in_string(
         ("invalid", "access_token", "input", "it must be", "non-empty"),
@@ -342,17 +338,19 @@ def test_create_repository_client_no_token(repository: tuple[Repo, Path]):
 
 
 def test_create_repository_client(
-    monkeypatch: pytest.MonkeyPatch, repository: tuple[Repo, Path], mock_github_repo: Repository
+    monkeypatch: pytest.MonkeyPatch,
+    repository: Repo,
+    repository_path: Path,
+    mock_github_repo: Repository,
 ):
     """
     arrange: given valid repository path and a valid access_token and a mocked github client
     act: when create_repository_client is called
     assert: RepositoryClient is returned.
     """
-    (repo, repo_path) = repository
-    origin = repo.remote("origin")
-    repo.delete_remote(origin)
-    repo.create_remote("origin", "https://github.com/test-user/test-repo.git")
+    origin = repository.remote("origin")
+    repository.delete_remote(origin)
+    repository.create_remote("origin", "https://github.com/test-user/test-repo.git")
     # the following token is for testing purposes only.
     test_token = "testing-token"  # nosec
     mock_github_client = mock.MagicMock(spec=Github)
@@ -360,7 +358,7 @@ def test_create_repository_client(
     monkeypatch.setattr(pull_request, "Github", mock_github_client)
 
     returned_client = pull_request.create_repository_client(
-        access_token=test_token, base_path=repo_path
+        access_token=test_token, base_path=repository_path
     )
 
     assert isinstance(returned_client, pull_request.RepositoryClient)

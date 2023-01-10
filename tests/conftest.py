@@ -17,36 +17,51 @@ import src
 from src import pull_request
 
 
-@pytest.fixture(name="upstream_repository")
-def fixture_upstream_repository(tmp_path: Path) -> tuple[Repo, Path]:
-    """Create upstream repository."""
+@pytest.fixture(name="upstream_repository_path")
+def fixture_upstream_repository_path(tmp_path: Path) -> Path:
+    """Create a path for upstream repository."""
     upstream_path = tmp_path / "upstream"
     upstream_path.mkdir()
-    upstream = Repo.init(upstream_path)
-    writer = upstream.config_writer()
+    return upstream_path
+
+
+@pytest.fixture(name="upstream_repository")
+def fixture_upstream_repository(upstream_repository_path: Path) -> Repo:
+    """Initialize upstream repository."""
+    upstream_repository = Repo.init(upstream_repository_path)
+    writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
     writer.set_value("user", "email", "upstream_email")
     writer.release()
-    upstream.git.checkout("-b", "main")
-    (upstream_path / ".gitkeep").touch()
-    upstream.git.add(".")
-    upstream.git.commit("-m", "'initial commit'")
+    upstream_repository.git.checkout("-b", "main")
+    (upstream_repository_path / ".gitkeep").touch()
+    upstream_repository.git.add(".")
+    upstream_repository.git.commit("-m", "'initial commit'")
 
-    return (upstream, upstream_path)
+    return upstream_repository
+
+
+@pytest.fixture(name="repository_path")
+def fixture_repository_path(tmp_path: Path) -> Path:
+    """Create path for testing repository."""
+    repo_path = tmp_path / "mocked"
+    repo_path.mkdir()
+    return repo_path
 
 
 @pytest.fixture(name="repository")
 def fixture_repository(
-    upstream_repository: tuple[Repo, Path], tmp_path: Path
-) -> tuple[Repo, Path]:
+    upstream_repository: Repo, upstream_repository_path: Path, repository_path: Path
+) -> Repo:
     """Create repository with mocked upstream."""
-    (_, upstream_path) = upstream_repository
-    repo_path = tmp_path / "mocked"
-    repo_path.mkdir()
-    repo = Repo.clone_from(url=upstream_path, to_path=repo_path)
+    # uptream_repository is added to create a dependency for the current fixture in order to ensure
+    # that the repository can be cloned after the upstream has fully initialized.
+    del upstream_repository
+
+    repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
     repo.git.checkout("main")
     repo.git.pull()
-    return (repo, repo_path)
+    return repo
 
 
 @pytest.fixture(name="mock_pull_request")
@@ -80,11 +95,10 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    repository: tuple[Repo, Path], mock_github_repo: Repository
+    repository: Repo, mock_github_repo: Repository
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
-    (repo, _) = repository
-    return pull_request.RepositoryClient(repository=repo, github_repository=mock_github_repo)
+    return pull_request.RepositoryClient(repository=repository, github_repository=mock_github_repo)
 
 
 @pytest.fixture(name="patch_create_repository_client")

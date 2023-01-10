@@ -175,7 +175,7 @@ def test__run_migrate_server_error_index(
 
 
 def test__run_migrate_server_error_topic(
-    repository: tuple[Repo, Path],
+    repository_path: Path,
     repository_client: pull_request.RepositoryClient,
 ):
     """
@@ -198,11 +198,10 @@ def test__run_migrate_server_error_topic(
     meta = types_.Metadata(name="name 1", docs=index_url)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
-    (_, repo_path) = repository
 
     with pytest.raises(exceptions.MigrationError):
         _run_migrate(
-            base_path=repo_path,
+            base_path=repository_path,
             metadata=meta,
             discourse=mocked_discourse,
             repository=repository_client,
@@ -211,8 +210,9 @@ def test__run_migrate_server_error_topic(
 
 # pylint: disable=too-many-locals
 def test__run_migrate(
-    repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
+    repository_path: Path,
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
     repository_client: pull_request.RepositoryClient,
     mock_pull_request: PullRequest,
 ):
@@ -233,20 +233,22 @@ def test__run_migrate(
         index_page,
         (link_content := "link 1 content"),
     ]
-    (_, repo_path) = repository
 
     returned_migration_reports = _run_migrate(
-        base_path=repo_path,
+        base_path=repository_path,
         metadata=meta,
         discourse=mocked_discourse,
         repository=repository_client,
     )
 
-    (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
-    assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
-    assert (path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1.md").is_file()
+    assert (
+        index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
+    ).is_file()
+    assert (
+        path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
+    ).is_file()
     assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == link_content
 
@@ -254,36 +256,34 @@ def test__run_migrate(
 # pylint: enable=too-many-locals
 
 
-def test_run_no_docs_no_dir(repository: tuple[Repo, Path]):
+def test_run_no_docs_no_dir(repository_path: Path):
     """
     arrange: given a path with a metadata.yaml that has no docs key and no docs directory
         and mocked discourse
     act: when run is called
     assert: InputError is raised with a guide to getting started.
     """
-    (_, repo_path) = repository
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repository_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     user_input = factories.UserInputFactory()
 
     with pytest.raises(exceptions.InputError) as exc:
         # run is repeated in unit tests / integration tests
         # pylint: disable=duplicate-code
-        _ = run(base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input)
+        _ = run(base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input)
 
     assert str(exc.value) == GETTING_STARTED
 
 
-def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
+def test_run_no_docs_empty_dir(repository_path: Path):
     """
     arrange: given a path with a metadata.yaml that has no docs key and has empty docs directory
         and mocked discourse
     act: when run is called
     assert: then an index page is created with empty navigation table.
     """
-    (_, repo_path) = repository
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repo_path)
-    (repo_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repository_path)
+    (repository_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
     user_input = factories.UserInputFactory()
@@ -291,7 +291,7 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
     # run is repeated in unit tests / integration tests
     # pylint: disable=duplicate-code
     returned_page_interactions = run(
-        base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input
+        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
@@ -304,8 +304,9 @@ def test_run_no_docs_empty_dir(repository: tuple[Repo, Path]):
 # pylint: disable=too-many-locals
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
-    repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
+    repository_path: Path,
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
     mock_pull_request: PullRequest,
 ):
     """
@@ -315,10 +316,9 @@ def test_run_no_docs_dir(
     assert: then docs from the server is migrated into local docs path and the files created
         are return as the result.
     """
-    (_, repo_path) = repository
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
-        path=repo_path,
+        path=repository_path,
     )
     index_content = """Content header.
 
@@ -334,15 +334,16 @@ def test_run_no_docs_dir(
 
     # run is repeated in unit tests / integration tests
     returned_migration_reports = run(
-        base_path=repo_path, discourse=mocked_discourse, user_inputs=user_input
+        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
     )  # pylint: disable=duplicate-code
 
-    (upstream_repo, upstream_path) = upstream_repository
-    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
-    assert (index_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (
-        path_file := upstream_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+        index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
+    ).is_file()
+    assert (
+        path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
     ).is_file()
     assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == navlink_page

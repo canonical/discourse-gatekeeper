@@ -29,8 +29,10 @@ async def test_run_migrate(
     discourse_hostname: str,
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
-    repository: tuple[Repo, Path],
-    upstream_repository: tuple[Repo, Path],
+    repository: Repo,
+    repository_path: Path,
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
     mock_pull_request: PullRequest,
 ):
     """
@@ -47,8 +49,6 @@ async def test_run_migrate(
     caplog.set_level(logging.INFO)
     document_name = "migration name 1"
     discourse_prefix = f"http://{discourse_hostname}"
-    (repo, repo_path) = repository
-    (upstream_repo, upstream_repo_path) = upstream_repository
     content_page_1 = factories.ContentPageFactory()
     content_page_1_url = discourse_api.create_topic(
         title=content_page_1.title,
@@ -95,17 +95,17 @@ async def test_run_migrate(
     caplog.clear()
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repo_path,
+        path=repository_path,
     )
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(),
     )
 
-    upstream_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    upstream_doc_dir = upstream_repo_path / index.DOCUMENTATION_FOLDER_NAME
+    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_doc_dir = upstream_repository_path / index.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
@@ -121,10 +121,10 @@ async def test_run_migrate(
 
     # 2. with no changes applied after migration
     caplog.clear()
-    repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
     urls_with_actions = run(
-        base_path=repo_path,
+        base_path=repository_path,
         discourse=discourse_api,
         user_inputs=factories.UserInputFactory(),
     )
