@@ -103,8 +103,11 @@ charmhub.
             run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```
 
-    a branch name with `upload-charm-docs/migrate` will be created and a pull request named `[upload-charm-docs] Migrate charm docs` will be created towards the working branch the workflow was triggered with. 
-    In order to ensure that the branches can be created successfully, please make sure that there are no existing branches clashing with the name above.
+    a branch name with `upload-charm-docs/migrate` will be created and a pull 
+    request named `[upload-charm-docs] Migrate charm docs` will be created 
+    towards the working branch the workflow was triggered with. 
+    In order to ensure that the branches can be created successfully, please 
+    make sure that there are no existing branches clashing with the name above.
     Please note that `dry_run` parameter has no effect on migrate mode.
 
 The action will now compare the discourse topics with the files and directories
