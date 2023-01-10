@@ -117,7 +117,7 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
     ],
 )
 def test__validate_table_rows_invalid_rows(
-    table_rows: Iterable[types_.TableRow], expected_message_contents: Iterable[str]
+    table_rows: tuple[types_.TableRow, ...], expected_message_contents: Iterable[str]
 ):
     """
     arrange: given invalid table_rows sequence
@@ -163,7 +163,7 @@ def test__validate_table_rows_invalid_rows(
         ),
     ],
 )
-def test__validate_table_rows(table_rows: Iterable[types_.TableRow]):
+def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
     """
     arrange: given table rows of valid sequence
     act: when _validate_table_rows is called
@@ -402,7 +402,7 @@ def test__validate_table_rows(table_rows: Iterable[types_.TableRow]):
     ],
 )
 def test__extract_docs_from_table_rows(
-    table_rows: Iterable[types_.TableRow], expected_metas: Iterable[types_.DocumentMeta]
+    table_rows: tuple[types_.TableRow, ...], expected_metas: Iterable[types_.DocumentMeta]
 ):
     """
     arrange: given an valid table row sequences
@@ -808,7 +808,7 @@ def test__assert_migration_success(migration_results: Iterable[types_.ActionRepo
     ],
 )
 def test_run(
-    table_rows: Iterable[types_.TableRow],
+    table_rows: tuple[types_.TableRow, ...],
     index_content: str,
     tmp_path: Path,
     expected_files: Iterable[Path],

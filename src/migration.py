@@ -358,7 +358,7 @@ def _run_one(
 
 def _get_docs_metadata(
     table_rows: typing.Iterable[types_.TableRow], index_content: str
-) -> typing.Iterable[types_.MigrationFileMeta]:
+) -> itertools.chain[types_.MigrationFileMeta]:
     """Get metadata for documents to be migrated.
 
     Args:
