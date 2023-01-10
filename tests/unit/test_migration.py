@@ -618,13 +618,7 @@ def test__migrate_index(tmp_path: Path):
         pytest.param(
             gitkeep_meta := types_.GitkeepMeta(
                 path=(gitkeep_path := Path(".gitkeep")),
-                table_row=(
-                    table_row_sample := types_.TableRow(
-                        level=1,
-                        path="tablepath",
-                        navlink=types_.Navlink(title="navlink", link=None),
-                    )
-                ),
+                table_row=(table_row_sample := factories.TableRowFactory()),
             ),
             gitkeep_report := types_.ActionReport(
                 table_row=table_row_sample,
@@ -637,7 +631,7 @@ def test__migrate_index(tmp_path: Path):
         pytest.param(
             document_meta := types_.DocumentMeta(
                 path=(document_path := Path("document.md")),
-                table_row=table_row_sample,
+                table_row=(table_row_sample := factories.TableRowFactory()),
                 link="samplelink",
             ),
             document_report := types_.ActionReport(
