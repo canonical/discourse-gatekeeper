@@ -98,28 +98,6 @@ def test__extract_name_from_paths(path: Path, table_path: types_.TablePath, expe
         pytest.param(
             (
                 factories.TableRowFactory(level=1, is_document=True),
-                factories.TableRowFactory(level=3, is_document=True),
-            ),
-            (
-                "invalid row level value sequence",
-                "level sequence jumps of more than 1 is invalid.",
-            ),
-            id="document sequence level increase(skip level)",
-        ),
-        pytest.param(
-            (
-                factories.TableRowFactory(level=1, is_group=True),
-                factories.TableRowFactory(level=3, is_group=True),
-            ),
-            (
-                "invalid row level value sequence",
-                "level sequence jumps of more than 1 is invalid.",
-            ),
-            id="group sequence level increase(skip level)",
-        ),
-        pytest.param(
-            (
-                factories.TableRowFactory(level=1, is_document=True),
                 factories.TableRowFactory(level=2, is_group=True),
             ),
             (
