@@ -36,6 +36,8 @@ def _log_content_change(old: str, new: str) -> None:
         old: The previous content.
         new: The current content.
     """
+    old = f"{old}\n" if not old.endswith("\n") else old
+    new = f"{new}\n" if not new.endswith("\n") else new
     if new != old:
         logging.info(
             "content change:\n%s",

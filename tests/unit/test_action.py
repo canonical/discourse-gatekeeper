@@ -362,7 +362,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
+            old=(old_content := "content 1"), new=(new_content := "content 2")
         ),
     )
 
@@ -376,7 +376,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             f"dry run: {False}",
             old_content,
             new_content,
-            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
+            f"content change:\n- {old_content}\n?         ^\n+ {new_content}\n?         ^\n",
         ),
         caplog.text,
     )
