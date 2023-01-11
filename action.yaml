@@ -16,7 +16,7 @@ inputs:
     required: false
     type: boolean
   discourse_host:
-    description: The discourse host name.
+    description: The base path(hostname) to the discourse server.
     required: true
     type: string
   discourse_api_username:

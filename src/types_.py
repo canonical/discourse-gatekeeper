@@ -15,7 +15,7 @@ class UserInputs:
     """Configurable user input values used to run upload-charm-docs.
 
     Attrs:
-        discourse_hostname: The discourse hostname.
+        discourse_hostname: The base path to the discourse server.
         discourse_category_id: The category identifier to use on discourse for all topics.
         discourse_api_username: The discourse API username to use for interactions with the server.
         discourse_api_key: The discourse API key to use for interactions with the server.
