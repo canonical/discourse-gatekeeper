@@ -29,6 +29,24 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
     return discourse.absolute_url(url=url) if url is not None else None
 
 
+def _log_content_change(old: str, new: str) -> None:
+    """Log the difference between the old and new content, if any.
+
+    Args:
+        old: The previous content.
+        new: The current content.
+    """
+    if new != old:
+        logging.info(
+            "content change:\n%s",
+            "".join(
+                difflib.Differ().compare(
+                    old.splitlines(keepends=True), new.splitlines(keepends=True)
+                )
+            ),
+        )
+
+
 def _create(
     action: types_.CreateAction, discourse: Discourse, dry_run: bool, name: str
 ) -> types_.ActionReport:
@@ -131,17 +149,8 @@ def _update(
         action.content_change is not None
         and action.content_change.old is not None
         and action.content_change.new is not None
-        and action.content_change.old != action.content_change.new
     ):
-        logging.info(
-            "content change:\n%s",
-            "".join(
-                difflib.Differ().compare(
-                    action.content_change.old.splitlines(keepends=True),
-                    action.content_change.new.splitlines(keepends=True),
-                )
-            ),
-        )
+        _log_content_change(old=action.content_change.old, new=action.content_change.new)
 
     if (
         not dry_run
@@ -329,15 +338,7 @@ def _run_index(
         case types_.UpdateIndexAction:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
-                logging.info(
-                    "content change:\n%s",
-                    "".join(
-                        difflib.Differ().compare(
-                            action.content_change.old.splitlines(keepends=True),
-                            action.content_change.new.splitlines(keepends=True),
-                        )
-                    ),
-                )
+                _log_content_change(old=action.content_change.old, new=action.content_change.new)
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 report = types_.ActionReport(
                     table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None

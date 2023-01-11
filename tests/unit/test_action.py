@@ -6,7 +6,6 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
-import difflib
 import logging
 import types
 from unittest import mock
