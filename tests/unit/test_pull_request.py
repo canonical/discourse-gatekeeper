@@ -24,7 +24,7 @@ from src.pull_request import RepositoryClient
 from .helpers import assert_substrings_in_string
 
 
-def test___init__(repository: Repo, mock_github_repo: Repository):
+def test_repository_client__init__(repository: Repo, mock_github_repo: Repository):
     """
     arrange: given a local git repository client and mock github repository client
     act: when RepositoryClient is initialized
@@ -39,7 +39,7 @@ def test___init__(repository: Repo, mock_github_repo: Repository):
     assert config_reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
 
 
-def test__check_branch_exists_error(
+def test_repository_client_check_branch_exists_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
@@ -61,7 +61,7 @@ def test__check_branch_exists_error(
     )
 
 
-def test__check_branch_not_exists(repository_client: RepositoryClient):
+def test_repository_client_check_branch_not_exists(repository_client: RepositoryClient):
     """
     arrange: given RepositoryClient with an upstream repository
     act: when _check_branch_exists is called
@@ -70,7 +70,7 @@ def test__check_branch_not_exists(repository_client: RepositoryClient):
     assert not repository_client.check_branch_exists("no-such-branchname")
 
 
-def test__check_branch_exists(
+def test_repository_client_check_branch_exists(
     repository_client: RepositoryClient, upstream_repository: Repo, upstream_repository_path: Path
 ):
     """
@@ -88,7 +88,7 @@ def test__check_branch_exists(
     assert repository_client.check_branch_exists(branch_name)
 
 
-def test__create_branch_error(
+def test_repository_client_create_branch_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
@@ -109,7 +109,7 @@ def test__create_branch_error(
     )
 
 
-def test__create_branch(
+def test_repository_client_create_branch(
     repository_client: RepositoryClient,
     repository_path: Path,
     upstream_repository: Repo,
@@ -134,7 +134,7 @@ def test__create_branch(
     )
 
 
-def test__create_pull_request_error(
+def test_repository_client_create_pull_request_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
@@ -156,7 +156,9 @@ def test__create_pull_request_error(
     )
 
 
-def test__create_pull_request(repository_client: RepositoryClient, mock_pull_request: PullRequest):
+def test_repository_client_create_pull_request(
+    repository_client: RepositoryClient, mock_pull_request: PullRequest
+):
     """
     arrange: given RepositoryClient with a mocked github client that returns a mocked pull request
     act: when _create_pull_request is called
