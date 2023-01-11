@@ -131,11 +131,15 @@ def _update(
         action.content_change is not None
         and action.content_change.old is not None
         and action.content_change.new is not None
+        and action.content_change.old != action.content_change.new
     ):
         logging.info(
-            "content change: %s",
-            "\n".join(
-                difflib.Differ().compare(action.content_change.old, action.content_change.new)
+            "content change:\n%s",
+            "".join(
+                difflib.Differ().compare(
+                    action.content_change.old.splitlines(keepends=True),
+                    action.content_change.new.splitlines(keepends=True),
+                )
             ),
         )
 
@@ -325,6 +329,15 @@ def _run_index(
         case types_.UpdateIndexAction:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
+                logging.info(
+                    "content change:\n%s",
+                    "".join(
+                        difflib.Differ().compare(
+                            action.content_change.old.splitlines(keepends=True),
+                            action.content_change.new.splitlines(keepends=True),
+                        )
+                    ),
+                )
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 report = types_.ActionReport(
                     table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None

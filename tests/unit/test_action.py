@@ -276,7 +276,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1"), new=(new_content := "content 2")
+            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
         ),
     )
 
@@ -290,7 +290,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             f"dry run: {True}",
             old_content,
             new_content,
-            "\n".join(difflib.Differ().compare(old_content, new_content)),
+            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
         ),
         caplog.text,
     )
@@ -330,12 +330,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     )
 
     assert_substrings_in_string(
-        (
-            f"action: {update_action}",
-            f"dry run: {False}",
-            content,
-            "\n".join(difflib.Differ().compare(content, content)),
-        ),
+        (f"action: {update_action}", f"dry run: {False}", content),
         caplog.text,
     )
     mocked_discourse.update_topic.assert_not_called()
@@ -368,7 +363,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1"), new=(new_content := "content 2")
+            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
         ),
     )
 
@@ -382,7 +377,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             f"dry run: {False}",
             old_content,
             new_content,
-            "\n".join(difflib.Differ().compare(old_content, new_content)),
+            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
         ),
         caplog.text,
     )
@@ -417,7 +412,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1"), new=(new_content := "content 2")
+            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
         ),
     )
 
@@ -431,7 +426,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             f"dry run: {False}",
             old_content,
             new_content,
-            "\n".join(difflib.Differ().compare(old_content, new_content)),
+            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
         ),
         caplog.text,
     )
@@ -828,7 +823,9 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     index_action = src_types.UpdateIndexAction(
         url=(url := "url 1"),
-        content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
+        content_change=src_types.IndexContentChange(
+            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
+        ),
     )
 
     returned_report = action._run_index(
@@ -836,9 +833,16 @@ def test__run_index_update_error(caplog: pytest.LogCaptureFixture):
     )
 
     assert_substrings_in_string(
-        (f"action: {index_action}", f"dry run: {False}", f"report: {returned_report}"), caplog.text
+        (
+            f"action: {index_action}",
+            f"dry run: {False}",
+            f"report: {returned_report}",
+            new_content,
+            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
+        ),
+        caplog.text,
     )
-    mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
+    mocked_discourse.update_topic.assert_called_once_with(url=url, content=new_content)
     assert returned_report.table_row is None
     assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.FAIL
@@ -855,7 +859,9 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     index_action = src_types.UpdateIndexAction(
         url=(url := "url 1"),
-        content_change=src_types.IndexContentChange(old="content 1", new=(content := "content 2")),
+        content_change=src_types.IndexContentChange(
+            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
+        ),
     )
 
     returned_report = action._run_index(
@@ -863,9 +869,16 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     )
 
     assert_substrings_in_string(
-        (f"action: {index_action}", f"dry run: {False}", f"report: {returned_report}"), caplog.text
+        (
+            f"action: {index_action}",
+            f"dry run: {False}",
+            f"report: {returned_report}",
+            new_content,
+            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
+        ),
+        caplog.text,
     )
-    mocked_discourse.update_topic.assert_called_once_with(url=url, content=content)
+    mocked_discourse.update_topic.assert_called_once_with(url=url, content=new_content)
     assert returned_report.table_row is None
     assert returned_report.url == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
