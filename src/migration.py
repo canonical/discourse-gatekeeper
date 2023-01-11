@@ -388,14 +388,13 @@ def run(
     Raises:
         MigrationError: if any migration report has failed.
     """
-    valid_table_rows = (
-        valid_table_row for valid_table_row in _validate_table_rows(table_rows=table_rows)
+    valid_table_rows = _validate_table_rows(table_rows=table_rows)
+    document_metadata = _get_docs_metadata(
+        table_rows=valid_table_rows, index_content=index_content
     )
     migration_reports = (
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)
-        for document in _get_docs_metadata(
-            table_rows=valid_table_rows, index_content=index_content
-        )
+        for document in document_metadata
     )
 
     if any(result for result in migration_reports if result.result is types_.ActionResult.FAIL):
