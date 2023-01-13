@@ -2,9 +2,13 @@
 
 ## [Unreleased]
 
+## [v0.2.0] - 2023-01-13
+
 ### Added
 
 - Topics are now created unlisted on discourse
+- Runs on a charm with existing documentation and without the `docs` folder now
+  results in a PR being created to migrate the docs to the repository
 
 ## [v0.1.1] - 2022-12-13
 
