@@ -93,7 +93,7 @@ def _create(
         path=action.path,
         navlink=types_.Navlink(title=action.navlink_title, link=url),
     )
-    return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
+    return types_.ActionReport(table_row=table_row, location=url, result=result, reason=reason)
 
 
 def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionReport:
@@ -111,7 +111,7 @@ def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionRepor
     table_row = types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
     return types_.ActionReport(
         table_row=table_row,
-        url=_absolute_url(table_row.navlink.link, discourse=discourse),
+        location=_absolute_url(table_row.navlink.link, discourse=discourse),
         result=types_.ActionResult.SUCCESS,
         reason=None,
     )
@@ -178,7 +178,7 @@ def _update(
     table_row = types_.TableRow(
         level=action.level, path=action.path, navlink=action.navlink_change.new
     )
-    return types_.ActionReport(table_row=table_row, url=url, result=result, reason=reason)
+    return types_.ActionReport(table_row=table_row, location=url, result=result, reason=reason)
 
 
 def _delete(
@@ -204,15 +204,15 @@ def _delete(
     is_group = action.navlink.link is None
     if dry_run:
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
+            table_row=None, location=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
         )
     if not delete_pages and not is_group:
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SKIP, reason=NOT_DELETE_REASON
+            table_row=None, location=url, result=types_.ActionResult.SKIP, reason=NOT_DELETE_REASON
         )
     if is_group:
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
+            table_row=None, location=url, result=types_.ActionResult.SUCCESS, reason=None
         )
 
     try:
@@ -224,11 +224,11 @@ def _delete(
 
         discourse.delete_topic(url=action.navlink.link)
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
+            table_row=None, location=url, result=types_.ActionResult.SUCCESS, reason=None
         )
     except exceptions.DiscourseError as exc:
         return types_.ActionReport(
-            table_row=None, url=url, result=types_.ActionResult.FAIL, reason=str(exc)
+            table_row=None, location=url, result=types_.ActionResult.FAIL, reason=str(exc)
         )
 
 
@@ -304,7 +304,7 @@ def _run_index(
     if dry_run:
         report = types_.ActionReport(
             table_row=None,
-            url=(
+            location=(
                 DRY_RUN_NAVLINK_LINK
                 if isinstance(action, types_.CreateIndexAction)
                 else action.url
@@ -323,19 +323,22 @@ def _run_index(
                 assert isinstance(action, types_.CreateIndexAction)  # nosec
                 url = discourse.create_topic(title=action.title, content=action.content)
                 report = types_.ActionReport(
-                    table_row=None, url=url, result=types_.ActionResult.SUCCESS, reason=None
+                    table_row=None, location=url, result=types_.ActionResult.SUCCESS, reason=None
                 )
             except exceptions.DiscourseError as exc:
                 report = types_.ActionReport(
                     table_row=None,
-                    url=FAIL_NAVLINK_LINK,
+                    location=FAIL_NAVLINK_LINK,
                     result=types_.ActionResult.FAIL,
                     reason=str(exc),
                 )
         case types_.NoopIndexAction:
             assert isinstance(action, types_.NoopIndexAction)  # nosec
             report = types_.ActionReport(
-                table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
+                table_row=None,
+                location=action.url,
+                result=types_.ActionResult.SUCCESS,
+                reason=None,
             )
         case types_.UpdateIndexAction:
             try:
@@ -343,13 +346,16 @@ def _run_index(
                 _log_content_change(old=action.content_change.old, new=action.content_change.new)
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 report = types_.ActionReport(
-                    table_row=None, url=action.url, result=types_.ActionResult.SUCCESS, reason=None
+                    table_row=None,
+                    location=action.url,
+                    result=types_.ActionResult.SUCCESS,
+                    reason=None,
                 )
             except exceptions.DiscourseError as exc:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 report = types_.ActionReport(
                     table_row=None,
-                    url=action.url,
+                    location=action.url,
                     result=types_.ActionResult.FAIL,
                     reason=str(exc),
                 )
