@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-# # Copyright 2022 Canonical Ltd.
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Cleanup and checking utility after running the action, primarily for testing purposes."""
