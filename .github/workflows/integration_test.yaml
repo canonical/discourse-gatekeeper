@@ -165,7 +165,7 @@ jobs:
         run: |
           # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-          INDEX_URL=$(jq ".index" '${{ steps.prepare-discourse.outputs.topics }}')
+          INDEX_URL=$(echo '${{ steps.prepare-discourse.outputs.topics }}' | jq ".index" )
           echo "docs: $INDEX_URL" >> metadata.yaml
           cat metadata.yaml
       - name: Clean up
