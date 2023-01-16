@@ -159,7 +159,7 @@ jobs:
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action prepare --action-kwargs "{\"index_filename\": \"$INDEX_FILENAME\", \"page_filename\": \"$PAGE_FILENAME\"}' '${{ steps.configuration.outputs.discourse }}'
       - name: Show created topics
         run: echo '${{ steps.prepare-discourse.outputs.topics }}'
-          cat metadata.yaml- name: Prepare metadata.yaml
+      - name: Create metadata.yaml
         run: |
           # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
