@@ -67,7 +67,7 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-          ./prepare_check_cleanup.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.self-test-draft.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          ./prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.self-test-draft.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Create self test
         id: self-test-create
         uses: ./
@@ -79,7 +79,7 @@ jobs:
         run: echo '${{ steps.self-test-create.outputs.urls_with_actions }}'
       - name: Check create
         run: |
-          ./prepare_check_cleanup.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          ./prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Add docs key to metadata
         run: |
           echo "docs: ${{ steps.self-test-create.outputs.index_url }}" >> metadata.yaml
@@ -98,7 +98,7 @@ jobs:
         run: echo '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}'
       - name: Check delete topics disabled
         run: |
-          ./prepare_check_cleanup.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          ./prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Delete the doc with delete_topics enabled
         run: rm docs/doc.md
       - name: Delete topics enabled self test
@@ -112,8 +112,8 @@ jobs:
         run: echo '${{ steps.self-test-delete.outputs.urls_with_actions }}'
       - name: Check delete topics enabled
         run: |
-          ./prepare_check_cleanup.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.self-test-delete.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          ./prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.self-test-delete.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Clean up
         if: always()
         run: |
-          ./prepare_check_cleanup.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          ./prepare_check_cleanup/reconcile.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
