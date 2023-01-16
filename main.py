@@ -67,8 +67,7 @@ def _write_github_output(
     else:
         index_url = ""
     github_output_path.write_text(
-        f"urls_with_actions={urls_with_actions}\n"
-        f"index_url={index_url}\n"
+        f"urls_with_actions={urls_with_actions}\nindex_url={index_url}\n",
         encoding="utf-8",
     )
 
