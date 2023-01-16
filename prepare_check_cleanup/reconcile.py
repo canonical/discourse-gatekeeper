@@ -1,7 +1,7 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Cleanup and checking utility after running the action, primarily for testing purposes."""
+"""Utility for running the reconcile action, primarily for testing purposes."""
 
 import argparse
 import contextlib
@@ -33,7 +33,7 @@ class Action(str, Enum):
 
 
 def main() -> None:
-    """Clean up created Discourse pages.
+    """Execute requested reconcilliation action.
 
     Raises:
         NotImplementedError: if an action was received for which there is no imlpementation.
@@ -41,8 +41,8 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
-        prog="DiscourseCleanup",
-        description="Delete posts created on discourse during an action execution.",
+        prog="ReconcileTestSupport",
+        description="Check or delete posts created on discourse during an action execution.",
     )
     parser.add_argument("urls_with_actions", help="The pages that were created during execution")
     parser.add_argument(

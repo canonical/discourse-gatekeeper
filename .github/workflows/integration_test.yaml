@@ -10,7 +10,7 @@ jobs:
     with:
       pre-run-script: tests/integration/pre_run.sh
       modules: '["discourse", "reconcile", "migrate"]'
-  self-tests:
+  self-tests-reconcile:
     runs-on: ubuntu-22.04
     steps:
       - name: Generate discourse configuration
@@ -32,21 +32,21 @@ jobs:
           mkdir docs
           # need some values in the content that change on every commit as discourse looks for file
           # similarity
-          echo -e "# Charm Upload Automation Test Index Title some uuid: $(uuidgen)\n" \
+          echo -e "# Charm Upload Automation Reconcile Test Index Title some uuid: $(uuidgen)\n" \
             "placeholder index content for testing, " \
             "repository: ${{ github.repository }}, " \
             "branch: ${{ github.head_ref }}, " \
             "commit sha: ${{ github.sha }}, " \
             "some uuid: $(uuidgen)" \
             > docs/index.md
-          echo -e "# Charm Upload Automation Test Documentation Title some uuid: $(uuidgen)\n" \
+          echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
             "placeholder documentation content for testing, " \
             "repository: ${{ github.repository }}, " \
             "branch: ${{ github.head_ref }}, " \
             "commit sha: ${{ github.sha }}, " \
             "some uuid: $(uuidgen)" \
             > docs/doc.md
-          echo -e "# Charm Upload Automation Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
+          echo -e "# Charm Upload Automation Reconcile Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
             "placeholder documentation alternate content for testing, " \
             "repository: ${{ github.repository }}, " \
             "branch: ${{ github.head_ref }}, " \
@@ -117,3 +117,56 @@ jobs:
         if: always()
         run: |
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+  self-tests-migration:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Generate discourse configuration
+        id: configuration
+        run: |
+          echo "discourse= \
+            { \
+              \"hostname\":\"discourse.charmhub.io\", \
+              \"category_id\":\"41\", \
+              \"api_username\":\"${{ secrets.DISCOURSE_API_USERNAME }}\", \
+              \"api_key\":\"${{ secrets.DISCOURSE_API_KEY }}\" \
+            }" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v3
+      - name: Prepare discourse topics
+        id: prepare-discourse
+        run: |
+          # Create topics on discourse
+          MIGRATION_DIR=migration_docs
+          mkdir $MIGRATION_DIR
+          # need some values in the content that change on every commit as discourse looks for file
+          # similarity
+          INDEX_FILENAME=$MIGRATION_DIR/index.md
+          echo -e "# Charm Upload Automation Migration Test Index Title some uuid: $(uuidgen)\n" \
+            "placeholder index content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > $INDEX_FILENAME
+          PAGE_FILENAME=$MIGRATION_DIR/page.md
+          echo -e "# Charm Upload Automation Migration Test Documentation Title some uuid: $(uuidgen)\n" \
+            "placeholder documentation content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > $PAGE_FILENAME
+          # Create discourse topics
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action prepare --action-kwargs "{\"index_filename\": \"$INDEX_FILENAME\", \"page_filename\": \"$PAGE_FILENAME\"}' '${{ steps.configuration.outputs.discourse }}'
+      - name: Show created topics
+        run: echo '${{ steps.prepare-discourse.outputs.topics }}'
+          cat metadata.yaml- name: Prepare metadata.yaml
+        run: |
+          # Create metadata.yaml file
+          echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+          INDEX_URL=$(jq ".index" '${{ steps.prepare-discourse.outputs.topics }}')
+          echo "docs: $INDEX_URL" >> metadata.yaml
+          cat metadata.yaml
+      - name: Clean up
+        if: always()
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup '${{ steps.configuration.outputs.discourse }}' --action-kwargs '{"topics": ${{ steps.prepare-discourse.outputs.topics }}}'

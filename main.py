@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Main execution for the action."""
