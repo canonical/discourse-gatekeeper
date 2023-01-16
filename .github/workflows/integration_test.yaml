@@ -156,6 +156,8 @@ jobs:
             "some uuid: $(uuidgen)" \
             > $PAGE_FILENAME
           # Create discourse topics
+          sudo apt update && sudo apt install python3-pip git
+          pip3 install -r requirements.txt
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py '${{ steps.configuration.outputs.discourse }}' --action prepare --action-kwargs "{\"index_filename\": \"$INDEX_FILENAME\", \"page_filename\": \"$PAGE_FILENAME\"}"
       - name: Show created topics
         run: echo '${{ steps.prepare-discourse.outputs.topics }}'
