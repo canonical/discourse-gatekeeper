@@ -19,7 +19,7 @@ jobs:
           echo "config= \
             { \
               \"hostname\":\"discourse.charmhub.io\", \
-              \"category_id\":41, \
+              \"category_id\":\"41\", \
               \"api_username\":\"${{ secrets.DISCOURSE_API_USERNAME }}\", \
               \"api_key\":\"${{ secrets.DISCOURSE_API_KEY }}\" \
             }" >> $GITHUB_OUTPUT
