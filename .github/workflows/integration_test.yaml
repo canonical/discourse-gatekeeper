@@ -13,6 +13,16 @@ jobs:
   self-tests:
     runs-on: ubuntu-22.04
     steps:
+      - name: Generate discourse configuration
+        id: discourse
+        run: |
+          echo 'config=\
+            {\
+              "hostname":"discourse.charmhub.io",\
+              "category_id":41,\
+              "api_username":"${{ secrets.DISCOURSE_API_USERNAME }}",\
+              "api_key":"${{ secrets.DISCOURSE_API_KEY }}"\
+            }' >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
       - name: Prepare for action to run
         run: |
@@ -44,7 +54,7 @@ jobs:
             "some uuid: $(uuidgen)" \
             > docs/alternate_doc.md
       - name: Draft self test
-        id: selfTestDraft
+        id: self-test-draft
         uses: ./
         with:
           discourse_host: discourse.charmhub.io
@@ -52,32 +62,32 @@ jobs:
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
           dry_run: true
       - name: Show pages
-        run: echo '${{ steps.selfTestDraft.outputs.urls_with_actions }}'
+        run: echo '${{ steps.self-test-draft.outputs.urls_with_actions }}'
       - name: Check draft
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-          ./discourse_check_cleanup.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.selfTestDraft.outputs.urls_with_actions }}' '${{ steps.selfTestDraft.outputs.discourse_config }}'
+          ./prepare_check_cleanup.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.self-test-draft.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Create self test
-        id: selfTestCreate
+        id: self-test-create
         uses: ./
         with:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show pages
-        run: echo '${{ steps.selfTestCreate.outputs.urls_with_actions }}'
+        run: echo '${{ steps.self-test-create.outputs.urls_with_actions }}'
       - name: Check create
         run: |
-          ./discourse_check_cleanup.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTestCreate.outputs.discourse_config }}'
+          ./prepare_check_cleanup.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Add docs key to metadata
         run: |
-          echo "docs: ${{ steps.selfTestCreate.outputs.index_url }}" >> metadata.yaml
+          echo "docs: ${{ steps.self-test-create.outputs.index_url }}" >> metadata.yaml
           cat metadata.yaml
       - name: Delete the alternate doc with delete_topics disabled
         run: rm docs/alternate_doc.md
       - name: Delete topics disabled self test
-        id: selfTestDeleteTopics
+        id: self-test-delete-topics
         uses: ./
         with:
           delete_topics: false
@@ -85,25 +95,25 @@ jobs:
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show pages
-        run: echo '${{ steps.selfTestDeleteTopics.outputs.urls_with_actions }}'
+        run: echo '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}'
       - name: Check delete topics disabled
         run: |
-          ./discourse_check_cleanup.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.selfTestDeleteTopics.outputs.urls_with_actions }}' '${{ steps.selfTestDeleteTopics.outputs.discourse_config }}'
+          ./prepare_check_cleanup.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Delete the doc with delete_topics enabled
         run: rm docs/doc.md
       - name: Delete topics enabled self test
-        id: selfTestDelete
+        id: self-test-delete
         uses: ./
         with:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
       - name: Show pages
-        run: echo '${{ steps.selfTestDelete.outputs.urls_with_actions }}'
+        run: echo '${{ steps.self-test-delete.outputs.urls_with_actions }}'
       - name: Check delete topics enabled
         run: |
-          ./discourse_check_cleanup.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.selfTestDelete.outputs.urls_with_actions }}' '${{ steps.selfTestDelete.outputs.discourse_config }}'
+          ./prepare_check_cleanup.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.self-test-delete.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
       - name: Clean up
         if: always()
         run: |
-          ./discourse_check_cleanup.py --action cleanup '${{ steps.selfTestCreate.outputs.urls_with_actions }}' '${{ steps.selfTestCreate.outputs.discourse_config }}'
+          ./prepare_check_cleanup.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'

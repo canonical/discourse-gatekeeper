@@ -66,18 +66,9 @@ def _write_github_output(
         *_, index_url = urls_with_actions_dict.keys()
     else:
         index_url = ""
-    discourse_config = compact_json(
-        {
-            "hostname": user_inputs.discourse_hostname,
-            "category_id": user_inputs.discourse_category_id,
-            "api_username": user_inputs.discourse_api_username,
-            "api_key": user_inputs.discourse_api_key,
-        }
-    )
     github_output_path.write_text(
         f"urls_with_actions={urls_with_actions}\n"
         f"index_url={index_url}\n"
-        f"discourse_config={discourse_config}\n",
         encoding="utf-8",
     )
 
