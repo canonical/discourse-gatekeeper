@@ -11,7 +11,10 @@ import sys
 from enum import Enum
 from pathlib import Path
 
+from github import Github
+
 from src.discourse import Discourse, create_discourse
+from src.pull_request import create_repository_client
 from src.reconcile import NAVIGATION_TABLE_START
 
 
@@ -99,15 +102,23 @@ def prepare(index_filename: str, page_filename: str, discourse: Discourse) -> No
     output_file.write_text(f"topics={json.dumps(topics, separators=(',', ':'))}", encoding="utf-8")
 
 
-def cleanup(topics: dict[str, str], discourse: Discourse) -> None:
+def cleanup(
+    topics: dict[str, str],
+    github_access_token: str,
+    discourse: Discourse,
+) -> None:
     """Create the content and index page.
 
     Args:
         topics: The discourse topics created for the migration.
+        github_access_token: The secret required for interactions with GitHub.
         discourse: Client to the documentation server.
     """
     for topic_url in topics.values():
         discourse.delete_topic(url=topic_url)
+
+    repository = create_repository_client(access_token=github_access_token, base_path=Path("."))
+    repository.cleanup_migration()
 
 
 if __name__ == "__main__":
