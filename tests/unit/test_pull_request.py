@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for git."""
@@ -182,7 +182,9 @@ def test_create_pull_request_on_default_branchname(
     head.checkout()
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=pull_request.DEFAULT_BRANCH_NAME
+        )
 
     assert_substrings_in_string(
         (
@@ -195,7 +197,7 @@ def test_create_pull_request_on_default_branchname(
 
 
 def test_create_pull_request_no_dirty_files(
-    repository_client: RepositoryClient,
+    repository_client: RepositoryClient, default_branch: str
 ):
     """
     arrange: given RepositoryClient with no dirty files
@@ -203,7 +205,9 @@ def test_create_pull_request_no_dirty_files(
     assert: InputError is raised.
     """
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=default_branch
+        )
 
     assert_substrings_in_string(
         ("no files seem to be migrated. please add contents upstream first.",),
@@ -216,6 +220,7 @@ def test_create_pull_request_existing_branch(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
+    default_branch: str,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
@@ -232,7 +237,9 @@ def test_create_pull_request_existing_branch(
     upstream_repository.git.commit("-m", "test")
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=default_branch
+        )
 
     assert_substrings_in_string(
         (
@@ -251,6 +258,7 @@ def test_create_pull_request(
     upstream_repository_path: Path,
     repository_path: Path,
     mock_pull_request: PullRequest,
+    default_branch: str,
 ):
     """
     arrange: given RepositoryClient and a repository with changed files
@@ -262,7 +270,9 @@ def test_create_pull_request(
     filler_text = "filler-text"
     filler_file.write_text(filler_text)
 
-    returned_pr_link = pull_request.create_pull_request(repository=repository_client)
+    returned_pr_link = pull_request.create_pull_request(
+        repository=repository_client, current_branch_name=default_branch
+    )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
