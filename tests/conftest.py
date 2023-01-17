@@ -26,14 +26,14 @@ def fixture_upstream_repository_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(name="upstream_repository")
-def fixture_upstream_repository(upstream_repository_path: Path) -> Repo:
+def fixture_upstream_repository(upstream_repository_path: Path, default_branch: str) -> Repo:
     """Initialize upstream repository."""
     upstream_repository = Repo.init(upstream_repository_path)
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
     writer.set_value("user", "email", "upstream_email")
     writer.release()
-    upstream_repository.git.checkout("-b", "main")
+    upstream_repository.git.checkout("-b", default_branch)
     (upstream_repository_path / ".gitkeep").touch()
     upstream_repository.git.add(".")
     upstream_repository.git.commit("-m", "'initial commit'")
@@ -49,9 +49,18 @@ def fixture_repository_path(tmp_path: Path) -> Path:
     return repo_path
 
 
+@pytest.fixture(name="default_branch")
+def fixture_default_branch() -> str:
+    """Get the default branch name."""
+    return "main"
+
+
 @pytest.fixture(name="repository")
 def fixture_repository(
-    upstream_repository: Repo, upstream_repository_path: Path, repository_path: Path
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
+    repository_path: Path,
+    default_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
     # uptream_repository is added to create a dependency for the current fixture in order to ensure
@@ -59,8 +68,12 @@ def fixture_repository(
     del upstream_repository
 
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
-    repo.git.checkout("main")
+    repo.git.checkout(default_branch)
     repo.git.pull()
+
+    # Go into detached head mode to reflect how GitHub performs the checkout
+    repo.head.set_reference(repo.head.commit.hexsha)
+
     return repo
 
 

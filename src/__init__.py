@@ -70,7 +70,11 @@ def _run_reconcile(
 
 
 def _run_migrate(
-    base_path: Path, metadata: Metadata, discourse: Discourse, repository: RepositoryClient
+    base_path: Path,
+    metadata: Metadata,
+    discourse: Discourse,
+    repository: RepositoryClient,
+    current_branch_name: str,
 ) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
@@ -79,6 +83,7 @@ def _run_migrate(
         metadata: Information about the charm.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        current_branch_name: The name of the branch the migration is running on.
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
@@ -97,7 +102,7 @@ def _run_migrate(
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
 
-    pr_link = create_pull_request(repository=repository)
+    pr_link = create_pull_request(repository=repository, current_branch_name=current_branch_name)
 
     return {pr_link: ActionResult.SUCCESS}
 
@@ -127,6 +132,7 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
             metadata=metadata,
             discourse=discourse,
             repository=repository,
+            current_branch_name=user_inputs.branch_name,
         )
     if has_docs_dir:
         return _run_reconcile(

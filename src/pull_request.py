@@ -147,11 +147,12 @@ class RepositoryClient:
         self._git_repo.git.checkout(branch_name)
 
 
-def create_pull_request(repository: RepositoryClient) -> str:
+def create_pull_request(repository: RepositoryClient, current_branch_name: str) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
+        current_branch_name: The name of the branch the migration is running on.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -160,6 +161,9 @@ def create_pull_request(repository: RepositoryClient) -> str:
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
+    # Ensure the branch is set as expected
+    repository.set_active_branch(branch_name=current_branch_name)
+
     base = repository.get_active_branch()
     if base == DEFAULT_BRANCH_NAME:
         raise InputError(

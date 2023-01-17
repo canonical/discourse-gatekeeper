@@ -83,7 +83,7 @@ def prepare(index_filename: str, page_filename: str, discourse: Discourse) -> No
     index_file = Path(index_filename)
     index_content = index_file.read_text(encoding="utf-8")
     index_topic_content = (
-        f"{index_content}{NAVIGATION_TABLE_START}\n| 1 | page | [{page_title}]({page_url}) |"
+        f"{index_content}{NAVIGATION_TABLE_START}\n| 1 | page | [{page_title}]({page_url}) |\n"
     )
     index_title = index_content.splitlines()[0].lstrip("# ")
     index_url = discourse.create_topic(title=index_title, content=index_topic_content)

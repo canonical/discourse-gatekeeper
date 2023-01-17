@@ -14,6 +14,9 @@ from functools import partial
 from src import GETTING_STARTED, exceptions, run, types_
 from src.discourse import create_discourse
 
+GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
+GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
+
 
 def _parse_env_vars() -> types_.UserInputs:
     """Instantiate user inputs from environment variables.
@@ -28,6 +31,14 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
+    github_head_ref = os.getenv(GITHUB_HEAD_REF_ENV_NAME)
+
+    if not github_head_ref:
+        raise exceptions.InputError(
+            f"Invalid '{GITHUB_HEAD_REF_ENV_NAME}' input, it must be non-empty, got "
+            f"{github_head_ref=!r}. This action is intended to run inside github-actions. "
+            f"{GETTING_STARTED}"
+        )
 
     return types_.UserInputs(
         discourse_hostname=discourse_host,
@@ -37,26 +48,25 @@ def _parse_env_vars() -> types_.UserInputs:
         delete_pages=delete_topics,
         dry_run=dry_run,
         github_access_token=github_access_token,
+        branch_name=github_head_ref,
     )
 
 
-def _write_github_output(
-    urls_with_actions_dict: dict[str, str], user_inputs: types_.UserInputs
-) -> None:
+def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
     """Writes results produced by the action to github_output.
 
     Args:
         urls_with_actions_dict: key value pairs of link to result of action.
-        user_inputs: parsed input variables used to run the action.
 
     Raises:
         InputError: if not running inside a github actions environment.
     """
-    github_output = os.getenv("GITHUB_OUTPUT")
+    github_output = os.getenv(GITHUB_OUTPUT_ENV_NAME)
     if not github_output:
         raise exceptions.InputError(
-            f"Invalid 'GITHUB_OUTPUT' input, it must be non-empty, got {github_output=!r}"
-            f"This action is intended to run inside github-actions. {GETTING_STARTED}"
+            f"Invalid '{GITHUB_OUTPUT_ENV_NAME}' input, it must be non-empty, got"
+            f"{github_output=!r}. This action is intended to run inside github-actions. "
+            f"{GETTING_STARTED}"
         )
 
     github_output_path = pathlib.Path(github_output)
@@ -93,7 +103,7 @@ def main() -> None:
     )
 
     # Write output
-    _write_github_output(urls_with_actions_dict=urls_with_actions_dict, user_inputs=user_inputs)
+    _write_github_output(urls_with_actions_dict=urls_with_actions_dict)
 
 
 if __name__ == "__main__":

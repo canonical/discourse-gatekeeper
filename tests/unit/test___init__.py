@@ -151,7 +151,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
 
 
 def test__run_migrate_server_error_index(
-    tmp_path: Path, repository_client: pull_request.RepositoryClient
+    tmp_path: Path, repository_client: pull_request.RepositoryClient, default_branch: str
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -169,14 +169,14 @@ def test__run_migrate_server_error_index(
             metadata=meta,
             discourse=mocked_discourse,
             repository=repository_client,
+            current_branch_name=default_branch,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
 
 
 def test__run_migrate_server_error_topic(
-    repository_path: Path,
-    repository_client: pull_request.RepositoryClient,
+    repository_path: Path, repository_client: pull_request.RepositoryClient, default_branch: str
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -205,6 +205,7 @@ def test__run_migrate_server_error_topic(
             metadata=meta,
             discourse=mocked_discourse,
             repository=repository_client,
+            current_branch_name=default_branch,
         )
 
 
@@ -238,6 +239,7 @@ def test__run_migrate(
         metadata=meta,
         discourse=mocked_discourse,
         repository=repository_client,
+        current_branch_name=upstream_repository.active_branch.name,
     )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
@@ -325,7 +327,7 @@ def test_run_no_docs_dir(
     navlink_page = "file-navlink-content"
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
-    user_input = factories.UserInputFactory()
+    user_input = factories.UserInputFactory(branch_name=upstream_repository.active_branch.name)
 
     # run is repeated in unit tests / integration tests
     returned_migration_reports = run(

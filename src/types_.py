@@ -25,6 +25,8 @@ class UserInputs:
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
+        branch_name: The name of the branch the PR is running on, used to check the branch created
+            by the migration doesn't clash with the current branch.
     """
 
     discourse_hostname: str
@@ -34,6 +36,7 @@ class UserInputs:
     dry_run: bool
     delete_pages: bool
     github_access_token: str | None
+    branch_name: str
 
 
 class Metadata(typing.NamedTuple):
