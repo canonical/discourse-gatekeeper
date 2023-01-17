@@ -118,6 +118,8 @@ jobs:
         run: |
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
   self-tests-migration:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-22.04
     steps:
       - name: Generate discourse configuration
