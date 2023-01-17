@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Factories for generating test data."""
@@ -98,6 +98,7 @@ class UserInputFactory(factory.Factory):
     discourse_api_username = "discourse-test-user"
     discourse_api_key = "discourse-test-key"
     github_access_token = "test-token"  # nosec the following token is a test variable.
+    branch_name = "test-branch"
     dry_run = False
     delete_pages = False
 
