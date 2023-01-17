@@ -117,7 +117,7 @@ def cleanup(
     for topic_url in topics.values():
         discourse.delete_topic(url=topic_url)
 
-    repository = create_repository_client(access_token=github_access_token, base_path=Path("."))
+    repository = create_repository_client(access_token=github_access_token, base_path=Path())
     repository.cleanup_migration()
 
 
