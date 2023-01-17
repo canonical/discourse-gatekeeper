@@ -124,7 +124,7 @@ class RepositoryClient:
         return pull_request.html_url
 
     def cleanup_migration(self):
-        """Delete the pull request and branch created for migration."""
+        """Delete the pull request and branch created for the migration."""
         for pull_request in self._github_repo.get_pulls():
             if pull_request.title == ACTIONS_PULL_REQUEST_TITLE:
                 pull_request.edit(state="closed")
