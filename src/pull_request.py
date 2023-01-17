@@ -136,6 +136,7 @@ class RepositoryClient:
         Args:
             branch_name: target branch that already exists in git.
         """
+        self._git_repo.remotes.origin.fetch()
         self._git_repo.git.checkout(branch_name)
 
 

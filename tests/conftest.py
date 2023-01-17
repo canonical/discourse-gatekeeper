@@ -68,11 +68,12 @@ def fixture_repository(
     del upstream_repository
 
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
+    repo.git.fetch()
     repo.git.checkout(default_branch)
-    repo.git.pull()
 
     # Go into detached head mode to reflect how GitHub performs the checkout
     repo.head.set_reference(repo.head.commit.hexsha)
+    repo.git.checkout(repo.head.commit.hexsha)
 
     return repo
 
