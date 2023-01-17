@@ -130,14 +130,6 @@ class RepositoryClient:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_active_branch(self) -> str:
-        """Get name of currently active branch on local git repository.
-
-        Returns:
-            Name of currently active branch.
-        """
-        return self._git_repo.active_branch.name
-
     def set_active_branch(self, branch_name: str) -> None:
         """Set current active branch to an given branch that already exists.
 
@@ -147,11 +139,12 @@ class RepositoryClient:
         self._git_repo.git.checkout(branch_name)
 
 
-def create_pull_request(repository: RepositoryClient) -> str:
+def create_pull_request(repository: RepositoryClient, current_branch_name: str) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
+        current_branch_name: The name of the branch the migration is running on.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -160,8 +153,7 @@ def create_pull_request(repository: RepositoryClient) -> str:
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    base = repository.get_active_branch()
-    if base == DEFAULT_BRANCH_NAME:
+    if current_branch_name == DEFAULT_BRANCH_NAME:
         raise InputError(
             f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
             f"Branch name {DEFAULT_BRANCH_NAME} is reserved for creating a migration branch."
@@ -183,12 +175,12 @@ def create_pull_request(repository: RepositoryClient) -> str:
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
     pull_request_web_link = repository.create_pull_request(
         branch_name=DEFAULT_BRANCH_NAME,
-        base=base,
+        base=current_branch_name,
     )
 
     # reset active branch back to original branch to ensure following actions
     # do not run on an newly created branch
-    repository.set_active_branch(branch_name=base)
+    repository.set_active_branch(branch_name=current_branch_name)
 
     return pull_request_web_link
 
