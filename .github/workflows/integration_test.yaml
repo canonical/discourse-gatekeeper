@@ -168,6 +168,14 @@ jobs:
           INDEX_URL=$(echo '${{ steps.prepare-discourse.outputs.topics }}' | jq ".index" )
           echo "docs: $INDEX_URL" >> metadata.yaml
           cat metadata.yaml
+      - name: Run migration
+        id: run-migration
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Clean up
         if: always()
         run: |

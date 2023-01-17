@@ -12,6 +12,7 @@ from enum import Enum
 from pathlib import Path
 
 from src.discourse import Discourse, create_discourse
+from src.reconcile import NAVIGATION_TABLE_START
 
 
 class Action(str, Enum):
@@ -74,15 +75,18 @@ def prepare(index_filename: str, page_filename: str, discourse: Discourse) -> No
             be used as the title and the content will be used as the topic content.
         discourse: Client to the documentation server.
     """
-    index_file = Path(index_filename)
-    index_content = index_file.read_text(encoding="utf-8")
-    index_title = index_content.splitlines()[0].lstrip("# ")
-    index_url = discourse.create_topic(title=index_title, content=index_content)
-
     page_file = Path(page_filename)
     page_content = page_file.read_text(encoding="utf-8")
     page_title = page_content.splitlines()[0].lstrip("# ")
     page_url = discourse.create_topic(title=page_title, content=page_content)
+
+    index_file = Path(index_filename)
+    index_content = index_file.read_text(encoding="utf-8")
+    index_topic_content = (
+        f"{index_content}{NAVIGATION_TABLE_START}\n| 1 | page | [{page_title}]({page_url}) |"
+    )
+    index_title = index_content.splitlines()[0].lstrip("# ")
+    index_url = discourse.create_topic(title=index_title, content=index_topic_content)
 
     topics = {"index": index_url, "page": page_url}
 
