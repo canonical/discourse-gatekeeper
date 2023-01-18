@@ -207,6 +207,17 @@ def check_pull_request(github_access_token: str) -> bool:
         )
         return False
 
+    expected_files = {"docs/index.md", "docs/page.md"}
+    files_in_pull_request = set(file.filename for file in migration_pull_request.get_files())
+    if not (expected_files <= files_in_pull_request):
+        logging.error(
+            "%s check failed, migration pull request does not contain expected files, "
+            "expected file: %s, files in pull request: %s",
+            test_name,
+            expected_files,
+            files_in_pull_request,
+        )
+        return False
     logging.info(list(migration_pull_request.get_files()))
 
     logging.info("%s check succeeded", test_name)
