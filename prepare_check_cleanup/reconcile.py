@@ -10,10 +10,9 @@ import logging
 import sys
 from enum import Enum
 
+from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-
-from . import exit_
 
 
 class Action(str, Enum):

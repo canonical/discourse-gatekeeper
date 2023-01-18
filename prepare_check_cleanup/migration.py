@@ -17,6 +17,7 @@ from github.GitRef import GitRef
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
+from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.pull_request import (
@@ -25,8 +26,6 @@ from src.pull_request import (
     create_repository_client,
 )
 from src.reconcile import NAVIGATION_TABLE_START
-
-from . import exit_
 
 
 class Action(str, Enum):
