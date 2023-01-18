@@ -133,7 +133,7 @@ class RepositoryClient:
         return pull_request.html_url
 
     # This is only needed for e2e tests
-    def cleanup_migration(self):  # pragma: nocover
+    def cleanup_migration(self) -> None:  # pragma: nocover
         """Delete the pull request and branch created for the migration."""
         for pull_request in self._github_repo.get_pulls():
             if pull_request.title == ACTIONS_PULL_REQUEST_TITLE:

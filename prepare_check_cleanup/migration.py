@@ -11,8 +11,6 @@ import sys
 from enum import Enum
 from pathlib import Path
 
-from github import Github
-
 from src.discourse import Discourse, create_discourse
 from src.pull_request import create_repository_client
 from src.reconcile import NAVIGATION_TABLE_START

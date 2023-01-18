@@ -84,6 +84,21 @@ class ContentPageFactory(factory.Factory):
     content = factory.Sequence(lambda n: f"Content {n}")
 
 
+class UserInputDiscourseFactory(factory.Factory):
+    """Generate user input tuple."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UserInputsDiscourse
+        abstract = False
+
+    hostname = factory.Sequence(lambda n: f"http://discourse/{n}")
+    category_id = factory.Sequence(lambda n: n)
+    api_username = factory.Sequence(lambda n: f"discourse-test-user-{n}")
+    api_key = factory.Sequence(lambda n: f"discourse-test-key-{n}")
+
+
 class UserInputFactory(factory.Factory):
     """Generate user input tuple."""  # noqa: DCO060
 
@@ -93,12 +108,9 @@ class UserInputFactory(factory.Factory):
         model = types_.UserInputs
         abstract = False
 
-    discourse_hostname = "http://discourse"
-    discourse_category_id = factory.Sequence(lambda n: n)
-    discourse_api_username = "discourse-test-user"
-    discourse_api_key = "discourse-test-key"
-    github_access_token = "test-token"  # nosec the following token is a test variable.
-    branch_name = "test-branch"
+    discourse = factory.SubFactory(UserInputDiscourseFactory)
+    github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
+    branch_name = factory.Sequence(lambda n: f"test-branch-{n}")
     dry_run = False
     delete_pages = False
 
