@@ -225,7 +225,6 @@ def check_pull_request(github_access_token: str) -> bool:
             files_in_pull_request,
         )
         return False
-    logging.info(list(migration_pull_request.get_files()))
 
     logging.info("%s check succeeded", test_name)
     return True
