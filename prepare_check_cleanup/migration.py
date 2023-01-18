@@ -215,7 +215,7 @@ def check_pull_request(github_access_token: str) -> bool:
         f"{DOCUMENTATION_FOLDER_NAME}/{DOCUMENTATION_INDEX_FILENAME}",
         f"{DOCUMENTATION_FOLDER_NAME}/page.md",
     }
-    files_in_pull_request = set(file.filename for file in migration_pull_request.get_files())
+    files_in_pull_request = {file.filename for file in migration_pull_request.get_files()}
     if expected_files == files_in_pull_request:
         logging.error(
             "%s check failed, migration pull request does not contain expected files, "
