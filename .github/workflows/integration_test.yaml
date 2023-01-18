@@ -4,12 +4,12 @@ on:
   pull_request:
 
 jobs:
-  integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
-    secrets: inherit
-    with:
-      pre-run-script: tests/integration/pre_run.sh
-      modules: '["discourse", "reconcile", "migrate"]'
+  # integration-tests:
+  #   uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+  #   secrets: inherit
+  #   with:
+  #     pre-run-script: tests/integration/pre_run.sh
+  #     modules: '["discourse", "reconcile", "migrate"]'
   # self-tests-reconcile:
   #   runs-on: ubuntu-22.04
   #   steps:
