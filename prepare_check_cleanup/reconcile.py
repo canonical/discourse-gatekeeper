@@ -13,6 +13,8 @@ from enum import Enum
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 
+from . import exit_
+
 
 class Action(str, Enum):
     """The actions the utility can take.
@@ -63,21 +65,21 @@ def main() -> None:
 
     match args.action:
         case Action.CHECK_DRAFT.value:
-            _exit_with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
+            exit_.with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
         case Action.CHECK_CREATE.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_create(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
         case Action.CHECK_DELETE_TOPICS.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_delete_topics(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
         case Action.CHECK_DELETE.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_delete(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
@@ -87,15 +89,6 @@ def main() -> None:
             sys.exit(0)
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
-
-
-def _exit_with_result(check_result: bool) -> None:
-    """Exit and set exit code based on the check result.
-
-    Args:
-        check_result: The outcome of a check.
-    """
-    sys.exit(0 if check_result else 1)
 
 
 def _check_url_count(

@@ -177,6 +177,12 @@ jobs:
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check migration branch got created
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action check-branch --action-kwargs '{"github_access_token": "${{ secrets.GITHUB_TOKEN }}"}'
+      - name: Check migration pull request got created
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action check-pull-request --action-kwargs '{"github_access_token": "${{ secrets.GITHUB_TOKEN }}"}'
       - name: Clean up
         if: always()
         run: |

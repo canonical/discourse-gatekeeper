@@ -276,6 +276,8 @@ def test_create_pull_request_existing_branch(
     )
 
 
+# All of these fixtures are required and they can't be consolidated because not all of them are
+# used by all tests
 def test_create_pull_request(
     repository_client: RepositoryClient,
     upstream_repository: Repo,
@@ -283,7 +285,7 @@ def test_create_pull_request(
     repository_path: Path,
     mock_pull_request: PullRequest,
     default_branch: str,
-):
+):  # pylint: disable=too-many-arguments
     """
     arrange: given RepositoryClient and a repository with changed files
     act: when create_pull_request is called
