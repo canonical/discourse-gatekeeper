@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-
-# # Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Cleanup and checking utility after running the action, primarily for testing purposes."""
+"""Utility for running the reconcile action, primarily for testing purposes."""
 
 import argparse
 import contextlib
@@ -12,6 +10,7 @@ import logging
 import sys
 from enum import Enum
 
+from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 
@@ -35,7 +34,7 @@ class Action(str, Enum):
 
 
 def main() -> None:
-    """Clean up created Discourse pages.
+    """Execute requested reconcilliation action.
 
     Raises:
         NotImplementedError: if an action was received for which there is no imlpementation.
@@ -43,8 +42,8 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
-        prog="DiscourseCleanup",
-        description="Delete posts created on discourse during an action execution.",
+        prog="ReconcileTestSupport",
+        description="Check or delete posts created on discourse during an action execution.",
     )
     parser.add_argument("urls_with_actions", help="The pages that were created during execution")
     parser.add_argument(
@@ -65,21 +64,21 @@ def main() -> None:
 
     match args.action:
         case Action.CHECK_DRAFT.value:
-            _exit_with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
+            exit_.with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
         case Action.CHECK_CREATE.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_create(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
         case Action.CHECK_DELETE_TOPICS.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_delete_topics(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
         case Action.CHECK_DELETE.value:
-            _exit_with_result(
+            exit_.with_result(
                 check_delete(
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
@@ -89,15 +88,6 @@ def main() -> None:
             sys.exit(0)
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
-
-
-def _exit_with_result(check_result: bool) -> None:
-    """Exit and set exit code based on the check result.
-
-    Args:
-        check_result: The outcome of a check.
-    """
-    sys.exit(0 if check_result else 1)
 
 
 def _check_url_count(

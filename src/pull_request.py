@@ -29,6 +29,10 @@ PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
 BRANCH_PREFIX = "upload-charm-docs"
 DEFAULT_BRANCH_NAME = f"{BRANCH_PREFIX}/migrate"
 
+CONFIG_USER_SECTION_NAME = "user"
+CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
+CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
+
 
 class RepositoryClient:
     """Wrapper for git/git-server related functionalities."""
@@ -49,11 +53,16 @@ class RepositoryClient:
 
         Configured profile appears as the git committer.
         """
-        config_writer = self._git_repo.config_writer()
-        config_writer.set_value("user", "name", ACTIONS_USER_NAME)
-        config_writer.set_value("user", "email", ACTIONS_USER_EMAIL)
-        # there is no context manager, config writer must be manually released.
-        config_writer.release()
+        config_reader = self._git_repo.config_reader(config_level="repository")
+        with self._git_repo.config_writer(config_level="repository") as config_writer:
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_NAME):
+                config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
+                config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
     def check_branch_exists(self, branch_name: str) -> bool:
         """Check if branch exists on remote.
@@ -130,28 +139,18 @@ class RepositoryClient:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_active_branch(self) -> str:
-        """Get name of currently active branch on local git repository.
-
-        Returns:
-            Name of currently active branch.
-        """
-        return self._git_repo.active_branch.name
-
-    def set_active_branch(self, branch_name: str) -> None:
-        """Set current active branch to an given branch that already exists.
-
-        Args:
-            branch_name: target branch that already exists in git.
-        """
-        self._git_repo.git.checkout(branch_name)
+    def detach_head(self) -> None:
+        """Detach from the current branch to ensure no further commits can occur."""
+        self._git_repo.head.set_reference(self._git_repo.head.commit.hexsha)
+        self._git_repo.git.checkout(self._git_repo.head.commit.hexsha)
 
 
-def create_pull_request(repository: RepositoryClient) -> str:
+def create_pull_request(repository: RepositoryClient, current_branch_name: str) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
+        current_branch_name: The name of the branch the migration is running on.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -160,8 +159,7 @@ def create_pull_request(repository: RepositoryClient) -> str:
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    base = repository.get_active_branch()
-    if base == DEFAULT_BRANCH_NAME:
+    if current_branch_name == DEFAULT_BRANCH_NAME:
         raise InputError(
             f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
             f"Branch name {DEFAULT_BRANCH_NAME} is reserved for creating a migration branch."
@@ -183,12 +181,11 @@ def create_pull_request(repository: RepositoryClient) -> str:
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
     pull_request_web_link = repository.create_pull_request(
         branch_name=DEFAULT_BRANCH_NAME,
-        base=base,
+        base=current_branch_name,
     )
 
-    # reset active branch back to original branch to ensure following actions
-    # do not run on an newly created branch
-    repository.set_active_branch(branch_name=base)
+    # Detach head to ensure no further changes can be made
+    repository.detach_head()
 
     return pull_request_web_link
 
