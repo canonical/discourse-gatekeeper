@@ -57,7 +57,7 @@ def main() -> None:
         prog="MigrationTestSupport",
         description="Support functions for the migration testing.",
     )
-    # TODO Consolidating this code should be done in a following pull request with reconcile.py
+    # Consolidating this code should be done in a following pull request with reconcile.py
     # pylint: disable=duplicate-code
     parser.add_argument(
         "--action", help="Action to run", choices=tuple(action.value for action in Action)
