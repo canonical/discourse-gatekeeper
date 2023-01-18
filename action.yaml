@@ -47,10 +47,6 @@ outputs:
       them.
   index_url:
     description: The URL to the documentation index page.
-  discourse_config:
-    description: |
-      The configuration used by the action to interact with the discourse
-      server.
 runs:
   using: docker
   image: Dockerfile

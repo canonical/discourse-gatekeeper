@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for git."""
@@ -30,13 +30,37 @@ def test_repository_client__init__(repository: Repo, mock_github_repo: Repositor
     act: when RepositoryClient is initialized
     assert: RepositoryClient is created and git user is configured.
     """
+    pull_request.RepositoryClient(repository=repository, github_repository=mock_github_repo)
+
+    config_reader = repository.config_reader()
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_NAME) == pull_request.ACTIONS_USER_NAME
+    )
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == pull_request.ACTIONS_USER_EMAIL
+    )
+
+
+def test_repository_client__init__name_email_set(repository: Repo, mock_github_repo: Repository):
+    """
+    arrange: given a local git repository client with the user and email configuration already set
+        and mock github repository client
+    act: when RepositoryClient is initialized
+    assert: RepositoryClient is created and git user is not reconfigured.
+    """
+    user_name = "name 1"
+    user_email = "email 1"
+    with repository.config_writer(config_level="repository") as config_writer:
+        config_writer.set_value(*pull_request.CONFIG_USER_NAME, user_name)
+        config_writer.set_value(*pull_request.CONFIG_USER_EMAIL, user_email)
+
     repository_client = pull_request.RepositoryClient(
         repository=repository, github_repository=mock_github_repo
     )
 
     config_reader = repository_client._git_repo.config_reader()
-    assert config_reader.get_value("user", "name") == pull_request.ACTIONS_USER_NAME
-    assert config_reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
+    assert config_reader.get_value(*pull_request.CONFIG_USER_NAME) == user_name
+    assert config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == user_email
 
 
 def test_repository_client_check_branch_exists_error(
@@ -182,7 +206,9 @@ def test_create_pull_request_on_default_branchname(
     head.checkout()
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=pull_request.DEFAULT_BRANCH_NAME
+        )
 
     assert_substrings_in_string(
         (
@@ -195,7 +221,7 @@ def test_create_pull_request_on_default_branchname(
 
 
 def test_create_pull_request_no_dirty_files(
-    repository_client: RepositoryClient,
+    repository_client: RepositoryClient, default_branch: str
 ):
     """
     arrange: given RepositoryClient with no dirty files
@@ -203,7 +229,9 @@ def test_create_pull_request_no_dirty_files(
     assert: InputError is raised.
     """
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=default_branch
+        )
 
     assert_substrings_in_string(
         ("no files seem to be migrated. please add contents upstream first.",),
@@ -216,6 +244,7 @@ def test_create_pull_request_existing_branch(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
+    default_branch: str,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
@@ -232,7 +261,9 @@ def test_create_pull_request_existing_branch(
     upstream_repository.git.commit("-m", "test")
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=default_branch
+        )
 
     assert_substrings_in_string(
         (
@@ -251,6 +282,7 @@ def test_create_pull_request(
     upstream_repository_path: Path,
     repository_path: Path,
     mock_pull_request: PullRequest,
+    default_branch: str,
 ):
     """
     arrange: given RepositoryClient and a repository with changed files
@@ -262,7 +294,9 @@ def test_create_pull_request(
     filler_text = "filler-text"
     filler_file.write_text(filler_text)
 
-    returned_pr_link = pull_request.create_pull_request(repository=repository_client)
+    returned_pr_link = pull_request.create_pull_request(
+        repository=repository_client, current_branch_name=default_branch
+    )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
