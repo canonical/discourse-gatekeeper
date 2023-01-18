@@ -19,6 +19,7 @@ from github.Repository import Repository
 
 from src import pull_request
 from src.exceptions import InputError, RepositoryClientError
+from src.index import DOCUMENTATION_FOLDER_NAME
 from src.pull_request import RepositoryClient
 
 from .helpers import assert_substrings_in_string
@@ -139,13 +140,21 @@ def test_repository_client_create_branch(
     upstream_repository: Repo,
 ):
     """
-    arrange: given RepositoryClient and newly created files in repo directory
+    arrange: given RepositoryClient and newly created files in repo and repo/docs directory
     act: when _create_branch is called
-    assert: a new branch is successfully created upstream.
+    assert: a new branch is successfully created upstream with only the files in the repo/docs
+        directory.
     """
-    testfile = "testfile.txt"
-    testfile_content = "test"
-    (repository_path / testfile).write_text(testfile_content)
+    root_file = repository_path / "test.txt"
+    root_file.write_text("content 1", encoding="utf-8")
+    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_dir).mkdir()
+    docs_file = docs_dir / "test.txt"
+    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+    nested_docs_dir = docs_dir / "nested"
+    (repository_path / nested_docs_dir).mkdir()
+    nested_docs_file = nested_docs_dir / "test.txt"
+    (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
     repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
@@ -156,6 +165,13 @@ def test_repository_client_create_branch(
         for branch in upstream_repository.branches  # type: ignore
         if branch.name == branch_name
     )
+    # Check files in the branch
+    branch_files = set(
+        upstream_repository.git.ls_tree("-r", branch_name, "--name-only").splitlines()
+    )
+    assert str(root_file) not in branch_files
+    assert str(docs_file) in branch_files
+    assert str(nested_docs_file) in branch_files
 
 
 def test_repository_client_create_pull_request_error(
@@ -251,12 +267,16 @@ def test_create_pull_request_existing_branch(
     act: when create_pull_request is called
     assert: InputError is raised.
     """
-    (repository_path / "filler-file").write_text("filler-content")
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_folder).mkdir()
+    filler_file = docs_folder / "filler-file"
+    (repository_path / filler_file).write_text("filler-content")
 
     branch_name = pull_request.DEFAULT_BRANCH_NAME
     head = upstream_repository.create_head(branch_name)
     head.checkout()
-    (upstream_repository_path / "filler-file").touch()
+    (upstream_repository_path / docs_folder).mkdir()
+    (upstream_repository_path / filler_file).touch()
     upstream_repository.git.add(".")
     upstream_repository.git.commit("-m", "test")
 
@@ -291,10 +311,11 @@ def test_create_pull_request(
     act: when create_pull_request is called
     assert: changes are pushed to default branch and pull request link is returned.
     """
-    filler_filename = "filler-file"
-    filler_file = repository_path / filler_filename
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_folder).mkdir()
+    filler_file = docs_folder / "filler.txt"
     filler_text = "filler-text"
-    filler_file.write_text(filler_text)
+    (repository_path / filler_file).write_text(filler_text)
 
     returned_pr_link = pull_request.create_pull_request(
         repository=repository_client, current_branch_name=default_branch
@@ -302,7 +323,7 @@ def test_create_pull_request(
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
-    assert (upstream_repository_path / filler_filename).read_text() == filler_text
+    assert (upstream_repository_path / filler_file).read_text() == filler_text
 
 
 @pytest.mark.parametrize(

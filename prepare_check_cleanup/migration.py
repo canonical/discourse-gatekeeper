@@ -20,6 +20,7 @@ from github.Repository import Repository
 from prepare_check_cleanup import exit_
 from src.discourse import create_discourse
 from src.exceptions import DiscourseError
+from src.index import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_INDEX_FILENAME
 from src.pull_request import (
     ACTIONS_PULL_REQUEST_TITLE,
     DEFAULT_BRANCH_NAME,
@@ -56,6 +57,8 @@ def main() -> None:
         prog="MigrationTestSupport",
         description="Support functions for the migration testing.",
     )
+    # TODO Consolidating this code should be done in a following pull request with reconcile.py
+    # pylint: disable=duplicate-code
     parser.add_argument(
         "--action", help="Action to run", choices=tuple(action.value for action in Action)
     )
@@ -63,6 +66,7 @@ def main() -> None:
         "--action-kwargs", help="Arguments for the action as a JSON mapping", default="{}"
     )
     args = parser.parse_args()
+    # pylint: enable=duplicate-code
     action_kwargs = json.loads(args.action_kwargs)
 
     match args.action:
@@ -207,9 +211,12 @@ def check_pull_request(github_access_token: str) -> bool:
         )
         return False
 
-    expected_files = {"docs/index.md", "docs/page.md"}
+    expected_files = {
+        f"{DOCUMENTATION_FOLDER_NAME}/{DOCUMENTATION_INDEX_FILENAME}",
+        f"{DOCUMENTATION_FOLDER_NAME}/page.md",
+    }
     files_in_pull_request = set(file.filename for file in migration_pull_request.get_files())
-    if not (expected_files <= files_in_pull_request):
+    if expected_files == files_in_pull_request:
         logging.error(
             "%s check failed, migration pull request does not contain expected files, "
             "expected file: %s, files in pull request: %s",

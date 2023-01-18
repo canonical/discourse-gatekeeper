@@ -14,6 +14,7 @@ from github.GithubException import GithubException
 from github.Repository import Repository
 
 from .exceptions import InputError, RepositoryClientError
+from .index import DOCUMENTATION_FOLDER_NAME
 
 GITHUB_HOSTNAME = "github.com"
 HTTPS_URL_PATTERN = re.compile(rf"^https?:\/\/.*@?{GITHUB_HOSTNAME}\/(.+\/.+?)(.git)?$")
@@ -98,7 +99,7 @@ class RepositoryClient:
         """
         try:
             self._git_repo.git.checkout("-b", branch_name)
-            self._git_repo.git.add(".")
+            self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             self._git_repo.git.push("-u", "origin", branch_name)
         except GitCommandError as exc:
