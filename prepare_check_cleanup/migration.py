@@ -56,12 +56,6 @@ def main() -> None:
         prog="MigrationTestSupport",
         description="Support functions for the migration testing.",
     )
-    # The cli setup is similar to the reconcile cli, making this a function would make this
-    # unnecessarily complex
-    # pylint: disable=duplicate-code
-    parser.add_argument(
-        "discourse_config", help="The discourse configuration used to create the pages"
-    )
     parser.add_argument(
         "--action", help="Action to run", choices=tuple(action.value for action in Action)
     )
@@ -69,28 +63,36 @@ def main() -> None:
         "--action-kwargs", help="Arguments for the action as a JSON mapping", default="{}"
     )
     args = parser.parse_args()
-    # pylint: enable=duplicate-code
-    discourse_config = json.loads(args.discourse_config)
     action_kwargs = json.loads(args.action_kwargs)
-
-    discourse = create_discourse(**discourse_config)
 
     match args.action:
         case Action.PREPARE.value:
-            prepare(discourse=discourse, **action_kwargs)
+            prepare(**action_kwargs)
             sys.exit(0)
         case Action.CHECK_BRANCH.value:
             exit_.with_result(check_branch(**action_kwargs))
         case Action.CHECK_PULL_REQUEST.value:
             exit_.with_result(check_pull_request(**action_kwargs))
         case Action.CLEANUP.value:
-            cleanup(discourse=discourse, **action_kwargs)
+            cleanup(**action_kwargs)
             sys.exit(0)
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
 
-def prepare(index_filename: str, page_filename: str, discourse: Discourse) -> None:
+def _create_discourse_client(config: str) -> Discourse:
+    """Create an API for interacting with GitHub.
+
+    Args:
+        config: The details required for interacting with discourse.
+
+    Returns:
+        API to the GitHub repository.
+    """
+    return create_discourse(**json.loads(config))
+
+
+def prepare(index_filename: str, page_filename: str, discourse_config: str) -> None:
     """Create the content and index page.
 
     Args:
@@ -98,8 +100,10 @@ def prepare(index_filename: str, page_filename: str, discourse: Discourse) -> No
             used as the title and the content will be used as the topic content.
         page_filename: The path to the file with the content file contents. The first line will
             be used as the title and the content will be used as the topic content.
-        discourse: Client to the documentation server.
+        discourse_config: Details required to communicate with discourse.
     """
+    discourse = _create_discourse_client(config=discourse_config)
+
     page_file = Path(page_filename)
     page_content = page_file.read_text(encoding="utf-8")
     page_title = page_content.splitlines()[0].lstrip("# ")
@@ -220,19 +224,16 @@ def check_pull_request(github_access_token: str) -> bool:
     return True
 
 
-def cleanup(
-    topics: dict[str, str],
-    github_access_token: str,
-    discourse: Discourse,
-) -> None:
+def cleanup(topics: dict[str, str], github_access_token: str, discourse_config: str) -> None:
     """Clean up testing artifacts on GitHub and Discourse.
 
     Args:
         topics: The discourse topics created for the migration.
         github_access_token: The secret required for interactions with GitHub.
-        discourse: Client to the documentation server.
+        discourse_config: Details required to communicate with discourse.
     """
     # Delete discourse topics
+    discourse = _create_discourse_client(config=discourse_config)
     with suppress(DiscourseError):
         for topic_url in topics.values():
             discourse.delete_topic(url=topic_url)

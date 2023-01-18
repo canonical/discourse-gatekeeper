@@ -159,7 +159,7 @@ jobs:
           # Create discourse topics
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py '${{ steps.configuration.outputs.discourse }}' --action prepare --action-kwargs "{\"index_filename\": \"$INDEX_FILENAME\", \"page_filename\": \"$PAGE_FILENAME\"}"
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action prepare --action-kwargs "{\"index_filename\": \"$INDEX_FILENAME\", \"page_filename\": \"$PAGE_FILENAME\", "discourse_config": "${{ steps.configuration.outputs.discourse }}"}"
       - name: Show created topics
         run: echo '${{ steps.prepare-discourse.outputs.topics }}'
       - name: Create metadata.yaml
@@ -186,4 +186,4 @@ jobs:
       - name: Clean up
         if: always()
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup '${{ steps.configuration.outputs.discourse }}' --action-kwargs '{"topics": ${{ steps.prepare-discourse.outputs.topics }}, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs '{"topics": ${{ steps.prepare-discourse.outputs.topics }}, "github_access_token": "${{ secrets.GITHUB_TOKEN }}", "discourse_config": "${{ steps.configuration.outputs.discourse }}"}'
