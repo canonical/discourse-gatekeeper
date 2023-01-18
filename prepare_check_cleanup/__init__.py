@@ -1,4 +1,4 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Tests for uploading docs to charmhub."""
+"""CLIs supporting the self test end-to-end tests."""
