@@ -36,7 +36,7 @@ class Action(str, Enum):
         PREPARE: Prepare discourse pages before running the migration.
         CHECK_BRANCH: Check that the migration branch was created.
         CHECK_PULL_REQUEST: Check that the migration pull request was created.
-        CLEANUP: Delete discourse pages before after the migration.
+        CLEANUP: Delete discourse pages and migration pull request and branch after the migration.
     """
 
     PREPARE = "prepare"
@@ -216,7 +216,7 @@ def check_pull_request(github_access_token: str) -> bool:
         f"{DOCUMENTATION_FOLDER_NAME}/page.md",
     }
     files_in_pull_request = {file.filename for file in migration_pull_request.get_files()}
-    if expected_files == files_in_pull_request:
+    if expected_files != files_in_pull_request:
         logging.error(
             "%s check failed, migration pull request does not contain expected files, "
             "expected file: %s, files in pull request: %s",

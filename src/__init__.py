@@ -3,6 +3,7 @@
 
 """Library for uploading docs to charmhub."""
 
+import logging
 from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
@@ -90,11 +91,15 @@ def _run_migrate(
         migrated documentation as key and successful action result as value.
     """
     index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
+    logging.info("index: %s", repr(index))
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
+    logging.info("server_content: %s", repr(server_content))
     index_content = contents_from_page(server_content)
+    logging.info("index_content: %s", repr(index_content))
     table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
+    logging.info("table_rows: %s", repr(table_rows))
     migrate_contents(
         table_rows=table_rows,
         index_content=index_content,

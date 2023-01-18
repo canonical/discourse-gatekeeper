@@ -47,7 +47,7 @@ def test_repository_client__init__name_email_set(repository: Repo, mock_github_r
     arrange: given a local git repository client with the user and email configuration already set
         and mock github repository client
     act: when RepositoryClient is initialized
-    assert: RepositoryClient is created and git user is not reconfigured.
+    assert: RepositoryClient is created and git user configuration is not overridden.
     """
     user_name = "name 1"
     user_email = "email 1"
@@ -142,7 +142,7 @@ def test_repository_client_create_branch(
     """
     arrange: given RepositoryClient and newly created files in repo and repo/docs directory
     act: when _create_branch is called
-    assert: a new branch is successfully created upstream with only the files in the repo/docs
+    assert: a new branch is successfully created upstream with only the files in the `repo/docs`
         directory.
     """
     root_file = repository_path / "test.txt"
