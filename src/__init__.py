@@ -1,8 +1,9 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
 
+import logging
 from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
@@ -70,7 +71,11 @@ def _run_reconcile(
 
 
 def _run_migrate(
-    base_path: Path, metadata: Metadata, discourse: Discourse, repository: RepositoryClient
+    base_path: Path,
+    metadata: Metadata,
+    discourse: Discourse,
+    repository: RepositoryClient,
+    current_branch_name: str,
 ) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
@@ -79,17 +84,22 @@ def _run_migrate(
         metadata: Information about the charm.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        current_branch_name: The name of the branch the migration is running on.
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
     index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
+    logging.info("index: %s", index)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
+    logging.info("server_content: %s", repr(server_content))
     index_content = contents_from_page(server_content)
-    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
+    logging.info("index_content: %s", repr(index_content))
+    table_rows = list(navigation_table_from_page(page=server_content, discourse=discourse))
+    logging.info("table_rows: %s", table_rows)
     migrate_contents(
         table_rows=table_rows,
         index_content=index_content,
@@ -97,7 +107,7 @@ def _run_migrate(
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
 
-    pr_link = create_pull_request(repository=repository)
+    pr_link = create_pull_request(repository=repository, current_branch_name=current_branch_name)
 
     return {pr_link: ActionResult.SUCCESS}
 
@@ -127,6 +137,7 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
             metadata=metadata,
             discourse=discourse,
             repository=repository,
+            current_branch_name=user_inputs.branch_name,
         )
     if has_docs_dir:
         return _run_reconcile(
