@@ -63,6 +63,7 @@ def main() -> None:
         "--action-kwargs", help="Arguments for the action as a JSON mapping", default="{}"
     )
     args = parser.parse_args()
+    logging.info(args.action_kwargs)
     action_kwargs = json.loads(args.action_kwargs)
     logging.info(action_kwargs)
 
