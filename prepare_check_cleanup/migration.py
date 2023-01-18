@@ -242,20 +242,27 @@ def cleanup(
     """
     # Delete discourse topics
     discourse = create_discourse(**discourse_config)
-    with suppress(DiscourseError):
+    try:
         for topic_url in topics.values():
             discourse.delete_topic(url=topic_url)
+    except DiscourseError as exc:
+        logging.exception("cleanup failed for discourse, %s", exc)
 
-    with suppress(GithubException):
-        github_repo = _create_repository_client(github_access_token=github_access_token)
-        # Delete the migration PR
+    github_repo = _create_repository_client(github_access_token=github_access_token)
+    # Delete the migration PR
+    try:
         migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
         if migration_pull_request:
             migration_pull_request.edit(state="closed")
-        # Delete the migration branch
+    except GithubException as exc:
+        logging.exception("cleanup failed for migration pull request, %s", exc)
+    # Delete the migration branch
+    try:
         migration_branch = _get_migration_branch(github_repo=github_repo)
         if migration_branch:
             migration_branch.delete()
+    except GithubException as exc:
+        logging.exception("cleanup failed for migration branch, %s", exc)
 
 
 if __name__ == "__main__":
