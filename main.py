@@ -23,6 +23,9 @@ def _parse_env_vars() -> types_.UserInputs:
 
     Returns:
         Wrapped user input variables.
+
+    Raises:
+        InputError: If the INPUT_GITHUB_TOKEN environment variable is not provided or empty.
     """
     discourse_host = os.getenv("INPUT_DISCOURSE_HOST", "")
     discourse_category_id = os.getenv("INPUT_DISCOURSE_CATEGORY_ID", "")

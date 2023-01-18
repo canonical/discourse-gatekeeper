@@ -30,6 +30,10 @@ PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
 BRANCH_PREFIX = "upload-charm-docs"
 DEFAULT_BRANCH_NAME = f"{BRANCH_PREFIX}/migrate"
 
+CONFIG_USER_SECTION_NAME = "user"
+CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
+CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
+
 
 class RepositoryClient:
     """Wrapper for git/git-server related functionalities."""
@@ -50,11 +54,16 @@ class RepositoryClient:
 
         Configured profile appears as the git committer.
         """
-        config_writer = self._git_repo.config_writer()
-        config_writer.set_value("user", "name", ACTIONS_USER_NAME)
-        config_writer.set_value("user", "email", ACTIONS_USER_EMAIL)
-        # there is no context manager, config writer must be manually released.
-        config_writer.release()
+        config_reader = self._git_repo.config_reader(config_level="repository")
+        with self._git_repo.config_writer(config_level="repository") as config_writer:
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_NAME):
+                config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
+                config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
     def check_branch_exists(self, branch_name: str) -> bool:
         """Check if branch exists on remote.
@@ -123,7 +132,8 @@ class RepositoryClient:
 
         return pull_request.html_url
 
-    def cleanup_migration(self):
+    # This is only needed for e2e tests
+    def cleanup_migration(self):  # pragma: nocover
         """Delete the pull request and branch created for the migration."""
         for pull_request in self._github_repo.get_pulls():
             if pull_request.title == ACTIONS_PULL_REQUEST_TITLE:

@@ -30,13 +30,37 @@ def test_repository_client__init__(repository: Repo, mock_github_repo: Repositor
     act: when RepositoryClient is initialized
     assert: RepositoryClient is created and git user is configured.
     """
+    pull_request.RepositoryClient(repository=repository, github_repository=mock_github_repo)
+
+    config_reader = repository.config_reader()
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_NAME) == pull_request.ACTIONS_USER_NAME
+    )
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == pull_request.ACTIONS_USER_EMAIL
+    )
+
+
+def test_repository_client__init__name_email_set(repository: Repo, mock_github_repo: Repository):
+    """
+    arrange: given a local git repository client with the user and email configuration already set
+        and mock github repository client
+    act: when RepositoryClient is initialized
+    assert: RepositoryClient is created and git user is not reconfigured.
+    """
+    user_name = "name 1"
+    user_email = "email 1"
+    with repository.config_writer(config_level="repository") as config_writer:
+        config_writer.set_value(*pull_request.CONFIG_USER_NAME, user_name)
+        config_writer.set_value(*pull_request.CONFIG_USER_EMAIL, user_email)
+
     repository_client = pull_request.RepositoryClient(
         repository=repository, github_repository=mock_github_repo
     )
 
     config_reader = repository_client._git_repo.config_reader()
-    assert config_reader.get_value("user", "name") == pull_request.ACTIONS_USER_NAME
-    assert config_reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
+    assert config_reader.get_value(*pull_request.CONFIG_USER_NAME) == user_name
+    assert config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == user_email
 
 
 def test_repository_client_check_branch_exists_error(
