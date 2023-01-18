@@ -121,17 +121,17 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-22.04
     steps:
-      # - name: Generate discourse configuration
-      #   id: configuration
-      #   run: |
-      #     echo "discourse= \
-      #       { \
-      #         \"hostname\":\"discourse.charmhub.io\", \
-      #         \"category_id\":\"41\", \
-      #         \"api_username\":\"${{ secrets.DISCOURSE_API_USERNAME }}\", \
-      #         \"api_key\":\"${{ secrets.DISCOURSE_API_KEY }}\" \
-      #       }" >> $GITHUB_OUTPUT
-      # - uses: actions/checkout@v3
+      - name: Generate discourse configuration
+        id: configuration
+        run: |
+          echo "discourse= \
+            { \
+              \"hostname\":\"discourse.charmhub.io\", \
+              \"category_id\":\"41\", \
+              \"api_username\":\"${{ secrets.DISCOURSE_API_USERNAME }}\", \
+              \"api_key\":\"${{ secrets.DISCOURSE_API_KEY }}\" \
+            }" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v3
       # - name: Prepare discourse topics
       #   id: prepare-discourse
       #   run: |
