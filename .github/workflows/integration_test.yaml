@@ -13,10 +13,12 @@ jobs:
   self-tests-reconcile:
     runs-on: ubuntu-22.04
     steps:
+      # Each job has to have this configuration because secrets can be passed through the output of
+      # another job
       - name: Generate discourse configuration
-        id: discourse
+        id: configuration
         run: |
-          echo "config= \
+          echo "discourse= \
             { \
               \"hostname\":\"discourse.charmhub.io\", \
               \"category_id\":\"41\", \
@@ -67,7 +69,7 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.self-test-draft.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.self-test-draft.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Create self test
         id: self-test-create
         uses: ./
@@ -79,7 +81,7 @@ jobs:
         run: echo '${{ steps.self-test-create.outputs.urls_with_actions }}'
       - name: Check create
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Add docs key to metadata
         run: |
           echo "docs: ${{ steps.self-test-create.outputs.index_url }}" >> metadata.yaml
@@ -98,7 +100,7 @@ jobs:
         run: echo '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}'
       - name: Check delete topics disabled
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.self-test-delete-topics.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Delete the doc with delete_topics enabled
         run: rm docs/doc.md
       - name: Delete topics enabled self test
@@ -112,15 +114,17 @@ jobs:
         run: echo '${{ steps.self-test-delete.outputs.urls_with_actions }}'
       - name: Check delete topics enabled
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.self-test-delete.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.self-test-delete.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Clean up
         if: always()
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.discourse.outputs.config }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup '${{ steps.self-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
   self-tests-migration:
     permissions: write-all
     runs-on: ubuntu-22.04
     steps:
+      # Each job has to have this configuration because secrets can be passed through the output of
+      # another job
       - name: Generate discourse configuration
         id: configuration
         run: |
