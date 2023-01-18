@@ -112,7 +112,7 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
     )
     output_file = Path(github_output)
     topics_output = json.dumps(topics, separators=(",", ":")).replace('"', '\\"')
-    output_file.write_text(f"topics={topics_output}", encoding="utf-8")
+    output_file.write_text(f"topics={topics_output}\nindex_url={index_url}\n", encoding="utf-8")
 
 
 def _create_repository_client(github_access_token: str) -> Repository:

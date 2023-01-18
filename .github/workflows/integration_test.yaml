@@ -167,8 +167,7 @@ jobs:
         run: |
           # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-          INDEX_URL=$(echo '${{ steps.prepare-discourse.outputs.topics }}' | jq ".index" )
-          echo "docs: $INDEX_URL" >> metadata.yaml
+          echo "docs: ${{ steps.prepare-discourse.outputs.index_url }}" >> metadata.yaml
           cat metadata.yaml
       - name: Run migration
         id: run-migration
@@ -188,4 +187,4 @@ jobs:
         if: always()
         run: |
           DISCOURSE_CONFIG='${{ steps.configuration.outputs.discourse }}'
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs "{\"topics\": {}, \"github_access_token\": \"${{ secrets.GITHUB_TOKEN }}\", \"discourse_config\": $DISCOURSE_CONFIG}"
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs "{\"topics\": ${{ steps.prepare-discourse.outputs.topics }}, \"github_access_token\": \"${{ secrets.GITHUB_TOKEN }}\", \"discourse_config\": $DISCOURSE_CONFIG}"
