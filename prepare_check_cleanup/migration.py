@@ -94,13 +94,11 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
     """
     discourse = create_discourse(**discourse_config)
 
-    page_file = Path(page_filename)
-    page_content = page_file.read_text(encoding="utf-8")
+    page_content = Path(page_filename).read_text(encoding="utf-8")
     page_title = page_content.splitlines()[0].lstrip("# ")
     page_url = discourse.create_topic(title=page_title, content=page_content)
 
-    index_file = Path(index_filename)
-    index_content = index_file.read_text(encoding="utf-8")
+    index_content = Path(index_filename).read_text(encoding="utf-8")
     index_topic_content = (
         f"{index_content}{NAVIGATION_TABLE_START}\n| 1 | page | [{page_title}]({page_url}) |\n"
     )
@@ -209,6 +207,8 @@ def check_pull_request(github_access_token: str) -> bool:
             ACTIONS_PULL_REQUEST_TITLE,
         )
         return False
+
+    logging.info(list(migration_pull_request.get_files()))
 
     logging.info("%s check succeeded", test_name)
     return True
