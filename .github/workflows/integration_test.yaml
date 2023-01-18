@@ -187,4 +187,5 @@ jobs:
       - name: Clean up
         if: always()
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs '{"topics": ${{ steps.prepare-discourse.outputs.topics }}, "github_access_token": "${{ secrets.GITHUB_TOKEN }}", "discourse_config": ${{ steps.configuration.outputs.discourse }}}'
+          DISCOURSE_CONFIG='${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs '{"topics": ${{ steps.prepare-discourse.outputs.topics }}, "github_access_token": "${{ secrets.GITHUB_TOKEN }}", "discourse_config": '$DISCOURSE_CONFIG'}'

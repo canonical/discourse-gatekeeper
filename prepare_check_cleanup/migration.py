@@ -18,7 +18,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from prepare_check_cleanup import exit_
-from src.discourse import Discourse, create_discourse
+from src.discourse import create_discourse
 from src.exceptions import DiscourseError
 from src.pull_request import (
     ACTIONS_PULL_REQUEST_TITLE,
