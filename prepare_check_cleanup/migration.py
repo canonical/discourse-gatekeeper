@@ -80,19 +80,7 @@ def main() -> None:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
 
-def _create_discourse_client(config: str) -> Discourse:
-    """Create an API for interacting with GitHub.
-
-    Args:
-        config: The details required for interacting with discourse.
-
-    Returns:
-        API to the GitHub repository.
-    """
-    return create_discourse(**json.loads(config))
-
-
-def prepare(index_filename: str, page_filename: str, discourse_config: str) -> None:
+def prepare(index_filename: str, page_filename: str, discourse_config: dict[str, str]) -> None:
     """Create the content and index page.
 
     Args:
@@ -102,7 +90,7 @@ def prepare(index_filename: str, page_filename: str, discourse_config: str) -> N
             be used as the title and the content will be used as the topic content.
         discourse_config: Details required to communicate with discourse.
     """
-    discourse = _create_discourse_client(config=discourse_config)
+    discourse = create_discourse(**discourse_config)
 
     page_file = Path(page_filename)
     page_content = page_file.read_text(encoding="utf-8")
@@ -224,7 +212,9 @@ def check_pull_request(github_access_token: str) -> bool:
     return True
 
 
-def cleanup(topics: dict[str, str], github_access_token: str, discourse_config: str) -> None:
+def cleanup(
+    topics: dict[str, str], github_access_token: str, discourse_config: dict[str, str]
+) -> None:
     """Clean up testing artifacts on GitHub and Discourse.
 
     Args:
@@ -233,7 +223,7 @@ def cleanup(topics: dict[str, str], github_access_token: str, discourse_config: 
         discourse_config: Details required to communicate with discourse.
     """
     # Delete discourse topics
-    discourse = _create_discourse_client(config=discourse_config)
+    discourse = create_discourse(**discourse_config)
     with suppress(DiscourseError):
         for topic_url in topics.values():
             discourse.delete_topic(url=topic_url)
