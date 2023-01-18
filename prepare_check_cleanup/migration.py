@@ -246,15 +246,15 @@ def cleanup(
         for topic_url in topics.values():
             discourse.delete_topic(url=topic_url)
 
-    github_repo = _create_repository_client(github_access_token=github_access_token)
-    # Delete the migration PR
-    migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
-    if migration_pull_request:
-        migration_pull_request.edit(state="closed")
-    # Delete the migration branch
-    migration_branch = _get_migration_branch(github_repo=github_repo)
-    if migration_branch:
-        with suppress(GithubException):
+    with suppress(GithubException):
+        github_repo = _create_repository_client(github_access_token=github_access_token)
+        # Delete the migration PR
+        migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
+        if migration_pull_request:
+            migration_pull_request.edit(state="closed")
+        # Delete the migration branch
+        migration_branch = _get_migration_branch(github_repo=github_repo)
+        if migration_branch:
             migration_branch.delete()
 
 
