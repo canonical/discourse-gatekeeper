@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Types for uploading docs to charmhub."""
@@ -10,30 +10,42 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
-@dataclasses.dataclass
-class UserInputs:
+class UserInputsDiscourse(typing.NamedTuple):
     """Configurable user input values used to run upload-charm-docs.
 
     Attrs:
-        discourse_hostname: The base path to the discourse server.
-        discourse_category_id: The category identifier to use on discourse for all topics.
-        discourse_api_username: The discourse API username to use for interactions with the server.
-        discourse_api_key: The discourse API key to use for interactions with the server.
+        hostname: The base path to the discourse server.
+        category_id: The category identifier to use on discourse for all topics.
+        api_username: The discourse API username to use for interactions with the server.
+        api_key: The discourse API key to use for interactions with the server.
+    """
+
+    hostname: str
+    category_id: str
+    api_username: str
+    api_key: str
+
+
+class UserInputs(typing.NamedTuple):
+    """Configurable user input values used to run upload-charm-docs.
+
+    Attrs:
+        discourse: The configuration for interacting with discourse.
         dry_run: If enabled, only log the action that would be taken. Has no effect in migration
             mode.
         delete_pages: Whether to delete pages that are no longer needed. Has no effect in
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
+        branch_name: The name of the branch the PR is running on, used to check the branch created
+            by the migration doesn't clash with the current branch.
     """
 
-    discourse_hostname: str
-    discourse_category_id: str
-    discourse_api_username: str
-    discourse_api_key: str
+    discourse: UserInputsDiscourse
     dry_run: bool
     delete_pages: bool
     github_access_token: str | None
+    branch_name: str
 
 
 class Metadata(typing.NamedTuple):
