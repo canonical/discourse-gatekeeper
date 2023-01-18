@@ -64,6 +64,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     action_kwargs = json.loads(args.action_kwargs)
+    logging.info(action_kwargs)
 
     match args.action:
         case Action.PREPARE.value:
