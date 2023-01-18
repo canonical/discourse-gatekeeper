@@ -189,4 +189,4 @@ jobs:
         run: |
           DISCOURSE_CONFIG='${{ steps.configuration.outputs.discourse }}'
           pip3 install -r requirements.txt
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs '{"topics": {}, "github_access_token": "${{ secrets.GITHUB_TOKEN }}", "discourse_config": '$DISCOURSE_CONFIG'}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/migration.py --action cleanup --action-kwargs "{\"topics\": {}, \"github_access_token\": \"${{ secrets.GITHUB_TOKEN }}\", \"discourse_config\": $DISCOURSE_CONFIG}"

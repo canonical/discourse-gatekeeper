@@ -113,7 +113,8 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
         "is this running in a GitHub workflow?"
     )
     output_file = Path(github_output)
-    output_file.write_text(f"topics={json.dumps(topics, separators=(',', ':'))}", encoding="utf-8")
+    topics_output = json.dumps(topics, separators=(",", ":")).replace('"', '\\"')
+    output_file.write_text(f"topics={topics_output}", encoding="utf-8")
 
 
 def _create_repository_client(github_access_token: str) -> Repository:
