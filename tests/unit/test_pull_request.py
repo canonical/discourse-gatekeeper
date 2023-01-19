@@ -113,7 +113,7 @@ def test_repository_client_check_branch_exists(
     assert repository_client.check_branch_exists(branch_name)
 
 
-def test_repository_client_create_branch_git_error(
+def test_repository_client_create_branch_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
