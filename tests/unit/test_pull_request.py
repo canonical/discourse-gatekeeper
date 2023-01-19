@@ -113,7 +113,28 @@ def test_repository_client_check_branch_exists(
     assert repository_client.check_branch_exists(branch_name)
 
 
-def test_repository_client_create_branch_error(
+def test_repository_client_create_branch_github_error(
+    monkeypatch: pytest.MonkeyPatch,
+    repository_client: RepositoryClient,
+    mock_github_repo: mock.MagicMock,
+):
+    """
+    arrange: given RepositoryClient with a mocked github client that raises an exception
+    act: when _create_branch is called
+    assert: RepositoryClientError is raised.
+    """
+    err_str = "mocked error"
+    mock_github_repo.default_branch.side_effect = RepositoryClientError(err_str)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.create_branch(branch_name="test-create-branch", commit_msg="commit-1")
+
+    assert_substrings_in_string(
+        ("unexpected error creating new branch", err_str), str(exc.value).lower()
+    )
+
+
+def test_repository_client_create_branch_git_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
     """
