@@ -97,9 +97,10 @@ class RepositoryClient:
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
         """
+        default_branch = self._github_repo.default_branch
         try:
-            self._git_repo.git.checkout(self._github_repo.default_branch)
-            self._git_repo.git.checkout("-b", branch_name)
+            self._git_repo.git.fetch("origin", default_branch)
+            self._git_repo.git.checkout("-b", branch_name, default_branch)
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             self._git_repo.git.push("-u", "origin", branch_name)
