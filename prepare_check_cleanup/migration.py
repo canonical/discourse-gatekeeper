@@ -103,7 +103,7 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
     index_content = Path(index_filename).read_text(encoding="utf-8")
     index_topic_content = (
         f"{index_content}{NAVIGATION_TABLE_START}\n| 1 | page | "
-        f"[{page_title}]({page_url.lstrip('https://discourse.charmhub.io')}) |\n"
+        f"[{page_title}]({page_url.removeprefix('https://discourse.charmhub.io')}) |\n"
     )
     index_title = index_content.splitlines()[0].lstrip("# ")
     index_url = discourse.create_topic(title=index_title, content=index_topic_content)
