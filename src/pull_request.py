@@ -108,12 +108,11 @@ class RepositoryClient:
         except GitCommandError as exc:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
-    def create_pull_request(self, branch_name: str, base: str) -> str:
-        """Create a pull request from given branch to base.
+    def create_pull_request(self, branch_name: str) -> str:
+        """Create a pull request from given branch to the default branch.
 
         Args:
             branch_name: Branch name from which the pull request will be created.
-            base: Base branch to which the pull request will be created.
 
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
@@ -125,7 +124,7 @@ class RepositoryClient:
             pull_request = self._github_repo.create_pull(
                 title=ACTIONS_PULL_REQUEST_TITLE,
                 body=ACTIONS_PULL_REQUEST_BODY,
-                base=base,
+                base=self._github_repo.default_branch,
                 head=branch_name,
             )
         except GithubException as exc:
@@ -143,8 +142,14 @@ class RepositoryClient:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def detach_head(self) -> None:
-        """Detach from the current branch to ensure no further commits can occur."""
+    def detach_head(self, branch_name: str) -> None:
+        """Detach from the current branch to ensure no further commits can occur.
+
+        Args:
+            branch_name: The branch name to use for the detached head mode.
+        """
+        self._git_repo.git.fetch("origin", branch_name)
+        self._git_repo.git.checkout(branch_name)
         self._git_repo.head.set_reference(self._git_repo.head.commit.hexsha)
         self._git_repo.git.checkout(self._git_repo.head.commit.hexsha)
 
@@ -183,13 +188,10 @@ def create_pull_request(repository: RepositoryClient, current_branch_name: str) 
         commit_msg=ACTIONS_COMMIT_MESSAGE,
     )
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
-    pull_request_web_link = repository.create_pull_request(
-        branch_name=DEFAULT_BRANCH_NAME,
-        base=current_branch_name,
-    )
+    pull_request_web_link = repository.create_pull_request(branch_name=DEFAULT_BRANCH_NAME)
 
     # Detach head to ensure no further changes can be made
-    repository.detach_head()
+    repository.detach_head(branch_name=current_branch_name)
 
     return pull_request_web_link
 
