@@ -88,7 +88,7 @@ class RepositoryClient:
             ) from exc
 
     def create_branch(self, branch_name: str, commit_msg: str) -> None:
-        """Create new branch with existing changes.
+        """Create new branch with existing changes using the default branch as the base.
 
         Args:
             branch_name: New branch name.
@@ -98,6 +98,7 @@ class RepositoryClient:
             RepositoryClientError: if unexpected error occurred during git operation.
         """
         try:
+            self._git_repo.git.checkout(self._github_repo.default_branch)
             self._git_repo.git.checkout("-b", branch_name)
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")

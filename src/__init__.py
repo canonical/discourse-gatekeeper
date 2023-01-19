@@ -97,8 +97,7 @@ def _run_migrate(
     )
     logging.info("server_content: %s", repr(server_content))
     index_content = contents_from_page(server_content)
-    logging.info("index_content: %s", repr(index_content))
-    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
+    table_rows = list(navigation_table_from_page(page=server_content, discourse=discourse))
     logging.info("table_rows: %s", repr(table_rows))
     migrate_contents(
         table_rows=table_rows,
