@@ -151,7 +151,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
 
 
 def test__run_migrate_server_error_index(
-    tmp_path: Path, repository_client: pull_request.RepositoryClient, default_branch: str
+    tmp_path: Path, repository_client: pull_request.RepositoryClient, test_branch: str
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -169,14 +169,14 @@ def test__run_migrate_server_error_index(
             metadata=meta,
             discourse=mocked_discourse,
             repository=repository_client,
-            current_branch_name=default_branch,
+            current_branch_name=test_branch,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
 
 
 def test__run_migrate_server_error_topic(
-    repository_path: Path, repository_client: pull_request.RepositoryClient, default_branch: str
+    repository_path: Path, repository_client: pull_request.RepositoryClient, test_branch: str
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -205,7 +205,7 @@ def test__run_migrate_server_error_topic(
             metadata=meta,
             discourse=mocked_discourse,
             repository=repository_client,
-            current_branch_name=default_branch,
+            current_branch_name=test_branch,
         )
 
 

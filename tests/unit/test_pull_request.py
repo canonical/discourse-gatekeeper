@@ -236,9 +236,7 @@ def test_create_pull_request_on_default_branchname(
     )
 
 
-def test_create_pull_request_no_dirty_files(
-    repository_client: RepositoryClient, default_branch: str
-):
+def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient, test_branch: str):
     """
     arrange: given RepositoryClient with no dirty files
     act: when create_pull_request is called
@@ -246,7 +244,7 @@ def test_create_pull_request_no_dirty_files(
     """
     with pytest.raises(InputError) as exc:
         pull_request.create_pull_request(
-            repository=repository_client, current_branch_name=default_branch
+            repository=repository_client, current_branch_name=test_branch
         )
 
     assert_substrings_in_string(
@@ -260,7 +258,7 @@ def test_create_pull_request_existing_branch(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
-    default_branch: str,
+    test_branch: str,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
@@ -282,7 +280,7 @@ def test_create_pull_request_existing_branch(
 
     with pytest.raises(InputError) as exc:
         pull_request.create_pull_request(
-            repository=repository_client, current_branch_name=default_branch
+            repository=repository_client, current_branch_name=test_branch
         )
 
     assert_substrings_in_string(
@@ -304,7 +302,7 @@ def test_create_pull_request(
     upstream_repository_path: Path,
     repository_path: Path,
     mock_pull_request: PullRequest,
-    default_branch: str,
+    test_branch: str,
 ):  # pylint: disable=too-many-arguments
     """
     arrange: given RepositoryClient and a repository with changed files
@@ -318,7 +316,7 @@ def test_create_pull_request(
     (repository_path / filler_file).write_text(filler_text)
 
     returned_pr_link = pull_request.create_pull_request(
-        repository=repository_client, current_branch_name=default_branch
+        repository=repository_client, current_branch_name=test_branch
     )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)

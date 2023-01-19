@@ -34,6 +34,7 @@ async def test_run_migrate(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
+    test_branch: str,
 ):
     """
     arrange: given running discourse server
@@ -101,7 +102,7 @@ async def test_run_migrate(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(),
+        user_inputs=factories.UserInputFactory(branch_name=test_branch),
     )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
@@ -126,7 +127,7 @@ async def test_run_migrate(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(),
+        user_inputs=factories.UserInputFactory(branch_name=test_branch),
     )
 
     assert_substrings_in_string(

@@ -25,8 +25,22 @@ def fixture_upstream_repository_path(tmp_path: Path) -> Path:
     return upstream_path
 
 
+@pytest.fixture(name="default_branch")
+def fixture_default_branch() -> str:
+    """Get the default branch name."""
+    return "main"
+
+
+@pytest.fixture(name="test_branch")
+def fixture_test_branch() -> str:
+    """Get the name of the branch to run tests on."""
+    return "test"
+
+
 @pytest.fixture(name="upstream_repository")
-def fixture_upstream_repository(upstream_repository_path: Path, default_branch: str) -> Repo:
+def fixture_upstream_repository(
+    upstream_repository_path: Path, default_branch: str, test_branch: str
+) -> Repo:
     """Initialize upstream repository."""
     upstream_repository = Repo.init(upstream_repository_path)
     writer = upstream_repository.config_writer()
@@ -37,6 +51,7 @@ def fixture_upstream_repository(upstream_repository_path: Path, default_branch: 
     (upstream_repository_path / ".gitkeep").touch()
     upstream_repository.git.add(".")
     upstream_repository.git.commit("-m", "'initial commit'")
+    upstream_repository.git.checkout("-b", test_branch)
 
     return upstream_repository
 
@@ -49,18 +64,12 @@ def fixture_repository_path(tmp_path: Path) -> Path:
     return repo_path
 
 
-@pytest.fixture(name="default_branch")
-def fixture_default_branch() -> str:
-    """Get the default branch name."""
-    return "main"
-
-
 @pytest.fixture(name="repository")
 def fixture_repository(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
-    default_branch: str,
+    test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
     # uptream_repository is added to create a dependency for the current fixture in order to ensure
@@ -69,7 +78,7 @@ def fixture_repository(
 
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
     repo.git.fetch()
-    repo.git.checkout(default_branch)
+    repo.git.checkout(test_branch)
 
     # Go into detached head mode to reflect how GitHub performs the checkout
     repo.head.set_reference(repo.head.commit.hexsha)
