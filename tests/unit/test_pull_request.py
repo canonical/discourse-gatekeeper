@@ -140,7 +140,7 @@ def test_repository_client_create_branch(
     upstream_repository: Repo,
 ):
     """
-    arrange: given RepositoryClient and newly created files in repo and repo/docs directory
+    arrange: given RepositoryClient and newly created files in `repo` and `repo/docs` directories
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with only the files in the `repo/docs`
         directory.
