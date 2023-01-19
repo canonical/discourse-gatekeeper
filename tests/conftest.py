@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for all tests."""
@@ -25,18 +25,33 @@ def fixture_upstream_repository_path(tmp_path: Path) -> Path:
     return upstream_path
 
 
+@pytest.fixture(name="default_branch")
+def fixture_default_branch() -> str:
+    """Get the default branch name."""
+    return "main"
+
+
+@pytest.fixture(name="test_branch")
+def fixture_test_branch() -> str:
+    """Get the name of the branch to run tests on."""
+    return "test"
+
+
 @pytest.fixture(name="upstream_repository")
-def fixture_upstream_repository(upstream_repository_path: Path) -> Repo:
+def fixture_upstream_repository(
+    upstream_repository_path: Path, default_branch: str, test_branch: str
+) -> Repo:
     """Initialize upstream repository."""
     upstream_repository = Repo.init(upstream_repository_path)
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
     writer.set_value("user", "email", "upstream_email")
     writer.release()
-    upstream_repository.git.checkout("-b", "main")
+    upstream_repository.git.checkout("-b", default_branch)
     (upstream_repository_path / ".gitkeep").touch()
     upstream_repository.git.add(".")
     upstream_repository.git.commit("-m", "'initial commit'")
+    upstream_repository.git.checkout("-b", test_branch)
 
     return upstream_repository
 
@@ -51,7 +66,10 @@ def fixture_repository_path(tmp_path: Path) -> Path:
 
 @pytest.fixture(name="repository")
 def fixture_repository(
-    upstream_repository: Repo, upstream_repository_path: Path, repository_path: Path
+    upstream_repository: Repo,
+    upstream_repository_path: Path,
+    repository_path: Path,
+    test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
     # uptream_repository is added to create a dependency for the current fixture in order to ensure
@@ -59,8 +77,13 @@ def fixture_repository(
     del upstream_repository
 
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
-    repo.git.checkout("main")
-    repo.git.pull()
+    repo.git.fetch()
+    repo.git.checkout(test_branch)
+
+    # Go into detached head mode to reflect how GitHub performs the checkout
+    repo.head.set_reference(repo.head.commit.hexsha)
+    repo.git.checkout(repo.head.commit.hexsha)
+
     return repo
 
 
@@ -77,11 +100,12 @@ def fixture_mock_pull_request() -> PullRequest:
 
 
 @pytest.fixture(name="mock_github_repo")
-def fixture_mock_github_repo(mock_pull_request: PullRequest) -> Repository:
+def fixture_mock_github_repo(mock_pull_request: PullRequest, default_branch: str) -> Repository:
     """Create a mock github repository instance."""
     mocked_repo = mock.MagicMock(spec=Repository)
     mocked_repo.create_pull.return_value = mock_pull_request
     mocked_repo.full_name = "test/repository"
+    mocked_repo.default_branch = default_branch
     return mocked_repo
 
 

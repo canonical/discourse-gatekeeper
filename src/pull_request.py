@@ -14,6 +14,7 @@ from github.GithubException import GithubException
 from github.Repository import Repository
 
 from .exceptions import InputError, RepositoryClientError
+from .index import DOCUMENTATION_FOLDER_NAME
 
 GITHUB_HOSTNAME = "github.com"
 HTTPS_URL_PATTERN = re.compile(rf"^https?:\/\/.*@?{GITHUB_HOSTNAME}\/(.+\/.+?)(.git)?$")
@@ -28,6 +29,10 @@ ACTIONS_PULL_REQUEST_BODY = (
 PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
 BRANCH_PREFIX = "upload-charm-docs"
 DEFAULT_BRANCH_NAME = f"{BRANCH_PREFIX}/migrate"
+
+CONFIG_USER_SECTION_NAME = "user"
+CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
+CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
 
 
 class RepositoryClient:
@@ -49,11 +54,16 @@ class RepositoryClient:
 
         Configured profile appears as the git committer.
         """
-        config_writer = self._git_repo.config_writer()
-        config_writer.set_value("user", "name", ACTIONS_USER_NAME)
-        config_writer.set_value("user", "email", ACTIONS_USER_EMAIL)
-        # there is no context manager, config writer must be manually released.
-        config_writer.release()
+        config_reader = self._git_repo.config_reader(config_level="repository")
+        with self._git_repo.config_writer(config_level="repository") as config_writer:
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_NAME):
+                config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
+            if not config_reader.has_section(
+                CONFIG_USER_SECTION_NAME
+            ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
+                config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
     def check_branch_exists(self, branch_name: str) -> bool:
         """Check if branch exists on remote.
@@ -78,7 +88,7 @@ class RepositoryClient:
             ) from exc
 
     def create_branch(self, branch_name: str, commit_msg: str) -> None:
-        """Create new branch with existing changes.
+        """Create new branch with existing changes using the default branch as the base.
 
         Args:
             branch_name: New branch name.
@@ -87,20 +97,22 @@ class RepositoryClient:
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
         """
+        default_branch = self._github_repo.default_branch
         try:
+            self._git_repo.git.fetch("origin", default_branch)
+            self._git_repo.git.checkout(default_branch)
             self._git_repo.git.checkout("-b", branch_name)
-            self._git_repo.git.add(".")
+            self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             self._git_repo.git.push("-u", "origin", branch_name)
         except GitCommandError as exc:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
-    def create_pull_request(self, branch_name: str, base: str) -> str:
-        """Create a pull request from given branch to base.
+    def create_pull_request(self, branch_name: str) -> str:
+        """Create a pull request from given branch to the default branch.
 
         Args:
             branch_name: Branch name from which the pull request will be created.
-            base: Base branch to which the pull request will be created.
 
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
@@ -112,7 +124,7 @@ class RepositoryClient:
             pull_request = self._github_repo.create_pull(
                 title=ACTIONS_PULL_REQUEST_TITLE,
                 body=ACTIONS_PULL_REQUEST_BODY,
-                base=base,
+                base=self._github_repo.default_branch,
                 head=branch_name,
             )
         except GithubException as exc:
@@ -130,28 +142,24 @@ class RepositoryClient:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_active_branch(self) -> str:
-        """Get name of currently active branch on local git repository.
-
-        Returns:
-            Name of currently active branch.
-        """
-        return self._git_repo.active_branch.name
-
-    def set_active_branch(self, branch_name: str) -> None:
-        """Set current active branch to an given branch that already exists.
+    def detach_head(self, branch_name: str) -> None:
+        """Detach from the current branch to ensure no further commits can occur.
 
         Args:
-            branch_name: target branch that already exists in git.
+            branch_name: The branch name to use for the detached head mode.
         """
+        self._git_repo.git.fetch("origin", branch_name)
         self._git_repo.git.checkout(branch_name)
+        self._git_repo.head.set_reference(self._git_repo.head.commit.hexsha)
+        self._git_repo.git.checkout(self._git_repo.head.commit.hexsha)
 
 
-def create_pull_request(repository: RepositoryClient) -> str:
+def create_pull_request(repository: RepositoryClient, current_branch_name: str) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
+        current_branch_name: The name of the branch the migration is running on.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -160,8 +168,7 @@ def create_pull_request(repository: RepositoryClient) -> str:
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    base = repository.get_active_branch()
-    if base == DEFAULT_BRANCH_NAME:
+    if current_branch_name == DEFAULT_BRANCH_NAME:
         raise InputError(
             f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
             f"Branch name {DEFAULT_BRANCH_NAME} is reserved for creating a migration branch."
@@ -181,14 +188,10 @@ def create_pull_request(repository: RepositoryClient) -> str:
         commit_msg=ACTIONS_COMMIT_MESSAGE,
     )
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
-    pull_request_web_link = repository.create_pull_request(
-        branch_name=DEFAULT_BRANCH_NAME,
-        base=base,
-    )
+    pull_request_web_link = repository.create_pull_request(branch_name=DEFAULT_BRANCH_NAME)
 
-    # reset active branch back to original branch to ensure following actions
-    # do not run on an newly created branch
-    repository.set_active_branch(branch_name=base)
+    # Detach head to ensure no further changes can be made
+    repository.detach_head(branch_name=current_branch_name)
 
     return pull_request_web_link
 

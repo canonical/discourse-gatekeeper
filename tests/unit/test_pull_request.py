@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for git."""
@@ -19,6 +19,7 @@ from github.Repository import Repository
 
 from src import pull_request
 from src.exceptions import InputError, RepositoryClientError
+from src.index import DOCUMENTATION_FOLDER_NAME
 from src.pull_request import RepositoryClient
 
 from .helpers import assert_substrings_in_string
@@ -30,13 +31,37 @@ def test_repository_client__init__(repository: Repo, mock_github_repo: Repositor
     act: when RepositoryClient is initialized
     assert: RepositoryClient is created and git user is configured.
     """
+    pull_request.RepositoryClient(repository=repository, github_repository=mock_github_repo)
+
+    config_reader = repository.config_reader()
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_NAME) == pull_request.ACTIONS_USER_NAME
+    )
+    assert (
+        config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == pull_request.ACTIONS_USER_EMAIL
+    )
+
+
+def test_repository_client__init__name_email_set(repository: Repo, mock_github_repo: Repository):
+    """
+    arrange: given a local git repository client with the user and email configuration already set
+        and mock github repository client
+    act: when RepositoryClient is initialized
+    assert: RepositoryClient is created and git user configuration is not overridden.
+    """
+    user_name = "name 1"
+    user_email = "email 1"
+    with repository.config_writer(config_level="repository") as config_writer:
+        config_writer.set_value(*pull_request.CONFIG_USER_NAME, user_name)
+        config_writer.set_value(*pull_request.CONFIG_USER_EMAIL, user_email)
+
     repository_client = pull_request.RepositoryClient(
         repository=repository, github_repository=mock_github_repo
     )
 
     config_reader = repository_client._git_repo.config_reader()
-    assert config_reader.get_value("user", "name") == pull_request.ACTIONS_USER_NAME
-    assert config_reader.get_value("user", "email") == pull_request.ACTIONS_USER_EMAIL
+    assert config_reader.get_value(*pull_request.CONFIG_USER_NAME) == user_name
+    assert config_reader.get_value(*pull_request.CONFIG_USER_EMAIL) == user_email
 
 
 def test_repository_client_check_branch_exists_error(
@@ -115,13 +140,21 @@ def test_repository_client_create_branch(
     upstream_repository: Repo,
 ):
     """
-    arrange: given RepositoryClient and newly created files in repo directory
+    arrange: given RepositoryClient and newly created files in `repo` and `repo/docs` directories
     act: when _create_branch is called
-    assert: a new branch is successfully created upstream.
+    assert: a new branch is successfully created upstream with only the files in the `repo/docs`
+        directory.
     """
-    testfile = "testfile.txt"
-    testfile_content = "test"
-    (repository_path / testfile).write_text(testfile_content)
+    root_file = repository_path / "test.txt"
+    root_file.write_text("content 1", encoding="utf-8")
+    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_dir).mkdir()
+    docs_file = docs_dir / "test.txt"
+    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+    nested_docs_dir = docs_dir / "nested"
+    (repository_path / nested_docs_dir).mkdir()
+    nested_docs_file = nested_docs_dir / "test.txt"
+    (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
     repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
@@ -132,6 +165,13 @@ def test_repository_client_create_branch(
         for branch in upstream_repository.branches  # type: ignore
         if branch.name == branch_name
     )
+    # Check files in the branch
+    branch_files = set(
+        upstream_repository.git.ls_tree("-r", branch_name, "--name-only").splitlines()
+    )
+    assert str(root_file) not in branch_files
+    assert str(docs_file) in branch_files
+    assert str(nested_docs_file) in branch_files
 
 
 def test_repository_client_create_pull_request_error(
@@ -149,7 +189,7 @@ def test_repository_client_create_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_pull_request(branch_name="branchname-1", base="base-branchname")
+        repository_client.create_pull_request(branch_name="branchname-1")
 
     assert_substrings_in_string(
         ("unexpected error creating pull request", "githubexception"), str(exc.value).lower()
@@ -164,7 +204,7 @@ def test_repository_client_create_pull_request(
     act: when _create_pull_request is called
     assert: a pull request's page link is returned.
     """
-    returned_url = repository_client.create_pull_request("branchname-1", "base-branchname")
+    returned_url = repository_client.create_pull_request("branchname-1")
 
     assert returned_url == mock_pull_request.html_url
 
@@ -182,7 +222,9 @@ def test_create_pull_request_on_default_branchname(
     head.checkout()
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=pull_request.DEFAULT_BRANCH_NAME
+        )
 
     assert_substrings_in_string(
         (
@@ -194,16 +236,16 @@ def test_create_pull_request_on_default_branchname(
     )
 
 
-def test_create_pull_request_no_dirty_files(
-    repository_client: RepositoryClient,
-):
+def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient, test_branch: str):
     """
     arrange: given RepositoryClient with no dirty files
     act: when create_pull_request is called
     assert: InputError is raised.
     """
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=test_branch
+        )
 
     assert_substrings_in_string(
         ("no files seem to be migrated. please add contents upstream first.",),
@@ -216,23 +258,30 @@ def test_create_pull_request_existing_branch(
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
+    test_branch: str,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
     act: when create_pull_request is called
     assert: InputError is raised.
     """
-    (repository_path / "filler-file").write_text("filler-content")
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_folder).mkdir()
+    filler_file = docs_folder / "filler-file"
+    (repository_path / filler_file).write_text("filler-content")
 
     branch_name = pull_request.DEFAULT_BRANCH_NAME
     head = upstream_repository.create_head(branch_name)
     head.checkout()
-    (upstream_repository_path / "filler-file").touch()
+    (upstream_repository_path / docs_folder).mkdir()
+    (upstream_repository_path / filler_file).touch()
     upstream_repository.git.add(".")
     upstream_repository.git.commit("-m", "test")
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(
+            repository=repository_client, current_branch_name=test_branch
+        )
 
     assert_substrings_in_string(
         (
@@ -245,28 +294,34 @@ def test_create_pull_request_existing_branch(
     )
 
 
+# All of these fixtures are required and they can't be consolidated because not all of them are
+# used by all tests
 def test_create_pull_request(
     repository_client: RepositoryClient,
     upstream_repository: Repo,
     upstream_repository_path: Path,
     repository_path: Path,
     mock_pull_request: PullRequest,
-):
+    test_branch: str,
+):  # pylint: disable=too-many-arguments
     """
     arrange: given RepositoryClient and a repository with changed files
     act: when create_pull_request is called
     assert: changes are pushed to default branch and pull request link is returned.
     """
-    filler_filename = "filler-file"
-    filler_file = repository_path / filler_filename
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_folder).mkdir()
+    filler_file = docs_folder / "filler.txt"
     filler_text = "filler-text"
-    filler_file.write_text(filler_text)
+    (repository_path / filler_file).write_text(filler_text)
 
-    returned_pr_link = pull_request.create_pull_request(repository=repository_client)
+    returned_pr_link = pull_request.create_pull_request(
+        repository=repository_client, current_branch_name=test_branch
+    )
 
     upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
-    assert (upstream_repository_path / filler_filename).read_text() == filler_text
+    assert (upstream_repository_path / filler_file).read_text() == filler_text
 
 
 @pytest.mark.parametrize(
