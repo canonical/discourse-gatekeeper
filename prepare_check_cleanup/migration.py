@@ -217,7 +217,7 @@ def check_pull_request(github_access_token: str) -> bool:
     success = True
 
     # Check the head and base branch
-    if migration_pull_request.head != DEFAULT_BRANCH_NAME:
+    if migration_pull_request.head.ref != DEFAULT_BRANCH_NAME:
         logging.error(
             "%s check failed, migration pull request head branch is not as expected, "
             "head branch: %s, expected: %s",
@@ -226,7 +226,7 @@ def check_pull_request(github_access_token: str) -> bool:
             DEFAULT_BRANCH_NAME,
         )
         success = False
-    if migration_pull_request.base != github_repo.default_branch:
+    if migration_pull_request.base.ref != github_repo.default_branch:
         logging.error(
             "%s check failed, migration pull request base branch is not as expected, "
             "base branch: %s, expected: %s",
