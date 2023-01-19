@@ -189,7 +189,7 @@ def test_repository_client_create_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_pull_request(branch_name="branchname-1", base="base-branchname")
+        repository_client.create_pull_request(branch_name="branchname-1")
 
     assert_substrings_in_string(
         ("unexpected error creating pull request", "githubexception"), str(exc.value).lower()
@@ -204,7 +204,7 @@ def test_repository_client_create_pull_request(
     act: when _create_pull_request is called
     assert: a pull request's page link is returned.
     """
-    returned_url = repository_client.create_pull_request("branchname-1", "base-branchname")
+    returned_url = repository_client.create_pull_request("branchname-1")
 
     assert returned_url == mock_pull_request.html_url
 

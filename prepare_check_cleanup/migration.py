@@ -202,6 +202,7 @@ def check_pull_request(github_access_token: str) -> bool:
     """
     test_name = "check-pull-request"
 
+    # Check the pull request exists
     github_repo = _create_repository_client(github_access_token=github_access_token)
     migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
     if not migration_pull_request:
@@ -212,6 +213,30 @@ def check_pull_request(github_access_token: str) -> bool:
         )
         return False
 
+    # Log all the issues that were found
+    success = True
+
+    # Check the head and base branch
+    if migration_pull_request.head != DEFAULT_BRANCH_NAME:
+        logging.error(
+            "%s check failed, migration pull request head branch is not as expected, "
+            "head branch: %s, expected: %s",
+            test_name,
+            migration_pull_request.head,
+            DEFAULT_BRANCH_NAME,
+        )
+        success = False
+    if migration_pull_request.base != github_repo.default_branch:
+        logging.error(
+            "%s check failed, migration pull request base branch is not as expected, "
+            "base branch: %s, expected: %s",
+            test_name,
+            migration_pull_request.base,
+            github_repo.default_branch,
+        )
+        success = False
+
+    # Check it contains the expected files
     expected_files = {
         f"{DOCUMENTATION_FOLDER_NAME}/{DOCUMENTATION_INDEX_FILENAME}",
         f"{DOCUMENTATION_FOLDER_NAME}/page.md",
@@ -225,10 +250,10 @@ def check_pull_request(github_access_token: str) -> bool:
             expected_files,
             files_in_pull_request,
         )
-        return False
+        success = False
 
     logging.info("%s check succeeded", test_name)
-    return True
+    return success
 
 
 def cleanup(

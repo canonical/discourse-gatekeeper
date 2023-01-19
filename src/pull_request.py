@@ -97,7 +97,12 @@ class RepositoryClient:
         Raises:
             RepositoryClientError: if unexpected error occurred during git operation.
         """
-        default_branch = self._github_repo.default_branch
+        try:
+            default_branch = self._github_repo.default_branch
+        except GithubException as exc:
+            raise RepositoryClientError(
+                f"Unexpected error creating pull request. {exc=!r}"
+            ) from exc
         try:
             self._git_repo.git.fetch("origin", default_branch)
             self._git_repo.git.checkout(default_branch)

@@ -91,11 +91,12 @@ def fixture_mock_pull_request() -> PullRequest:
 
 
 @pytest.fixture(name="mock_github_repo")
-def fixture_mock_github_repo(mock_pull_request: PullRequest) -> Repository:
+def fixture_mock_github_repo(mock_pull_request: PullRequest, default_branch: str) -> Repository:
     """Create a mock github repository instance."""
     mocked_repo = mock.MagicMock(spec=Repository)
     mocked_repo.create_pull.return_value = mock_pull_request
     mocked_repo.full_name = "test/repository"
+    mocked_repo.default_branch = default_branch
     return mocked_repo
 
 
