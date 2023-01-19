@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [v0.2.1] - 2023-01-20
+
+### Fixed
+
+- Migration now correctly handles that the git checkout on GitHub actions runs
+  in detached head mode, the migration failed before due to not being able to
+  create a new branch from detached head mode
+- Only files in the `docs` folder are now added to the migration PR
+- The migration PR is now created with a branch from the default branch merging
+  back into the default branch, previously the branch was from the branch the
+  action was running on back into that branch
+
 ## [v0.2.0] - 2023-01-13
 
 ### Added
