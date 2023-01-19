@@ -30,7 +30,7 @@ def assert_substrings_in_string(substrings: typing.Iterable[str], string: str) -
 
     """
     for substring in substrings:
-        assert substring in string  # nosec
+        assert substring in string, f"`{substring}` not in `{string}`"  # nosec
 
 
 def path_to_markdown(path: Path) -> Path:

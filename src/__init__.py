@@ -3,7 +3,6 @@
 
 """Library for uploading docs to charmhub."""
 
-import logging
 from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
