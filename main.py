@@ -113,8 +113,9 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
         try:
             with tempfile.TemporaryDirectory() as tempdir_name:
                 tempdir = Path(tempdir_name)
-                shutil.copytree(src=initial_cwd, dst=tempdir)
-                os.chdir(tempdir)
+                execute_cwd = tempdir / "cwd"
+                shutil.copytree(src=initial_cwd, dst=execute_cwd)
+                os.chdir(execute_cwd)
                 func()
         finally:
             os.chdir(initial_cwd)
