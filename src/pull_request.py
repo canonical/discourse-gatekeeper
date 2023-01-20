@@ -234,6 +234,7 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Repos
         )
 
     local_repo = Repo(base_path)
+    logging.info("executing in git repository in the directory: %s", local_repo.working_dir)
     github_client = Github(login_or_token=access_token)
     remote_url = local_repo.remote().url
     repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)

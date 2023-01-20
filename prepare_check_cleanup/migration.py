@@ -98,7 +98,6 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
 
     page_content = Path(page_filename).read_text(encoding="utf-8")
     page_title = page_content.splitlines()[0].lstrip("# ")
-    logging.info("page_content: %s", page_content)
     page_url = discourse.create_topic(title=page_title, content=page_content)
 
     index_content = Path(index_filename).read_text(encoding="utf-8")
