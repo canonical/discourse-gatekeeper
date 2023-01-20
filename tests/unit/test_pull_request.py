@@ -181,8 +181,8 @@ def test_repository_client_create_branch_checkout_clash_default(
     default_branch: str,
 ):
     """
-    arrange: given RepositoryClient and a file with the same name as the default branch and one
-        file in the docs folder
+    arrange: given RepositoryClient and a file with the same name as the default branch and a file
+        in the docs folder
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
     """
@@ -196,14 +196,14 @@ def test_repository_client_create_branch_checkout_clash_default(
 
     repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
 
-    assert set(upstream_repository.git.ls_tree("-r", branch_name, "--name-only").splitlines())
+    assert upstream_repository.git.ls_tree("-r", branch_name, "--name-only")
 
 
 def test_repository_client_create_branch_checkout_clash_created(
     repository_client: RepositoryClient, repository_path: Path, upstream_repository: Repo
 ):
     """
-    arrange: given RepositoryClient and a file with the same name as the requested branch and one
+    arrange: given RepositoryClient and a file with the same name as the requested branch and a
         file in the docs folder
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
@@ -218,7 +218,7 @@ def test_repository_client_create_branch_checkout_clash_created(
 
     repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
 
-    assert set(upstream_repository.git.ls_tree("-r", branch_name, "--name-only").splitlines())
+    assert upstream_repository.git.ls_tree("-r", branch_name, "--name-only")
 
 
 def test_repository_client_create_pull_request_error(
@@ -262,7 +262,7 @@ def test_repository_client_detach_head(
     """
     arrange: given RepositoryClient and a repository checkout on on a different branch
     act: when detach_head is called with the test branch
-    assert: git is changed to operate in detached head mode on the tes branch.
+    assert: git is changed to operate in detached head mode.
     """
     branch_name = "test-create-branch"
     repository.git.checkout("-b", branch_name)
@@ -280,10 +280,12 @@ def test_repository_client_detach_head_file_clash(
 ):
     """
     arrange: given RepositoryClient and a repository checkout on on a different branch with a file
-        that matches the default branch
-    act: when detach_head is called with the test branch
-    assert: git is changed to operate in detached head mode on the tes branch.
+        that matches the default branch name
+    act: when detach_head is called with the default branch
+    assert: git is changed to operate in detached head mode.
     """
+    branch_name = "test-create-branch"
+    repository.git.checkout("-b", branch_name)
     root_file = repository_path / default_branch
     root_file.write_text("content 1", encoding="utf-8")
 
