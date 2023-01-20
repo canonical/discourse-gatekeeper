@@ -101,6 +101,9 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
 
     Args:
         func: The function to run in a temporary directory.
+
+    Returns:
+        The wrapper for the function that executes it in a temporary directory.
     """
 
     @functools.wraps(func)
