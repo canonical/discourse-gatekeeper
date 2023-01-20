@@ -100,7 +100,7 @@ class RepositoryClient:
         default_branch = self._github_repo.default_branch
         try:
             self._git_repo.git.fetch("origin", default_branch)
-            self._git_repo.git.checkout(default_branch)
+            self._git_repo.git.checkout(default_branch, "--")
             self._git_repo.git.checkout("-b", branch_name)
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
@@ -149,7 +149,7 @@ class RepositoryClient:
             branch_name: The branch name to use for the detached head mode.
         """
         self._git_repo.git.fetch("origin", branch_name)
-        self._git_repo.git.checkout(branch_name)
+        self._git_repo.git.checkout(branch_name, "--")
         self._git_repo.head.set_reference(self._git_repo.head.commit.hexsha)
         self._git_repo.git.checkout(self._git_repo.head.commit.hexsha)
 
