@@ -6,15 +6,15 @@
 
 ### Fixed
 
-- Fixed name clashes during migration for checkouts when a file or directory has
-  the same name as the branch being checked out
+- Name clashes during migration for checkouts when a file or directory has the
+  same name as the branch being checked out
 
 ### Changed
 
 - The action now operates in a temporary directory that is a copy of the
-  directory the action was called. Using a temporary directory ensures that any
-  operations of the action, such as git operations, do not change the state of
-  the files and directories any following steps receive.
+  directory the action was called on. Using a temporary directory ensures that
+  any operations of the action, such as git operations, do not change the state
+  of the files and directories any following steps receive.
 
 ## [v0.2.1] - 2023-01-20
 
