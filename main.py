@@ -28,9 +28,6 @@ def _parse_env_vars() -> types_.UserInputs:
 
     Returns:
         Wrapped user input variables.
-
-    Raises:
-        InputError: If the INPUT_GITHUB_TOKEN environment variable is not provided or empty.
     """
     discourse_host = os.getenv("INPUT_DISCOURSE_HOST", "")
     discourse_category_id = os.getenv("INPUT_DISCOURSE_CATEGORY_ID", "")
@@ -39,14 +36,6 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    github_head_ref = os.getenv(GITHUB_HEAD_REF_ENV_NAME)
-
-    if not github_head_ref:
-        raise exceptions.InputError(
-            f"Invalid '{GITHUB_HEAD_REF_ENV_NAME}' input, it must be non-empty, got "
-            f"{github_head_ref=!r}. This action is intended to run inside github-actions. "
-            f"{GETTING_STARTED}"
-        )
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -58,7 +47,6 @@ def _parse_env_vars() -> types_.UserInputs:
         delete_pages=delete_topics,
         dry_run=dry_run,
         github_access_token=github_access_token,
-        branch_name=github_head_ref,
     )
 
 
@@ -92,42 +80,6 @@ def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
     )
 
 
-def simulate_trigger(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
-    """Simulate the action running in a context without certain environment variables.
-
-    Stores the value of certain environment variables and then removes them, calls the underlying
-    function and then restores the environment variable.
-
-    Args:
-        func: The function to run in a simulated trigger.
-
-    Returns:
-        The wrapper for the function that executes it in a simulated trigger.
-    """
-
-    @functools.wraps(func)
-    def wrapper() -> None:
-        """Replacement function."""
-        simulate_trigger_enabled = os.getenv("INPUT_SIMULATE_TRIGGER", "") in {
-            "push",
-            "workflow_dispatch",
-        }
-        env_vars_record = {}
-        if simulate_trigger_enabled:
-            env_vars_record[GITHUB_HEAD_REF_ENV_NAME] = os.environ.pop(
-                GITHUB_HEAD_REF_ENV_NAME, None
-            )
-
-        try:
-            func()
-        finally:
-            for name, value in env_vars_record:
-                if value is not None:
-                    os.environ[name] = value
-
-    return wrapper
-
-
 def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
     """Execute a function in a temporary directory.
 
@@ -159,7 +111,6 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
     return wrapper
 
 
-@simulate_trigger
 @execute_in_tmpdir
 def main() -> None:
     """Execute the action."""

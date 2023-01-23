@@ -36,14 +36,12 @@ class Action(str, Enum):
         PREPARE: Prepare discourse pages before running the migration.
         CHECK_BRANCH: Check that the migration branch was created.
         CHECK_PULL_REQUEST: Check that the migration pull request was created.
-        CLEANUP_GITHUB: Delete migration pull request and branch after the migration.
         CLEANUP: Delete discourse pages and migration pull request and branch after the migration.
     """
 
     PREPARE = "prepare"
     CHECK_BRANCH = "check-branch"
     CHECK_PULL_REQUEST = "check-pull-request"
-    CLEANUP_GITHUB = "cleanup-github"
     CLEANUP = "cleanup"
 
 
@@ -79,9 +77,6 @@ def main() -> None:
             exit_.with_result(check_branch(**action_kwargs))
         case Action.CHECK_PULL_REQUEST.value:
             exit_.with_result(check_pull_request(**action_kwargs))
-        case Action.CLEANUP_GITHUB.value:
-            cleanup_github(**action_kwargs)
-            sys.exit(0)
         case Action.CLEANUP.value:
             cleanup(**action_kwargs)
             sys.exit(0)
@@ -261,29 +256,6 @@ def check_pull_request(github_access_token: str) -> bool:
     return success
 
 
-def cleanup_github(github_access_token: str) -> None:
-    """Clean up testing artifacts on GitHub.
-
-    Args:
-        github_access_token: The secret required for interactions with GitHub.
-    """
-    github_repo = _create_repository_client(github_access_token=github_access_token)
-    # Delete the migration PR
-    try:
-        migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
-        if migration_pull_request:
-            migration_pull_request.edit(state="closed")
-    except GithubException as exc:
-        logging.exception("cleanup failed for migration pull request, %s", exc)
-    # Delete the migration branch
-    try:
-        migration_branch = _get_migration_branch(github_repo=github_repo)
-        if migration_branch:
-            migration_branch.delete()
-    except GithubException as exc:
-        logging.exception("cleanup failed for migration branch, %s", exc)
-
-
 def cleanup(
     topics: dict[str, str], github_access_token: str, discourse_config: dict[str, str]
 ) -> None:
@@ -302,7 +274,21 @@ def cleanup(
     except DiscourseError as exc:
         logging.exception("cleanup failed for discourse, %s", exc)
 
-    cleanup_github(github_access_token=github_access_token)
+    github_repo = _create_repository_client(github_access_token=github_access_token)
+    # Delete the migration PR
+    try:
+        migration_pull_request = _get_migration_pull_request(github_repo=github_repo)
+        if migration_pull_request:
+            migration_pull_request.edit(state="closed")
+    except GithubException as exc:
+        logging.exception("cleanup failed for migration pull request, %s", exc)
+    # Delete the migration branch
+    try:
+        migration_branch = _get_migration_branch(github_repo=github_repo)
+        if migration_branch:
+            migration_branch.delete()
+    except GithubException as exc:
+        logging.exception("cleanup failed for migration branch, %s", exc)
 
 
 if __name__ == "__main__":

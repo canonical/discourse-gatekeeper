@@ -40,14 +40,6 @@ inputs:
       Required if running in migration mode.
     required: false
     type: string
-  simulate_trigger:
-    description: |
-      Simulate that the action was trigger by a certain event. All context not available in that
-      event is removed before the action is run. This is primarily useful for e2e testing. Valid
-      values are: push, workflow_dispatch.
-    default: ""
-    required: false
-    type: string
 outputs:
   urls_with_actions:
     description: |
