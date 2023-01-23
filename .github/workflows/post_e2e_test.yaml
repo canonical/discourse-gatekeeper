@@ -1,10 +1,13 @@
-name: Integration Tests Workflow Dispatch Reconcile
+name: Post E2E Tests
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: [E2E Tests]
+    types:
+      - completed
 
 jobs:
-  self-tests-reconcile:
+  post-e2e-tests-reconcile:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
