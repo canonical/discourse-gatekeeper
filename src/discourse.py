@@ -87,16 +87,55 @@ class Discourse:
         self._api_username = api_username
         self._api_key = api_key
 
+    @staticmethod
+    def _topic_url_path_components_valid(
+        path_components: typing.Sequence[str], url: str
+    ) -> str | None:
+        """Check whether the path components of a topic URL are valid.
+
+        Args:
+            path_components: The elements of the URL path after splitting on /.
+            url: The original URL, used for messages describing what is wrong.
+
+        Returns:
+            Whether the message for what is wrong with the path components or None if no issues
+            were found.
+        """
+        if not len(path_components) == 3:
+            return (
+                "Unexpected number of path components, "
+                f"expected: 3, got: {len(path_components)}, {url=}"
+            )
+
+        if not path_components[0] == "t":
+            return (
+                "Unexpected first path component, "
+                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}"
+            )
+
+        if not path_components[1]:
+            return f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}"
+
+        if not path_components[2].isnumeric():
+            return (
+                "unexpected third path component topic id, "
+                "expected: a string that can be converted to an integer, "
+                f"got: {path_components[2]!r}, {url=}"
+            )
+
+        return None
+
     def topic_url_valid(self, url: str) -> _ValidationResult:
         """Check whether a url to a topic is valid. Assume the url is well formatted.
 
         Validations:
             1. The URL must start with the base path configured during construction.
-            2. The URL must have 3 components in its path.
-            3. The first component in the path must be the literal 't'.
-            4. The second component in the path must be the slug to the topic which must have at
+            2. The URL must resolve on a discourse HEAD request.
+            3. The URL must have 3 components in its path.
+            4. The first component in the path must be the literal 't'.
+            5. The second component in the path must be the slug to the topic which must have at
                 least 1 character.
-            5. The third component must the the topic id as an integer.
+            6. The third component must the the topic id as an integer.
 
         Args:
             url: The URL to check.
@@ -128,29 +167,12 @@ class Discourse:
         # Remove trailing / and ignore first element which is always empty
         path_components = parsed_url.path.rstrip("/").split("/")[1:]
 
-        if not len(path_components) == 3:
-            return _ValidationResultInvalid(
-                "Unexpected number of path components, "
-                f"expected: 3, got: {len(path_components)}, {url=}"
+        if (
+            components_message := self._topic_url_path_components_valid(
+                path_components=path_components, url=url
             )
-
-        if not path_components[0] == "t":
-            return _ValidationResultInvalid(
-                "Unexpected first path component, "
-                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}"
-            )
-
-        if not path_components[1]:
-            return _ValidationResultInvalid(
-                f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}"
-            )
-
-        if not path_components[2].isnumeric():
-            return _ValidationResultInvalid(
-                "unexpected third path component topic id, "
-                "expected: a string that can be converted to an integer, "
-                f"got: {path_components[2]!r}, {url=}"
-            )
+        ) is not None:
+            return _ValidationResultInvalid(components_message)
 
         return _ValidationResultValid(final_url=url)
 

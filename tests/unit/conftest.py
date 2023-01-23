@@ -10,7 +10,7 @@ import pytest
 import requests
 
 from src import index
-from src.discourse import _URL_PATH_PREFIX, Discourse
+from src.discourse import Discourse
 
 from . import helpers
 
@@ -32,6 +32,8 @@ def fixture_discourse_mocked_get_requests_session(
     discourse: Discourse, monkeypatch: pytest.MonkeyPatch
 ) -> Discourse:
     """Get the mocked get_session."""
+    # Have to access protected attributes to be able to mock them for tests
+    # pylint: disable=protected-access
     mock_get_requests_session = mock.MagicMock(spec=discourse._get_requests_session)
     mocked_session = mock.MagicMock(spec=requests.Session)
     mock_get_requests_session.return_value = mocked_session
@@ -44,11 +46,14 @@ def fixture_discourse_mocked_get_requests_session(
 
 
 @pytest.fixture(name="topic_url")
-def fixture_topic_url(discourse_mocked_get_requests_session: Discourse, base_path: str) -> str:
+def fixture_topic_url(discourse_mocked_get_requests_session: Discourse) -> str:
     """Get the base path for discourse."""
     url = helpers.get_discourse_topic_url()
     discourse = discourse_mocked_get_requests_session
-    discourse._get_requests_session.return_value.head.return_value.url = url
+    # Have to access protected attributes to be able to mock them for tests
+    # pylint: disable=protected-access
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    discourse._get_requests_session.return_value.head.return_value.url = url  # type: ignore
     return url
 
 

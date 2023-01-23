@@ -137,7 +137,8 @@ def test_topic_url_valid(
     assert: then the expected result and message with the expected contents are returned.
     """
     discourse = discourse_mocked_get_requests_session
-    discourse._get_requests_session.return_value.head.return_value.url = topic_url
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    discourse._get_requests_session.return_value.head.return_value.url = topic_url  # type: ignore
 
     result = discourse.topic_url_valid(url=topic_url)
 
@@ -563,7 +564,6 @@ def test_update_topic(
     ],
 )
 # All arguments needed to be able to parametrize tests
-# pylint: disable=too-many-arguments
 @pytest.mark.usefixtures("topic_url")
 def test_function_discourse_error(
     monkeypatch: pytest.MonkeyPatch,
@@ -572,7 +572,7 @@ def test_function_discourse_error(
     kwargs: dict,
     expected_error_msg_contents: tuple[str, ...],
     discourse: Discourse,
-):
+):  # pylint: disable=too-many-arguments
     """
     arrange: given mocked discourse client that raises an error
     act: when the given function is called
@@ -629,9 +629,9 @@ def test_retrieve_topic_head_http_error(
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    discourse._get_requests_session.return_value.head.return_value.raise_for_status.side_effect = (
-        requests.HTTPError
-    )
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    mocked_head = discourse._get_requests_session.return_value.head  # type: ignore
+    mocked_head.return_value.raise_for_status.side_effect = requests.HTTPError
 
     with pytest.raises(DiscourseError) as exc_info:
         discourse.retrieve_topic(url=topic_url)
@@ -657,9 +657,9 @@ def test_retrieve_topic_get_http_error(
     monkeypatch.setattr(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
-    discourse._get_requests_session.return_value.get.return_value.raise_for_status.side_effect = (
-        requests.HTTPError
-    )
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
+    mocked_get.return_value.raise_for_status.side_effect = requests.HTTPError
 
     with pytest.raises(DiscourseError) as exc_info:
         discourse.retrieve_topic(url=topic_url)
@@ -688,9 +688,9 @@ def test_retrieve_topic(
         discourse, "check_topic_read_permission", mocked_check_topic_read_permission
     )
     content = "content 1"
-    discourse._get_requests_session.return_value.get.return_value.content = content.encode(
-        encoding="utf-8"
-    )
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
+    mocked_get.return_value.content = content.encode(encoding="utf-8")
 
     returned_content = discourse.retrieve_topic(url=topic_url)
 
