@@ -1,0 +1,18 @@
+name: Integration Tests Workflow Dispatch Reconcile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  self-tests-reconcile:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Self test
+        id: self-test-draft
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          dry_run: true
