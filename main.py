@@ -5,11 +5,16 @@
 
 """Main execution for the action."""
 
+import functools
 import json
 import logging
 import os
 import pathlib
+import shutil
+import tempfile
+import typing
 from functools import partial
+from pathlib import Path
 
 from src import GETTING_STARTED, exceptions, run, types_
 from src.discourse import create_discourse
@@ -87,6 +92,38 @@ def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
     )
 
 
+def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
+    """Execute a function in a temporary directory.
+
+    Makes a copy of the current working directory in a temporary directory, changes the working
+    directory to that directory, executes the function, changes the working directory back and
+    deletes the temporary directory.
+
+    Args:
+        func: The function to run in a temporary directory.
+
+    Returns:
+        The wrapper for the function that executes it in a temporary directory.
+    """
+
+    @functools.wraps(func)
+    def wrapper() -> None:
+        """Replacement function."""
+        initial_cwd = Path.cwd()
+        try:
+            with tempfile.TemporaryDirectory() as tempdir_name:
+                tempdir = Path(tempdir_name)
+                execute_cwd = tempdir / "cwd"
+                shutil.copytree(src=initial_cwd, dst=execute_cwd)
+                os.chdir(execute_cwd)
+                func()
+        finally:
+            os.chdir(initial_cwd)
+
+    return wrapper
+
+
+@execute_in_tmpdir
 def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
