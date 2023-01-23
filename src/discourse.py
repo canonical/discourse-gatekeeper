@@ -150,7 +150,10 @@ class Discourse:
             )
 
         try:
-            response = self._get_requests_session().head(url, allow_redirects=True)
+            response = self._get_requests_session().head(
+                url if url.startswith(self._base_path) else f"{self._base_path}{url}",
+                allow_redirects=True,
+            )
             response.raise_for_status()
             url = response.url
         except (
