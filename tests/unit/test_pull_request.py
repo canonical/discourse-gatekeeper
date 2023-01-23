@@ -174,6 +174,53 @@ def test_repository_client_create_branch(
     assert str(nested_docs_file) in branch_files
 
 
+def test_repository_client_create_branch_checkout_clash_default(
+    repository_client: RepositoryClient,
+    repository_path: Path,
+    upstream_repository: Repo,
+    default_branch: str,
+):
+    """
+    arrange: given RepositoryClient and a file with the same name as the default branch and a file
+        in the docs folder
+    act: when _create_branch is called
+    assert: a new branch is successfully created upstream with one or more files.
+    """
+    root_file = repository_path / default_branch
+    root_file.write_text("content 1", encoding="utf-8")
+    branch_name = "test-create-branch"
+    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_dir).mkdir()
+    docs_file = docs_dir / "test.txt"
+    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+
+    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+
+    assert upstream_repository.git.ls_tree("-r", branch_name, "--name-only")
+
+
+def test_repository_client_create_branch_checkout_clash_created(
+    repository_client: RepositoryClient, repository_path: Path, upstream_repository: Repo
+):
+    """
+    arrange: given RepositoryClient and a file with the same name as the requested branch and a
+        file in the docs folder
+    act: when _create_branch is called
+    assert: a new branch is successfully created upstream with one or more files.
+    """
+    branch_name = "test-create-branch"
+    root_file = repository_path / branch_name
+    root_file.write_text("content 1", encoding="utf-8")
+    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_dir).mkdir()
+    docs_file = docs_dir / "test.txt"
+    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+
+    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+
+    assert upstream_repository.git.ls_tree("-r", branch_name, "--name-only")
+
+
 def test_repository_client_create_pull_request_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ):
@@ -207,6 +254,44 @@ def test_repository_client_create_pull_request(
     returned_url = repository_client.create_pull_request("branchname-1")
 
     assert returned_url == mock_pull_request.html_url
+
+
+def test_repository_client_detach_head(
+    repository_client: RepositoryClient, repository: Repo, test_branch: str
+):
+    """
+    arrange: given RepositoryClient and a repository checkout on on a different branch
+    act: when detach_head is called with the test branch
+    assert: git is changed to operate in detached head mode.
+    """
+    branch_name = "test-create-branch"
+    repository.git.checkout("-b", branch_name)
+
+    repository_client.detach_head(branch_name=test_branch)
+
+    assert repository.head.is_detached
+
+
+def test_repository_client_detach_head_file_clash(
+    repository_client: RepositoryClient,
+    repository: Repo,
+    default_branch: str,
+    repository_path: Path,
+):
+    """
+    arrange: given RepositoryClient and a repository checkout on on a different branch with a file
+        that matches the default branch name
+    act: when detach_head is called with the default branch
+    assert: git is changed to operate in detached head mode.
+    """
+    branch_name = "test-create-branch"
+    repository.git.checkout("-b", branch_name)
+    root_file = repository_path / default_branch
+    root_file.write_text("content 1", encoding="utf-8")
+
+    repository_client.detach_head(branch_name=default_branch)
+
+    assert repository.head.is_detached
 
 
 def test_create_pull_request_on_default_branchname(
