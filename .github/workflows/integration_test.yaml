@@ -1,9 +1,9 @@
-name: Integration Tests
+# name: Integration Tests
 
-on:
-  pull_request:
+# on:
+#   pull_request:
 
-jobs:
+# jobs:
   # integration-tests:
   #   uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
   #   secrets: inherit

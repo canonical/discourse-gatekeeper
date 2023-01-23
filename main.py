@@ -92,6 +92,42 @@ def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
     )
 
 
+def simulate_trigger(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
+    """Simulate the action running in a context without certain environment variables.
+
+    Stores the value of certain environment variables and then removes them, calls the underlying
+    function and then restores the environment variable.
+
+    Args:
+        func: The function to run in a simulated trigger.
+
+    Returns:
+        The wrapper for the function that executes it in a simulated trigger.
+    """
+
+    @functools.wraps(func)
+    def wrapper() -> None:
+        """Replacement function."""
+        simulate_trigger_enabled = os.getenv("INPUT_SIMULATE_TRIGGER", "") in {
+            "push",
+            "workflow_dispatch",
+        }
+        env_vars_record = {}
+        if simulate_trigger_enabled:
+            env_vars_record[GITHUB_HEAD_REF_ENV_NAME] = os.environ.pop(
+                GITHUB_HEAD_REF_ENV_NAME, None
+            )
+
+        try:
+            func()
+        finally:
+            for name, value in env_vars_record:
+                if value is not None:
+                    os.environ[name] = value
+
+    return wrapper
+
+
 def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
     """Execute a function in a temporary directory.
 
@@ -123,6 +159,7 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
     return wrapper
 
 
+@simulate_trigger
 @execute_in_tmpdir
 def main() -> None:
     """Execute the action."""
