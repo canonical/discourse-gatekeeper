@@ -36,9 +36,11 @@ class _ValidationResultValid(typing.NamedTuple):
     Attrs:
         value: The validation result, always True.
         message: The validation message, always None.
+        final_url: The topic link after any redirects have been resolved.
 
     """
 
+    final_url: str
     value: typing.Literal[True] = True
     message: None = None
 
@@ -49,11 +51,13 @@ class _ValidationResultInvalid(typing.NamedTuple):
     Attrs:
         value: The validation result, always False.
         message: The validation message as the reason the validation failed.
+        final_url: Always set to None since the url is not valid.
 
     """
 
     message: str
     value: typing.Literal[False] = False
+    final_url: None = None
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
@@ -99,12 +103,25 @@ class Discourse:
 
         Returns:
             Whether the URL is a valid topic URL.
-
         """
         if not url.startswith((self._base_path, _URL_PATH_PREFIX)):
             return _ValidationResultInvalid(
                 "The base path is different to the expected base path, "
                 f"expected: {self._base_path}, {url=}"
+            )
+
+        try:
+            response = self._get_requests_session().head(url, allow_redirects=True)
+            response.raise_for_status()
+            url = response.url
+        except (
+            requests.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as exc:
+            return _ValidationResultInvalid(
+                f"The topic URL could not be resolved on discourse, error: {exc}, {url=}"
             )
 
         parsed_url = parse.urlparse(url=url)
@@ -135,7 +152,7 @@ class Discourse:
                 f"got: {path_components[2]!r}, {url=}"
             )
 
-        return _ValidationResultValid()
+        return _ValidationResultValid(final_url=url)
 
     def _url_to_topic_info(self, url: str) -> _DiscourseTopicInfo:
         """Retrieve the topic information from the url to the topic.
@@ -148,11 +165,13 @@ class Discourse:
 
         Raises:
             DiscourseError: if the url is not valid.
-
         """
         result = self.topic_url_valid(url=url)
         if not result.value:
             raise DiscourseError(result.message)
+
+        # If the result is valid, the final_url is guaranteed to be a string
+        url = typing.cast(str, result.final_url)
 
         path_components = parse.urlparse(url=url).path.split("/")
         return _DiscourseTopicInfo(slug=path_components[-2], id_=int(path_components[-1]))
@@ -327,7 +346,12 @@ class Discourse:
         )
         try:
             response.raise_for_status()
-        except requests.HTTPError as exc:
+        except (
+            requests.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as exc:
             raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
 
         return response.content.decode("utf-8")
