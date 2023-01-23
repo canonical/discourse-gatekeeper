@@ -17,7 +17,7 @@ from . import types
 pytestmark = pytest.mark.discourse
 
 
-SLUG_REGEX = r"\/t\/[\w-]*\/"
+SLUG_REGEX = r"\/t\/[\w-]+\/"
 
 
 def change_url_slug(url: str, new_slug: str) -> str:
