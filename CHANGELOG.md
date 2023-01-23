@@ -12,7 +12,7 @@
   This is no longer required because the migration branch is now from the default branch and there
   is an existing check that looks for any clashes with existing branches.
 - The action no longer goes back to detached head mode after completing git operations since the
-  action now runs in a temporary directory meaning that no changes that persist beyond the action
+  action now runs in a temporary directory meaning that no changes persist beyond the action
   completing.
 
 ## [v0.2.2] - 2023-01-23
