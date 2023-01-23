@@ -5,10 +5,13 @@
 ### Added
 
 - Check to ensure that a topic URL resolves on discourse after allowing for any
-  redirects. This also relaxes the URL checking to be on the URL after any
-  redirects rather than before letting topic URLs pass that do not include the
-  slug or do not include the topic id as long as the URL after redirects is
-  valid.
+  redirects.
+
+## Changed
+
+- URL checks are now after allowing for any discourse redirects rather than
+  before letting topic URLs pass that do not include the slug or do not include
+  the topic id as long as the URL after redirects is valid.
 
 ## [v0.2.1] - 2023-01-20
 
