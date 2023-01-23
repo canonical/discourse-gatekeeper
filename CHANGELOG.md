@@ -15,6 +15,20 @@
   action now runs in a temporary directory meaning that no changes that persist beyond the action
   completing.
 
+## [v0.2.2] - 2023-01-23
+
+### Fixed
+
+- Name clashes during migration for checkouts when a file or directory has the
+  same name as the branch being checked out
+
+### Changed
+
+- The action now operates in a temporary directory that is a copy of the
+  directory the action was called on. Using a temporary directory ensures that
+  any operations of the action, such as git operations, do not change the state
+  of the files and directories any following steps receive.
+
 ## [v0.2.1] - 2023-01-20
 
 ### Fixed
@@ -22,7 +36,7 @@
 - Migration now correctly handles that the git checkout on GitHub actions runs
   in detached head mode, the migration failed before due to not being able to
   create a new branch from detached head mode
-- Only files in the `docs` folder are now added to the migration PR
+- Only files in the `docs` directory are now added to the migration PR
 - The migration PR is now created with a branch from the default branch merging
   back into the default branch, previously the branch was from the branch the
   action was running on back into that branch
@@ -32,8 +46,8 @@
 ### Added
 
 - Topics are now created unlisted on discourse
-- Runs on a charm with existing documentation and without the `docs` folder now
-  results in a PR being created to migrate the docs to the repository
+- Runs on a charm with existing documentation and without the `docs` directory
+  now results in a PR being created to migrate the docs to the repository
 
 ## [v0.1.1] - 2022-12-13
 
