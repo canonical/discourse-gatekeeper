@@ -17,6 +17,9 @@ from . import types
 pytestmark = pytest.mark.discourse
 
 
+SLUG_REGEX = r"\/t\/[\w-]+\/"
+
+
 def change_url_slug(url: str, new_slug: str) -> str:
     """Change the slug of a topic URL.
 
@@ -27,7 +30,31 @@ def change_url_slug(url: str, new_slug: str) -> str:
     Returns:
         The URL with the changed slug.
     """
-    return re.sub(r"\/t\/[\w-]*\/", f"/t/{new_slug}/", url)
+    return re.sub(SLUG_REGEX, f"/t/{new_slug}/", url)
+
+
+def remove_url_slug(url: str) -> str:
+    """Remove the slug from a topic URL.
+
+    Args:
+        url: The topic URL to change.
+
+    Returns:
+        The URL without the slug.
+    """
+    return re.sub(SLUG_REGEX, "/t/", url)
+
+
+def remove_url_topic_id(url: str) -> str:
+    """Remove the topic id from a topic URL.
+
+    Args:
+        url: The topic URL to change.
+
+    Returns:
+        The URL without the topic id.
+    """
+    return re.sub(r"\/\d+$", "", url)
 
 
 @pytest.mark.asyncio
@@ -86,10 +113,11 @@ async def test_create_retrieve_update_delete_topic(
 
 
 @pytest.mark.asyncio
-async def test_retrieve_wrong_slug(discourse_api: Discourse):
+async def test_retrieve_wrong_url(discourse_api: Discourse):
     """
     arrange: given running discourse server
-    act: when a topic is created and retrieved with the wrong slug
+    act: when a topic is created and retrieved with the wrong slug, without the slug or without the
+        topic id
     assert: then the correct content is returned.
     """
     title = "title 1 padding so it is long enough test_retrieve_wrong_slug"
@@ -98,6 +126,16 @@ async def test_retrieve_wrong_slug(discourse_api: Discourse):
 
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
     returned_content = discourse_api.retrieve_topic(url=url_incorrect_slug)
+
+    assert returned_content == content
+
+    url_missing_slug = remove_url_slug(url)
+    returned_content = discourse_api.retrieve_topic(url=url_missing_slug)
+
+    assert returned_content == content
+
+    url_missing_topic_id = remove_url_topic_id(url)
+    returned_content = discourse_api.retrieve_topic(url=url_missing_topic_id)
 
     assert returned_content == content
 

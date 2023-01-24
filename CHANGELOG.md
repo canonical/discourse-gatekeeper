@@ -2,18 +2,28 @@
 
 ## [Unreleased]
 
+### Added
+
+- Check to ensure that a topic URL resolves on discourse after allowing for any
+  redirects.
+
+## Changed
+
+- URL checks are now after allowing for any discourse redirects rather than
+  before letting topic URLs pass that do not include the slug or do not include
+  the topic id as long as the URL after redirects is valid.
+- The check for whether the current branch clashes with the branch being created
+  has been removed. This is no longer required because the migration branch is
+  now from the default branch and there is an existing check that looks for any
+  clashes with existing branches.
+- The action no longer goes back to detached head mode after completing git
+  operations since the action now runs in a temporary directory meaning that no
+  changes persist beyond the action completing.
+
 ### Fixed
 
-- Bug where the action required environment variables that aren't available on all supported triggers.
-
-### Changed
-
-- The check for whether the current branch clashes with the branch being created has been removed.
-  This is no longer required because the migration branch is now from the default branch and there
-  is an existing check that looks for any clashes with existing branches.
-- The action no longer goes back to detached head mode after completing git operations since the
-  action now runs in a temporary directory meaning that no changes persist beyond the action
-  completing.
+- Bug where the action required environment variables that aren't available on
+  all supported triggers.
 
 ## [v0.2.2] - 2023-01-23
 

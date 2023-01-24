@@ -7,6 +7,7 @@ import typing
 from pathlib import Path
 
 from src import metadata
+from src.discourse import _URL_PATH_PREFIX
 
 
 def create_metadata_yaml(content: str, path: Path) -> None:
@@ -43,3 +44,21 @@ def path_to_markdown(path: Path) -> Path:
         Path with last path being a markdown file.
     """
     return Path(f"{path}.md")
+
+
+def get_discourse_base_path() -> str:
+    """Get the base path for discourse.
+
+    Returns:
+        The base path for discourse.
+    """
+    return "http://discourse"
+
+
+def get_discourse_topic_url() -> str:
+    """Get a topic url for discourse.
+
+    Returns:
+        A topic url for discourse.
+    """
+    return f"{get_discourse_base_path()}{_URL_PATH_PREFIX}slug/1"

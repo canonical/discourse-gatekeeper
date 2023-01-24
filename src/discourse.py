@@ -36,9 +36,11 @@ class _ValidationResultValid(typing.NamedTuple):
     Attrs:
         value: The validation result, always True.
         message: The validation message, always None.
+        final_url: The topic link after any redirects have been resolved.
 
     """
 
+    final_url: str
     value: typing.Literal[True] = True
     message: None = None
 
@@ -49,11 +51,13 @@ class _ValidationResultInvalid(typing.NamedTuple):
     Attrs:
         value: The validation result, always False.
         message: The validation message as the reason the validation failed.
+        final_url: Always set to None since the url is not valid.
 
     """
 
     message: str
     value: typing.Literal[False] = False
+    final_url: None = None
 
 
 _ValidationResult = _ValidationResultValid | _ValidationResultInvalid
@@ -83,23 +87,61 @@ class Discourse:
         self._api_username = api_username
         self._api_key = api_key
 
+    @staticmethod
+    def _topic_url_path_components_valid(
+        path_components: typing.Sequence[str], url: str
+    ) -> str | None:
+        """Check whether the path components of a topic URL are valid.
+
+        Args:
+            path_components: The elements of the URL path after splitting on /.
+            url: The original URL, used for messages describing what is wrong.
+
+        Returns:
+            Whether the message for what is wrong with the path components or None if no issues
+            were found.
+        """
+        if not len(path_components) == 3:
+            return (
+                "Unexpected number of path components, "
+                f"expected: 3, got: {len(path_components)}, {url=}"
+            )
+
+        if not path_components[0] == "t":
+            return (
+                "Unexpected first path component, "
+                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}"
+            )
+
+        if not path_components[1]:
+            return f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}"
+
+        if not path_components[2].isnumeric():
+            return (
+                "unexpected third path component topic id, "
+                "expected: a string that can be converted to an integer, "
+                f"got: {path_components[2]!r}, {url=}"
+            )
+
+        return None
+
     def topic_url_valid(self, url: str) -> _ValidationResult:
         """Check whether a url to a topic is valid. Assume the url is well formatted.
 
         Validations:
             1. The URL must start with the base path configured during construction.
-            2. The URL must have 3 components in its path.
-            3. The first component in the path must be the literal 't'.
-            4. The second component in the path must be the slug to the topic which must have at
+            2. The URL must resolve on a discourse HEAD request.
+            3. The URL must have 3 components in its path.
+            4. The first component in the path must be the literal 't'.
+            5. The second component in the path must be the slug to the topic which must have at
                 least 1 character.
-            5. The third component must the the topic id as an integer.
+            6. The third component must the the topic id as an integer.
 
         Args:
             url: The URL to check.
 
         Returns:
             Whether the URL is a valid topic URL.
-
         """
         if not url.startswith((self._base_path, _URL_PATH_PREFIX)):
             return _ValidationResultInvalid(
@@ -107,35 +149,35 @@ class Discourse:
                 f"expected: {self._base_path}, {url=}"
             )
 
+        try:
+            response = self._get_requests_session().head(
+                url if url.startswith(self._base_path) else f"{self._base_path}{url}",
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+            url = response.url
+        except (
+            requests.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as exc:
+            return _ValidationResultInvalid(
+                f"The topic URL could not be resolved on discourse, error: {exc}, {url=}"
+            )
+
         parsed_url = parse.urlparse(url=url)
         # Remove trailing / and ignore first element which is always empty
         path_components = parsed_url.path.rstrip("/").split("/")[1:]
 
-        if not len(path_components) == 3:
-            return _ValidationResultInvalid(
-                "Unexpected number of path components, "
-                f"expected: 3, got: {len(path_components)}, {url=}"
+        if (
+            components_message := self._topic_url_path_components_valid(
+                path_components=path_components, url=url
             )
+        ) is not None:
+            return _ValidationResultInvalid(components_message)
 
-        if not path_components[0] == "t":
-            return _ValidationResultInvalid(
-                "Unexpected first path component, "
-                f"expected: {'t'!r}, got: {path_components[0]!r}, {url=}"
-            )
-
-        if not path_components[1]:
-            return _ValidationResultInvalid(
-                f"Empty second path component topic slug, got: {path_components[1]!r}, {url=}"
-            )
-
-        if not path_components[2].isnumeric():
-            return _ValidationResultInvalid(
-                "unexpected third path component topic id, "
-                "expected: a string that can be converted to an integer, "
-                f"got: {path_components[2]!r}, {url=}"
-            )
-
-        return _ValidationResultValid()
+        return _ValidationResultValid(final_url=url)
 
     def _url_to_topic_info(self, url: str) -> _DiscourseTopicInfo:
         """Retrieve the topic information from the url to the topic.
@@ -148,11 +190,13 @@ class Discourse:
 
         Raises:
             DiscourseError: if the url is not valid.
-
         """
         result = self.topic_url_valid(url=url)
         if not result.value:
             raise DiscourseError(result.message)
+
+        # If the result is valid, the final_url is guaranteed to be a string
+        url = typing.cast(str, result.final_url)
 
         path_components = parse.urlparse(url=url).path.split("/")
         return _DiscourseTopicInfo(slug=path_components[-2], id_=int(path_components[-1]))
@@ -327,7 +371,12 @@ class Discourse:
         )
         try:
             response.raise_for_status()
-        except requests.HTTPError as exc:
+        except (
+            requests.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as exc:
             raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
 
         return response.content.decode("utf-8")
