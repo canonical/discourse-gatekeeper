@@ -110,7 +110,6 @@ class UserInputFactory(factory.Factory):
 
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
-    branch_name = factory.Sequence(lambda n: f"test-branch-{n}")
     dry_run = False
     delete_pages = False
 

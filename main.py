@@ -28,9 +28,6 @@ def _parse_env_vars() -> types_.UserInputs:
 
     Returns:
         Wrapped user input variables.
-
-    Raises:
-        InputError: If the INPUT_GITHUB_TOKEN environment variable is not provided or empty.
     """
     discourse_host = os.getenv("INPUT_DISCOURSE_HOST", "")
     discourse_category_id = os.getenv("INPUT_DISCOURSE_CATEGORY_ID", "")
@@ -39,14 +36,6 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    github_head_ref = os.getenv(GITHUB_HEAD_REF_ENV_NAME)
-
-    if not github_head_ref:
-        raise exceptions.InputError(
-            f"Invalid '{GITHUB_HEAD_REF_ENV_NAME}' input, it must be non-empty, got "
-            f"{github_head_ref=!r}. This action is intended to run inside github-actions. "
-            f"{GETTING_STARTED}"
-        )
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -58,7 +47,6 @@ def _parse_env_vars() -> types_.UserInputs:
         delete_pages=delete_topics,
         dry_run=dry_run,
         github_access_token=github_access_token,
-        branch_name=github_head_ref,
     )
 
 

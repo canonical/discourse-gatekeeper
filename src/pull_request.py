@@ -142,24 +142,12 @@ class RepositoryClient:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def detach_head(self, branch_name: str) -> None:
-        """Detach from the current branch to ensure no further commits can occur.
 
-        Args:
-            branch_name: The branch name to use for the detached head mode.
-        """
-        self._git_repo.git.fetch("origin", branch_name)
-        self._git_repo.git.checkout(branch_name, "--")
-        self._git_repo.head.set_reference(self._git_repo.head.commit.hexsha)
-        self._git_repo.git.checkout(self._git_repo.head.commit.hexsha)
-
-
-def create_pull_request(repository: RepositoryClient, current_branch_name: str) -> str:
+def create_pull_request(repository: RepositoryClient) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
-        current_branch_name: The name of the branch the migration is running on.
 
     Raises:
         InputError: if pull request branch name is invalid or the a branch
@@ -168,12 +156,6 @@ def create_pull_request(repository: RepositoryClient, current_branch_name: str) 
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    if current_branch_name == DEFAULT_BRANCH_NAME:
-        raise InputError(
-            f"Pull request branch cannot be named {DEFAULT_BRANCH_NAME}."
-            f"Branch name {DEFAULT_BRANCH_NAME} is reserved for creating a migration branch."
-            "Please try again after changing the branch name."
-        )
     if not repository.is_dirty():
         raise InputError("No files seem to be migrated. Please add contents upstream first.")
     if repository.check_branch_exists(branch_name=DEFAULT_BRANCH_NAME):
@@ -189,9 +171,6 @@ def create_pull_request(repository: RepositoryClient, current_branch_name: str) 
     )
     logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
     pull_request_web_link = repository.create_pull_request(branch_name=DEFAULT_BRANCH_NAME)
-
-    # Detach head to ensure no further changes can be made
-    repository.detach_head(branch_name=current_branch_name)
 
     return pull_request_web_link
 
