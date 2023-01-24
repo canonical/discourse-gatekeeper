@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.2.3] - 2023-01-25
+
 ### Added
 
 - Check to ensure that a topic URL resolves on discourse after allowing for any
