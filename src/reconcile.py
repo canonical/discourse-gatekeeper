@@ -90,7 +90,7 @@ def _local_and_server(
 
     Raises:
         ReconcilliationError:
-            - If the table path or level do not match for the path info and table row
+            - If the table path or level do not match for the path info and table row.
             - If certain edge cases occur that are not expected, such as table_row.navlink.link for
               a page on the server.
     """
