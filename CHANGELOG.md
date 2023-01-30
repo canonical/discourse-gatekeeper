@@ -9,7 +9,7 @@
 - Check to ensure that a topic URL resolves on discourse after allowing for any
   redirects.
 
-## Changed
+### Changed
 
 - URL checks are now after allowing for any discourse redirects rather than
   before letting topic URLs pass that do not include the slug or do not include

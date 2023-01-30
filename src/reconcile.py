@@ -89,10 +89,10 @@ def _local_and_server(
         The action to execute against the server.
 
     Raises:
-        ReconcilliationError: if the table path or level do not match for the path info and table
-            row.
-        ReconcilliationError: if certain edge cases occur that are not expected, such as
-            table_row.navlink.link for a page on the server.
+        ReconcilliationError:
+            - If the table path or level do not match for the path info and table row.
+            - If certain edge cases occur that are not expected, such as table_row.navlink.link for
+              a page on the server.
     """
     if path_info.level != table_row.level:
         raise exceptions.ReconcilliationError(
