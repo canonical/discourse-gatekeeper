@@ -56,7 +56,7 @@ def get(path: Path) -> types_.Metadata:
         raise InputError(f"Invalid value for name key: {name}, expected a string value")
 
     docs = metadata.get(METADATA_DOCS_KEY)
-    if not isinstance(docs, str | None) or (METADATA_DOCS_KEY in metadata and docs is None):
+    if docs and not isinstance(docs, str) or (METADATA_DOCS_KEY in metadata and docs is None):
         raise InputError(f"Invalid value for docs key: {docs}, expected a string value")
 
     return types_.Metadata(name=name, docs=docs)
