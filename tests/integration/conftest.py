@@ -121,10 +121,8 @@ async def discourse(model: Model, discourse_hostname: str):
     )
     # Using permissive throttle level to speed up tests
     discourse_app = await model.deploy(
-        # discourse_charm_name,
-        "/home/yanks/Documents/canonical/discourse-k8s-operator/discourse-k8s_ubuntu-20.04-amd64.charm",
-        resources={"discourse-image": "discourse:test"},
-        config={"external_hostname": discourse_hostname, "throttle_level": "permissive"},
+        discourse_charm_name,
+        config={"external_hostname": discourse_hostname},
     )
 
     await model.wait_for_idle()
