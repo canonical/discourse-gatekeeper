@@ -8,12 +8,18 @@
 import asyncio
 import re
 import secrets
+import typing
 
 import pydiscourse
 import pytest
 import pytest_asyncio
 import requests
-from ops.model import ActiveStatus, Application
+from juju.action import Action
+from juju.application import Application
+from juju.client._definitions import ApplicationStatus, FullStatus, UnitStatus
+from juju.model import Model
+from juju.unit import Unit
+from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 from src.discourse import Discourse
@@ -25,6 +31,13 @@ from . import types
 def discourse_hostname():
     """Get the hostname for discourse."""
     return "discourse"
+
+
+@pytest.fixture(scope="module", name="model")
+def model_module_scope_fixture(ops_test: OpsTest) -> Model:
+    """Get current valid model created for integraion testing with module scope."""
+    assert ops_test.model
+    return ops_test.model
 
 
 async def create_discourse_account(
@@ -97,30 +110,31 @@ def create_user_api_key(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse(ops_test: OpsTest, discourse_hostname: str):
+async def discourse(model: Model, discourse_hostname: str):
     """Deploy discourse."""
     postgres_charm_name = "postgresql-k8s"
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
-    assert ops_test.model is not None
     await asyncio.gather(
-        ops_test.model.deploy(postgres_charm_name),
-        ops_test.model.deploy(redis_charm_name),
+        model.deploy(postgres_charm_name),
+        model.deploy(redis_charm_name),
     )
     # Using permissive throttle level to speed up tests
-    discourse_app = await ops_test.model.deploy(
-        discourse_charm_name,
+    discourse_app = await model.deploy(
+        # discourse_charm_name,
+        "/home/yanks/Documents/canonical/discourse-k8s-operator/discourse-k8s_ubuntu-20.04-amd64.charm",
+        resources={"discourse-image": "discourse:test"},
         config={"external_hostname": discourse_hostname, "throttle_level": "permissive"},
     )
 
-    await ops_test.model.wait_for_idle()
+    await model.wait_for_idle()
 
-    await ops_test.model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
-    await ops_test.model.relate(discourse_charm_name, redis_charm_name)
+    await model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
+    await model.relate(discourse_charm_name, redis_charm_name)
 
     # mypy seems to have trouble with this line;
     # "error: Cannot determine type of "name"  [has-type]"
-    await ops_test.model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
     # Need to wait for the waiting status to be resolved
 
@@ -130,11 +144,7 @@ async def discourse(ops_test: OpsTest, discourse_hostname: str):
         Returns:
             The status of discourse.
         """
-        # to help mypy understand model is not None.
-        assert ops_test.model  # nosec
-        return (await ops_test.model.get_status())["applications"]["discourse-k8s"].status[
-            "status"
-        ]
+        return (await model.get_status())["applications"]["discourse-k8s"].status["status"]
 
     for _ in range(120):
         if await get_discourse_status() != "waiting":
@@ -183,19 +193,49 @@ async def discourse_alternate_user_credentials(ops_test: OpsTest, discourse_unit
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_main_api_key(ops_test: OpsTest, discourse_unit_name: str):
-    """Get the user api key for discourse."""
-    return_code, stdout, stderr = await ops_test.juju(
-        "exec",
-        "--unit",
-        discourse_unit_name,
-        "--",
-        "cd /srv/discourse/app && ./bin/bundle exec rake "
-        "api_key:create_master['main API key for testing'] RAILS_ENV=production",
+async def discourse_main_api_key(model: Model, discourse: Application, discourse_unit_name: str):
+    """Get the user global api key for discourse."""
+    test_user_email = "testing@admin.com"
+    test_user_password = "testingtesting"
+    discourse_unit: Unit = discourse.units[0]
+    action: Action = await discourse_unit.run_action(
+        "add-admin-user", email=test_user_email, password=test_user_password
     )
-    assert return_code == 0, f"discourse main API key creation failed, {stderr=}"
+    await action.wait()
+    status: FullStatus = await model.get_status()
+    app_status = typing.cast(ApplicationStatus, status.applications[discourse.name])
+    unit_status = typing.cast(UnitStatus, app_status.units[discourse_unit_name])
+    unit_ip = typing.cast(str, unit_status.address)
+    discourse_url = f"http://{unit_ip}:3000"
 
-    return stdout.strip()
+    with requests.session() as sess:
+        res = sess.get(f"{discourse_url}/session/csrf", headers={"Accept": "application/json"})
+        csrf = res.json()["csrf"]
+        res = sess.post(
+            f"{discourse_url}/session",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRF-Token": csrf,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            data={
+                "login": test_user_email,
+                "password": test_user_password,
+                "second_factor_method": "1",
+                "timezone": "Asia/Hong_Kong",
+            },
+        )
+        res = sess.post(
+            f"{discourse_url}/admin/api/keys",
+            headers={
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrf,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            json={"key": {"description": "admin-api-key", "username": None}},
+        )
+
+        return res.json()["key"]["key"]
 
 
 @pytest_asyncio.fixture(scope="module")
