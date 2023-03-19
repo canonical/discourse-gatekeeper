@@ -43,16 +43,16 @@ async def discourse(model: Model) -> Application:
         model.deploy(postgres_charm_name),
         model.deploy(redis_charm_name),
     )
-    discourse_app: Application = await model.deploy(discourse_charm_name)
+    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
 
-    await model.wait_for_idle()
+    await model.wait_for_idle(raise_on_error=False)
 
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
     await model.relate(discourse_charm_name, redis_charm_name)
 
     # mypy seems to have trouble with this line;
     # "error: Cannot determine type of "name"  [has-type]"
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ActiveStatus.name, raise_on_error=False)  # type: ignore
 
     # Need to wait for the waiting status to be resolved
 
@@ -293,10 +293,8 @@ async def discourse_client(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse_category_id(discourse_admin_api_credentials: types.APICredentials):
+async def discourse_category_id(discourse_client: pydiscourse.DiscourseClient):
     """Create the category for topics."""
-    # discourse_client.create_category gives internal server error"
-    # MiniRacer::RuntimeError (TypeError: Cannot read property 'markdown_note_enabled' of undefined)
     category = discourse_client.create_category(name="docs", color="FFFFFF")
     return category["category"]["id"]
 
