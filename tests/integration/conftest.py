@@ -44,7 +44,9 @@ async def discourse(model: Model) -> Application:
         model.deploy(redis_charm_name),
     )
     discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
-    await model.wait_for_idle(status=ActiveStatus.name, idle_period=30)
+    # mypy seems to have trouble with this line;
+    # "error: Cannot determine type of "name"  [has-type]"
+    await model.wait_for_idle(status=ActiveStatus.name, idle_period=30)  # type: ignore
 
     status: FullStatus = await model.get_status()
     app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
@@ -57,11 +59,12 @@ async def discourse(model: Model) -> Application:
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
     await model.relate(discourse_charm_name, redis_charm_name)
 
-    # mypy seems to have trouble with this line;
-    # "error: Cannot determine type of "name"  [has-type]"
     await model.wait_for_idle(
-        status=ActiveStatus.name, raise_on_error=False, timeout=60 * 30, idle_period=30
-    )  # type: ignore
+        status=ActiveStatus.name,  # type: ignore
+        raise_on_error=False,
+        timeout=60 * 30,
+        idle_period=30,
+    )
 
     # Need to wait for the waiting status to be resolved
 
