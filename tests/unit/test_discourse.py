@@ -670,6 +670,36 @@ def test_retrieve_topic_get_http_error(
     assert topic_url in exc_message
 
 
+def test_retrieve_topic_invalid_post_error(
+    monkeypatch: pytest.MonkeyPatch,
+    discourse: Discourse,
+    topic_url: str,
+):
+    """
+    arrange: given mocked requests that returns an invalid contents string
+    act: when retrieve_topic is called
+    assert: then DiscourseError is raised.
+    """
+    mocked_check_topic_read_permission = mock.MagicMock(spec=Discourse.check_topic_read_permission)
+    mocked_check_topic_read_permission.return_value = True
+    monkeypatch.setattr(
+        discourse, "check_topic_read_permission", mocked_check_topic_read_permission
+    )
+    content = "content 1"
+    # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
+    mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
+    mocked_get.return_value.content = content.encode(encoding="utf-8")
+
+    with pytest.raises(DiscourseError) as exc_info:
+        discourse.retrieve_topic(url=topic_url)
+
+    exc_message = str(exc_info.value).lower()
+    assert "no post found in topic," in exc_message
+    assert "url" in exc_message
+    assert topic_url in exc_message
+    assert "posts" in exc_message
+
+
 def test_retrieve_topic(
     monkeypatch: pytest.MonkeyPatch,
     discourse_mocked_get_requests_session: Discourse,
@@ -690,7 +720,9 @@ def test_retrieve_topic(
     content = "content 1"
     # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
     mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
-    mocked_get.return_value.content = content.encode(encoding="utf-8")
+    mocked_get.return_value.content = helpers.mock_discourse_raw_topic_api(content=content).encode(
+        encoding="utf-8"
+    )
 
     returned_content = discourse.retrieve_topic(url=topic_url)
 

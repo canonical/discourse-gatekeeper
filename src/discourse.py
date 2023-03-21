@@ -379,7 +379,10 @@ class Discourse:
         ) as exc:
             raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
 
-        return response.content.decode("utf-8")
+        posts = response.content.decode("utf-8").split("\n\n-------------------------\n\n")
+        if len(posts) < 2:
+            raise DiscourseError(f"No post found in topic, {url=!r} {posts=!r}")
+        return "".join(posts[0].splitlines(keepends=True)[2:])
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
