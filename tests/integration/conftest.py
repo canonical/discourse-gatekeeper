@@ -60,7 +60,9 @@ async def discourse(model: Model) -> Application:
 
     # mypy seems to have trouble with this line;
     # "error: Cannot determine type of "name"  [has-type]"
-    await model.wait_for_idle(status=ActiveStatus.name, raise_on_error=False, idle_period=30)  # type: ignore
+    await model.wait_for_idle(
+        status=ActiveStatus.name, raise_on_error=False, timeout=60 * 30, idle_period=30
+    )  # type: ignore
 
     # Need to wait for the waiting status to be resolved
 
