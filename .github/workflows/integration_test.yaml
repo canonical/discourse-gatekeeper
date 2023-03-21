@@ -5,7 +5,7 @@ on:
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@fix/juju-edge
     secrets: inherit
     with:
       pre-run-script: tests/integration/pre_run.sh
