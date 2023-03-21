@@ -47,6 +47,14 @@ async def discourse(model: Model) -> Application:
 
     await model.wait_for_idle(raise_on_error=False)
 
+    status: FullStatus = await model.get_status()
+    app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
+    unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
+    unit_ip = typing.cast(str, unit_status.address)
+
+    # the redirects will be towards default external_hostname value of application name which
+    # the client cannot reach. Hence we need to override it with accessible address.
+    await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
     await model.relate(discourse_charm_name, redis_charm_name)
 
@@ -159,7 +167,6 @@ async def create_discourse_account(
         admin_api_credentials: The admin API credentials used for creating the user account.
     """
     password = secrets.token_urlsafe(16)
-
     # Register user
     requests.post(
         f"{discourse_address}/users.json",
@@ -205,7 +212,6 @@ def create_user_api_key(
     response = requests.post(
         f"{discourse_address}/admin/api/keys", headers=headers, json=data, timeout=60
     )
-    response.raise_for_status()
 
     return response.json()["key"]["key"]
 
@@ -286,7 +292,7 @@ async def discourse_client(
 ):
     """Create the category for topics."""
     return pydiscourse.DiscourseClient(
-        host=f"{discourse_address}",
+        host=discourse_address,
         api_username=discourse_admin_api_credentials.username,
         api_key=discourse_admin_api_credentials.key,
     )
@@ -308,7 +314,7 @@ async def discourse_api(
 ):
     """Create discourse instance."""
     return Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key=discourse_user_api_key,
         category_id=discourse_category_id,
