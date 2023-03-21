@@ -43,24 +43,24 @@ async def discourse(model: Model) -> Application:
         model.deploy(postgres_charm_name),
         model.deploy(redis_charm_name),
     )
-    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
+    await model.wait_for_idle(status=ActiveStatus.name, idle_period=30)
 
-    await model.wait_for_idle(raise_on_error=False)
+    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
 
     status: FullStatus = await model.get_status()
     app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
     unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
     unit_ip = typing.cast(str, unit_status.address)
-
     # the redirects will be towards default external_hostname value of application name which
     # the client cannot reach. Hence we need to override it with accessible address.
     await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
+
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db-admin")
     await model.relate(discourse_charm_name, redis_charm_name)
 
     # mypy seems to have trouble with this line;
     # "error: Cannot determine type of "name"  [has-type]"
-    await model.wait_for_idle(status=ActiveStatus.name, raise_on_error=False)  # type: ignore
+    await model.wait_for_idle(status=ActiveStatus.name, raise_on_error=False, idle_period=30)  # type: ignore
 
     # Need to wait for the waiting status to be resolved
 
