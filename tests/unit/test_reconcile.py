@@ -178,8 +178,10 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = (server_content := "content 2")
+    mock_repository = mock.MagicMock(spec=repository.Client)
+    base_content = "content 3"
+    mock_repository.get_file_content.return_value = base_content
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
@@ -198,7 +200,9 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     assert returned_action.navlink_change.new == navlink  # type: ignore
     assert returned_action.content_change.old == server_content  # type: ignore
     assert returned_action.content_change.new == local_content  # type: ignore
+    assert returned_action.content_change.base == base_content  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mock_repository.get_file_content.assert_called_once_with(path=str(path))
 
 
 def test__local_and_server_file_navlink_title_change(tmp_path: Path):
@@ -212,8 +216,9 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = content
+    mock_repository = mock.MagicMock(spec=repository.Client)
+    mock_repository.get_file_content.return_value = content
     navlink = types_.Navlink(title="title 2", link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
@@ -235,6 +240,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     assert returned_action.content_change.old == content  # type: ignore
     assert returned_action.content_change.new == content  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mock_repository.get_file_content.assert_called_once_with(path=str(path))
 
 
 def test__local_and_server_directory_same(tmp_path: Path):
@@ -264,6 +270,7 @@ def test__local_and_server_directory_same(tmp_path: Path):
     assert returned_action.navlink == navlink  # type: ignore
     assert returned_action.content is None  # type: ignore
     mock_discourse.retrieve_topic.assert_not_called()
+    mock_repository.get_file_content.assert_not_called()
 
 
 def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):

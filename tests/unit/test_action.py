@@ -275,7 +275,9 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
+            old=(old_content := "content 1\n"),
+            new=(new_content := "content 2\n"),
+            base=old_content,
         ),
     )
 
@@ -321,7 +323,9 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(old=(content := "content 1"), new=content),
+        content_change=src_types.ContentChange(
+            old=(content := "content 1"), new=content, base=content
+        ),
     )
 
     returned_report = action._update(
@@ -362,7 +366,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1"), new=(new_content := "content 2")
+            old=(old_content := "content 1"), new=(new_content := "content 2"), base=old_content
         ),
     )
 
@@ -411,7 +415,9 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1\n"), new=(new_content := "content 2\n")
+            old=(old_content := "content 1\n"),
+            new=(new_content := "content 2\n"),
+            base=old_content,
         ),
     )
 

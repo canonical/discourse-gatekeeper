@@ -166,6 +166,7 @@ def _local_and_server(
     # Is a page locally and on the server
     local_content = path_info.local_path.read_text(encoding="utf-8").strip()
     server_content = _get_server_content(table_row=table_row, discourse=discourse)
+    base_content = repository.get_file_content(path=str(path_info.local_path))
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
@@ -184,7 +185,9 @@ def _local_and_server(
                 old=table_row.navlink,
                 new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
             ),
-            content_change=types_.ContentChange(old=server_content, new=local_content),
+            content_change=types_.ContentChange(
+                old=server_content, new=local_content, base=base_content
+            ),
         ),
     )
 
