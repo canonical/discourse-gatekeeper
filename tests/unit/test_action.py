@@ -442,16 +442,9 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     assert returned_report.reason is None
 
 
-@pytest.mark.parametrize(
-    "content_change",
-    [
-        pytest.param(None, id="None"),
-        pytest.param(src_types.ContentChange(old="content 1", new=None), id="new is None"),
-    ],
-)
-def test__update_file_navlink_content_change_error(content_change: src_types.ContentChange | None):
+def test__update_file_navlink_content_change_error():
     """
-    arrange: given update action for a file where content has changed to None
+    arrange: given update action for a file where content change is None
     act: when action is passed to _update with dry_run False
     assert: ActionError is raised.
     """
@@ -463,7 +456,7 @@ def test__update_file_navlink_content_change_error(content_change: src_types.Con
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=content_change,
+        content_change=None,
     )
 
     with pytest.raises(exceptions.ActionError):

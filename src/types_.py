@@ -256,8 +256,8 @@ class ContentChange(typing.NamedTuple):
         new: The new content.
     """
 
-    old: Content | None
-    new: Content | None
+    old: Content
+    new: Content
 
 
 class IndexContentChange(typing.NamedTuple):

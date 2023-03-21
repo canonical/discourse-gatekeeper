@@ -140,12 +140,6 @@ def _update(
         raise exceptions.ActionError(
             f"internal error, content change for page is None, {action=!r}"
         )
-    if (
-        action.navlink_change.new.link is not None
-        and action.content_change is not None
-        and action.content_change.new is None
-    ):
-        raise exceptions.ActionError(f"internal error, new content for page is None, {action=!r}")
 
     if (
         action.content_change is not None
