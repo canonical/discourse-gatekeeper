@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+import base64
 from pathlib import Path
 from unittest import mock
 
@@ -13,6 +14,7 @@ import pytest
 from git.exc import GitCommandError
 from git.repo import Repo
 from github import Github
+from github.ContentFile import ContentFile
 from github.GithubException import GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
@@ -254,6 +256,91 @@ def test_repository_client_create_pull_request(
     returned_url = repository_client.create_pull_request("branchname-1")
 
     assert returned_url == mock_pull_request.html_url
+
+
+def test_repository_client_get_file_content_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
+):
+    """
+    arrange: given RepositoryClient with a mocked github repository client that raises an exception
+    act: when get_file_content is called
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.side_effect = [
+        GithubException(status=404, data="File not found error", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    path = "path 1"
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_file_content(path=path)
+
+    assert_substrings_in_string(
+        ("not", "retrieve", "file", path, "githubexception"), str(exc.value).lower()
+    )
+
+
+def test_repository_client_get_file_content_list(
+    monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
+):
+    """
+    arrange: given RepositoryClient with a mocked github repository client that returns a list
+    act: when get_file_content is called
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.return_value = []
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    path = "path 1"
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_file_content(path=path)
+
+    assert_substrings_in_string(("path", "matched", "more", "file", path), str(exc.value).lower())
+
+
+def test_repository_client_get_file_content_content_none(
+    monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
+):
+    """
+    arrange: given RepositoryClient with a mocked github repository client that returns None
+        content
+    act: when get_file_content is called
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    mock_content_file.content = None
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    path = "path 1"
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_file_content(path=path)
+
+    assert_substrings_in_string(("path", "not", "file", path), str(exc.value).lower())
+
+
+def test_repository_client_get_file_content(
+    monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
+):
+    """
+    arrange: given RepositoryClient with a mocked github repository client that returns content
+    act: when get_file_content is called
+    assert: then the content is returned.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    content = "content 1"
+    mock_content_file.content = base64.b64encode(content.encode(encoding="utf-8"))
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    path = "path 1"
+
+    returned_content = repository_client.get_file_content(path=path)
+
+    assert returned_content == content
 
 
 def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient):
