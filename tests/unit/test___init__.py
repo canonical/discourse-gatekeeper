@@ -24,6 +24,7 @@ from src import (
     metadata,
     pull_request,
     reconcile,
+    repository,
     run,
     types_,
 )
@@ -40,6 +41,7 @@ def test__run_reconcile_empty_local_server(tmp_path: Path):
     """
     meta = types_.Metadata(name="name 1", docs=None)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_repository = mock.MagicMock(spec=repository.Client)
     mocked_discourse.create_topic.return_value = (url := "url 1")
 
     returned_page_interactions = _run_reconcile(
@@ -48,6 +50,7 @@ def test__run_reconcile_empty_local_server(tmp_path: Path):
         discourse=mocked_discourse,
         dry_run=False,
         delete_pages=True,
+        repository=mocked_repository,
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
@@ -70,6 +73,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
     (docs_folder / "index.md").write_text(index_content := "index content")
     (docs_folder / "page.md").write_text(page_content := "page content")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_repository = mock.MagicMock(spec=repository.Client)
     mocked_discourse.create_topic.side_effect = [
         (page_url := "url 1"),
         (index_url := "url 2"),
@@ -81,6 +85,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
         discourse=mocked_discourse,
         dry_run=False,
         delete_pages=True,
+        repository=mocked_repository,
     )
 
     assert mocked_discourse.create_topic.call_count == 2
@@ -111,6 +116,7 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_repository = mock.MagicMock(spec=repository.Client)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
@@ -118,6 +124,7 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
         discourse=mocked_discourse,
         dry_run=True,
         delete_pages=True,
+        repository=mocked_repository,
     )
 
     mocked_discourse.create_topic.assert_not_called()
@@ -134,6 +141,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
     meta = types_.Metadata(name="name 1", docs=None)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = exceptions.DiscourseError
+    mocked_repository = mock.MagicMock(spec=repository.Client)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
@@ -141,6 +149,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
         discourse=mocked_discourse,
         dry_run=False,
         delete_pages=True,
+        repository=mocked_repository,
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
@@ -209,7 +218,7 @@ def test__run_migrate_server_error_topic(
 
 def test__run_migrate(
     repository_path: Path,
-    upstream_repository: Repo,
+    upstream_git_repo: Repo,
     upstream_repository_path: Path,
     repository_client: pull_request.RepositoryClient,
     mock_pull_request: PullRequest,
@@ -239,7 +248,7 @@ def test__run_migrate(
         repository=repository_client,
     )
 
-    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
@@ -251,6 +260,7 @@ def test__run_migrate(
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
+@pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_no_dir(repository_path: Path):
     """
     arrange: given a path with a metadata.yaml that has no docs key and no docs directory
@@ -271,6 +281,7 @@ def test_run_no_docs_no_dir(repository_path: Path):
     assert str(exc.value) == GETTING_STARTED
 
 
+@pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_empty_dir(repository_path: Path):
     """
     arrange: given a path with a metadata.yaml that has no docs key and has empty docs directory
@@ -299,7 +310,7 @@ def test_run_no_docs_empty_dir(repository_path: Path):
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
     repository_path: Path,
-    upstream_repository: Repo,
+    upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
 ):
@@ -331,7 +342,7 @@ def test_run_no_docs_dir(
         base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
     )  # pylint: disable=duplicate-code
 
-    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"

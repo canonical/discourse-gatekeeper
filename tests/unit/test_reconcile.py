@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, exceptions, reconcile, types_
+from src import discourse, exceptions, reconcile, repository, types_
 
 from .. import factories
 
@@ -80,10 +80,14 @@ def test__local_and_server_error(
     navlink = types_.Navlink(title=path_info.navlink_title, link="link 1")
     table_row = types_.TableRow(level=table_row_level, path=table_row_path, navlink=navlink)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
-            path_info=path_info, table_row=table_row, discourse=mock_discourse
+            path_info=path_info,
+            table_row=table_row,
+            discourse=mock_discourse,
+            repository=mock_repository,
         )
 
 
@@ -142,12 +146,16 @@ def test__local_and_server_file_same(local_content: str, server_content: str, tm
     path.write_text(local_content, encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = server_content
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -170,12 +178,16 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = (server_content := "content 2")
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -200,12 +212,16 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = content
     navlink = types_.Navlink(title="title 2", link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -230,11 +246,15 @@ def test__local_and_server_directory_same(tmp_path: Path):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     navlink = types_.Navlink(title=path_info.navlink_title, link=None)
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -255,11 +275,15 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     navlink = types_.Navlink(title="title 2", link=None)
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -284,11 +308,15 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     navlink = types_.Navlink(title=path_info.navlink_title, link=None)
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, types_.CreateAction)
@@ -309,12 +337,16 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     mock_discourse.retrieve_topic.return_value = (content := "content 1")
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     returned_actions = reconcile._local_and_server(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert len(returned_actions) == 2
@@ -398,9 +430,12 @@ def test__calculate_action_error():
     assert: then ReconcilliationError is raised.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
 
     with pytest.raises(exceptions.ReconcilliationError):
-        reconcile._calculate_action(path_info=None, table_row=None, discourse=mock_discourse)
+        reconcile._calculate_action(
+            path_info=None, table_row=None, discourse=mock_discourse, repository=mock_repository
+        )
 
 
 def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathInfo:
@@ -459,11 +494,15 @@ def test__calculate_action(
     assert: then the expected action type is returned.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     if path_info is not None:
         path_info = path_info_mkdir(path_info=path_info, base_dir=tmp_path)
 
     (returned_action,) = reconcile._calculate_action(
-        path_info=path_info, table_row=table_row, discourse=mock_discourse
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
     )
 
     assert isinstance(returned_action, expected_action_type)
@@ -579,10 +618,16 @@ def test_run(
     assert: then the expected actions are returned in the expected order.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_repository = mock.MagicMock(spec=repository.Client)
     path_infos = tuple(path_info_mkdir(path_info, base_dir=tmp_path) for path_info in path_infos)
 
     returned_actions = list(
-        reconcile.run(path_infos=path_infos, table_rows=table_rows, discourse=mock_discourse)
+        reconcile.run(
+            path_infos=path_infos,
+            table_rows=table_rows,
+            discourse=mock_discourse,
+            repository=mock_repository,
+        )
     )
 
     assert (

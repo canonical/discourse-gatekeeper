@@ -29,9 +29,9 @@ async def test_run_migrate(
     discourse_hostname: str,
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
-    repository: Repo,
+    git_repo: Repo,
     repository_path: Path,
-    upstream_repository: Repo,
+    upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
 ):
@@ -104,7 +104,7 @@ async def test_run_migrate(
         user_inputs=factories.UserInputFactory(),
     )
 
-    upstream_repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repository_path / index.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
@@ -121,7 +121,7 @@ async def test_run_migrate(
 
     # 2. with no changes applied after migration
     caplog.clear()
-    repository.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
     urls_with_actions = run(
         base_path=repository_path,

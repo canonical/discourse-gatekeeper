@@ -16,8 +16,10 @@ from .index import get as get_index
 from .metadata import get as get_metadata
 from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import RepositoryClient, create_pull_request, create_repository_client
+from .pull_request import create_pull_request
 from .reconcile import run as run_reconcile
+from .repository import Client as RepositoryClient
+from .repository import create_repository_client
 from .types_ import ActionResult, Metadata, UserInputs
 
 GETTING_STARTED = (
@@ -32,6 +34,7 @@ def _run_reconcile(
     discourse: Discourse,
     dry_run: bool,
     delete_pages: bool,
+    repository: RepositoryClient,
 ) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
@@ -41,6 +44,7 @@ def _run_reconcile(
         discourse: A client to the documentation server.
         dry_run: If enabled, only log the action that would be taken.
         delete_pages: Whether to delete pages that are no longer needed.
+        repository: Repository client for managing both local and remote git repositories.
 
     Returns:
         All the URLs that had an action with the result of that action.
@@ -52,7 +56,9 @@ def _run_reconcile(
         index.server.content if index.server is not None and index.server.content else ""
     )
     table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
-    actions = run_reconcile(path_infos=path_infos, table_rows=table_rows, discourse=discourse)
+    actions = run_reconcile(
+        path_infos=path_infos, table_rows=table_rows, discourse=discourse, repository=repository
+    )
     reports = run_all_actions(
         actions=actions,
         index=index,
@@ -121,10 +127,10 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
     """
     metadata = get_metadata(base_path)
     has_docs_dir = has_docs_directory(base_path=base_path)
+    repository = create_repository_client(
+        access_token=user_inputs.github_access_token, base_path=base_path
+    )
     if metadata.docs and not has_docs_dir:
-        repository = create_repository_client(
-            access_token=user_inputs.github_access_token, base_path=base_path
-        )
         return _run_migrate(
             base_path=base_path,
             metadata=metadata,
@@ -138,5 +144,6 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
             discourse=discourse,
             dry_run=user_inputs.dry_run,
             delete_pages=user_inputs.delete_pages,
+            repository=repository,
         )
     raise InputError(GETTING_STARTED)

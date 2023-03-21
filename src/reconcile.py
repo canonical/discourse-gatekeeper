@@ -7,14 +7,9 @@ import itertools
 import typing
 
 from . import exceptions, types_
+from .constants import NAVIGATION_TABLE_START
 from .discourse import Discourse
-
-NAVIGATION_TABLE_START = """
-
-# Navigation
-
-| Level | Path | Navlink |
-| -- | -- | -- |"""
+from .repository import Client as RepositoryClient
 
 
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
@@ -62,7 +57,10 @@ def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str
 
 
 def _local_and_server(
-    path_info: types_.PathInfo, table_row: types_.TableRow, discourse: Discourse
+    path_info: types_.PathInfo,
+    table_row: types_.TableRow,
+    discourse: Discourse,
+    repository: RepositoryClient,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -84,6 +82,7 @@ def _local_and_server(
         path_info: Information about the local documentation file.
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
+        repository: Repository client for managing both local and remote git repositories.
 
     Returns:
         The action to execute against the server.
@@ -231,7 +230,10 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
 
 def _calculate_action(
-    path_info: types_.PathInfo | None, table_row: types_.TableRow | None, discourse: Discourse
+    path_info: types_.PathInfo | None,
+    table_row: types_.TableRow | None,
+    discourse: Discourse,
+    repository: RepositoryClient,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
@@ -239,6 +241,7 @@ def _calculate_action(
         path_info: Information about the local documentation file.
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
+        repository: Repository client for managing both local and remote git repositories.
 
     Returns:
         The action to take for the page.
@@ -255,7 +258,9 @@ def _calculate_action(
     if path_info is None and table_row is not None:
         return (_server_only(table_row=table_row, discourse=discourse),)
     if path_info is not None and table_row is not None:
-        return _local_and_server(path_info=path_info, table_row=table_row, discourse=discourse)
+        return _local_and_server(
+            path_info=path_info, table_row=table_row, discourse=discourse, repository=repository
+        )
 
     # Something weird has happened since all cases should already be covered
     raise exceptions.ReconcilliationError("internal error")  # pragma: no cover
@@ -265,6 +270,7 @@ def run(
     path_infos: typing.Iterable[types_.PathInfo],
     table_rows: typing.Iterable[types_.TableRow],
     discourse: Discourse,
+    repository: RepositoryClient,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
@@ -285,6 +291,7 @@ def run(
         path_infos: Information about the local documentation files.
         table_rows: Rows from the navigation table.
         discourse: A client to the documentation server.
+        repository: Repository client for managing both local and remote git repositories.
 
     Returns:
         The actions required to reconcile differences between the documentation server and local
@@ -303,7 +310,9 @@ def run(
     sorted_remaining_table_row_keys = sorted(table_row_lookup.keys() - path_info_lookup.keys())
     keys = itertools.chain(sorted_path_info_keys, sorted_remaining_table_row_keys)
     return itertools.chain.from_iterable(
-        _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), discourse)
+        _calculate_action(
+            path_info_lookup.get(key), table_row_lookup.get(key), discourse, repository
+        )
         for key in keys
     )
 
