@@ -3,6 +3,7 @@
 
 """Module for handling interactions with git repository."""
 
+import base64
 import logging
 import re
 from pathlib import Path
@@ -141,6 +142,30 @@ class RepositoryClient:
             True if any changes have occurred.
         """
         return self._git_repo.is_dirty(untracked_files=True)
+
+    def get_file_content(self, path: str) -> str:
+        """Returns the content of a file from the default branch.
+
+        Args:
+            path: The path to the file.
+
+        Returns:
+            The content of the file on the default branch.
+        """
+        try:
+            content_file = self._github_repo.get_contents(path)
+        except GithubException as exc:
+            raise RepositoryClientError(
+                f"Could not retrieve the file at {path=}. {exc=!r}"
+            ) from exc
+
+        if isinstance(content_file, list):
+            raise RepositoryClientError(f"Path matched more than one file {path=}.")
+
+        if content_file.content is None:
+            raise RepositoryClientError(f"Path did not match a file {path=}.")
+
+        return base64.b64decode(content_file.content).decode("utf-8")
 
 
 def create_pull_request(repository: RepositoryClient) -> str:
