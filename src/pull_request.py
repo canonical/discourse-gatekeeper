@@ -144,13 +144,18 @@ class RepositoryClient:
         return self._git_repo.is_dirty(untracked_files=True)
 
     def get_file_content(self, path: str) -> str:
-        """Returns the content of a file from the default branch.
+        """Get the content of a file from the default branch.
 
         Args:
             path: The path to the file.
 
         Returns:
             The content of the file on the default branch.
+
+        Raises:
+            RepositoryClientError: if there is a problem with communicating with
+                GitHub, more than one file is returned or a non-file is returned
+                for the provided path.
         """
         try:
             content_file = self._github_repo.get_contents(path)
