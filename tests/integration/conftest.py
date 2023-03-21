@@ -103,6 +103,9 @@ async def create_discourse_admin_account(discourse: Application, email: str):
     Args:
         discourse: The Discourse charm application.
         email: The email address to use to create the account.
+
+    Returns:
+        The credentials of the admin user.
     """
     password = secrets.token_urlsafe(16)
     discourse_unit: Unit = discourse.units[0]
@@ -121,6 +124,9 @@ async def create_discourse_admin_api_key(
     Args:
         discourse_address: The discourse web address.
         admin_credentials: The discourse admin user credentials.
+
+    Returns:
+        The admin API credentials.
     """
     with requests.session() as sess:
         # Get CSRF token
@@ -165,6 +171,9 @@ async def create_discourse_account(
         email: The email address to use to create the account.
         username: The username to use to create the account.
         admin_api_credentials: The admin API credentials used for creating the user account.
+
+    Returns:
+        A newly created discourse user credential.
     """
     password = secrets.token_urlsafe(16)
     # Register user
@@ -182,6 +191,7 @@ async def create_discourse_account(
             "active": True,
             "approved": True,
         },
+        timeout=60,
     ).raise_for_status()
 
     return types.Credentials(email=email, username=username, password=password)
