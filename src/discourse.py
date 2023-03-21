@@ -401,7 +401,6 @@ class Discourse:
                 category_id=self._category_id,
                 tags=self._tags,
                 content=content,
-                unlist_topic=True,
             )
         except pydiscourse.exceptions.DiscourseError as discourse_error:
             raise DiscourseError(
