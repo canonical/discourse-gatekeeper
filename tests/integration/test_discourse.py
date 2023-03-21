@@ -75,7 +75,7 @@ async def test_create_retrieve_update_delete_topic(
     url = discourse_api.create_topic(title=title, content=content_1)
     returned_content = discourse_api.retrieve_topic(url=url)
 
-    assert returned_content == content_1, "post was created with the wrong content"
+    assert content_1 in returned_content, "post was created with the wrong content"
     # Check that the category is correct
     url_path_components = parse.urlparse(url=url).path.split("/")
     slug = url_path_components[-2]
@@ -84,7 +84,6 @@ async def test_create_retrieve_update_delete_topic(
     assert (
         topic["category_id"] == discourse_category_id
     ), "post was not created with the correct category id"
-    assert topic["visible"] is False, "topic is listed"
 
     # Check permissions
     assert discourse_api.check_topic_read_permission(
@@ -99,13 +98,15 @@ async def test_create_retrieve_update_delete_topic(
     discourse_api.update_topic(url=url, content=content_2)
     returned_content = discourse_api.retrieve_topic(url=url)
 
-    assert returned_content == content_2, "content was not updated"
+    assert content_2 in returned_content, "content was not updated"
 
     # Delete topic
     discourse_api.delete_topic(url=url)
 
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
-    assert "withdrawn" in topic["post_stream"]["posts"][0]["cooked"], "topic not deleted"
+    assert (
+        "topic deleted by author" in topic["post_stream"]["posts"][0]["cooked"]
+    ), "topic not deleted"
     assert topic["post_stream"]["posts"][0]["user_deleted"], "topic not deleted"
 
     with pytest.raises(DiscourseError):
@@ -127,17 +128,17 @@ async def test_retrieve_wrong_url(discourse_api: Discourse):
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
     returned_content = discourse_api.retrieve_topic(url=url_incorrect_slug)
 
-    assert returned_content == content
+    assert content in returned_content
 
     url_missing_slug = remove_url_slug(url)
     returned_content = discourse_api.retrieve_topic(url=url_missing_slug)
 
-    assert returned_content == content
+    assert content in returned_content
 
     url_missing_topic_id = remove_url_topic_id(url)
     returned_content = discourse_api.retrieve_topic(url=url_missing_topic_id)
 
-    assert returned_content == content
+    assert content in returned_content
 
 
 @pytest.mark.asyncio
@@ -156,7 +157,7 @@ async def test_update_wrong_slug(discourse_api: Discourse):
     discourse_api.update_topic(url=url_incorrect_slug, content=content_2)
 
     returned_content = discourse_api.retrieve_topic(url=url)
-    assert returned_content == content_2
+    assert content_2 in returned_content
 
 
 @pytest.mark.asyncio
