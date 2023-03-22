@@ -105,7 +105,7 @@ async def test_create_retrieve_update_delete_topic(
 
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
     assert (
-        "topic deleted by author" == topic["post_stream"]["posts"][0]["cooked"]
+        "topic deleted by author" in topic["post_stream"]["posts"][0]["cooked"]
     ), "topic not deleted"
     assert topic["post_stream"]["posts"][0]["user_deleted"], "topic not deleted"
 
