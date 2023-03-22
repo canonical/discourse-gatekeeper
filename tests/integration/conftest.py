@@ -43,28 +43,11 @@ async def discourse(model: Model) -> Application:
         model.deploy(postgres_charm_name),
         model.deploy(redis_charm_name),
     )
-    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
-    # waiting for discourse app to become idle will keep the model waiting infinitely
-    await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name])
+    await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
 
+    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
     await model.relate(discourse_charm_name, redis_charm_name)
-    # mypy seems to have trouble with this line;
-    # "error: Cannot determine type of "name"  [has-type]"
-    await model.wait_for_idle(
-        status=ActiveStatus.name,  # type: ignore
-        raise_on_error=False,
-        timeout=60 * 30,
-        idle_period=30,
-    )
-
-    status: FullStatus = await model.get_status()
-    app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
-    unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
-    unit_ip = typing.cast(str, unit_status.address)
-    # the redirects will be towards default external_hostname value of application name which
-    # the client cannot reach. Hence we need to override it with accessible address.
-    await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
 
     # Need to wait for the waiting status to be resolved
 
@@ -81,6 +64,16 @@ async def discourse(model: Model) -> Application:
             break
         await asyncio.sleep(10)
     assert await get_discourse_status() != "waiting", "discourse never stopped waiting"
+
+    status: FullStatus = await model.get_status()
+    app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
+    unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
+    unit_ip = typing.cast(str, unit_status.address)
+    # the redirects will be towards default external_hostname value of application name which
+    # the client cannot reach. Hence we need to override it with accessible address.
+    await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
+
+    await model.wait_for_idle()
 
     return discourse_app
 
