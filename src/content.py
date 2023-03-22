@@ -12,7 +12,7 @@ from git.repo import Repo
 from .exceptions import ContentError
 
 
-def has_conflicts(base: str, theirs: str, ours: str) -> bool:
+def conflicts(base: str, theirs: str, ours: str) -> str | None:
     """Check for merge conflicts based on the git merge algorithm.
 
     Args:
@@ -21,13 +21,13 @@ def has_conflicts(base: str, theirs: str, ours: str) -> bool:
         ours: The local change.
 
     Returns:
-        Whether there are merge conflicts.
+        The description of the merge conflicts or None if there are no conflicts.
     """
     try:
         merge(base=base, theirs=theirs, ours=ours)
-    except ContentError:
-        return True
-    return False
+    except ContentError as exc:
+        return str(exc)
+    return None
 
 
 def merge(base: str, theirs: str, ours: str) -> str:
