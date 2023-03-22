@@ -1,1 +1,2 @@
 factory_boy>=3.2,<3.3
+juju==3.0.4
