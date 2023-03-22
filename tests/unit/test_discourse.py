@@ -670,15 +670,16 @@ def test_retrieve_topic_get_http_error(
     assert topic_url in exc_message
 
 
-def test_retrieve_topic_invalid_post_error(
+def test_retrieve_topic_old_discourse(
     monkeypatch: pytest.MonkeyPatch,
     discourse: Discourse,
+    base_path: str,
     topic_url: str,
 ):
     """
-    arrange: given mocked requests that returns an invalid contents string
+    arrange: given mocked requests that returns an old version of discourse(2.6.0) contents string
     act: when retrieve_topic is called
-    assert: then DiscourseError is raised.
+    assert: then the content is returned.
     """
     mocked_check_topic_read_permission = mock.MagicMock(spec=Discourse.check_topic_read_permission)
     mocked_check_topic_read_permission.return_value = True
@@ -690,14 +691,14 @@ def test_retrieve_topic_invalid_post_error(
     mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
     mocked_get.return_value.content = content.encode(encoding="utf-8")
 
-    with pytest.raises(DiscourseError) as exc_info:
-        discourse.retrieve_topic(url=topic_url)
+    returned_content = discourse.retrieve_topic(url=topic_url)
 
-    exc_message = str(exc_info.value).lower()
-    assert "no post found in topic," in exc_message
-    assert "url" in exc_message
-    assert topic_url in exc_message
-    assert "posts" in exc_message
+    assert returned_content == content
+
+    url_path = topic_url.removeprefix(base_path)
+    returned_content = discourse.retrieve_topic(url=url_path)
+
+    assert returned_content == content
 
 
 def test_retrieve_topic(

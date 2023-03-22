@@ -15,6 +15,7 @@ from urllib3 import Retry
 from .exceptions import DiscourseError, InputError
 
 _URL_PATH_PREFIX = "/t/"
+_POST_SPLIT_LINE = "\n\n-------------------------\n\n"
 
 
 class _DiscourseTopicInfo(typing.NamedTuple):
@@ -379,10 +380,16 @@ class Discourse:
         ) as exc:
             raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
 
-        posts = response.content.decode("utf-8").split("\n\n-------------------------\n\n")
-        if len(posts) < 2:
-            raise DiscourseError(f"No post found in topic, {url=!r} {posts=!r}")
-        return "".join(posts[0].splitlines(keepends=True)[2:])
+        content = response.content.decode("utf-8")
+
+        # Discourse version 2.6.0, the content of a topc is returned as raw string.
+        if not content.endswith(_POST_SPLIT_LINE):
+            return content
+
+        # Discourse version 2.8.14, the posts are split by _POST_SPLIT_LINE.
+        posts = content.split(_POST_SPLIT_LINE)
+        post_metadata_removed = posts[0].splitlines(keepends=True)[2:]
+        return "".join(post_metadata_removed)
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
