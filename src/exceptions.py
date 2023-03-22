@@ -42,3 +42,7 @@ class MigrationError(BaseError):
 
 class RepositoryClientError(BaseError):
     """A problem with git repository client occurred."""
+
+
+class ContentError(BaseError):
+    """A problem with the content occured."""
