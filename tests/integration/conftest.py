@@ -48,24 +48,26 @@ async def discourse(model: Model) -> Application:
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
     await model.relate(discourse_charm_name, redis_charm_name)
 
-    async def get_discourse_ip() -> str | None:
-        """Get the unit ip of discourse application.
+    # Need to wait for the waiting status to be resolved
+
+    async def get_discourse_status():
+        """Get the status of discourse.
 
         Returns:
-            The unit ip of discourse application if unit is assigned. None otherwise.
+            The status of discourse.
         """
-        status: FullStatus = await model.get_status()
-        app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
-        unit_status = app_status.units[f"{discourse_app.name}/0"]
-        if not unit_status or not unit_status.address:
-            return None
-        return str(unit_status.address)
+        return (await model.get_status())["applications"]["discourse-k8s"].status["status"]
 
     for _ in range(120):
-        if await get_discourse_ip():
+        if await get_discourse_status() != "waiting":
             break
         await asyncio.sleep(10)
-    unit_ip = await get_discourse_ip()
+    assert await get_discourse_status() != "waiting", "discourse never stopped waiting"
+
+    status: FullStatus = await model.get_status()
+    app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
+    unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
+    unit_ip = typing.cast(str, unit_status.address)
     # the redirects will be towards default external_hostname value of application name which
     # the client cannot reach. Hence we need to override it with accessible address.
     await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
