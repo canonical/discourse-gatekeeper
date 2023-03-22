@@ -18,7 +18,6 @@ from juju.application import Application
 from juju.client._definitions import ApplicationStatus, FullStatus, UnitStatus
 from juju.model import Model
 from juju.unit import Unit
-from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 from src.discourse import Discourse
@@ -49,26 +48,24 @@ async def discourse(model: Model) -> Application:
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
     await model.relate(discourse_charm_name, redis_charm_name)
 
-    # Need to wait for the waiting status to be resolved
-
-    async def get_discourse_status():
-        """Get the status of discourse.
+    async def get_discourse_ip() -> str | None:
+        """Get the unit ip of discourse application.
 
         Returns:
-            The status of discourse.
+            The unit ip of discourse application if unit is assigned. None otherwise.
         """
-        return (await model.get_status())["applications"]["discourse-k8s"].status["status"]
+        status: FullStatus = await model.get_status()
+        app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
+        unit_status = app_status.units[f"{discourse_app.name}/0"]
+        if not unit_status or not unit_status.address:
+            return None
+        return str(unit_status.address)
 
     for _ in range(120):
-        if await get_discourse_status() != "waiting":
+        if await get_discourse_ip():
             break
         await asyncio.sleep(10)
-    assert await get_discourse_status() != "waiting", "discourse never stopped waiting"
-
-    status: FullStatus = await model.get_status()
-    app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
-    unit_status = typing.cast(UnitStatus, app_status.units[f"{discourse_app.name}/0"])
-    unit_ip = typing.cast(str, unit_status.address)
+    unit_ip = await get_discourse_ip()
     # the redirects will be towards default external_hostname value of application name which
     # the client cannot reach. Hence we need to override it with accessible address.
     await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
