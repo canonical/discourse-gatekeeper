@@ -44,7 +44,8 @@ async def discourse(model: Model) -> Application:
         model.deploy(redis_charm_name),
     )
     discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
-    await model.wait_for_idle(idle_period=30)
+    # waiting for discourse app to become idle will keep the model waiting infinitely
+    await model.wait_for_idle(idle_period=30, apps=[postgres_charm_name, redis_charm_name])
 
     status: FullStatus = await model.get_status()
     app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
