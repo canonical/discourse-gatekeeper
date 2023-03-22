@@ -1,0 +1,2 @@
+# Charm Upload Automation Migration Test Documentation Title some uuid: 3f96306c-9c19-492e-93a2-977c450b1951
+ placeholder documentation content for testing,  repository: canonical/upload-charm-docs,  branch: fix/ci,  commit sha: 801d688c511f4076bfb6ecb787daca4752282aab,  some uuid: e6471a0a-edc9-4bcb-b989-bf4c595ffd44
