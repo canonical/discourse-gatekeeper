@@ -48,7 +48,7 @@ async def test_run_migrate(
     """
     caplog.set_level(logging.INFO)
     document_name = "migration name 1"
-    discourse_prefix = f"{discourse_address}"
+    discourse_prefix = discourse_address
     content_page_1 = factories.ContentPageFactory()
     content_page_1_url = discourse_api.create_topic(
         title=content_page_1.title,
