@@ -8,6 +8,7 @@ import logging
 import typing
 
 from . import exceptions, reconcile, types_
+from .content import merge as content_merge
 from .discourse import Discourse
 
 DRY_RUN_NAVLINK_LINK = "<not created due to dry run>"
@@ -29,14 +30,14 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
     return discourse.absolute_url(url=url) if url is not None else None
 
 
-def _log_content_change(old: str, new: str) -> None:
-    """Log the difference between the old and new content, if any.
+def _log_content_change(base: str, new: str) -> None:
+    """Log the difference between the base and new content, if any.
 
     Args:
-        old: The previous content.
+        base: The previous content.
         new: The current content.
     """
-    old = f"{old}\n" if not old.endswith("\n") else old
+    old = f"{base}\n" if not base.endswith("\n") else base
     new = f"{new}\n" if not new.endswith("\n") else new
     if new != old:
         logging.info(
@@ -146,7 +147,7 @@ def _update(
         and action.content_change.old is not None
         and action.content_change.new is not None
     ):
-        _log_content_change(old=action.content_change.old, new=action.content_change.new)
+        _log_content_change(base=action.content_change.base, new=action.content_change.new)
 
     if (
         not dry_run
@@ -156,12 +157,18 @@ def _update(
         and action.content_change.new != action.content_change.old
     ):
         try:
-            discourse.update_topic(
-                url=action.navlink_change.new.link, content=action.content_change.new
+            merged_content = content_merge(
+                base=action.content_change.base,
+                theirs=action.content_change.old,
+                ours=action.content_change.new,
             )
+            discourse.update_topic(url=action.navlink_change.new.link, content=merged_content)
             result = types_.ActionResult.SUCCESS
             reason = None
         except exceptions.DiscourseError as exc:
+            result = types_.ActionResult.FAIL
+            reason = str(exc)
+        except exceptions.ContentError as exc:
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:
@@ -337,7 +344,7 @@ def _run_index(
         case types_.UpdateIndexAction:
             try:
                 assert isinstance(action, types_.UpdateIndexAction)  # nosec
-                _log_content_change(old=action.content_change.old, new=action.content_change.new)
+                _log_content_change(base=action.content_change.old, new=action.content_change.new)
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 report = types_.ActionReport(
                     table_row=None,
