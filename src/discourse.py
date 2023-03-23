@@ -346,6 +346,25 @@ class Discourse:
         session.mount("https://", adapter)
         return session
 
+    @staticmethod
+    def _parse_raw_content(content: str) -> str:
+        """Parses raw topic content returned from discourse /raw/{topic_id} API endpoint.
+
+        Args:
+            content: Raw content returned by discourse API.
+
+        Returns:
+            Original topic content.
+        """
+        # Discourse version 2.6.0, the content of a topc is returned as raw string.
+        if not content.endswith(_POST_SPLIT_LINE):
+            return content
+
+        # Discourse version 2.8.14, the posts are split by _POST_SPLIT_LINE.
+        posts = content.split(_POST_SPLIT_LINE)
+        post_metadata_removed = posts[0].splitlines(keepends=True)[2:]
+        return "".join(post_metadata_removed)
+
     def retrieve_topic(self, url: str) -> str:
         """Retrieve the topic content.
 
@@ -381,15 +400,7 @@ class Discourse:
             raise DiscourseError(f"Error retrieving the topic, {url=!r}") from exc
 
         content = response.content.decode("utf-8")
-
-        # Discourse version 2.6.0, the content of a topc is returned as raw string.
-        if not content.endswith(_POST_SPLIT_LINE):
-            return content
-
-        # Discourse version 2.8.14, the posts are split by _POST_SPLIT_LINE.
-        posts = content.split(_POST_SPLIT_LINE)
-        post_metadata_removed = posts[0].splitlines(keepends=True)[2:]
-        return "".join(post_metadata_removed)
+        return self._parse_raw_content(content)
 
     def create_topic(self, title: str, content: str) -> str:
         """Create a new topic.
