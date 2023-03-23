@@ -79,7 +79,7 @@ async def discourse(model: Model) -> Application:
 
 @pytest.fixture(scope="module")
 def discourse_unit_name(discourse: Application):
-    """Get the admin credentials for discourse."""
+    """Get the discourse charm's unit name."""
     return f"{discourse.name}/0"
 
 
@@ -142,7 +142,7 @@ async def create_discourse_admin_api_key(
                 "login": admin_credentials.email,
                 "password": admin_credentials.password,
                 "second_factor_method": "1",
-                "timezone": "Asia/Hong_Kong",
+                "timezone": "UTC",
             },
             timeout=60,
         )
@@ -162,7 +162,7 @@ async def create_discourse_admin_api_key(
 
 
 async def create_discourse_account(
-    discourse_address: str, email: str, username: str, admin_api_credentials: types.APICredentials
+    discourse_address: str, email: str, username: str, admin_api_headers: dict[str, str]
 ) -> types.Credentials:
     """Create an user account on discourse.
 
@@ -170,7 +170,7 @@ async def create_discourse_account(
         discourse_address: The Discourse web address.
         email: The email address to use to create the account.
         username: The username to use to create the account.
-        admin_api_credentials: The admin API credentials used for creating the user account.
+        admin_api_headers: Headers with admin API key.
 
     Returns:
         A newly created discourse user credential.
@@ -179,10 +179,7 @@ async def create_discourse_account(
     # Register user
     requests.post(
         f"{discourse_address}/users.json",
-        headers={
-            "Api-Key": admin_api_credentials.key,
-            "Api-Username": admin_api_credentials.username,
-        },
+        headers=admin_api_headers,
         json={
             "name": username,
             "email": email,
@@ -199,7 +196,7 @@ async def create_discourse_account(
 
 def create_user_api_key(
     discourse_address: str,
-    admin_api_credentials: types.APICredentials,
+    admin_api_headers: dict[str, str],
     user_credentials: types.Credentials,
 ) -> str:
     """
@@ -207,20 +204,16 @@ def create_user_api_key(
 
     Args:
         discourse_address: The web address discourse is running under.
-        admin_api_credentials: The admin user's API credentials.
+        admin_api_headers: Headers with admin API key.
         user_credentials: The crednetials of the user to create an API key for.
 
     Returns:
         The API key for the user.
 
     """
-    headers = {
-        "Api-Key": admin_api_credentials.key,
-        "Api-Username": admin_api_credentials.username,
-    }
     data = {"key": {"description": "Test key", "username": user_credentials.username}}
     response = requests.post(
-        f"{discourse_address}/admin/api/keys", headers=headers, json=data, timeout=60
+        f"{discourse_address}/admin/api/keys", headers=admin_api_headers, json=data, timeout=60
     )
 
     return response.json()["key"]["key"]
@@ -243,55 +236,66 @@ async def discourse_admin_api_credentials(
 
 
 @pytest_asyncio.fixture(scope="module")
+async def discourse_admin_api_headers(
+    admin_api_credentials: types.APICredentials,
+) -> dict[str, str]:
+    """Headers with admin api key to access API requiring admin privileges."""
+    return {
+        "Api-Key": admin_api_credentials.key,
+        "Api-Username": admin_api_credentials.username,
+    }
+
+
+@pytest_asyncio.fixture(scope="module")
 async def discourse_user_credentials(
-    discourse_address: str, discourse_admin_api_credentials: types.APICredentials
+    discourse_address: str, discourse_admin_api_headers: dict[str, str]
 ):
     """Get the user credentials for discourse."""
     return await create_discourse_account(
         discourse_address=discourse_address,
         email="user@test.internal",
         username="test_user",
-        admin_api_credentials=discourse_admin_api_credentials,
+        admin_api_headers=discourse_admin_api_headers,
     )
 
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_alternate_user_credentials(
-    discourse_address: str, discourse_admin_api_credentials: types.APICredentials
+    discourse_address: str, discourse_admin_api_headers: dict[str, str]
 ):
     """Get the alternate user credentials for discourse."""
     return await create_discourse_account(
         discourse_address=discourse_address,
         email="alternate_user@test.internal",
         username="alternate_user",
-        admin_api_credentials=discourse_admin_api_credentials,
+        admin_api_headers=discourse_admin_api_headers,
     )
 
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_user_api_key(
-    discourse_admin_api_credentials: types.APICredentials,
+    discourse_admin_api_headers: dict[str, str],
     discourse_user_credentials: types.Credentials,
     discourse_address: str,
 ):
     """Get the user api key for discourse."""
     return create_user_api_key(
         discourse_address=discourse_address,
-        admin_api_credentials=discourse_admin_api_credentials,
+        admin_api_headers=discourse_admin_api_headers,
         user_credentials=discourse_user_credentials,
     )
 
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_alternate_user_api_key(
-    discourse_admin_api_credentials: types.APICredentials,
+    discourse_admin_api_headers,
     discourse_alternate_user_credentials: types.Credentials,
     discourse_address: str,
 ):
     """Get the alternate user api key for discourse."""
     return create_user_api_key(
         discourse_address=discourse_address,
-        admin_api_credentials=discourse_admin_api_credentials,
+        admin_api_headers=discourse_admin_api_headers,
         user_credentials=discourse_alternate_user_credentials,
     )
 
@@ -353,14 +357,9 @@ def discourse_enable_tags(
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def discourse_remove_rate_limits(
-    discourse_admin_api_credentials: types.APICredentials, discourse_address: str
+    discourse_admin_api_headers: dict[str, str], discourse_address: str
 ):
     """Disables rate limits on discourse."""
-    headers = {
-        "Api-Key": discourse_admin_api_credentials.key,
-        "Api-Username": discourse_admin_api_credentials.username,
-    }
-
     settings = {
         "unique_posts_mins": "0",
         "rate_limit_create_post": "0",
@@ -384,7 +383,7 @@ async def discourse_remove_rate_limits(
     for setting, value in settings.items():
         response = requests.put(
             f"{discourse_address}/admin/site_settings/{setting}",
-            headers=headers,
+            headers=discourse_admin_api_headers,
             data={setting: value},
             timeout=60,
         )
