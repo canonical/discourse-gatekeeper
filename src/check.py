@@ -3,6 +3,7 @@
 
 """Module for running checks."""
 
+import logging
 from typing import Iterable, Iterator, NamedTuple, TypeGuard
 
 from .content import conflicts as content_conflicts
@@ -54,7 +55,19 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     if action_conflcits is None:
         return None
 
-    return Problem(path=action.path, description=action_conflcits)
+    problem = Problem(
+        path=action.path,
+        description=(
+            "cannot execute the update action due to conflicting changes on discourse, "
+            f"please resolve the conflicts and try again: \n{action_conflcits}"
+        ),
+    )
+    logging.error(
+        "there is a problem preventing the execution of an action, action: %s, problem: %s",
+        action,
+        problem,
+    )
+    return problem
 
 
 def conflicts(actions: Iterable[AnyAction]) -> Iterator[Problem]:

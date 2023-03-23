@@ -3,10 +3,12 @@
 
 """Library for uploading docs to charmhub."""
 
+from itertools import tee
 from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
+from .check import conflicts as check_conflicts
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .discourse import Discourse
 from .docs_directory import has_docs_directory
@@ -48,6 +50,9 @@ def _run_reconcile(
     Returns:
         All the URLs that had an action with the result of that action.
 
+    Raises:
+        InputError: if there are any problems with executing any of the actions.
+
     """
     index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
     path_infos = read_docs_directory(docs_path=base_path / DOCUMENTATION_FOLDER_NAME)
@@ -58,6 +63,14 @@ def _run_reconcile(
     actions = run_reconcile(
         path_infos=path_infos, table_rows=table_rows, discourse=discourse, repository=repository
     )
+
+    actions, check_actions = tee(actions, 2)
+    problems = tuple(check_conflicts(actions=check_actions))
+    if problems:
+        raise InputError(
+            "One or more of the required actions could not be executed, see the log for details"
+        )
+
     reports = run_all_actions(
         actions=actions,
         index=index,

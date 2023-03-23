@@ -267,6 +267,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
+    old_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -316,6 +317,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
+    content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -358,6 +360,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
+    old_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -407,6 +410,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
+    old_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),

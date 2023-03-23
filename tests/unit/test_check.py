@@ -3,6 +3,7 @@
 
 """Unit tests for check."""
 
+import logging
 from typing import NamedTuple
 
 import pytest
@@ -128,13 +129,17 @@ def _test_conflicts_parameters():
     _test_conflicts_parameters(),
 )
 def test_conflicts(
-    actions: tuple[types_.AnyAction, ...], expected_problems: tuple[ExpectedProblem]
+    actions: tuple[types_.AnyAction, ...],
+    expected_problems: tuple[ExpectedProblem],
+    caplog: pytest.LogCaptureFixture,
 ):
     """
     arrange: given actions
     act: when conflicts is called with the actions
     assert: then the expected problems are yielded.
     """
+    caplog.set_level(logging.INFO)
+
     returned_problems = tuple(check.conflicts(actions=actions))
 
     assert len(returned_problems) == len(expected_problems)
@@ -142,4 +147,14 @@ def test_conflicts(
         assert returned_problem.path == expected_problem.path
         assert_substrings_in_string(
             expected_problem.description_contents, returned_problem.description
+        )
+        assert_substrings_in_string(
+            (
+                "problem",
+                "preventing",
+                "execution",
+                "UpdateAction",
+                str(returned_problem),
+            ),
+            caplog.text,
         )
