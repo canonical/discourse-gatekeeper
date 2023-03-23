@@ -99,7 +99,7 @@ class UserInputDiscourseFactory(factory.Factory):
     api_key = factory.Sequence(lambda n: f"discourse-test-key-{n}")
 
 
-class UserInputFactory(factory.Factory):
+class UserInputsFactory(factory.Factory):
     """Generate user input tuple."""  # noqa: DCO060
 
     class Meta:

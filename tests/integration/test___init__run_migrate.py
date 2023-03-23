@@ -14,7 +14,7 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import index, metadata, migration, pull_request, run
+from src import constants, metadata, migration, pull_request, run
 from src.discourse import Discourse
 
 from .. import factories
@@ -101,11 +101,11 @@ async def test_run_migrate(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(),
+        user_inputs=factories.UserInputsFactory(),
     )
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
-    upstream_doc_dir = upstream_repository_path / index.DOCUMENTATION_FOLDER_NAME
+    upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
@@ -126,7 +126,7 @@ async def test_run_migrate(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(),
+        user_inputs=factories.UserInputsFactory(),
     )
 
     assert_substrings_in_string(

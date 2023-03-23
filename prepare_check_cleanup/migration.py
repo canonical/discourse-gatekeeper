@@ -18,15 +18,15 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from prepare_check_cleanup import exit_
+from src.constants import (
+    DOCUMENTATION_FOLDER_NAME,
+    DOCUMENTATION_INDEX_FILENAME,
+    NAVIGATION_TABLE_START,
+)
 from src.discourse import create_discourse
 from src.exceptions import DiscourseError
-from src.index import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_INDEX_FILENAME
-from src.pull_request import (
-    ACTIONS_PULL_REQUEST_TITLE,
-    DEFAULT_BRANCH_NAME,
-    create_repository_client,
-)
-from src.reconcile import NAVIGATION_TABLE_START
+from src.pull_request import DEFAULT_BRANCH_NAME
+from src.repository import ACTIONS_PULL_REQUEST_TITLE, create_repository_client
 
 
 class Action(str, Enum):

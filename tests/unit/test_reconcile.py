@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, exceptions, reconcile, repository, types_
+from src import constants, discourse, exceptions, reconcile, repository, types_
 
 from .. import factories
 
@@ -662,7 +662,7 @@ def test_run(
             ),
             (),
             types_.CreateIndexAction(
-                title=local_title, content=f"{reconcile.NAVIGATION_TABLE_START.strip()}"
+                title=local_title, content=f"{constants.NAVIGATION_TABLE_START.strip()}"
             ),
             id="empty local only empty rows",
         ),
@@ -676,7 +676,7 @@ def test_run(
             ),
             (),
             types_.CreateIndexAction(
-                title=local_title, content=f"{local_content}{reconcile.NAVIGATION_TABLE_START}"
+                title=local_title, content=f"{local_content}{constants.NAVIGATION_TABLE_START}"
             ),
             id="local only empty rows",
         ),
@@ -692,7 +692,7 @@ def test_run(
             types_.CreateIndexAction(
                 title=local_title,
                 content=(
-                    f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
+                    f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
                     f"{table_row.to_markdown()}"
                 ),
             ),
@@ -713,7 +713,7 @@ def test_run(
             types_.CreateIndexAction(
                 title=local_title,
                 content=(
-                    f"{local_content}{reconcile.NAVIGATION_TABLE_START}\n"
+                    f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
                     f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
                 ),
             ),
@@ -725,7 +725,7 @@ def test_run(
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content}{reconcile.NAVIGATION_TABLE_START}"
+                        server_content := f"{local_content}{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -740,7 +740,7 @@ def test_run(
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f" {local_content}{reconcile.NAVIGATION_TABLE_START}"
+                        server_content := f" {local_content}{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -756,7 +756,7 @@ def test_run(
                     url=(url := "url 1"),
                     content=(
                         server_content := f"{local_content.strip()}"
-                        f"{reconcile.NAVIGATION_TABLE_START}"
+                        f"{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -775,7 +775,7 @@ def test_run(
             types_.UpdateIndexAction(
                 content_change=types_.IndexContentChange(
                     old=server_content,
-                    new=f"{local_content}{reconcile.NAVIGATION_TABLE_START}",
+                    new=f"{local_content}{constants.NAVIGATION_TABLE_START}",
                 ),
                 url=url,
             ),

@@ -602,7 +602,7 @@ def test__migrate_document(tmp_path: Path):
         document_meta=document_meta, discourse=mocked_discourse, docs_path=tmp_path
     )
 
-    assert (file_path := (tmp_path / path)).is_file()
+    assert (file_path := tmp_path / path).is_file()
     assert file_path.read_text(encoding="utf-8") == content
     mocked_discourse.retrieve_topic.assert_called_once_with(url=link_str)
     assert returned_report.table_row is not None
@@ -625,7 +625,7 @@ def test__migrate_index(tmp_path: Path):
 
     returned_report = migration._migrate_index(index_meta=document_meta, docs_path=tmp_path)
 
-    assert (file_path := (tmp_path / path)).is_file()
+    assert (file_path := tmp_path / path).is_file()
     assert file_path.read_text(encoding="utf-8") == content
     assert returned_report.table_row is None
     assert returned_report.result == types_.ActionResult.SUCCESS

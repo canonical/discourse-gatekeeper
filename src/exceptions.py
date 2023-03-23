@@ -45,4 +45,4 @@ class RepositoryClientError(BaseError):
 
 
 class ContentError(BaseError):
-    """A problem with the content occured."""
+    """A problem with the content occurred."""

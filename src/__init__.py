@@ -7,11 +7,12 @@ from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
+from .constants import DOCUMENTATION_FOLDER_NAME
 from .discourse import Discourse
 from .docs_directory import has_docs_directory
 from .docs_directory import read as read_docs_directory
 from .exceptions import InputError
-from .index import DOCUMENTATION_FOLDER_NAME, contents_from_page
+from .index import contents_from_page
 from .index import get as get_index
 from .metadata import get as get_metadata
 from .migration import run as migrate_contents
@@ -32,9 +33,8 @@ def _run_reconcile(
     base_path: Path,
     metadata: Metadata,
     discourse: Discourse,
-    dry_run: bool,
-    delete_pages: bool,
     repository: RepositoryClient,
+    user_inputs: UserInputs,
 ) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
@@ -42,9 +42,8 @@ def _run_reconcile(
         base_path: The base path of the repository.
         metadata: Information about the charm.
         discourse: A client to the documentation server.
-        dry_run: If enabled, only log the action that would be taken.
-        delete_pages: Whether to delete pages that are no longer needed.
         repository: Repository client for managing both local and remote git repositories.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         All the URLs that had an action with the result of that action.
@@ -63,8 +62,8 @@ def _run_reconcile(
         actions=actions,
         index=index,
         discourse=discourse,
-        dry_run=dry_run,
-        delete_pages=delete_pages,
+        dry_run=user_inputs.dry_run,
+        delete_pages=user_inputs.delete_pages,
     )
     return {
         str(report.location): report.result
@@ -142,8 +141,7 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
             base_path=base_path,
             metadata=metadata,
             discourse=discourse,
-            dry_run=user_inputs.dry_run,
-            delete_pages=user_inputs.delete_pages,
             repository=repository,
+            user_inputs=user_inputs,
         )
     raise InputError(GETTING_STARTED)

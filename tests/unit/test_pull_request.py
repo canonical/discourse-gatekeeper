@@ -13,8 +13,8 @@ from git.repo import Repo
 from github.PullRequest import PullRequest
 
 from src import pull_request
+from src.constants import DOCUMENTATION_FOLDER_NAME
 from src.exceptions import InputError
-from src.index import DOCUMENTATION_FOLDER_NAME
 from src.pull_request import RepositoryClient
 
 from .helpers import assert_substrings_in_string

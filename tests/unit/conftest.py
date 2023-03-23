@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 import requests
 
-from src import index
+from src import constants
 from src.discourse import Discourse
 
 from . import helpers
@@ -60,9 +60,9 @@ def fixture_topic_url(discourse_mocked_get_requests_session: Discourse) -> str:
 @pytest.fixture()
 def index_file_content(tmp_path: Path) -> str:
     """Create index file."""
-    docs_directory = tmp_path / index.DOCUMENTATION_FOLDER_NAME
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
     docs_directory.mkdir()
-    index_file = docs_directory / index.DOCUMENTATION_INDEX_FILENAME
+    index_file = docs_directory / constants.DOCUMENTATION_INDEX_FILENAME
     content = "content 1"
     index_file.write_text(content, encoding="utf-8")
     return content

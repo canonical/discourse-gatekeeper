@@ -18,12 +18,12 @@ from src import (
     GETTING_STARTED,
     _run_migrate,
     _run_reconcile,
+    constants,
     discourse,
     exceptions,
     index,
     metadata,
     pull_request,
-    reconcile,
     repository,
     run,
     types_,
@@ -43,19 +43,19 @@ def test__run_reconcile_empty_local_server(tmp_path: Path):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_repository = mock.MagicMock(spec=repository.Client)
     mocked_discourse.create_topic.return_value = (url := "url 1")
+    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
         metadata=meta,
         discourse=mocked_discourse,
-        dry_run=False,
-        delete_pages=True,
+        user_inputs=user_inputs,
         repository=mocked_repository,
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
+        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
@@ -78,13 +78,13 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
         (page_url := "url 1"),
         (index_url := "url 2"),
     ]
+    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
         metadata=meta,
         discourse=mocked_discourse,
-        dry_run=False,
-        delete_pages=True,
+        user_inputs=user_inputs,
         repository=mocked_repository,
     )
 
@@ -95,7 +95,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
     mocked_discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
-            f"{index_content}{reconcile.NAVIGATION_TABLE_START}\n"
+            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
             f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
@@ -117,13 +117,13 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
     (docs_folder / "page.md").write_text("page content")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_repository = mock.MagicMock(spec=repository.Client)
+    user_inputs = factories.UserInputsFactory(dry_run=True, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
         metadata=meta,
         discourse=mocked_discourse,
-        dry_run=True,
-        delete_pages=True,
+        user_inputs=user_inputs,
         repository=mocked_repository,
     )
 
@@ -142,19 +142,19 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = exceptions.DiscourseError
     mocked_repository = mock.MagicMock(spec=repository.Client)
+    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
         base_path=tmp_path,
         metadata=meta,
         discourse=mocked_discourse,
-        dry_run=False,
-        delete_pages=True,
+        user_inputs=user_inputs,
         repository=mocked_repository,
     )
 
     mocked_discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
+        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert not returned_page_interactions
 
@@ -231,7 +231,7 @@ def test__run_migrate(
     index_content = """Content header.
 
     Content body."""
-    index_table = f"""{index.NAVIGATION_TABLE_START}
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
     | 1 | path-1 | [Tutorials](link-1) |"""
     index_page = f"{index_content}{index_table}"
     meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
@@ -270,12 +270,12 @@ def test_run_no_docs_no_dir(repository_path: Path):
     """
     create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repository_path)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    user_input = factories.UserInputFactory()
+    user_inputs = factories.UserInputsFactory()
 
     with pytest.raises(exceptions.InputError) as exc:
         # run is repeated in unit tests / integration tests
         _ = run(
-            base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
+            base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
         )  # pylint: disable=duplicate-code
 
     assert str(exc.value) == GETTING_STARTED
@@ -293,16 +293,16 @@ def test_run_no_docs_empty_dir(repository_path: Path):
     (repository_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
-    user_input = factories.UserInputFactory()
+    user_inputs = factories.UserInputsFactory()
 
     # run is repeated in unit tests / integration tests
     returned_page_interactions = run(
-        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
+        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
     mocked_discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START.strip()}",
+        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
@@ -328,18 +328,18 @@ def test_run_no_docs_dir(
     index_content = """Content header.
 
     Content body.\n"""
-    index_table = f"""{index.NAVIGATION_TABLE_START}
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
     | 1 | path-1 | [empty-navlink]() |
     | 2 | file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
-    user_input = factories.UserInputFactory()
+    user_inputs = factories.UserInputsFactory()
 
     # run is repeated in unit tests / integration tests
     returned_migration_reports = run(
-        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_input
+        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)

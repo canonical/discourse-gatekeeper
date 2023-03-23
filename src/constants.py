@@ -3,7 +3,8 @@
 
 """Shared constants."""
 
-
+DOCUMENTATION_FOLDER_NAME = "docs"
+DOCUMENTATION_INDEX_FILENAME = "index.md"
 NAVIGATION_TABLE_START = """
 
 # Navigation

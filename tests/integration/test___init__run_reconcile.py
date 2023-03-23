@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from src import exceptions, index, metadata, reconcile, run
+from src import constants, exceptions, metadata, run
 from src.discourse import Discourse
 
 from .. import factories
@@ -71,19 +71,19 @@ async def test_run(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{reconcile.NAVIGATION_TABLE_START}".strip(),
+        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
         path=repository_path,
     )
-    (docs_dir := repository_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_dir := repository_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
 
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=True,
             delete_pages=True,
         ),
@@ -91,7 +91,7 @@ async def test_run(
 
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{reconcile.NAVIGATION_TABLE_START}".strip()
+    assert index_topic == f"{constants.NAVIGATION_TABLE_START}".strip()
     assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
 
     # 2. docs with an index file
@@ -100,7 +100,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -108,7 +108,7 @@ async def test_run(
 
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{index_content}{reconcile.NAVIGATION_TABLE_START}"
+    assert index_topic == f"{index_content}{constants.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
 
     # 3. docs with a documentation file added in dry run mode
@@ -119,7 +119,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=True,
             delete_pages=True,
         ),
@@ -136,7 +136,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -161,7 +161,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=True,
             delete_pages=True,
         ),
@@ -180,7 +180,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -204,7 +204,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -228,7 +228,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -256,7 +256,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=True,
             delete_pages=True,
         ),
@@ -278,7 +278,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=False,
         ),
@@ -300,7 +300,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -320,7 +320,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),
@@ -342,7 +342,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputFactory(
+        user_inputs=factories.UserInputsFactory(
             dry_run=False,
             delete_pages=True,
         ),

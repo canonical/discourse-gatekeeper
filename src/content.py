@@ -87,7 +87,9 @@ def merge(base: str, theirs: str, ours: str) -> str:
         try:
             repo.git.merge(their_branch)
         except GitCommandError as exc:
-            conflicts = content_path.read_text(encoding="utf-8")
-            raise ContentError(f"could not automatically merge, conflicts:\n{conflicts}") from exc
+            content_conflicts = content_path.read_text(encoding="utf-8")
+            raise ContentError(
+                f"could not automatically merge, conflicts:\n{content_conflicts}"
+            ) from exc
 
         return content_path.read_text(encoding="utf-8")

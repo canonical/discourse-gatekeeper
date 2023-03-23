@@ -14,8 +14,8 @@ from github import Github
 from github.GithubException import GithubException
 from github.Repository import Repository
 
+from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import InputError, RepositoryClientError
-from .index import DOCUMENTATION_FOLDER_NAME
 
 GITHUB_HOSTNAME = "github.com"
 HTTPS_URL_PATTERN = re.compile(rf"^https?:\/\/.*@?{GITHUB_HOSTNAME}\/(.+\/.+?)(.git)?$")

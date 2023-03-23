@@ -133,7 +133,7 @@ def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMe
         path: Relative path to where the document should reside.
 
     Raises:
-        MigrationError: if the table row that was passed in does not cantain a link to document.
+        MigrationError: if the table row that was passed in does not contain a link to document.
 
     Returns:
         Information required to migrate document.

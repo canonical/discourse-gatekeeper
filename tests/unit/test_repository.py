@@ -20,8 +20,8 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from src import repository
+from src.constants import DOCUMENTATION_FOLDER_NAME
 from src.exceptions import InputError, RepositoryClientError
-from src.index import DOCUMENTATION_FOLDER_NAME
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
