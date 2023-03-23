@@ -126,7 +126,9 @@ async def create_discourse_admin_api_key(
     """
     with requests.session() as sess:
         # Get CSRF token
-        res = sess.get(f"{discourse_address}/session/csrf", headers={"Accept": "application/json"})
+        res = sess.get(
+            f"{discourse_address}/session/csrf", headers={"Accept": "application/json"}, timeout=60
+        )
         csrf = res.json()["csrf"]
         # Create session & login
         res = sess.post(
@@ -142,6 +144,7 @@ async def create_discourse_admin_api_key(
                 "second_factor_method": "1",
                 "timezone": "Asia/Hong_Kong",
             },
+            timeout=60,
         )
         # Create global key
         res = sess.post(
@@ -152,6 +155,7 @@ async def create_discourse_admin_api_key(
                 "X-Requested-With": "XMLHttpRequest",
             },
             json={"key": {"description": "admin-api-key", "username": None}},
+            timeout=60,
         )
 
     return types.APICredentials(username=admin_credentials.username, key=res.json()["key"]["key"])
