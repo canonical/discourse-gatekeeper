@@ -75,7 +75,7 @@ async def test_create_retrieve_update_delete_topic(
     url = discourse_api.create_topic(title=title, content=content_1)
     returned_content = discourse_api.retrieve_topic(url=url)
 
-    assert content_1 == returned_content, "post was created with the wrong content"
+    assert returned_content == content_1, "post was created with the wrong content"
     # Check that the category is correct
     url_path_components = parse.urlparse(url=url).path.split("/")
     slug = url_path_components[-2]
@@ -128,17 +128,17 @@ async def test_retrieve_wrong_url(discourse_api: Discourse):
     url_incorrect_slug = change_url_slug(url, "wrong-slug")
     returned_content = discourse_api.retrieve_topic(url=url_incorrect_slug)
 
-    assert content == returned_content
+    assert returned_content == content
 
     url_missing_slug = remove_url_slug(url)
     returned_content = discourse_api.retrieve_topic(url=url_missing_slug)
 
-    assert content == returned_content
+    assert returned_content == content
 
     url_missing_topic_id = remove_url_topic_id(url)
     returned_content = discourse_api.retrieve_topic(url=url_missing_topic_id)
 
-    assert content == returned_content
+    assert returned_content == content
 
 
 @pytest.mark.asyncio
