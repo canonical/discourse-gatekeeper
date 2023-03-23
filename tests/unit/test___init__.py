@@ -30,7 +30,7 @@ from src import (
 )
 
 from .. import factories
-from .helpers import create_metadata_yaml
+from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
 def test__run_reconcile_empty_local_server(tmp_path: Path):
@@ -157,6 +157,49 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert not returned_page_interactions
+
+
+def test__run_reconcile_local_server_conflict(tmp_path: Path):
+    """
+    arrange: given metadata with name and docs and docs folder with a file and mocked discourse
+        with content that conflicts with the local content
+    act: when _run_reconcile is called
+    assert: InputError is raised.
+    """
+    name = "name 1"
+    index_url = "index-url"
+    meta = types_.Metadata(name=name, docs=index_url)
+    (docs_folder := tmp_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_content := "index content")
+    main_page_content = "page content 1"
+    (docs_folder / "page.md").write_text(local_page_content := "page content 2")
+    page_url = "page-url"
+    server_page_content = "page content 3"
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.retrieve_topic.side_effect = [
+        (
+            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"| 1 | page | [{local_page_content}]({page_url}) |"
+        ),
+        server_page_content,
+    ]
+    mocked_repository = mock.MagicMock(spec=repository.Client)
+    mocked_repository.get_file_content.return_value = main_page_content
+    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
+
+    with pytest.raises(exceptions.InputError) as exc_info:
+        _run_reconcile(
+            base_path=tmp_path,
+            metadata=meta,
+            discourse=mocked_discourse,
+            user_inputs=user_inputs,
+            repository=mocked_repository,
+        )
+
+    assert_substrings_in_string(("actions", "not", "executed"), str(exc_info.value))
+    assert mocked_discourse.retrieve_topic.call_count == 2
+    mocked_discourse.retrieve_topic.assert_any_call(url=index_url)
+    mocked_discourse.retrieve_topic.assert_any_call(url=page_url)
 
 
 def test__run_migrate_server_error_index(
