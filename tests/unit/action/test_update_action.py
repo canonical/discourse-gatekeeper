@@ -4,10 +4,10 @@
 """Unit tests for action."""
 
 # Need access to protected functions for testing
-# pylint: disable=protected-access
+# For some reason pylint is detecting duplicate code when there isn't any
+# pylint: disable=protected-access,duplicate-code
 
 import logging
-import types
 from unittest import mock
 
 import pytest
