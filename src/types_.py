@@ -257,9 +257,9 @@ class ContentChange(typing.NamedTuple):
         base: The content which is the base for comparison.
     """
 
+    base: Content
     old: Content
     new: Content
-    base: Content
 
 
 class IndexContentChange(typing.NamedTuple):

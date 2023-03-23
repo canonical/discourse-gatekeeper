@@ -71,6 +71,106 @@ class ActionReportFactory(factory.Factory):
     reason = None
 
 
+class CreateActionFactory(factory.Factory):
+    """Generate CreateActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreateAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NavlinkFactory(factory.Factory):
+    """Generate Navlink."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.Navlink
+        abstract = False
+
+    title = factory.Sequence(lambda n: f"navlink-title-{n}")
+    link = factory.Sequence(lambda n: f"navlink-{n}")
+
+
+class NoopActionFactory(factory.Factory):
+    """Generate NoopActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink = factory.SubFactory(NavlinkFactory)
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NavlinkChangeFactory(factory.Factory):
+    """Generate NavlinkChange."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NavlinkChange
+        abstract = False
+
+    old = factory.SubFactory(NavlinkFactory)
+    new = factory.SubFactory(NavlinkFactory)
+
+
+class ContentChangeFactory(factory.Factory):
+    """Generate ContentChange."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.ContentChange
+        abstract = False
+
+    old = factory.Sequence(lambda n: f"old {n}")
+    new = factory.Sequence(lambda n: f"new {n}")
+    base = factory.Sequence(lambda n: f"base {n}")
+
+
+class UpdateActionFactory(factory.Factory):
+    """Generate UpdateActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UpdateAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink_change = factory.SubFactory(NavlinkChangeFactory)
+    content_change = factory.SubFactory(ContentChangeFactory)
+
+
+class DeleteActionFactory(factory.Factory):
+    """Generate DeleteActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink = factory.SubFactory(NavlinkFactory)
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
 class ContentPageFactory(factory.Factory):
     """Generate discourse content page."""  # noqa: DCO060
 
@@ -142,4 +242,4 @@ class TableRowFactory(factory.Factory):
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: f"path-{n}")
-    navlink = factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}"))
+    navlink = factory.SubFactory(NavlinkFactory)
