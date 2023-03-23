@@ -98,7 +98,7 @@ async def test_create_retrieve_update_delete_topic(
     discourse_api.update_topic(url=url, content=content_2)
     returned_content = discourse_api.retrieve_topic(url=url)
 
-    assert content_2 == returned_content, "content was not updated"
+    assert returned_content == content_2, "content was not updated"
 
     # Delete topic
     discourse_api.delete_topic(url=url)
@@ -157,7 +157,7 @@ async def test_update_wrong_slug(discourse_api: Discourse):
     discourse_api.update_topic(url=url_incorrect_slug, content=content_2)
 
     returned_content = discourse_api.retrieve_topic(url=url)
-    assert content_2 == returned_content
+    assert returned_content == content_2
 
 
 @pytest.mark.asyncio
@@ -193,7 +193,7 @@ async def test_create_topic_auth_error(
     assert: then DiscourseError is raised.
     """
     discourse = Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -225,7 +225,7 @@ async def test_retrieve_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -254,7 +254,7 @@ async def test_update_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -284,7 +284,7 @@ async def test_delete_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -316,7 +316,7 @@ async def test_read_write_permission(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     alternate_user_discourse = Discourse(
-        base_path=f"{discourse_address}",
+        base_path=discourse_address,
         api_username=discourse_alternate_user_credentials.username,
         api_key=discourse_alternate_user_api_key,
         category_id=discourse_category_id,
