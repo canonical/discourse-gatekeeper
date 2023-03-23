@@ -348,7 +348,7 @@ class Discourse:
 
     @staticmethod
     def _parse_raw_content(content: str) -> str:
-        """Parses raw topic content returned from discourse /raw/{topic_id} API endpoint.
+        """Parse raw topic content returned from discourse /raw/{topic_id} API endpoint.
 
         Args:
             content: Raw content returned by discourse API.
