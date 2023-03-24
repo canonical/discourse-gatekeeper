@@ -21,7 +21,7 @@ from .helpers import assert_substrings_in_string
 @pytest.mark.parametrize(
     "path, table_path, expected",
     [
-        pytest.param(Path(""), "test", "test", id="table path only"),
+        pytest.param(Path(), "test", "test", id="table path only"),
         pytest.param(Path("group-1"), "group-1-test", "test", id="test in group"),
         pytest.param(
             Path("group-1/nested/path"),

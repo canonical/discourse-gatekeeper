@@ -18,3 +18,15 @@ class Credentials(NamedTuple):
     email: str
     username: str
     password: str
+
+
+class APICredentials(NamedTuple):
+    """Credentials needed to access discourse API.
+
+    Attrs:
+        username: The API Key user's username.
+        key: The Discourse API key.
+    """
+
+    username: str
+    key: str

@@ -8,5 +8,4 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      pre-run-script: tests/integration/pre_run.sh
       modules: '["discourse", "reconcile", "migrate"]'

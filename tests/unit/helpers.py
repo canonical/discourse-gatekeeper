@@ -62,3 +62,17 @@ def get_discourse_topic_url() -> str:
         A topic url for discourse.
     """
     return f"{get_discourse_base_path()}{_URL_PATH_PREFIX}slug/1"
+
+
+def mock_discourse_raw_topic_api(content: str) -> str:
+    """Transform a content into raw topic content returned from discourse.
+
+    Args:
+        content: Content to post to discourse.
+
+    Returns:
+        Content returned by discourse when accessing through /raw/{id} api endpoint.
+    """
+    return (
+        f"<username> | <timestamp> | <post number>\n\n{content}\n\n-------------------------\n\n"
+    )
