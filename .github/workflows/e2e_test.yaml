@@ -56,6 +56,7 @@ jobs:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
       - name: Show pages
         run: echo '${{ steps.e2e-test-draft.outputs.urls_with_actions }}'
@@ -71,6 +72,7 @@ jobs:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Show pages
         run: echo '${{ steps.e2e-test-create.outputs.urls_with_actions }}'
       - name: Check create
@@ -90,6 +92,7 @@ jobs:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Show pages
         run: echo '${{ steps.e2e-test-delete-topics.outputs.urls_with_actions }}'
       - name: Check delete topics disabled
@@ -104,6 +107,7 @@ jobs:
           discourse_host: discourse.charmhub.io
           discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
           discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Show pages
         run: echo '${{ steps.e2e-test-delete.outputs.urls_with_actions }}'
       - name: Check delete topics enabled
