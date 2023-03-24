@@ -56,6 +56,30 @@ def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str
         ) from exc
 
 
+def _local_and_server_validation(
+    path_info: types_.PathInfo,
+    table_row: types_.TableRow,
+) -> None:
+    """Input checks before execution.
+
+    Args:
+        path_info: Information about the local documentation file.
+        table_row: A row from the navigation table.
+
+    Raises:
+        ReconcilliationError:
+            If the table path or level do not match for the path info and table row.
+    """
+    if path_info.level != table_row.level:
+        raise exceptions.ReconcilliationError(
+            f"internal error, level mismatch, {path_info=!r}, {table_row=!r}"
+        )
+    if path_info.table_path != table_row.path:
+        raise exceptions.ReconcilliationError(
+            f"internal error, table path mismatch, {path_info=!r}, {table_row=!r}"
+        )
+
+
 def _local_and_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
@@ -95,14 +119,7 @@ def _local_and_server(
             - If certain edge cases occur that are not expected, such as table_row.navlink.link for
               a page on the server.
     """
-    if path_info.level != table_row.level:
-        raise exceptions.ReconcilliationError(
-            f"internal error, level mismatch, {path_info=!r}, {table_row=!r}"
-        )
-    if path_info.table_path != table_row.path:
-        raise exceptions.ReconcilliationError(
-            f"internal error, table path mismatch, {path_info=!r}, {table_row=!r}"
-        )
+    _local_and_server_validation(path_info=path_info, table_row=table_row)
 
     # Is a directory locally and a grouping on the server
     if path_info.local_path.is_dir() and table_row.is_group:

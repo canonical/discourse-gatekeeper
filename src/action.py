@@ -3,7 +3,6 @@
 
 """Module for taking the required actions to match the server state with the local state."""
 
-import difflib
 import logging
 import typing
 
@@ -149,7 +148,8 @@ def _update(
             new=action.content_change.new,
         )
 
-    if (
+    # All of these are needed to ensure types are as expected
+    if (  # pylint: disable=too-many-boolean-expressions
         not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None

@@ -145,6 +145,7 @@ class Client:
 
         Args:
             path: The path to the file.
+            branch: The branch to retrieve the file from.
 
         Returns:
             The content of the file on the default branch.
