@@ -61,7 +61,11 @@ def _run_reconcile(
     )
     table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
     actions = run_reconcile(
-        path_infos=path_infos, table_rows=table_rows, discourse=discourse, repository=repository
+        path_infos=path_infos,
+        table_rows=table_rows,
+        discourse=discourse,
+        repository=repository,
+        user_inputs=user_inputs,
     )
 
     actions, check_actions = tee(actions, 2)

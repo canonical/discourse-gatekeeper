@@ -61,6 +61,7 @@ def _local_and_server(
     table_row: types_.TableRow,
     discourse: Discourse,
     repository: RepositoryClient,
+    user_inputs: types_.UserInputs,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -83,6 +84,7 @@ def _local_and_server(
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The action to execute against the server.
@@ -178,7 +180,9 @@ def _local_and_server(
         )
 
     try:
-        base_content = repository.get_file_content(path=str(path_info.local_path))
+        base_content = repository.get_file_content(
+            path=str(path_info.local_path), branch=user_inputs.base_branch
+        )
     except exceptions.RepositoryClientError:
         base_content = None
     return (
@@ -241,6 +245,7 @@ def _calculate_action(
     table_row: types_.TableRow | None,
     discourse: Discourse,
     repository: RepositoryClient,
+    user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
@@ -249,6 +254,7 @@ def _calculate_action(
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The action to take for the page.
@@ -266,7 +272,11 @@ def _calculate_action(
         return (_server_only(table_row=table_row, discourse=discourse),)
     if path_info is not None and table_row is not None:
         return _local_and_server(
-            path_info=path_info, table_row=table_row, discourse=discourse, repository=repository
+            path_info=path_info,
+            table_row=table_row,
+            discourse=discourse,
+            repository=repository,
+            user_inputs=user_inputs,
         )
 
     # Something weird has happened since all cases should already be covered
@@ -278,6 +288,7 @@ def run(
     table_rows: typing.Iterable[types_.TableRow],
     discourse: Discourse,
     repository: RepositoryClient,
+    user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
@@ -299,6 +310,7 @@ def run(
         table_rows: Rows from the navigation table.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The actions required to reconcile differences between the documentation server and local
@@ -318,7 +330,11 @@ def run(
     keys = itertools.chain(sorted_path_info_keys, sorted_remaining_table_row_keys)
     return itertools.chain.from_iterable(
         _calculate_action(
-            path_info_lookup.get(key), table_row_lookup.get(key), discourse, repository
+            path_info_lookup.get(key),
+            table_row_lookup.get(key),
+            discourse,
+            repository,
+            user_inputs,
         )
         for key in keys
     )
