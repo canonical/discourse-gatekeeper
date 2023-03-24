@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+import textwrap
 from unittest import mock
 
 import pydiscourse
@@ -590,6 +591,55 @@ def test_function_discourse_error(
         assert expected_message_content in exc_message
 
 
+@pytest.mark.parametrize(
+    "raw_content, expected_content",
+    [
+        pytest.param("test content", "test content", id="version 2.6.0 response"),
+        pytest.param(
+            textwrap.dedent(
+                """\
+        test-username | timestamp | # 23
+
+        test content
+
+        -------------------------
+
+        """
+            ),
+            "test content",
+            id="version 2.8.14 response",
+        ),
+        pytest.param(
+            textwrap.dedent(
+                """\
+        test-username | timestamp | # 23
+
+        test content
+
+        -------------------------
+
+        reply-username | timestamp | # 23
+
+        reply content
+
+        -------------------------
+
+        """
+            ),
+            "test content",
+            id="version 2.8.14 response with post replies",
+        ),
+    ],
+)
+def test__parse_raw_content(discourse: Discourse, raw_content: str, expected_content: str):
+    """
+    arrange: given raw response content from the discourse API
+    act: when _parse_raw_content is called
+    assert: a parsed topic content is returned.
+    """
+    assert discourse._parse_raw_content(raw_content) == expected_content
+
+
 def test_retrieve_topic_read_error(
     monkeypatch: pytest.MonkeyPatch, discourse: Discourse, topic_url: str
 ):
@@ -690,7 +740,9 @@ def test_retrieve_topic(
     content = "content 1"
     # mypy complains that _get_requests_session has no attribute ..., it is actually mocked
     mocked_get = discourse._get_requests_session.return_value.get  # type: ignore
-    mocked_get.return_value.content = content.encode(encoding="utf-8")
+    mocked_get.return_value.content = helpers.mock_discourse_raw_topic_api(content=content).encode(
+        encoding="utf-8"
+    )
 
     returned_content = discourse.retrieve_topic(url=topic_url)
 

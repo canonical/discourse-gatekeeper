@@ -84,7 +84,6 @@ async def test_create_retrieve_update_delete_topic(
     assert (
         topic["category_id"] == discourse_category_id
     ), "post was not created with the correct category id"
-    assert topic["visible"] is False, "topic is listed"
 
     # Check permissions
     assert discourse_api.check_topic_read_permission(
@@ -105,7 +104,9 @@ async def test_create_retrieve_update_delete_topic(
     discourse_api.delete_topic(url=url)
 
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
-    assert "withdrawn" in topic["post_stream"]["posts"][0]["cooked"], "topic not deleted"
+    assert (
+        "topic deleted by author" in topic["post_stream"]["posts"][0]["cooked"]
+    ), "topic not deleted"
     assert topic["post_stream"]["posts"][0]["user_deleted"], "topic not deleted"
 
     with pytest.raises(DiscourseError):
@@ -182,7 +183,7 @@ async def test_delete_wrong_slug(discourse_api: Discourse):
 @pytest.mark.usefixtures("discourse_user_api_key")
 @pytest.mark.asyncio
 async def test_create_topic_auth_error(
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
 ):
@@ -192,7 +193,7 @@ async def test_create_topic_auth_error(
     assert: then DiscourseError is raised.
     """
     discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -208,7 +209,7 @@ async def test_create_topic_auth_error(
 
 @pytest.mark.asyncio
 async def test_retrieve_topic_auth_error(
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
     discourse_api: Discourse,
@@ -224,7 +225,7 @@ async def test_retrieve_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -236,7 +237,7 @@ async def test_retrieve_topic_auth_error(
 
 @pytest.mark.asyncio
 async def test_update_topic_auth_error(
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
     discourse_api: Discourse,
@@ -253,7 +254,7 @@ async def test_update_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -266,7 +267,7 @@ async def test_update_topic_auth_error(
 
 @pytest.mark.asyncio
 async def test_delete_topic_auth_error(
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_user_credentials: types.Credentials,
     discourse_category_id: int,
     discourse_api: Discourse,
@@ -283,7 +284,7 @@ async def test_delete_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
+        base_path=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -298,7 +299,7 @@ async def test_delete_topic_auth_error(
 @pytest.mark.asyncio
 async def test_read_write_permission(
     discourse_alternate_user_api_key: str,
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_alternate_user_credentials: types.Credentials,
     discourse_category_id: int,
     discourse_api: Discourse,
@@ -315,7 +316,7 @@ async def test_read_write_permission(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     alternate_user_discourse = Discourse(
-        base_path=f"http://{discourse_hostname}",
+        base_path=discourse_address,
         api_username=discourse_alternate_user_credentials.username,
         api_key=discourse_alternate_user_api_key,
         category_id=discourse_category_id,

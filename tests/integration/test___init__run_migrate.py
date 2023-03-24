@@ -26,7 +26,7 @@ pytestmark = pytest.mark.migrate
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("patch_create_repository_client")
 async def test_run_migrate(
-    discourse_hostname: str,
+    discourse_address: str,
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository: Repo,
@@ -48,7 +48,7 @@ async def test_run_migrate(
     """
     caplog.set_level(logging.INFO)
     document_name = "migration name 1"
-    discourse_prefix = f"http://{discourse_hostname}"
+    discourse_prefix = discourse_address
     content_page_1 = factories.ContentPageFactory()
     content_page_1_url = discourse_api.create_topic(
         title=content_page_1.title,
