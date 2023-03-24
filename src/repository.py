@@ -140,7 +140,7 @@ class Client:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_file_content(self, path: str) -> str:
+    def get_file_content(self, path: str, branch: str | None = None) -> str:
         """Get the content of a file from the default branch.
 
         Args:
@@ -155,7 +155,11 @@ class Client:
                 for the provided path.
         """
         try:
-            content_file = self._github_repo.get_contents(path)
+            content_file = (
+                self._github_repo.get_contents(path)
+                if branch is None
+                else self._github_repo.get_contents(path, branch)
+            )
         except GithubException as exc:
             raise RepositoryClientError(
                 f"Could not retrieve the file at {path=}. {exc=!r}"

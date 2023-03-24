@@ -304,8 +304,8 @@ def test_get_file_content_content_none(monkeypatch: pytest.MonkeyPatch, reposito
 
 def test_get_file_content(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
-    arrange: given Client with a mocked github repository client that returns content
-    act: when get_file_content is called
+    arrange: given path, Client with a mocked github repository client that returns content
+    act: when get_file_content is called with the path
     assert: then the content is returned.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
@@ -319,6 +319,29 @@ def test_get_file_content(monkeypatch: pytest.MonkeyPatch, repository_client: Cl
     returned_content = repository_client.get_file_content(path=path)
 
     assert returned_content == content
+    mock_github_repository.get_contents.assert_called_once_with(path)
+
+
+def test_get_file_content_branch(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+    """
+    arrange: given path and branch, Client with a mocked github repository client that returns
+        content
+    act: when get_file_content is called with the path and branch
+    assert: then the content is returned.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    content = "content 1"
+    mock_content_file.content = base64.b64encode(content.encode(encoding="utf-8"))
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    path = "path 1"
+    branch = "branch 1"
+
+    returned_content = repository_client.get_file_content(path=path, branch=branch)
+
+    assert returned_content == content
+    mock_github_repository.get_contents.assert_called_once_with(path, branch)
 
 
 @pytest.mark.parametrize(
