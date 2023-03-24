@@ -37,12 +37,14 @@ class UserInputs(typing.NamedTuple):
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
+        base_branch: The branch the the documentation is stored on after updating discourse.
     """
 
     discourse: UserInputsDiscourse
     dry_run: bool
     delete_pages: bool
     github_access_token: str | None
+    base_branch: str | None
 
 
 class Metadata(typing.NamedTuple):
