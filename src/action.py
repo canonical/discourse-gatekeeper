@@ -176,7 +176,11 @@ def _update(
         if dry_run:
             result = types_.ActionResult.SKIP
             reason = DRY_RUN_REASON
-        elif action.content_change is not None and action.content_change.base is None:
+        elif (
+            action.content_change is not None
+            and action.content_change.base is None
+            and action.content_change.new != action.content_change.old
+        ):
             result = types_.ActionResult.FAIL
             reason = "no base for the content to be automatically merged"
         else:

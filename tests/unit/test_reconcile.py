@@ -167,6 +167,43 @@ def test__local_and_server_file_same(local_content: str, server_content: str, tm
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
+def test__local_and_server_file_content_change_repo_error(tmp_path: Path):
+    """
+    arrange: given path info with a file and table row with no changes and discourse client that
+        returns the different content as in the file and repository that cannot find the file
+    act: when _local_and_server is called with the path info and table row
+    assert: then an update action is returned with None for the base content.
+    """
+    (path := tmp_path / "file1.md").touch()
+    path.write_text(local_content := "content 1", encoding="utf-8")
+    path_info = factories.PathInfoFactory(local_path=path)
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse.retrieve_topic.return_value = (server_content := "content 2")
+    mock_repository = mock.MagicMock(spec=repository.Client)
+    mock_repository.get_file_content.side_effect = exceptions.RepositoryClientError
+    navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
+    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+
+    (returned_action,) = reconcile._local_and_server(
+        path_info=path_info,
+        table_row=table_row,
+        discourse=mock_discourse,
+        repository=mock_repository,
+    )
+
+    assert isinstance(returned_action, types_.UpdateAction)
+    assert returned_action.level == path_info.level
+    assert returned_action.path == path_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_action.navlink_change.old == navlink  # type: ignore
+    assert returned_action.navlink_change.new == navlink  # type: ignore
+    assert returned_action.content_change.old == server_content  # type: ignore
+    assert returned_action.content_change.new == local_content  # type: ignore
+    assert returned_action.content_change.base is None  # type: ignore
+    mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mock_repository.get_file_content.assert_called_once_with(path=str(path))
+
+
 def test__local_and_server_file_content_change(tmp_path: Path):
     """
     arrange: given path info with a file and table row with no changes and discourse client that

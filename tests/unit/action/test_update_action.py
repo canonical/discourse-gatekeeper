@@ -15,6 +15,7 @@ import pytest
 from src import action, discourse, exceptions
 from src import types_ as src_types
 
+from ... import factories
 from ..helpers import assert_substrings_in_string
 
 
@@ -131,7 +132,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(content := "content 1"), new=content, base=content
+            old=(content := "content 1"), new=content, base=None
         ),
     )
 
@@ -205,10 +206,31 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     assert returned_report.reason == str(error)
 
 
-def test__update_file_navlink_content_change_conflict(caplog: pytest.LogCaptureFixture):
+@pytest.mark.parametrize(
+    "content_change, expected_log_contents, expected_reason_contents",
+    [
+        pytest.param(
+            factories.ContentChangeFactory(base="x", old="y", new="z"),
+            ("content change:\n- x\n+ z\n",),
+            ("merge", "conflict"),
+            id="merge conflict",
+        ),
+        pytest.param(
+            factories.ContentChangeFactory(base=None, old="y", new="z"),
+            (),
+            ("no", "base"),
+            id="no base",
+        ),
+    ],
+)
+def test__update_file_navlink_content_change_conflict(
+    content_change: src_types.ContentChange,
+    expected_log_contents: tuple[str, ...],
+    expected_reason_contents: tuple[str, ...],
+    caplog: pytest.LogCaptureFixture,
+):
     """
-    arrange: given update action for a file where content has changed and mocked discourse with
-        conflicting content
+    arrange: given update action for a file where content has changed and mocked discourse
     act: when action is passed to _update with dry_run False
     assert: then topic is not updated, the action is logged and a fail report is returned.
     """
@@ -216,7 +238,6 @@ def test__update_file_navlink_content_change_conflict(caplog: pytest.LogCaptureF
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    old_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -224,9 +245,7 @@ def test__update_file_navlink_content_change_conflict(caplog: pytest.LogCaptureF
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
         ),
-        content_change=src_types.ContentChange(
-            old=(old_content := "y"), new=(new_content := "z"), base=(base_content := "x")
-        ),
+        content_change=content_change,
     )
 
     returned_report = action._update(
@@ -237,10 +256,10 @@ def test__update_file_navlink_content_change_conflict(caplog: pytest.LogCaptureF
         (
             f"action: {update_action}",
             f"dry run: {False}",
-            repr(base_content),
-            repr(old_content),
-            repr(new_content),
-            "content change:\n- x\n+ z\n",
+            repr(content_change.base),
+            repr(content_change.old),
+            repr(content_change.new),
+            *expected_log_contents,
         ),
         caplog.text,
     )
@@ -253,7 +272,7 @@ def test__update_file_navlink_content_change_conflict(caplog: pytest.LogCaptureF
     assert returned_report.location == url
     assert returned_report.result == src_types.ActionResult.FAIL
     assert returned_report.reason is not None
-    assert_substrings_in_string(("merge", "conflict"), returned_report.reason)
+    assert_substrings_in_string(expected_reason_contents, returned_report.reason)
 
 
 def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
