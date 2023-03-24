@@ -237,12 +237,12 @@ async def discourse_admin_api_credentials(
 
 @pytest_asyncio.fixture(scope="module")
 async def discourse_admin_api_headers(
-    admin_api_credentials: types.APICredentials,
+    discourse_admin_api_credentials: types.APICredentials,
 ) -> dict[str, str]:
     """Headers with admin api key to access API requiring admin privileges."""
     return {
-        "Api-Key": admin_api_credentials.key,
-        "Api-Username": admin_api_credentials.username,
+        "Api-Key": discourse_admin_api_credentials.key,
+        "Api-Username": discourse_admin_api_credentials.username,
     }
 
 
