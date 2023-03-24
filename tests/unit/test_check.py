@@ -45,6 +45,35 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 factories.UpdateActionFactory(
+                    content_change=types_.ContentChange(base=None, old="a", new="a")
+                ),
+            ),
+            (),
+            id="single update no base content same",
+        ),
+        pytest.param(
+            (
+                action_1 := factories.UpdateActionFactory(
+                    content_change=types_.ContentChange(base=None, old="a", new="b")
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=action_1.path,
+                    description_contents=(
+                        "cannot",
+                        "execute",
+                        "branch",
+                        "discourse",
+                        *action_1.content_change[1:],
+                    ),
+                ),
+            ),
+            id="single update no base content different",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
                     content_change=types_.ContentChange(base="a", old="a", new="a")
                 ),
             ),

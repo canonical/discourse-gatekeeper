@@ -7,6 +7,7 @@ import logging
 from typing import Iterable, Iterator, NamedTuple, TypeGuard
 
 from .content import conflicts as content_conflicts
+from .content import diff as content_diff
 from .types_ import AnyAction, UpdateAction
 
 
@@ -47,21 +48,38 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     if action.content_change is None:
         return None
 
-    action_conflcits = content_conflicts(
-        base=action.content_change.base,
-        theirs=action.content_change.old,
-        ours=action.content_change.new,
-    )
-    if action_conflcits is None:
+    if (
+        action.content_change.base is None
+        and action.content_change.old == action.content_change.new
+    ):
         return None
 
-    problem = Problem(
-        path=action.path,
-        description=(
-            "cannot execute the update action due to conflicting changes on discourse, "
-            f"please resolve the conflicts and try again: \n{action_conflcits}"
-        ),
-    )
+    if action.content_change.base is None:
+        diff = content_diff(action.content_change.old, action.content_change.new)
+        problem = Problem(
+            path=action.path,
+            description=(
+                "cannot execute the update action due to not finding a file on the base branch "
+                "and there are differences between the branch and discourse content, please ensure "
+                f"that there are no differences and try again. Dtected differences:\n{diff}"
+            ),
+        )
+    else:
+        action_conflcits = content_conflicts(
+            base=action.content_change.base,
+            theirs=action.content_change.old,
+            ours=action.content_change.new,
+        )
+        if action_conflcits is None:
+            return None
+        problem = Problem(
+            path=action.path,
+            description=(
+                "cannot execute the update action due to conflicting changes on discourse, "
+                f"please resolve the conflicts and try again: \n{action_conflcits}"
+            ),
+        )
+
     logging.error(
         "there is a problem preventing the execution of an action, action: %s, problem: %s",
         action,

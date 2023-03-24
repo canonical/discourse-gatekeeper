@@ -252,12 +252,12 @@ class ContentChange(typing.NamedTuple):
     """Represents a change to the content.
 
     Attrs:
+        base: The content which is the base for comparison.
         old: The previous content.
         new: The new content.
-        base: The content which is the base for comparison.
     """
 
-    base: Content
+    base: Content | None
     old: Content
     new: Content
 

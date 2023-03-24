@@ -166,7 +166,6 @@ def _local_and_server(
     # Is a page locally and on the server
     local_content = path_info.local_path.read_text(encoding="utf-8").strip()
     server_content = _get_server_content(table_row=table_row, discourse=discourse)
-    base_content = repository.get_file_content(path=str(path_info.local_path))
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
@@ -177,6 +176,11 @@ def _local_and_server(
                 content=local_content,
             ),
         )
+
+    try:
+        base_content = repository.get_file_content(path=str(path_info.local_path))
+    except exceptions.RepositoryClientError:
+        base_content = None
     return (
         types_.UpdateAction(
             level=path_info.level,

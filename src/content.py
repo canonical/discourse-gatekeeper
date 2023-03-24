@@ -3,6 +3,7 @@
 
 """Module for checking for 3-way merge conflicts and create content based on a 3 way merge."""
 
+import difflib
 import tempfile
 from pathlib import Path
 
@@ -93,3 +94,18 @@ def merge(base: str, theirs: str, ours: str) -> str:
             ) from exc
 
         return content_path.read_text(encoding="utf-8")
+
+
+def diff(first: str, second: str) -> str:
+    """Show the difference between two strings.
+
+    Args:
+        first: One of the strings to compare.
+        second: One of the strings to compare.
+
+    Returns:
+        The diff between the two strings.
+    """
+    return "".join(
+        difflib.Differ().compare(first.splitlines(keepends=True), second.splitlines(keepends=True))
+    )

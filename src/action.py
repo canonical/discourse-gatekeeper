@@ -8,6 +8,7 @@ import logging
 import typing
 
 from . import exceptions, reconcile, types_
+from .content import diff as content_diff
 from .content import merge as content_merge
 from .discourse import Discourse
 
@@ -42,11 +43,7 @@ def _log_content_change(base: str, new: str) -> None:
     if new != old:
         logging.info(
             "content change:\n%s",
-            "".join(
-                difflib.Differ().compare(
-                    old.splitlines(keepends=True), new.splitlines(keepends=True)
-                )
-            ),
+            content_diff(old, new),
         )
 
 
@@ -147,12 +144,16 @@ def _update(
         and action.content_change.old is not None
         and action.content_change.new is not None
     ):
-        _log_content_change(base=action.content_change.base, new=action.content_change.new)
+        _log_content_change(
+            base=action.content_change.base or action.content_change.old,
+            new=action.content_change.new,
+        )
 
     if (
         not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None
+        and action.content_change.base is not None
         and action.content_change.new is not None
         and action.content_change.new != action.content_change.old
     ):
@@ -172,8 +173,15 @@ def _update(
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:
-        result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
-        reason = DRY_RUN_REASON if dry_run else None
+        if dry_run:
+            result = types_.ActionResult.SKIP
+            reason = DRY_RUN_REASON
+        elif action.content_change is not None and action.content_change.base is None:
+            result = types_.ActionResult.FAIL
+            reason = "no base for the content to be automatically merged"
+        else:
+            result = types_.ActionResult.SUCCESS
+            reason = None
 
     url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(

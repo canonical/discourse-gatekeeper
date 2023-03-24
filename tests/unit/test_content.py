@@ -10,8 +10,8 @@ from src import content, exceptions
 from .helpers import assert_substrings_in_string
 
 
-def _test_has_conflicts_parameters():
-    """Generate parameters for the test_has_conflicts test.
+def _test_conflicts_parameters():
+    """Generate parameters for the test_conflicts test.
 
     Returns:
         The tests.
@@ -34,11 +34,9 @@ def _test_has_conflicts_parameters():
 
 @pytest.mark.parametrize(
     "base, theirs, ours, expected_contents",
-    _test_has_conflicts_parameters(),
+    _test_conflicts_parameters(),
 )
-def test_has_conflicts(
-    base: str, theirs: str, ours: str, expected_contents: tuple[str, ...] | None
-):
+def test_conflicts(base: str, theirs: str, ours: str, expected_contents: tuple[str, ...] | None):
     """
     arrange: given content for base, theirs and ours
     act: when conflicts is called with the content
@@ -107,3 +105,32 @@ def test_merge_conflict():
     assert_substrings_in_string(
         (base, theirs, ours, "not", "merge", "<<<<<<< HEAD", ">>>>>>> theirs"), str(exc_info.value)
     )
+
+
+def _test_diff_parameters():
+    """Generate parameters for the test_diff test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param("a", "a", "  a", id="single line same"),
+        pytest.param("a", "x", "- a+ x", id="single line different"),
+        pytest.param("a\nb", "a\nb", "  a\n  b", id="multiple line same"),
+        pytest.param("a\nb", "x\ny", "- a\n- b+ x\n+ y", id="multiple line different"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "first, second, expected_diff",
+    _test_diff_parameters(),
+)
+def test_diff(first: str, second: str, expected_diff: str):
+    """
+    arrange: given two strings
+    act: when diff is called with the strings
+    assert: then the expected diff is returned.
+    """
+    returned_diff = content.diff(first=first, second=second)
+
+    assert returned_diff == expected_diff
