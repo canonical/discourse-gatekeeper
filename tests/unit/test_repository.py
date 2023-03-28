@@ -7,6 +7,7 @@
 # pylint: disable=protected-access
 
 import base64
+import secrets
 from pathlib import Path
 from unittest import mock
 
@@ -402,7 +403,7 @@ def test_create_repository_client_no_token(
     act: when create_repository_client is called
     assert: InputError is raised.
     """
-    # the following token is for testing purposes only.
+    # the following token is deliberately empty for this test
     test_token = ""  # nosec
 
     with pytest.raises(InputError) as exc:
@@ -428,8 +429,7 @@ def test_create_repository_client(
     origin = git_repo.remote("origin")
     git_repo.delete_remote(origin)
     git_repo.create_remote("origin", "https://github.com/test-user/test-repo.git")
-    # the following token is for testing purposes only.
-    test_token = "testing-token"  # nosec
+    test_token = secrets.token_hex(16)
     mock_github_client = mock.MagicMock(spec=Github)
     mock_github_client.get_repo.returns = mock_github_repo
     monkeypatch.setattr(repository, "Github", mock_github_client)
