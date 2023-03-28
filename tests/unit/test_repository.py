@@ -324,7 +324,7 @@ def test_get_file_content(monkeypatch: pytest.MonkeyPatch, repository_client: Cl
 
 def test_get_file_content_branch(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
-    arrange: given path and branch, Client with a mocked github repository client that returns
+    arrange: given path and branch, client with a mocked github repository client that returns
         content
     act: when get_file_content is called with the path and branch
     assert: then the content is returned.

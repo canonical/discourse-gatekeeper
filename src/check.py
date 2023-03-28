@@ -62,7 +62,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
             description=(
                 "cannot execute the update action due to not finding a file on the base branch "
                 "and there are differences between the branch and discourse content, please ensure "
-                f"that there are no differences and try again. Dtected differences:\n{diff}"
+                f"that there are no differences and try again. Detected differences:\n{diff}"
             ),
         )
     else:

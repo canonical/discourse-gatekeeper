@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Module for checking for 3-way merge conflicts and create content based on a 3 way merge."""
+"""Module for checking conflicts using 3-way merge and create content based on a 3 way merge."""
 
 import difflib
 import tempfile

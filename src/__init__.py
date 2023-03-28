@@ -68,6 +68,8 @@ def _run_reconcile(
         user_inputs=user_inputs,
     )
 
+    # tee creates a copy of the iterator which is needed as check_conflicts consumes the iterator
+    # it is passed
     actions, check_actions = tee(actions, 2)
     problems = tuple(check_conflicts(actions=check_actions))
     if problems:

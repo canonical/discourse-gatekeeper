@@ -37,7 +37,7 @@ class UserInputs(typing.NamedTuple):
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
-        base_branch: The branch the the documentation is stored on after updating discourse.
+        base_branch: The branch the documentation is stored on after updating discourse.
     """
 
     discourse: UserInputsDiscourse

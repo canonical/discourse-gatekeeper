@@ -13,6 +13,7 @@ from .discourse import Discourse
 
 DRY_RUN_NAVLINK_LINK = "<not created due to dry run>"
 DRY_RUN_REASON = "dry run"
+BASE_MISSING_REASON = "no base for the content to be automatically merged"
 FAIL_NAVLINK_LINK = "<not created due to error>"
 NOT_DELETE_REASON = "delete_topics is false"
 
@@ -182,7 +183,7 @@ def _update(
             and action.content_change.new != action.content_change.old
         ):
             result = types_.ActionResult.FAIL
-            reason = "no base for the content to be automatically merged"
+            reason = BASE_MISSING_REASON
         else:
             result = types_.ActionResult.SUCCESS
             reason = None
