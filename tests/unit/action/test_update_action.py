@@ -87,15 +87,16 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             base=old_content,
         ),
     )
+    dry_run = True
 
     returned_report = action._update(
-        action=update_action, discourse=mocked_discourse, dry_run=True
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
     )
 
     assert_substrings_in_string(
         (
             f"action: {update_action}",
-            f"dry run: {True}",
+            f"dry run: {dry_run}",
             old_content,
             new_content,
             f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
@@ -115,7 +116,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
 def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file where only the navlink title has changed and mocked
-        discourse
+        discourse and the content missing from the default branch
     act: when action is passed to _update with dry_run False
     assert: then no topic is updated, the action is logged and the expected table row is returned.
     """
@@ -135,13 +136,14 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
             old=(content := "content 1"), new=content, base=None
         ),
     )
+    dry_run = False
 
     returned_report = action._update(
-        action=update_action, discourse=mocked_discourse, dry_run=False
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
     )
 
     assert_substrings_in_string(
-        (f"action: {update_action}", f"dry run: {False}", content),
+        (f"action: {update_action}", f"dry run: {dry_run}", content),
         caplog.text,
     )
     mocked_discourse.update_topic.assert_not_called()
@@ -178,15 +180,16 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             old=(old_content := "content 1"), new=(new_content := "content 2"), base=old_content
         ),
     )
+    dry_run = False
 
     returned_report = action._update(
-        action=update_action, discourse=mocked_discourse, dry_run=False
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
     )
 
     assert_substrings_in_string(
         (
             f"action: {update_action}",
-            f"dry run: {False}",
+            f"dry run: {dry_run}",
             old_content,
             new_content,
             f"content change:\n- {old_content}\n?         ^\n+ {new_content}\n?         ^\n",
@@ -247,15 +250,16 @@ def test__update_file_navlink_content_change_conflict(
         ),
         content_change=content_change,
     )
+    dry_run = False
 
     returned_report = action._update(
-        action=update_action, discourse=mocked_discourse, dry_run=False
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
     )
 
     assert_substrings_in_string(
         (
             f"action: {update_action}",
-            f"dry run: {False}",
+            f"dry run: {dry_run}",
             repr(content_change.base),
             repr(content_change.old),
             repr(content_change.new),
@@ -300,15 +304,16 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             base=(base_content := "line 1\nline 2\nline 3\n"),
         ),
     )
+    dry_run = False
 
     returned_report = action._update(
-        action=update_action, discourse=mocked_discourse, dry_run=False
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
     )
 
     assert_substrings_in_string(
         (
             f"action: {update_action}",
-            f"dry run: {False}",
+            f"dry run: {dry_run}",
             repr(base_content),
             repr(old_content),
             repr(new_content),

@@ -100,7 +100,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (factories.NoopActionFactory(), factories.NoopActionFactory()),
             (),
-            id="multiple no problems",
+            id="multiple actions no problems",
         ),
         pytest.param(
             (
@@ -118,7 +118,7 @@ def _test_conflicts_parameters():
                     ),
                 ),
             ),
-            id="multiple single problem first",
+            id="multiple actions single problem first",
         ),
         pytest.param(
             (
@@ -136,7 +136,7 @@ def _test_conflicts_parameters():
                     ),
                 ),
             ),
-            id="multiple single problem second",
+            id="multiple actions single problem second",
         ),
         pytest.param(
             (
@@ -163,7 +163,7 @@ def _test_conflicts_parameters():
                     ),
                 ),
             ),
-            id="multiple multiple problems",
+            id="multiple actions multiple problems",
         ),
     ]
 
