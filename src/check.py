@@ -4,7 +4,8 @@
 """Module for running checks."""
 
 import logging
-from typing import Iterable, Iterator, NamedTuple, TypeGuard
+from collections.abc import Iterable, Iterator
+from typing import NamedTuple, TypeGuard
 
 from .content import conflicts as content_conflicts
 from .content import diff as content_diff
