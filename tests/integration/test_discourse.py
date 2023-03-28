@@ -81,6 +81,7 @@ async def test_create_retrieve_update_delete_topic(
     slug = url_path_components[-2]
     topic_id = url_path_components[-1]
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    assert topic
     assert (
         topic["category_id"] == discourse_category_id
     ), "post was not created with the correct category id"
@@ -104,6 +105,7 @@ async def test_create_retrieve_update_delete_topic(
     discourse_api.delete_topic(url=url)
 
     topic = discourse_client.topic(slug=slug, topic_id=topic_id)
+    assert topic
     assert (
         "topic deleted by author" in topic["post_stream"]["posts"][0]["cooked"]
     ), "topic not deleted"

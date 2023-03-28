@@ -5,6 +5,7 @@
 
 import itertools
 import typing
+from pathlib import Path
 
 from . import exceptions, types_
 from .constants import NAVIGATION_TABLE_START
@@ -85,6 +86,7 @@ def _local_and_server(
     table_row: types_.TableRow,
     discourse: Discourse,
     repository: RepositoryClient,
+    base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
@@ -108,6 +110,7 @@ def _local_and_server(
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        base_path: The base path of the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
@@ -198,7 +201,8 @@ def _local_and_server(
 
     try:
         base_content = repository.get_file_content(
-            path=str(path_info.local_path), branch=user_inputs.base_branch
+            path=str(path_info.local_path.relative_to(base_path)),
+            branch=user_inputs.base_branch,
         )
     except exceptions.RepositoryClientError:
         base_content = None
@@ -262,6 +266,7 @@ def _calculate_action(
     table_row: types_.TableRow | None,
     discourse: Discourse,
     repository: RepositoryClient,
+    base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
@@ -271,6 +276,7 @@ def _calculate_action(
         table_row: A row from the navigation table.
         discourse: A client to the documentation server.
         repository: Repository client for managing both local and remote git repositories.
+        base_path: The base path of the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
@@ -293,6 +299,7 @@ def _calculate_action(
             table_row=table_row,
             discourse=discourse,
             repository=repository,
+            base_path=base_path,
             user_inputs=user_inputs,
         )
 
@@ -305,6 +312,7 @@ def run(
     table_rows: typing.Iterable[types_.TableRow],
     discourse: Discourse,
     repository: RepositoryClient,
+    base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
@@ -323,6 +331,7 @@ def run(
     effect on the navigation table that is generated and hence ordering for them doesn't matter.
 
     Args:
+        base_path: The base path of the repository.
         path_infos: Information about the local documentation files.
         table_rows: Rows from the navigation table.
         discourse: A client to the documentation server.
@@ -351,6 +360,7 @@ def run(
             table_row_lookup.get(key),
             discourse,
             repository,
+            base_path,
             user_inputs,
         )
         for key in keys

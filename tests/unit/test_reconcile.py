@@ -88,6 +88,7 @@ def test__local_and_server_error(
             table_row=table_row,
             discourse=mock_discourse,
             repository=mock_repository,
+            base_path=tmp_path,
             user_inputs=factories.UserInputsFactory(),
         )
 
@@ -157,6 +158,7 @@ def test__local_and_server_file_same(local_content: str, server_content: str, tm
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -176,7 +178,8 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path):
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned with None for the base content.
     """
-    (path := tmp_path / "file1.md").touch()
+    filename = "file1.md"
+    (path := tmp_path / filename).touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
@@ -192,6 +195,7 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=user_inputs,
     )
 
@@ -206,7 +210,7 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path):
     assert returned_action.content_change.base is None  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_repository.get_file_content.assert_called_once_with(
-        path=str(path), branch=user_inputs.base_branch
+        path=filename, branch=user_inputs.base_branch
     )
 
 
@@ -217,6 +221,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
+    filename = "file1.md"
     (path := tmp_path / "file1.md").touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
@@ -234,6 +239,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=user_inputs,
     )
 
@@ -248,7 +254,7 @@ def test__local_and_server_file_content_change(tmp_path: Path):
     assert returned_action.content_change.base == base_content  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_repository.get_file_content.assert_called_once_with(
-        path=str(path), branch=user_inputs.base_branch
+        path=filename, branch=user_inputs.base_branch
     )
 
 
@@ -259,6 +265,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
+    filename = "file1.md"
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
@@ -275,6 +282,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=user_inputs,
     )
 
@@ -290,7 +298,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path):
     assert returned_action.content_change.new == content  # type: ignore
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_repository.get_file_content.assert_called_once_with(
-        path=str(path), branch=user_inputs.base_branch
+        path=filename, branch=user_inputs.base_branch
     )
 
 
@@ -312,6 +320,7 @@ def test__local_and_server_directory_same(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -343,6 +352,7 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -377,6 +387,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -408,6 +419,7 @@ def test__local_and_server_file_to_directory(tmp_path: Path):
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -485,7 +497,7 @@ def test__server_only_directory():
     mock_discourse.retrieve_topic.assert_not_called()
 
 
-def test__calculate_action_error():
+def test__calculate_action_error(tmp_path: Path):
     """
     arrange: given path info and table row that are None
     act: when _calculate_action is called with the path info and table row
@@ -500,6 +512,7 @@ def test__calculate_action_error():
             table_row=None,
             discourse=mock_discourse,
             repository=mock_repository,
+            base_path=tmp_path,
             user_inputs=factories.UserInputsFactory(),
         )
 
@@ -569,6 +582,7 @@ def test__calculate_action(
         table_row=table_row,
         discourse=mock_discourse,
         repository=mock_repository,
+        base_path=tmp_path,
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -694,6 +708,7 @@ def test_run(
             table_rows=table_rows,
             discourse=mock_discourse,
             repository=mock_repository,
+            base_path=tmp_path,
             user_inputs=factories.UserInputsFactory(),
         )
     )

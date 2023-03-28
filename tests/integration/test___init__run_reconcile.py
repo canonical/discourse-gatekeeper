@@ -7,11 +7,14 @@
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
+from base64 import b64encode
 from itertools import chain
 from pathlib import Path
+from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 import pytest
+from github.ContentFile import ContentFile
 
 from src import constants, exceptions, metadata, run
 from src.discourse import Discourse
@@ -28,6 +31,7 @@ async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository_path: Path,
+    mock_github_repo: MagicMock,
 ):
     """
     arrange: given running discourse server
@@ -78,15 +82,14 @@ async def test_run(
         path=repository_path,
     )
     (docs_dir := repository_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
-    (index_file := docs_dir / "index.md").write_text(index_content := "index content 1")
+    (index_file := docs_dir / "index.md").write_text(
+        index_content := "index content 1", encoding="utf-8"
+    )
 
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=True,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -100,10 +103,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -114,7 +114,9 @@ async def test_run(
     # 3. docs with a documentation file added in dry run mode
     caplog.clear()
     doc_table_key = "doc"
-    (doc_file := docs_dir / f"{doc_table_key}.md").write_text(doc_content_1 := "doc content 1")
+    (doc_file := docs_dir / f"{doc_table_key}.md").write_text(
+        doc_content_1 := "doc content 1", encoding="utf-8"
+    )
 
     urls_with_actions = run(
         base_path=repository_path,
@@ -136,10 +138,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert len(urls_with_actions) == 2
@@ -156,15 +155,15 @@ async def test_run(
 
     # 5. docs with a documentation file updated in dry run mode
     caplog.clear()
-    doc_file.write_text(doc_content_2 := "doc content 2")
+    doc_file.write_text(doc_content_2 := "doc content 2", encoding="utf-8")
+    mock_content_file = MagicMock(spec=ContentFile)
+    mock_content_file.content = b64encode(doc_content_1.encode(encoding="utf-8"))
+    mock_github_repo.get_contents.return_value = mock_content_file
 
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=True,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True, base_branch=None),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -173,6 +172,9 @@ async def test_run(
     assert doc_table_line_1 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_1
+    mock_github_repo.get_contents.assert_called_once_with(
+        str(doc_file.relative_to(repository_path))
+    )
 
     # 6. docs with a documentation file updated
     caplog.clear()
@@ -180,10 +182,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -204,10 +203,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -222,16 +218,13 @@ async def test_run(
     caplog.clear()
     nested_dir_doc_table_key = "nested-dir-doc"
     (nested_dir_doc_file := nested_dir / "doc.md").write_text(
-        nested_dir_doc_content := "nested dir doc content 1"
+        nested_dir_doc_content := "nested dir doc content 1", encoding="utf-8"
     )
 
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert len(urls_with_actions) == 3
@@ -256,10 +249,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=True,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -272,16 +262,13 @@ async def test_run(
     assert nested_dir_doc_topic == nested_dir_doc_content
 
     # 10. docs with the documentation file in the nested directory removed with page deletion
-    #     disabled
+    # disabled
     caplog.clear()
 
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=False,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=False),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -300,10 +287,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -320,10 +304,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -342,10 +323,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False,
-            delete_pages=True,
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (index_url,)

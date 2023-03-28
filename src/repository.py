@@ -18,6 +18,7 @@ from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import InputError, RepositoryClientError
 
 GITHUB_HOSTNAME = "github.com"
+ORIGIN_NAME = "origin"
 HTTPS_URL_PATTERN = re.compile(rf"^https?:\/\/.*@?{GITHUB_HOSTNAME}\/(.+\/.+?)(.git)?$")
 ACTIONS_USER_NAME = "upload-charms-docs-bot"
 ACTIONS_USER_EMAIL = "upload-charms-docs-bot@users.noreply.github.com"
@@ -76,7 +77,7 @@ class Client:
             True if branch already exists, False otherwise.
         """
         try:
-            self._git_repo.git.fetch("origin", branch_name)
+            self._git_repo.git.fetch(ORIGIN_NAME, branch_name)
             return True
         except GitCommandError as exc:
             if "couldn't find remote ref" in exc.stderr:
@@ -97,12 +98,12 @@ class Client:
         """
         default_branch = self._github_repo.default_branch
         try:
-            self._git_repo.git.fetch("origin", default_branch)
+            self._git_repo.git.fetch(ORIGIN_NAME, default_branch)
             self._git_repo.git.checkout(default_branch, "--")
             self._git_repo.git.checkout("-b", branch_name)
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
-            self._git_repo.git.push("-u", "origin", branch_name)
+            self._git_repo.git.push("-u", ORIGIN_NAME, branch_name)
         except GitCommandError as exc:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 

@@ -4,7 +4,7 @@
 """Unit tests for check."""
 
 import logging
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import pytest
 
@@ -65,7 +65,7 @@ def _test_conflicts_parameters():
                         "execute",
                         "branch",
                         "discourse",
-                        *action_1.content_change[1:],
+                        *(cast(tuple, action_1.content_change)[1:]),
                     ),
                 ),
             ),
@@ -89,7 +89,10 @@ def _test_conflicts_parameters():
             (
                 ExpectedProblem(
                     path=action_1.path,
-                    description_contents=("conflict", *action_1.content_change[1:]),
+                    description_contents=(
+                        "conflict",
+                        *(cast(tuple, action_1.content_change)[1:]),
+                    ),
                 ),
             ),
             id="single update conflict",
@@ -109,7 +112,10 @@ def _test_conflicts_parameters():
             (
                 ExpectedProblem(
                     path=action_1.path,
-                    description_contents=("conflict", *action_1.content_change[1:]),
+                    description_contents=(
+                        "conflict",
+                        *(cast(tuple, action_1.content_change)[1:]),
+                    ),
                 ),
             ),
             id="multiple single problem first",
@@ -124,7 +130,10 @@ def _test_conflicts_parameters():
             (
                 ExpectedProblem(
                     path=action_2.path,
-                    description_contents=("conflict", *action_2.content_change[1:]),
+                    description_contents=(
+                        "conflict",
+                        *(cast(tuple, action_2.content_change)[1:]),
+                    ),
                 ),
             ),
             id="multiple single problem second",
@@ -141,11 +150,17 @@ def _test_conflicts_parameters():
             (
                 ExpectedProblem(
                     path=action_1.path,
-                    description_contents=("conflict", *action_1.content_change[1:]),
+                    description_contents=(
+                        "conflict",
+                        *(cast(tuple, action_1.content_change)[1:]),
+                    ),
                 ),
                 ExpectedProblem(
                     path=action_2.path,
-                    description_contents=("conflict", *action_2.content_change[1:]),
+                    description_contents=(
+                        "conflict",
+                        *(cast(tuple, action_2.content_change)[1:]),
+                    ),
                 ),
             ),
             id="multiple multiple problems",

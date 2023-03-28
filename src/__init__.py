@@ -65,6 +65,7 @@ def _run_reconcile(
         table_rows=table_rows,
         discourse=discourse,
         repository=repository,
+        base_path=base_path,
         user_inputs=user_inputs,
     )
 

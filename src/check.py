@@ -66,18 +66,18 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
             ),
         )
     else:
-        action_conflcits = content_conflicts(
+        action_conflicts = content_conflicts(
             base=action.content_change.base,
             theirs=action.content_change.old,
             ours=action.content_change.new,
         )
-        if action_conflcits is None:
+        if action_conflicts is None:
             return None
         problem = Problem(
             path=action.path,
             description=(
                 "cannot execute the update action due to conflicting changes on discourse, "
-                f"please resolve the conflicts and try again: \n{action_conflcits}"
+                f"please resolve the conflicts and try again: \n{action_conflicts}"
             ),
         )
 
