@@ -12,6 +12,10 @@ from git.repo import Repo
 
 from .exceptions import ContentError
 
+_BASE_BRANCH = "base"
+_THEIR_BRANCH = "theirs"
+_OUR_BRANCH = "ours"
+
 
 def conflicts(base: str, theirs: str, ours: str) -> str | None:
     """Check for merge conflicts based on the git merge algorithm.
@@ -62,31 +66,28 @@ def merge(base: str, theirs: str, ours: str) -> str:
         writer.set_value("user", "email", "temp_email")
         writer.set_value("commit", "gpgsign", "false")
         writer.release()
-        base_branch = "base"
-        their_branch = "theirs"
-        our_branch = "ours"
 
         # Create base
-        repo.git.checkout("-b", base_branch)
+        repo.git.checkout("-b", _BASE_BRANCH)
         (content_path := tmp_path / "content.txt").write_text(base, encoding="utf-8")
         repo.git.add(".")
         repo.git.commit("-m", "'initial commit'")
 
         # Create their branch
-        repo.git.checkout("-b", their_branch)
+        repo.git.checkout("-b", _THEIR_BRANCH)
         content_path.write_text(theirs, encoding="utf-8")
         repo.git.add(".")
         repo.git.commit("-m", "'their change'")
 
         # Create our branch
-        repo.git.checkout(base_branch)
-        repo.git.checkout("-b", our_branch)
+        repo.git.checkout(_BASE_BRANCH)
+        repo.git.checkout("-b", _OUR_BRANCH)
         content_path.write_text(ours, encoding="utf-8")
         repo.git.add(".")
         repo.git.commit("-m", "'our change'")
 
         try:
-            repo.git.merge(their_branch)
+            repo.git.merge(_THEIR_BRANCH)
         except GitCommandError as exc:
             content_conflicts = content_path.read_text(encoding="utf-8")
             raise ContentError(
