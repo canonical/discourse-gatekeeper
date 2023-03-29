@@ -141,12 +141,12 @@ def _update(
 
     if (
         action.content_change is not None
-        and action.content_change.old is not None
-        and action.content_change.new is not None
+        and action.content_change.server is not None
+        and action.content_change.local is not None
     ):
         _log_content_change(
-            base=action.content_change.base or action.content_change.old,
-            new=action.content_change.new,
+            base=action.content_change.base or action.content_change.server,
+            new=action.content_change.local,
         )
 
     # All of these are needed to ensure types are as expected
@@ -155,14 +155,14 @@ def _update(
         and action.navlink_change.new.link is not None
         and action.content_change is not None
         and action.content_change.base is not None
-        and action.content_change.new is not None
-        and action.content_change.new != action.content_change.old
+        and action.content_change.local is not None
+        and action.content_change.local != action.content_change.server
     ):
         try:
             merged_content = content_merge(
                 base=action.content_change.base,
-                theirs=action.content_change.old,
-                ours=action.content_change.new,
+                theirs=action.content_change.server,
+                ours=action.content_change.local,
             )
             discourse.update_topic(url=action.navlink_change.new.link, content=merged_content)
             result = types_.ActionResult.SUCCESS
@@ -180,7 +180,7 @@ def _update(
         elif (
             action.content_change is not None
             and action.content_change.base is None
-            and action.content_change.new != action.content_change.old
+            and action.content_change.local != action.content_change.server
         ):
             result = types_.ActionResult.FAIL
             reason = BASE_MISSING_REASON

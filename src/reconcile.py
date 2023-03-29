@@ -212,7 +212,7 @@ def _local_and_server(
                 new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
             ),
             content_change=types_.ContentChange(
-                old=server_content, new=local_content, base=base_content
+                base=base_content, server=server_content, local=local_content
             ),
         ),
     )

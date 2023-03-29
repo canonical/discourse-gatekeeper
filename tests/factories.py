@@ -163,9 +163,9 @@ class ContentChangeFactory(
         model = types_.ContentChange
         abstract = False
 
-    old = factory.Sequence(lambda n: f"old {n}")
-    new = factory.Sequence(lambda n: f"new {n}")
     base = factory.Sequence(lambda n: f"base {n}")
+    server = factory.Sequence(lambda n: f"server {n}")
+    local = factory.Sequence(lambda n: f"local {n}")
 
 
 class UpdateActionFactory(

@@ -51,12 +51,12 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
 
     if (
         action.content_change.base is None
-        and action.content_change.old == action.content_change.new
+        and action.content_change.server == action.content_change.local
     ):
         return None
 
     if action.content_change.base is None:
-        diff = content_diff(action.content_change.old, action.content_change.new)
+        diff = content_diff(action.content_change.server, action.content_change.local)
         problem = Problem(
             path=action.path,
             description=(
@@ -68,8 +68,8 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     else:
         action_conflicts = content_conflicts(
             base=action.content_change.base,
-            theirs=action.content_change.old,
-            ours=action.content_change.new,
+            theirs=action.content_change.server,
+            ours=action.content_change.local,
         )
         if action_conflicts is None:
             return None

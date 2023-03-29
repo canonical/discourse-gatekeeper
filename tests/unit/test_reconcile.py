@@ -200,8 +200,8 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink_change.old == navlink  # type: ignore
     assert returned_action.navlink_change.new == navlink  # type: ignore
-    assert returned_action.content_change.old == server_content  # type: ignore
-    assert returned_action.content_change.new == local_content  # type: ignore
+    assert returned_action.content_change.server == server_content  # type: ignore
+    assert returned_action.content_change.local == local_content  # type: ignore
     assert returned_action.content_change.base is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
@@ -241,8 +241,8 @@ def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink_change.old == navlink  # type: ignore
     assert returned_action.navlink_change.new == navlink  # type: ignore
-    assert returned_action.content_change.old == server_content  # type: ignore
-    assert returned_action.content_change.new == local_content  # type: ignore
+    assert returned_action.content_change.server == server_content  # type: ignore
+    assert returned_action.content_change.local == local_content  # type: ignore
     assert returned_action.content_change.base == base_content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
@@ -283,8 +283,8 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clie
     assert returned_action.navlink_change.new == types_.Navlink(  # type: ignore
         title=path_info.navlink_title, link=navlink_link
     )
-    assert returned_action.content_change.old == content  # type: ignore
-    assert returned_action.content_change.new == content  # type: ignore
+    assert returned_action.content_change.server == content  # type: ignore
+    assert returned_action.content_change.local == content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
         path=filename, branch=user_inputs.base_branch

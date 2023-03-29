@@ -73,7 +73,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    old_content: str
+    server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -82,9 +82,9 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1\n"),
-            new=(new_content := "content 2\n"),
-            base=old_content,
+            server=(server_content := "content 1\n"),
+            local=(local_content := "content 2\n"),
+            base=server_content,
         ),
     )
     dry_run = True
@@ -97,9 +97,9 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
         (
             f"action: {update_action}",
             f"dry run: {dry_run}",
-            old_content,
-            new_content,
-            f"content change:\n- {old_content}?         ^\n+ {new_content}?         ^\n",
+            server_content,
+            local_content,
+            f"content change:\n- {server_content}?         ^\n+ {local_content}?         ^\n",
         ),
         caplog.text,
     )
@@ -133,7 +133,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(content := "content 1"), new=content, base=None
+            server=(content := "content 1"), local=content, base=None
         ),
     )
     dry_run = False
@@ -168,7 +168,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
-    old_content: str
+    server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -177,7 +177,9 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "content 1"), new=(new_content := "content 2"), base=old_content
+            server=(server_content := "content 1"),
+            local=(local_content := "content 2"),
+            base=server_content,
         ),
     )
     dry_run = False
@@ -190,15 +192,15 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
         (
             f"action: {update_action}",
             f"dry run: {dry_run}",
-            old_content,
-            new_content,
-            f"content change:\n- {old_content}\n?         ^\n+ {new_content}\n?         ^\n",
+            server_content,
+            local_content,
+            f"content change:\n- {server_content}\n?         ^\n+ {local_content}\n?         ^\n",
         ),
         caplog.text,
     )
     assert update_action.content_change is not None
     mocked_discourse.update_topic.assert_called_once_with(
-        url=link, content=update_action.content_change.new
+        url=link, content=update_action.content_change.local
     )
     assert returned_report.table_row is not None
     assert returned_report.table_row.level == level
@@ -213,13 +215,13 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     "content_change, expected_log_contents, expected_reason_contents",
     [
         pytest.param(
-            factories.ContentChangeFactory(base="x", old="y", new="z"),
+            factories.ContentChangeFactory(base="x", server="y", local="z"),
             ("content change:\n- x\n+ z\n",),
             ("merge", "conflict"),
             id="merge conflict",
         ),
         pytest.param(
-            factories.ContentChangeFactory(base=None, old="y", new="z"),
+            factories.ContentChangeFactory(base=None, server="y", local="z"),
             (),
             ("no", "base"),
             id="no base",
@@ -261,8 +263,8 @@ def test__update_file_navlink_content_change_conflict(
             f"action: {update_action}",
             f"dry run: {dry_run}",
             repr(content_change.base),
-            repr(content_change.old),
-            repr(content_change.new),
+            repr(content_change.server),
+            repr(content_change.local),
             *expected_log_contents,
         ),
         caplog.text,
@@ -290,7 +292,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    old_content: str
+    server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := "path 1"),
@@ -299,8 +301,8 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             new=src_types.Navlink(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            old=(old_content := "line 1a\nline 2\nline 3\n"),
-            new=(new_content := "line 1\nline 2\nline 3a\n"),
+            server=(server_content := "line 1a\nline 2\nline 3\n"),
+            local=(local_content := "line 1\nline 2\nline 3a\n"),
             base=(base_content := "line 1\nline 2\nline 3\n"),
         ),
     )
@@ -315,8 +317,8 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             f"action: {update_action}",
             f"dry run: {dry_run}",
             repr(base_content),
-            repr(old_content),
-            repr(new_content),
+            repr(server_content),
+            repr(local_content),
             "content change:\n  line 1\n  line 2\n- line 3\n+ line 3a\n?       +\n",
         ),
         caplog.text,

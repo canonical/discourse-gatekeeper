@@ -258,13 +258,13 @@ class ContentChange(typing.NamedTuple):
 
     Attrs:
         base: The content which is the base for comparison.
-        old: The previous content.
-        new: The new content.
+        server: The content on the server.
+        local: The content on the local disk.
     """
 
     base: Content | None
-    old: Content
-    new: Content
+    server: Content
+    local: Content
 
 
 class IndexContentChange(typing.NamedTuple):

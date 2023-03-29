@@ -45,7 +45,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base=None, old="a", new="a")
+                    content_change=types_.ContentChange(base=None, server="a", local="a")
                 ),
             ),
             (),
@@ -54,7 +54,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base=None, old="a", new="b")
+                    content_change=types_.ContentChange(base=None, server="a", local="b")
                 ),
             ),
             (
@@ -74,7 +74,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", old="a", new="a")
+                    content_change=types_.ContentChange(base="a", server="a", local="a")
                 ),
             ),
             (),
@@ -83,7 +83,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", old="b", new="c")
+                    content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
             ),
             (
@@ -105,7 +105,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", old="b", new="c")
+                    content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
                 factories.NoopActionFactory(),
             ),
@@ -124,7 +124,7 @@ def _test_conflicts_parameters():
             (
                 factories.NoopActionFactory(),
                 action_2 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="x", old="y", new="z")
+                    content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
             (
@@ -141,10 +141,10 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", old="b", new="c")
+                    content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
                 action_2 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="x", old="y", new="z")
+                    content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
             (
