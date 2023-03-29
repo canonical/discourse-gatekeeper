@@ -33,34 +33,28 @@ from .. import factories
 from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
-def test__run_reconcile_empty_local_server(tmp_path: Path):
+def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients: types_.Clients):
     """
     arrange: given metadata with name but not docs and empty docs folder and mocked discourse
     act: when _run_reconcile is called
     assert: then an index page is created with empty navigation table.
     """
     meta = types_.Metadata(name="name 1", docs=None)
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_repository = mock.MagicMock(spec=repository.Client)
-    mocked_discourse.create_topic.return_value = (url := "url 1")
+    mocked_clients.discourse.create_topic.return_value = (url := "url 1")
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
-        base_path=tmp_path,
-        metadata=meta,
-        discourse=mocked_discourse,
-        user_inputs=user_inputs,
-        repository=mocked_repository,
+        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
     )
 
-    mocked_discourse.create_topic.assert_called_once_with(
+    mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
-def test__run_reconcile_local_empty_server(tmp_path: Path):
+def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients: types_.Clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called
@@ -72,27 +66,21 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
     (docs_folder / "page.md").write_text(page_content := "page content")
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_repository = mock.MagicMock(spec=repository.Client)
-    mocked_discourse.create_topic.side_effect = [
+    mocked_clients.discourse.create_topic.side_effect = [
         (page_url := "url 1"),
         (index_url := "url 2"),
     ]
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
-        base_path=tmp_path,
-        metadata=meta,
-        discourse=mocked_discourse,
-        user_inputs=user_inputs,
-        repository=mocked_repository,
+        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
     )
 
-    assert mocked_discourse.create_topic.call_count == 2
-    mocked_discourse.create_topic.assert_any_call(
+    assert mocked_clients.discourse.create_topic.call_count == 2
+    mocked_clients.discourse.create_topic.assert_any_call(
         title=f"{name} docs: {page_content}", content=page_content
     )
-    mocked_discourse.create_topic.assert_any_call(
+    mocked_clients.discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
             f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
@@ -105,7 +93,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path):
     }
 
 
-def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
+def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_clients: types_.Clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called with dry run mode enabled
@@ -115,23 +103,17 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path):
     (docs_folder := tmp_path / "docs").mkdir()
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content")
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_repository = mock.MagicMock(spec=repository.Client)
     user_inputs = factories.UserInputsFactory(dry_run=True, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
-        base_path=tmp_path,
-        metadata=meta,
-        discourse=mocked_discourse,
-        user_inputs=user_inputs,
-        repository=mocked_repository,
+        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
     )
 
-    mocked_discourse.create_topic.assert_not_called()
+    mocked_clients.discourse.create_topic.assert_not_called()
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_empty_server_error(tmp_path: Path):
+def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients: types_.Clients):
     """
     arrange: given metadata with name but not docs and empty docs directory and mocked discourse
         that raises an exception
@@ -139,27 +121,21 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path):
     assert: no pages are created.
     """
     meta = types_.Metadata(name="name 1", docs=None)
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.create_topic.side_effect = exceptions.DiscourseError
-    mocked_repository = mock.MagicMock(spec=repository.Client)
+    mocked_clients.discourse.create_topic.side_effect = exceptions.DiscourseError
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     returned_page_interactions = _run_reconcile(
-        base_path=tmp_path,
-        metadata=meta,
-        discourse=mocked_discourse,
-        user_inputs=user_inputs,
-        repository=mocked_repository,
+        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
     )
 
-    mocked_discourse.create_topic.assert_called_once_with(
+    mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_server_conflict(tmp_path: Path):
+def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients: types_.Clients):
     """
     arrange: given metadata with name and docs and docs folder with a file and mocked discourse
         with content that conflicts with the local content
@@ -175,31 +151,25 @@ def test__run_reconcile_local_server_conflict(tmp_path: Path):
     (docs_folder / "page.md").write_text(local_page_content := "page content 2")
     page_url = "page-url"
     server_page_content = "page content 3"
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = [
+    mocked_clients.discourse.retrieve_topic.side_effect = [
         (
             f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
             f"| 1 | page | [{local_page_content}]({page_url}) |"
         ),
         server_page_content,
     ]
-    mocked_repository = mock.MagicMock(spec=repository.Client)
-    mocked_repository.get_file_content.return_value = main_page_content
+    mocked_clients.repository.get_file_content.return_value = main_page_content
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:
         _run_reconcile(
-            base_path=tmp_path,
-            metadata=meta,
-            discourse=mocked_discourse,
-            user_inputs=user_inputs,
-            repository=mocked_repository,
+            base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
         )
 
     assert_substrings_in_string(("actions", "not", "executed"), str(exc_info.value))
-    assert mocked_discourse.retrieve_topic.call_count == 2
-    mocked_discourse.retrieve_topic.assert_any_call(url=index_url)
-    mocked_discourse.retrieve_topic.assert_any_call(url=page_url)
+    assert mocked_clients.discourse.retrieve_topic.call_count == 2
+    mocked_clients.discourse.retrieve_topic.assert_any_call(url=index_url)
+    mocked_clients.discourse.retrieve_topic.assert_any_call(url=page_url)
 
 
 def test__run_migrate_server_error_index(
@@ -219,8 +189,7 @@ def test__run_migrate_server_error_index(
         _run_migrate(
             base_path=tmp_path,
             metadata=meta,
-            discourse=mocked_discourse,
-            repository=repository_client,
+            clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
         )
 
     assert "Index page retrieval failed" == str(exc.value)
@@ -254,8 +223,7 @@ def test__run_migrate_server_error_topic(
         _run_migrate(
             base_path=repository_path,
             metadata=meta,
-            discourse=mocked_discourse,
-            repository=repository_client,
+            clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
         )
 
 
@@ -287,8 +255,7 @@ def test__run_migrate(
     returned_migration_reports = _run_migrate(
         base_path=repository_path,
         metadata=meta,
-        discourse=mocked_discourse,
-        repository=repository_client,
+        clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
     )
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)

@@ -9,6 +9,7 @@
 import logging
 from itertools import chain
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from git.repo import Repo
@@ -34,6 +35,7 @@ async def test_run_migrate(
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
+    mock_github_repo: MagicMock,
 ):
     """
     arrange: given running discourse server
@@ -79,12 +81,12 @@ async def test_run_migrate(
     | -- | -- | -- |
     | 1 | group-1 | [Group 1]() |
     | 1 | group-2 | [Group 2]() |
-    | 2 | group-2-content-1 | [Content Link 1]({content_page_1_url}) |
-    | 2 | group-2-content-2 | [Content Link 2]({content_page_2_url}) |
+    | 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |
+    | 2 | group-2-content-2 | [{content_page_2.content}]({content_page_2_url}) |
     | 1 | group-3 | [Group 3]() |
     | 2 | group-3-group-4 | [Group 4]() |
-    | 3 | group-3-group-4-content-3 | [Content Link 3]({content_page_3_url}) |
-    | 2 | group-3-content-4 | [Content Link 4]({content_page_4_url}) |
+    | 3 | group-3-group-4-content-3 | [{content_page_3.content}]({content_page_3_url}) |
+    | 2 | group-3-content-4 | [{content_page_4.content}]({content_page_4_url}) |
     | 1 | group-5 | [Group 5]() |"""
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",

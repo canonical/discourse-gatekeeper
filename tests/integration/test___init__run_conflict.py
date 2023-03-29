@@ -5,6 +5,9 @@
 
 # This test is fairly complex as it simulates sequential action runs
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
+# The tests for reconcile are similar, although it is better to have some minor duplication than
+# make the tests less clear
+# pylint: disable = duplicate-code
 
 import logging
 from base64 import b64encode

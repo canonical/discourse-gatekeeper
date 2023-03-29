@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 import requests
 
-from src import constants
+from src import constants, repository, types_
 from src.discourse import Discourse
 
 from . import helpers
@@ -66,3 +66,11 @@ def index_file_content(tmp_path: Path) -> str:
     content = "content 1"
     index_file.write_text(content, encoding="utf-8")
     return content
+
+
+@pytest.fixture()
+def mocked_clients() -> types_.Clients:
+    """Create index file."""
+    mocked_discourse = mock.MagicMock(spec=Discourse)
+    mocked_repository = mock.MagicMock(spec=repository.Client)
+    return types_.Clients(discourse=mocked_discourse, repository=mocked_repository)

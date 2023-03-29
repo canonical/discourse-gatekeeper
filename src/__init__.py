@@ -23,7 +23,7 @@ from .pull_request import create_pull_request
 from .reconcile import run as run_reconcile
 from .repository import Client as RepositoryClient
 from .repository import create_repository_client
-from .types_ import ActionResult, Metadata, UserInputs
+from .types_ import ActionResult, Clients, Metadata, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
@@ -32,19 +32,14 @@ GETTING_STARTED = (
 
 
 def _run_reconcile(
-    base_path: Path,
-    metadata: Metadata,
-    discourse: Discourse,
-    repository: RepositoryClient,
-    user_inputs: UserInputs,
+    base_path: Path, metadata: Metadata, clients: Clients, user_inputs: UserInputs
 ) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
     Args:
         base_path: The base path of the repository.
         metadata: Information about the charm.
-        discourse: A client to the documentation server.
-        repository: Repository client for managing both local and remote git repositories.
+        clients: The clients to interact with things like discourse and the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
@@ -54,17 +49,16 @@ def _run_reconcile(
         InputError: if there are any problems with executing any of the actions.
 
     """
-    index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
+    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     path_infos = read_docs_directory(docs_path=base_path / DOCUMENTATION_FOLDER_NAME)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
+    table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
     actions = run_reconcile(
         path_infos=path_infos,
         table_rows=table_rows,
-        discourse=discourse,
-        repository=repository,
+        clients=clients,
         base_path=base_path,
         user_inputs=user_inputs,
     )
@@ -81,7 +75,7 @@ def _run_reconcile(
     reports = run_all_actions(
         actions=actions,
         index=index,
-        discourse=discourse,
+        discourse=clients.discourse,
         dry_run=user_inputs.dry_run,
         delete_pages=user_inputs.delete_pages,
     )
@@ -94,38 +88,32 @@ def _run_reconcile(
     }
 
 
-def _run_migrate(
-    base_path: Path,
-    metadata: Metadata,
-    discourse: Discourse,
-    repository: RepositoryClient,
-) -> dict[str, str]:
+def _run_migrate(base_path: Path, metadata: Metadata, clients: Clients) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
     Args:
         base_path: The base path of the repository.
         metadata: Information about the charm.
-        discourse: A client to the documentation server.
-        repository: Repository client for managing both local and remote git repositories.
+        clients: The clients to interact with things like discourse and the repository.
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
-    index = get_index(metadata=metadata, base_path=base_path, server_client=discourse)
+    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
     index_content = contents_from_page(server_content)
-    table_rows = navigation_table_from_page(page=server_content, discourse=discourse)
+    table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
     migrate_contents(
         table_rows=table_rows,
         index_content=index_content,
-        discourse=discourse,
+        discourse=clients.discourse,
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
 
-    pr_link = create_pull_request(repository=repository)
+    pr_link = create_pull_request(repository=clients.repository)
 
     return {pr_link: ActionResult.SUCCESS}
 
@@ -149,19 +137,11 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
     repository = create_repository_client(
         access_token=user_inputs.github_access_token, base_path=base_path
     )
+    clients = Clients(discourse=discourse, repository=repository)
     if metadata.docs and not has_docs_dir:
-        return _run_migrate(
-            base_path=base_path,
-            metadata=metadata,
-            discourse=discourse,
-            repository=repository,
-        )
+        return _run_migrate(base_path=base_path, metadata=metadata, clients=clients)
     if has_docs_dir:
         return _run_reconcile(
-            base_path=base_path,
-            metadata=metadata,
-            discourse=discourse,
-            repository=repository,
-            user_inputs=user_inputs,
+            base_path=base_path, metadata=metadata, clients=clients, user_inputs=user_inputs
         )
     raise InputError(GETTING_STARTED)

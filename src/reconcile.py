@@ -84,8 +84,7 @@ def _local_and_server_validation(
 def _local_and_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
-    discourse: Discourse,
-    repository: RepositoryClient,
+    clients: types_.Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[
@@ -108,8 +107,7 @@ def _local_and_server(
     Args:
         path_info: Information about the local documentation file.
         table_row: A row from the navigation table.
-        discourse: A client to the documentation server.
-        repository: Repository client for managing both local and remote git repositories.
+        clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
@@ -162,7 +160,7 @@ def _local_and_server(
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
-                content=discourse.retrieve_topic(url=table_row.navlink.link),
+                content=clients.discourse.retrieve_topic(url=table_row.navlink.link),
             ),
             types_.CreateAction(
                 level=path_info.level,
@@ -187,7 +185,7 @@ def _local_and_server(
 
     # Is a page locally and on the server
     local_content = path_info.local_path.read_text(encoding="utf-8").strip()
-    server_content = _get_server_content(table_row=table_row, discourse=discourse)
+    server_content = _get_server_content(table_row=table_row, discourse=clients.discourse)
 
     if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
         return (
@@ -200,7 +198,7 @@ def _local_and_server(
         )
 
     try:
-        base_content = repository.get_file_content(
+        base_content = clients.repository.get_file_content(
             path=str(path_info.local_path.relative_to(base_path)),
             branch=user_inputs.base_branch,
         )
@@ -264,8 +262,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 def _calculate_action(
     path_info: types_.PathInfo | None,
     table_row: types_.TableRow | None,
-    discourse: Discourse,
-    repository: RepositoryClient,
+    clients: types_.Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
@@ -274,8 +271,7 @@ def _calculate_action(
     Args:
         path_info: Information about the local documentation file.
         table_row: A row from the navigation table.
-        discourse: A client to the documentation server.
-        repository: Repository client for managing both local and remote git repositories.
+        clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
@@ -292,13 +288,12 @@ def _calculate_action(
     if path_info is not None and table_row is None:
         return (_local_only(path_info=path_info),)
     if path_info is None and table_row is not None:
-        return (_server_only(table_row=table_row, discourse=discourse),)
+        return (_server_only(table_row=table_row, discourse=clients.discourse),)
     if path_info is not None and table_row is not None:
         return _local_and_server(
             path_info=path_info,
             table_row=table_row,
-            discourse=discourse,
-            repository=repository,
+            clients=clients,
             base_path=base_path,
             user_inputs=user_inputs,
         )
@@ -310,8 +305,7 @@ def _calculate_action(
 def run(
     path_infos: typing.Iterable[types_.PathInfo],
     table_rows: typing.Iterable[types_.TableRow],
-    discourse: Discourse,
-    repository: RepositoryClient,
+    clients: types_.Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:
@@ -334,8 +328,7 @@ def run(
         base_path: The base path of the repository.
         path_infos: Information about the local documentation files.
         table_rows: Rows from the navigation table.
-        discourse: A client to the documentation server.
-        repository: Repository client for managing both local and remote git repositories.
+        clients: The clients to interact with things like discourse and the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
@@ -358,8 +351,7 @@ def run(
         _calculate_action(
             path_info_lookup.get(key),
             table_row_lookup.get(key),
-            discourse,
-            repository,
+            clients,
             base_path,
             user_inputs,
         )
