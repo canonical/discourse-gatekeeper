@@ -24,7 +24,6 @@ from src import (
     index,
     metadata,
     pull_request,
-    repository,
     run,
     types_,
 )
@@ -33,7 +32,7 @@ from .. import factories
 from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
-def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients: types_.Clients):
+def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs folder and mocked discourse
     act: when _run_reconcile is called
@@ -54,7 +53,7 @@ def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients: types
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
-def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients: types_.Clients):
+def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called
@@ -93,7 +92,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients: types
     }
 
 
-def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_clients: types_.Clients):
+def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called with dry run mode enabled
@@ -113,7 +112,7 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_client
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients: types_.Clients):
+def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs directory and mocked discourse
         that raises an exception
@@ -135,7 +134,7 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients:
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients: types_.Clients):
+def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
     """
     arrange: given metadata with name and docs and docs folder with a file and mocked discourse
         with content that conflicts with the local content

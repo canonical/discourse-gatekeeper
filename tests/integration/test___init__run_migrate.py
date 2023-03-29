@@ -9,7 +9,6 @@
 import logging
 from itertools import chain
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 from git.repo import Repo
@@ -35,7 +34,6 @@ async def test_run_migrate(
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
-    mock_github_repo: MagicMock,
 ):
     """
     arrange: given running discourse server

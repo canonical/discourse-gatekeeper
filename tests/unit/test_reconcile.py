@@ -3,7 +3,7 @@
 
 """Unit tests for reconcile module."""
 
-# Need access to protected functions for testing,using walrus operator causes too-many-locals
+# Need access to protected functions for testing, using walrus operator causes too-many-locals
 # pylint: disable=protected-access,too-many-locals
 
 from pathlib import Path
@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import constants, discourse, exceptions, reconcile, repository, types_
+from src import constants, discourse, exceptions, reconcile, types_
 
 from .. import factories
 
@@ -61,13 +61,14 @@ def test__local_only_directory(tmp_path: Path):
         pytest.param(1, 2, "table path 1", "table path 2", id="level and table path mismatch"),
     ],
 )
-def test__local_and_server_error(
+# The arguments are needed due to parametrisation and use of fixtures
+def test__local_and_server_error(  # pylint: disable=too-many-arguments
     path_info_level: int,
     table_row_level: int,
     path_info_table_path: str,
     table_row_path: str,
     tmp_path: Path,
-    mocked_clients: types_.Clients,
+    mocked_clients,
 ):
     """
     arrange: given path info and table row where either level or table path or both do not match
@@ -136,7 +137,7 @@ def test__get_server_content_server_error():
     ],
 )
 def test__local_and_server_file_same(
-    local_content: str, server_content: str, tmp_path: Path, mocked_clients: types_.Clients
+    local_content: str, server_content: str, tmp_path: Path, mocked_clients
 ):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -168,9 +169,7 @@ def test__local_and_server_file_same(
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
-def test__local_and_server_file_content_change_repo_error(
-    tmp_path: Path, mocked_clients: types_.Clients
-):
+def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file and repository that cannot find the file
@@ -210,7 +209,7 @@ def test__local_and_server_file_content_change_repo_error(
     )
 
 
-def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients: types_.Clients):
+def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file
@@ -251,9 +250,7 @@ def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients: t
     )
 
 
-def test__local_and_server_file_navlink_title_change(
-    tmp_path: Path, mocked_clients: types_.Clients
-):
+def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a file and table row with different navlink title and discourse
         client that returns the same content as in the file
@@ -294,7 +291,7 @@ def test__local_and_server_file_navlink_title_change(
     )
 
 
-def test__local_and_server_directory_same(tmp_path: Path, mocked_clients: types_.Clients):
+def test__local_and_server_directory_same(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a directory and table row with no changes
     act: when _local_and_server is called with the path info and table row
@@ -323,9 +320,7 @@ def test__local_and_server_directory_same(tmp_path: Path, mocked_clients: types_
     mocked_clients.repository.get_file_content.assert_not_called()
 
 
-def test__local_and_server_directory_navlink_title_changed(
-    tmp_path: Path, mocked_clients: types_.Clients
-):
+def test__local_and_server_directory_navlink_title_changed(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a directory and table row with different navlink title
     act: when _local_and_server is called with the path info and table row
@@ -356,7 +351,7 @@ def test__local_and_server_directory_navlink_title_changed(
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients: types_.Clients):
+def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a file and table row with a group
     act: when _local_and_server is called with the path info and table row
@@ -385,7 +380,7 @@ def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients: typ
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-def test__local_and_server_file_to_directory(tmp_path: Path, mocked_clients: types_.Clients):
+def test__local_and_server_file_to_directory(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a directory and table row with a file
     act: when _local_and_server is called with the path info and table row
@@ -479,7 +474,7 @@ def test__server_only_directory():
     mock_discourse.retrieve_topic.assert_not_called()
 
 
-def test__calculate_action_error(tmp_path: Path, mocked_clients: types_.Clients):
+def test__calculate_action_error(tmp_path: Path, mocked_clients):
     """
     arrange: given path info and table row that are None
     act: when _calculate_action is called with the path info and table row
@@ -544,7 +539,7 @@ def test__calculate_action(
     table_row: types_.TableRow | None,
     expected_action_type: type[types_.AnyAction],
     tmp_path: Path,
-    mocked_clients: types_.Clients,
+    mocked_clients,
 ):
     """
     arrange: given path info and table row for a directory and grouping
@@ -662,13 +657,14 @@ def test__calculate_action(
     ],
 )
 # pylint: enable=undefined-variable,unused-variable
-def test_run(
+# The arguments are needed due to parametrisation and use of fixtures
+def test_run(  # pylint: disable=too-many-arguments
     path_infos: tuple[types_.PathInfo, ...],
     table_rows: tuple[types_.TableRow, ...],
     expected_action_types: tuple[type[types_.AnyAction], ...],
     expected_level_paths: tuple[tuple[types_.Level, types_.TablePath], ...],
     tmp_path: Path,
-    mocked_clients: types_.Clients,
+    mocked_clients,
 ):
     """
     arrange: given path infos and table rows

@@ -409,7 +409,12 @@ class IndexDocumentMeta(MigrationFileMeta):
 
 
 class Clients(typing.NamedTuple):
-    """Collection of clients needed during execution."""
+    """Collection of clients needed during execution.
+
+    Attrs:
+        discourse: Discourse client.
+        repository: Client for the repository.
+    """
 
     discourse: Discourse
     repository: RepositoryClient

@@ -21,7 +21,6 @@ from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
 from .pull_request import create_pull_request
 from .reconcile import run as run_reconcile
-from .repository import Client as RepositoryClient
 from .repository import create_repository_client
 from .types_ import ActionResult, Clients, Metadata, UserInputs
 

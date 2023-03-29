@@ -10,7 +10,6 @@ from pathlib import Path
 from . import exceptions, types_
 from .constants import NAVIGATION_TABLE_START
 from .discourse import Discourse
-from .repository import Client as RepositoryClient
 
 
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
