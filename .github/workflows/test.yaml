@@ -1,22 +1,22 @@
-# name: Tests
+name: Tests
 
-# on:
-#   pull_request:
+on:
+  pull_request:
 
-# jobs:
-#   unit-tests:
-#     uses: canonical/operator-workflows/.github/workflows/test.yaml@main
-#     secrets: inherit
-#   look-for-outdated-code:
-#     runs-on: ubuntu-22.04
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Install dependencies
-#         run: |
-#           sudo apt update && sudo apt install python3-pip
-#           pip3 install pyupgrade refurb
-#       - name: Check for any code improvements
-#         run: |
-#           PYTHON_FILES=$(find . -name '*.py')
-#           pyupgrade --py311-plus $PYTHON_FILES
-#           refurb $PYTHON_FILES
+jobs:
+  unit-tests:
+    uses: canonical/operator-workflows/.github/workflows/test.yaml@main
+    secrets: inherit
+  look-for-outdated-code:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install python3-pip
+          pip3 install pyupgrade refurb
+      - name: Check for any code improvements
+        run: |
+          PYTHON_FILES=$(find . -name '*.py')
+          pyupgrade --py311-plus $PYTHON_FILES
+          refurb $PYTHON_FILES
