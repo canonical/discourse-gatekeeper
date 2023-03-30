@@ -139,23 +139,17 @@ def _update(
             f"internal error, content change for page is None, {action=!r}"
         )
 
-    if (
-        action.content_change is not None
-        and action.content_change.server is not None
-        and action.content_change.local is not None
-    ):
+    if action.content_change is not None:
         _log_content_change(
             base=action.content_change.base or action.content_change.server,
             new=action.content_change.local,
         )
 
-    # All of these are needed to ensure types are as expected
-    if (  # pylint: disable=too-many-boolean-expressions
+    if (
         not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None
         and action.content_change.base is not None
-        and action.content_change.local is not None
         and action.content_change.local != action.content_change.server
     ):
         try:
