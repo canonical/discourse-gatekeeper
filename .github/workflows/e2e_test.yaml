@@ -86,7 +86,7 @@ jobs:
         id: e2e-test-prepare-update
         run: |
           GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
-          REPO = '${{ github.repository }}'
+          REPO='${{ github.repository }}'
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare-update --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\", \"filename\": \"docs/doc.md\"}" '${{ steps.e2e-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
           # Update the contents of one of the files
           echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
