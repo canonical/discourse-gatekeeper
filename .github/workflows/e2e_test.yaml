@@ -104,7 +104,7 @@ jobs:
         run: echo '${{ steps.e2e-test-update.outputs.urls_with_actions }}'
       - name: Check update
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs '{"expected_url_results": ["noop", "success", "noop"]}' '${{ steps.e2e-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Delete the alternate doc with delete_topics disabled
         run: rm docs/alternate_doc.md
       - name: Delete topics disabled self test

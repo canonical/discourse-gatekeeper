@@ -182,7 +182,7 @@ def _check_url_result(
     if sorted(results := urls_with_actions.values()) != sorted(expected_result):
         logging.error(
             "%s check failed, the result is not as expected, "
-            "expected: %s, got: %s, urls_with_actions=%s",
+            "got: %s, expected: %s, urls_with_actions=%s",
             test_name,
             results,
             expected_result,
@@ -448,10 +448,11 @@ def cleanup(
         with contextlib.suppress(DiscourseError):
             discourse.delete_topic(url=url)
 
-    github_client = Github(login_or_token=github_token)
-    github_repo = github_client.get_repo(repo)
-    update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
-    update_branch.delete()
+    with contextlib.suppress(GithubException):
+        github_client = Github(login_or_token=github_token)
+        github_repo = github_client.get_repo(repo)
+        update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
+        update_branch.delete()
 
 
 if __name__ == "__main__":
