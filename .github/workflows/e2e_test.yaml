@@ -5,6 +5,7 @@ on:
 
 jobs:
   e2e-tests-reconcile:
+    permissions: write-all
     runs-on: ubuntu-22.04
     steps:
       # Each job has to have this configuration because secrets can be passed through the output of
@@ -85,11 +86,11 @@ jobs:
       - name: Prepare for update test
         id: e2e-test-prepare-update
         run: |
+          # Update the contents of one of the files, do it first to get around content conflicts
+          echo more content >> docs/doc.md
           GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
           REPO='${{ github.repository }}'
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare-update --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\", \"filename\": \"docs/doc.md\"}" '${{ steps.e2e-test-create.outputs.urls_with_actions }}' '${{ steps.configuration.outputs.discourse }}'
-          # Update the contents of one of the files
-          echo more content >> docs/doc.md
       - name: Update self test
         id: e2e-test-update
         uses: ./
