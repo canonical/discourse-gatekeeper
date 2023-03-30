@@ -118,6 +118,7 @@ def _local_and_server(
             - If the table path or level do not match for the path info and table row.
             - If certain edge cases occur that are not expected, such as table_row.navlink.link for
               a page on the server.
+            - If there was a problem retrieving content from GitHub.
     """
     _local_and_server_validation(path_info=path_info, table_row=table_row)
 

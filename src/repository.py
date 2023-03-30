@@ -152,9 +152,9 @@ class Client:
             The content of the file on the default branch.
 
         Raises:
-            RepositoryClientError: if there is a problem with communicating with
-                GitHub, more than one file is returned or a non-file is returned
-                for the provided path.
+            RepositoryFileNotFoundError: if the file could not be retrieved from GitHub, more than
+                one file is returned or a non-file is returned
+            RepositoryClientError: if there is a problem with communicating with GitHub
         """
         try:
             content_file = (
