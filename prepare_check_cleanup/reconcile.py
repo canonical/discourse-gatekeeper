@@ -444,11 +444,10 @@ def cleanup(urls_with_actions: dict[str, str], discourse: Discourse, github_toke
         with contextlib.suppress(DiscourseError):
             discourse.delete_topic(url=url)
 
-    with contextlib.suppress(GithubException):
-        github_client = Github(login_or_token=github_token)
-        github_repo = github_client.get_repo("upload-charm-docs")
-        update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
-        update_branch.delete()
+    github_client = Github(login_or_token=github_token)
+    github_repo = github_client.get_repo("upload-charm-docs")
+    update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
+    update_branch.delete()
 
 
 if __name__ == "__main__":
