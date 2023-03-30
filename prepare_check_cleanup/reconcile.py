@@ -433,19 +433,23 @@ def check_delete(
     return True
 
 
-def cleanup(urls_with_actions: dict[str, str], discourse: Discourse, github_token: str) -> None:
+def cleanup(
+    urls_with_actions: dict[str, str], discourse: Discourse, github_token: str, repo: str
+) -> None:
     """Delete all URLs.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
+        github_token: Token for communication with GitHub.
+        repo: The name of the repository.
     """
     for url in urls_with_actions.keys():
         with contextlib.suppress(DiscourseError):
             discourse.delete_topic(url=url)
 
     github_client = Github(login_or_token=github_token)
-    github_repo = github_client.get_repo("upload-charm-docs")
+    github_repo = github_client.get_repo(repo)
     update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
     update_branch.delete()
 
