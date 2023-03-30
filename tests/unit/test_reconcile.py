@@ -7,6 +7,7 @@
 # pylint: disable=protected-access,too-many-locals
 
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -14,6 +15,7 @@ import pytest
 from src import constants, discourse, exceptions, reconcile, types_
 
 from .. import factories
+from .helpers import assert_substrings_in_string
 
 
 def test__local_only_file(tmp_path: Path):
@@ -172,6 +174,42 @@ def test__local_and_server_file_same(
 def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
+        returns the different content as in the file and repository that raises an error
+    act: when _local_and_server is called with the path info and table row
+    assert: then ReconcilliationError is raised.
+    """
+    filename = "file1.md"
+    (path := tmp_path / filename).touch()
+    path.write_text("content 1", encoding="utf-8")
+    path_info = factories.PathInfoFactory(local_path=path)
+    mocked_clients.discourse.retrieve_topic.return_value = "content 2"
+    mocked_clients.repository.get_file_content.side_effect = exceptions.RepositoryClientError
+    navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
+    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    user_inputs = factories.UserInputsFactory()
+
+    with pytest.raises(exceptions.ReconcilliationError) as exc_info:
+        reconcile._local_and_server(
+            path_info=path_info,
+            table_row=table_row,
+            clients=mocked_clients,
+            base_path=tmp_path,
+            user_inputs=user_inputs,
+        )
+
+    assert_substrings_in_string(
+        ("unable", "retrieve", filename, cast(str, user_inputs.base_branch)),
+        str(exc_info.value).lower(),
+    )
+    mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mocked_clients.repository.get_file_content.assert_called_once_with(
+        path=filename, branch=user_inputs.base_branch
+    )
+
+
+def test__local_and_server_file_content_change_file_not_in_repo(tmp_path: Path, mocked_clients):
+    """
+    arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file and repository that cannot find the file
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned with None for the base content.
@@ -181,7 +219,7 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
-    mocked_clients.repository.get_file_content.side_effect = exceptions.RepositoryClientError
+    mocked_clients.repository.get_file_content.side_effect = exceptions.RepositoryFileNotFoundError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
     user_inputs = factories.UserInputsFactory()

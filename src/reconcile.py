@@ -197,12 +197,17 @@ def _local_and_server(
         )
 
     try:
+        path = str(path_info.local_path.relative_to(base_path))
         base_content = clients.repository.get_file_content(
-            path=str(path_info.local_path.relative_to(base_path)),
-            branch=user_inputs.base_branch,
+            path=path, branch=user_inputs.base_branch
         )
-    except exceptions.RepositoryClientError:
+    except exceptions.RepositoryFileNotFoundError:
         base_content = None
+    except exceptions.RepositoryClientError as exc:
+        raise exceptions.ReconcilliationError(
+            f"Unable to retrieve content for path from branch, {path=}, "
+            f"branch={user_inputs.base_branch}"
+        ) from exc
     return (
         types_.UpdateAction(
             level=path_info.level,

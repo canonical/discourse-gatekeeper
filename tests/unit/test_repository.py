@@ -16,13 +16,13 @@ from git.exc import GitCommandError
 from git.repo import Repo
 from github import Github
 from github.ContentFile import ContentFile
-from github.GithubException import GithubException
+from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from src import repository
 from src.constants import DOCUMENTATION_FOLDER_NAME
-from src.exceptions import InputError, RepositoryClientError
+from src.exceptions import InputError, RepositoryClientError, RepositoryFileNotFoundError
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
@@ -245,39 +245,57 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     assert returned_url == mock_pull_request.html_url
 
 
-def test_get_file_content_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+def test_get_file_content_github_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
     arrange: given Client with a mocked github repository client that raises an exception
     act: when get_file_content is called
-    assert: RepositoryClientError is raised.
+    assert:  is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
     mock_github_repository.get_contents.side_effect = [
-        GithubException(status=404, data="File not found error", headers=None)
+        GithubException(status=401, data="unauthorized", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_file_content(path="path 1")
+
+    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+
+
+def test_get_file_content_unknown_object_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that raises an exception
+    act: when get_file_content is called
+    assert: RepositoryFileNotFoundError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.side_effect = [
+        UnknownObjectException(status=404, data="File not found error", headers=None)
     ]
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
     path = "path 1"
 
-    with pytest.raises(RepositoryClientError) as exc:
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
         repository_client.get_file_content(path=path)
 
-    assert_substrings_in_string(
-        ("not", "retrieve", "file", path, "githubexception"), str(exc.value).lower()
-    )
+    assert_substrings_in_string(("not", "retrieve", "file", path), str(exc.value).lower())
 
 
 def test_get_file_content_list(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
     arrange: given Client with a mocked github repository client that returns a list
     act: when get_file_content is called
-    assert: RepositoryClientError is raised.
+    assert: RepositoryFileNotFoundError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
     mock_github_repository.get_contents.return_value = []
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
     path = "path 1"
 
-    with pytest.raises(RepositoryClientError) as exc:
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
         repository_client.get_file_content(path=path)
 
     assert_substrings_in_string(("path", "matched", "more", "file", path), str(exc.value).lower())
@@ -288,7 +306,7 @@ def test_get_file_content_content_none(monkeypatch: pytest.MonkeyPatch, reposito
     arrange: given Client with a mocked github repository client that returns None
         content
     act: when get_file_content is called
-    assert: RepositoryClientError is raised.
+    assert: RepositoryFileNotFoundError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
     mock_content_file = mock.MagicMock(spec=ContentFile)
@@ -297,7 +315,7 @@ def test_get_file_content_content_none(monkeypatch: pytest.MonkeyPatch, reposito
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
     path = "path 1"
 
-    with pytest.raises(RepositoryClientError) as exc:
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
         repository_client.get_file_content(path=path)
 
     assert_substrings_in_string(("path", "not", "file", path), str(exc.value).lower())

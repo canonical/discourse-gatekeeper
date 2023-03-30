@@ -11,11 +11,11 @@ from pathlib import Path
 from git import GitCommandError
 from git.repo import Repo
 from github import Github
-from github.GithubException import GithubException
+from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .exceptions import InputError, RepositoryClientError
+from .exceptions import InputError, RepositoryClientError, RepositoryFileNotFoundError
 
 GITHUB_HOSTNAME = "github.com"
 ORIGIN_NAME = "origin"
@@ -162,16 +162,18 @@ class Client:
                 if branch is None
                 else self._github_repo.get_contents(path, branch)
             )
-        except GithubException as exc:
-            raise RepositoryClientError(
+        except UnknownObjectException as exc:
+            raise RepositoryFileNotFoundError(
                 f"Could not retrieve the file at {path=}. {exc=!r}"
             ) from exc
+        except GithubException as exc:
+            raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
 
         if isinstance(content_file, list):
-            raise RepositoryClientError(f"Path matched more than one file {path=}.")
+            raise RepositoryFileNotFoundError(f"Path matched more than one file {path=}.")
 
         if content_file.content is None:
-            raise RepositoryClientError(f"Path did not match a file {path=}.")
+            raise RepositoryFileNotFoundError(f"Path did not match a file {path=}.")
 
         return base64.b64decode(content_file.content).decode("utf-8")
 

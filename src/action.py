@@ -161,10 +161,7 @@ def _update(
             discourse.update_topic(url=action.navlink_change.new.link, content=merged_content)
             result = types_.ActionResult.SUCCESS
             reason = None
-        except exceptions.DiscourseError as exc:
-            result = types_.ActionResult.FAIL
-            reason = str(exc)
-        except exceptions.ContentError as exc:
+        except (exceptions.DiscourseError, exceptions.ContentError) as exc:
             result = types_.ActionResult.FAIL
             reason = str(exc)
     else:

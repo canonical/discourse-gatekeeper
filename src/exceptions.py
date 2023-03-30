@@ -44,5 +44,9 @@ class RepositoryClientError(BaseError):
     """A problem with git repository client occurred."""
 
 
+class RepositoryFileNotFoundError(BaseError):
+    """A problem retrieving a file from a git repository occurred."""
+
+
 class ContentError(BaseError):
     """A problem with the content occurred."""
