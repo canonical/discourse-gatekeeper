@@ -145,7 +145,10 @@ def _update(
             new=action.content_change.local,
         )
 
-    if (
+    if dry_run:
+        result = types_.ActionResult.SKIP
+        reason = DRY_RUN_REASON
+    elif (
         not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None
@@ -164,20 +167,16 @@ def _update(
         except (exceptions.DiscourseError, exceptions.ContentError) as exc:
             result = types_.ActionResult.FAIL
             reason = str(exc)
+    elif (
+        action.content_change is not None
+        and action.content_change.base is None
+        and action.content_change.local != action.content_change.server
+    ):
+        result = types_.ActionResult.FAIL
+        reason = BASE_MISSING_REASON
     else:
-        if dry_run:
-            result = types_.ActionResult.SKIP
-            reason = DRY_RUN_REASON
-        elif (
-            action.content_change is not None
-            and action.content_change.base is None
-            and action.content_change.local != action.content_change.server
-        ):
-            result = types_.ActionResult.FAIL
-            reason = BASE_MISSING_REASON
-        else:
-            result = types_.ActionResult.SUCCESS
-            reason = None
+        result = types_.ActionResult.SUCCESS
+        reason = None
 
     url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(

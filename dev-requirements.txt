@@ -1,5 +1,5 @@
 factory_boy>=3.2,<3.3
-ops>=2.1,<2.2
+ops
 pytest-asyncio>=0.21,<0.22
 pytest-operator>=0.26,<0.27
 pytest>=7.2,<7.3
