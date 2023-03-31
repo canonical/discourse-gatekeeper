@@ -5,6 +5,7 @@
 
 import logging
 import typing
+from enum import StrEnum
 
 from . import exceptions, reconcile, types_
 from .content import diff as content_diff
@@ -112,6 +113,57 @@ def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionRepor
     )
 
 
+class UpdateCase(StrEnum):
+    """The possible cases for the update action.
+
+    Attrs:
+        INVALID: The action is not valid.
+        DRY_RUN: Do not make any changes.
+        CONTENT_CHANGE: The content has been changed.
+        BASE_MISSING: The base content is not available.
+        DEFAULT: No other specific case applies.
+    """
+
+    INVALID = "invalid"
+    DRY_RUN = "dry-run"
+    CONTENT_CHANGE = "content-change"
+    BASE_MISSING = "base-missing"
+    DEFAULT = "default"
+
+
+def _get_update_case(action: types_.UpdateAction, dry_run: bool) -> UpdateCase:
+    """Get the execution case for the update action.
+
+    Args:
+        action: The update action details.
+        dry_run: If enabled, only log the action that would be taken.
+
+    Returns:
+        The named case for the action execution.
+    """
+    # Check that action is valid
+    if action.navlink_change.new.link is not None and action.content_change is None:
+        return UpdateCase.INVALID
+
+    if dry_run:
+        return UpdateCase.DRY_RUN
+    elif (
+        not dry_run
+        and action.navlink_change.new.link is not None
+        and action.content_change is not None
+        and action.content_change.base is not None
+        and action.content_change.local != action.content_change.server
+    ):
+        return UpdateCase.CONTENT_CHANGE
+    elif (
+        action.content_change is not None
+        and action.content_change.base is None
+        and action.content_change.local != action.content_change.server
+    ):
+        return UpdateCase.BASE_MISSING
+    return UpdateCase.DEFAULT
+
+
 def _update(
     action: types_.UpdateAction, discourse: Discourse, dry_run: bool
 ) -> types_.ActionReport:
@@ -129,51 +181,44 @@ def _update(
         ActionError: if the content change or new content for a page is None.
     """
     logging.info("dry run: %s, action: %s", dry_run, action)
-
-    # Check that action is valid
-    if action.navlink_change.new.link is not None and action.content_change is None:
-        raise exceptions.ActionError(
-            f"internal error, content change for page is None, {action=!r}"
-        )
-
     if action.content_change is not None:
         _log_content_change(
             base=action.content_change.base or action.content_change.server,
             new=action.content_change.local,
         )
 
-    if dry_run:
-        result = types_.ActionResult.SKIP
-        reason = DRY_RUN_REASON
-    elif (
-        not dry_run
-        and action.navlink_change.new.link is not None
-        and action.content_change is not None
-        and action.content_change.base is not None
-        and action.content_change.local != action.content_change.server
-    ):
-        try:
-            merged_content = content_merge(
-                base=action.content_change.base,
-                theirs=action.content_change.server,
-                ours=action.content_change.local,
+    update_case = _get_update_case(action=action, dry_run=dry_run)
+
+    match update_case:
+        case UpdateCase.INVALID:
+            raise exceptions.ActionError(
+                f"internal error, content change for page is None, {action=!r}"
             )
-            discourse.update_topic(url=action.navlink_change.new.link, content=merged_content)
+        case UpdateCase.DRY_RUN:
+            result = types_.ActionResult.SKIP
+            reason = DRY_RUN_REASON
+        case UpdateCase.CONTENT_CHANGE:
+            try:
+                content_change = typing.cast(types_.ContentChange, action.content_change)
+                merged_content = content_merge(
+                    base=typing.cast(str, content_change.base),
+                    theirs=content_change.server,
+                    ours=content_change.local,
+                )
+                discourse.update_topic(
+                    url=typing.cast(str, action.navlink_change.new.link), content=merged_content
+                )
+                result = types_.ActionResult.SUCCESS
+                reason = None
+            except (exceptions.DiscourseError, exceptions.ContentError) as exc:
+                result = types_.ActionResult.FAIL
+                reason = str(exc)
+        case UpdateCase.BASE_MISSING:
+            result = types_.ActionResult.FAIL
+            reason = BASE_MISSING_REASON
+        case _:
             result = types_.ActionResult.SUCCESS
             reason = None
-        except (exceptions.DiscourseError, exceptions.ContentError) as exc:
-            result = types_.ActionResult.FAIL
-            reason = str(exc)
-    elif (
-        action.content_change is not None
-        and action.content_change.base is None
-        and action.content_change.local != action.content_change.server
-    ):
-        result = types_.ActionResult.FAIL
-        reason = BASE_MISSING_REASON
-    else:
-        result = types_.ActionResult.SUCCESS
-        reason = None
 
     url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(
