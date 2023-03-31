@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from contextlib import suppress
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 from github.GithubException import GithubException
@@ -28,7 +28,7 @@ from src.pull_request import DEFAULT_BRANCH_NAME
 from src.repository import ACTIONS_PULL_REQUEST_TITLE, create_repository_client
 
 
-class Action(StrEnum):
+class Action(str, Enum):
     """The actions the utility can take.
 
     Attrs:

@@ -5,7 +5,7 @@
 
 import logging
 import typing
-from enum import StrEnum
+from enum import Enum
 
 from . import exceptions, reconcile, types_
 from .content import diff as content_diff
@@ -113,7 +113,7 @@ def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionRepor
     )
 
 
-class UpdateCase(StrEnum):
+class UpdateCase(str, Enum):
     """The possible cases for the update action.
 
     Attrs:

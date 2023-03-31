@@ -8,7 +8,7 @@ import contextlib
 import json
 import logging
 import sys
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 from github import Github
@@ -22,7 +22,7 @@ from src.pull_request import BRANCH_PREFIX
 _UPDATE_BRANCH = f"{BRANCH_PREFIX}/update-test"
 
 
-class Action(StrEnum):
+class Action(str, Enum):
     """The actions the utility can take.
 
     Attrs:
