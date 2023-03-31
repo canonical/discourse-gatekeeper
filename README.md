@@ -55,6 +55,7 @@ charmhub.
               discourse_host: discourse.charmhub.io
               discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
               discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+              github_token: ${{ secrets.GITHUB_TOKEN }}
           - name: Show index page
             run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
     ```
@@ -117,3 +118,19 @@ Additional recommended steps:
   publish a new version of the charm and documentation.
 * Add the action in dry run mode on publishes to `edge` to see what changes to
   the documentation will be made once you publish to `stable`.
+
+## Discourse Documentation Edits
+
+To ensure that contributions to the documentation on discourse are not
+overridden, the action compares the content that was last pushed to discourse
+with the current documentation on discourse and any proposed changes. If there
+are changes both on discourse and in the repository, the action will attempt to
+merge the content using essentially `git merge`. If that fails, the action will
+prompt you to resolve those conflicts by editing the documentation on discourse
+and on the repository. Be sure to explain the reasoning for the changes on
+discourse.
+
+Note that `git merge` will not make any changes on your branch. The content that
+was last pushed to discourse is determined by getting the content from a given
+file from the default branch of the repository. A different branch can be
+configured using the `base_branch` input.
