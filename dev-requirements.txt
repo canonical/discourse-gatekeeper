@@ -1,6 +1,6 @@
-factory_boy>=3.2,<3.3
 ops
+pytest-operator
+factory_boy>=3.2,<3.3
 pytest-asyncio>=0.21,<0.22
-pytest-operator>=0.26,<0.27
 pytest>=7.2,<7.3
 juju==3.0.4
