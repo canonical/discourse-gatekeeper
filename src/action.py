@@ -41,10 +41,7 @@ def _log_content_change(base: str, new: str) -> None:
     old = f"{base}\n" if not base.endswith("\n") else base
     new = f"{new}\n" if not new.endswith("\n") else new
     if new != old:
-        logging.info(
-            "content change:\n%s",
-            content_diff(old, new),
-        )
+        logging.info("content change:\n%s", content_diff(old, new))
 
 
 def _create(
