@@ -144,10 +144,9 @@ def _get_update_case(action: types_.UpdateAction, dry_run: bool) -> UpdateCase:
     # Check that action is valid
     if action.navlink_change.new.link is not None and action.content_change is None:
         return UpdateCase.INVALID
-
     if dry_run:
         return UpdateCase.DRY_RUN
-    elif (
+    if (
         not dry_run
         and action.navlink_change.new.link is not None
         and action.content_change is not None
@@ -155,7 +154,7 @@ def _get_update_case(action: types_.UpdateAction, dry_run: bool) -> UpdateCase:
         and action.content_change.local != action.content_change.server
     ):
         return UpdateCase.CONTENT_CHANGE
-    elif (
+    if (
         action.content_change is not None
         and action.content_change.base is None
         and action.content_change.local != action.content_change.server
@@ -189,6 +188,7 @@ def _update(
 
     update_case = _get_update_case(action=action, dry_run=dry_run)
 
+    reason: str | None
     match update_case:
         case UpdateCase.INVALID:
             raise exceptions.ActionError(
