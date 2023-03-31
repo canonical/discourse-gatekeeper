@@ -6,7 +6,6 @@
 import argparse
 import json
 import logging
-import os
 import sys
 from contextlib import suppress
 from enum import Enum
@@ -17,7 +16,7 @@ from github.GitRef import GitRef
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from prepare_check_cleanup import exit_
+from prepare_check_cleanup import exit_, output
 from src.constants import (
     DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
@@ -110,14 +109,8 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
 
     topics = {"index": index_url, "page": page_url}
 
-    github_output = os.getenv("GITHUB_OUTPUT")
-    assert github_output, (
-        "the GITHUB_OUTPUT environment variable is empty or defined, "
-        "is this running in a GitHub workflow?"
-    )
-    output_file = Path(github_output)
     topics_output = json.dumps(topics, separators=(",", ":")).replace('"', '\\"')
-    output_file.write_text(f"topics={topics_output}\nindex_url={index_url}\n", encoding="utf-8")
+    output.write(f"topics={topics_output}\nindex_url={index_url}\n")
 
 
 def _create_repository_client(github_access_token: str) -> Repository:

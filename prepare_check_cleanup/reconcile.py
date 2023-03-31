@@ -7,7 +7,6 @@ import argparse
 import contextlib
 import json
 import logging
-import os
 import sys
 from enum import Enum
 from pathlib import Path
@@ -15,7 +14,7 @@ from pathlib import Path
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
 
-from prepare_check_cleanup import exit_
+from prepare_check_cleanup import exit_, output
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.pull_request import BRANCH_PREFIX
@@ -291,13 +290,7 @@ def prepare_update(github_token: str, repo: str, filename: str) -> None:
         branch=_UPDATE_BRANCH,
     )
 
-    github_output = os.getenv("GITHUB_OUTPUT")
-    assert github_output, (
-        "the GITHUB_OUTPUT environment variable is empty or defined, "
-        "is this running in a GitHub workflow?"
-    )
-    output_file = Path(github_output)
-    output_file.write_text(f"update_branch={_UPDATE_BRANCH}\n", encoding="utf-8")
+    output.write(f"update_branch={_UPDATE_BRANCH}\n")
 
 
 def check_update(
