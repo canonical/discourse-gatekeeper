@@ -26,12 +26,12 @@ class Action(str, Enum):
     """The actions the utility can take.
 
     Attrs:
-        CHECK_DRAFT: Check that the draft integration test succeeded.
-        CHECK_CREATE: Check that the create integration test succeeded.
+        CHECK_DRAFT: Check that the draft e2e test succeeded.
+        CHECK_CREATE: Check that the create e2e test succeeded.
         PREPARE_UPDATE: Prepare for the update test.
-        CHECK_UPDATE: Check that the update integration test succeeded.
-        CHECK_DELETE_TOPICS: Check that the delete_topics integration test succeeded.
-        CHECK_DELETE: Check that the delete integration test succeeded.
+        CHECK_UPDATE: Check that the update e2e test succeeded.
+        CHECK_DELETE_TOPICS: Check that the delete_topics e2e test succeeded.
+        CHECK_DELETE: Check that the delete e2e test succeeded.
         CLEANUP: Discourse cleanup after the testing.
     """
 
@@ -104,8 +104,9 @@ def main() -> None:
                 )
             )
         case Action.CLEANUP.value:
-            cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
-            sys.exit(0)
+            exit_.with_result(
+                cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
+            )
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
@@ -428,7 +429,7 @@ def check_delete(
 
 def cleanup(
     urls_with_actions: dict[str, str], discourse: Discourse, github_token: str, repo: str
-) -> None:
+) -> bool:
     """Delete all URLs.
 
     Args:
@@ -436,16 +437,29 @@ def cleanup(
         discourse: Client to the documentation server.
         github_token: Token for communication with GitHub.
         repo: The name of the repository.
-    """
-    for url in urls_with_actions.keys():
-        with contextlib.suppress(DiscourseError):
-            discourse.delete_topic(url=url)
 
-    with contextlib.suppress(GithubException):
+    Returns:
+        Whether the cleanup succeeded.
+    """
+    result = True
+
+    for url in urls_with_actions.keys():
+        try:
+            discourse.delete_topic(url=url)
+        except DiscourseError as exc:
+            logging.exception("cleanup failed for discourse, %s", exc)
+            result = False
+
+    try:
         github_client = Github(login_or_token=github_token)
         github_repo = github_client.get_repo(repo)
         update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
         update_branch.delete()
+    except GithubException as exc:
+        logging.exception("cleanup failed for GitHub, %s", exc)
+        result = False
+
+    return result
 
 
 if __name__ == "__main__":
