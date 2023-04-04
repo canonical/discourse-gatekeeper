@@ -71,20 +71,20 @@ def merge(base: str, theirs: str, ours: str) -> str:
         repo.git.checkout("-b", _BASE_BRANCH)
         (content_path := tmp_path / "content.txt").write_text(base, encoding="utf-8")
         repo.git.add(".")
-        repo.git.commit("-m", "'initial commit'")
+        repo.git.commit("-m", "initial commit")
 
         # Create their branch
         repo.git.checkout("-b", _THEIR_BRANCH)
         content_path.write_text(theirs, encoding="utf-8")
         repo.git.add(".")
-        repo.git.commit("-m", "'their change'")
+        repo.git.commit("-m", "their change")
 
         # Create our branch
         repo.git.checkout(_BASE_BRANCH)
         repo.git.checkout("-b", _OUR_BRANCH)
         content_path.write_text(ours, encoding="utf-8")
         repo.git.add(".")
-        repo.git.commit("-m", "'our change'")
+        repo.git.commit("-m", "our change")
 
         try:
             repo.git.merge(_THEIR_BRANCH)
