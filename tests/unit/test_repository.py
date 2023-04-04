@@ -249,7 +249,7 @@ def test_get_file_content_github_error(monkeypatch: pytest.MonkeyPatch, reposito
     """
     arrange: given Client with a mocked github repository client that raises an exception
     act: when get_file_content is called
-    assert:  is raised.
+    assert: RepositoryClientError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
     mock_github_repository.get_contents.side_effect = [
