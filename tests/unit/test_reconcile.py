@@ -178,8 +178,8 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked
     act: when _local_and_server is called with the path info and table row
     assert: then ReconcilliationError is raised.
     """
-    filename = "file1.md"
-    (path := tmp_path / filename).touch()
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
     path.write_text("content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = "content 2"
@@ -198,12 +198,12 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked
         )
 
     assert_substrings_in_string(
-        ("unable", "retrieve", filename, cast(str, user_inputs.base_branch)),
+        ("unable", "retrieve", str(relative_path), cast(str, user_inputs.base_branch)),
         str(exc_info.value).lower(),
     )
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
-        path=filename, branch=user_inputs.base_branch
+        path=str(relative_path), branch=user_inputs.base_branch
     )
 
 
@@ -214,8 +214,8 @@ def test__local_and_server_file_content_change_file_not_in_repo(tmp_path: Path, 
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned with None for the base content.
     """
-    filename = "file1.md"
-    (path := tmp_path / filename).touch()
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
@@ -243,7 +243,7 @@ def test__local_and_server_file_content_change_file_not_in_repo(tmp_path: Path, 
     assert returned_action.content_change.base is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
-        path=filename, branch=user_inputs.base_branch
+        path=str(relative_path), branch=user_inputs.base_branch
     )
 
 
@@ -254,8 +254,8 @@ def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
-    filename = "file1.md"
-    (path := tmp_path / "file1.md").touch()
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
@@ -284,7 +284,7 @@ def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
     assert returned_action.content_change.base == base_content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
-        path=filename, branch=user_inputs.base_branch
+        path=str(relative_path), branch=user_inputs.base_branch
     )
 
 
@@ -295,8 +295,8 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clie
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
-    filename = "file1.md"
-    (path := tmp_path / "file1.md").touch()
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     mocked_clients.discourse.retrieve_topic.return_value = content
@@ -325,7 +325,7 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clie
     assert returned_action.content_change.local == content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mocked_clients.repository.get_file_content.assert_called_once_with(
-        path=filename, branch=user_inputs.base_branch
+        path=str(relative_path), branch=user_inputs.base_branch
     )
 
 
