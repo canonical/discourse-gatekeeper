@@ -28,7 +28,7 @@ class BaseMetaFactory(Generic[T], factory.base.FactoryMetaClass):
 
 
 # The attributes of these classes are generators for the attributes of the meta class
-# mypy icorrectly believes the factories don't support metaclass
+# mypy incorrectly believes the factories don't support metaclass
 class PathInfoFactory(
     factory.Factory, metaclass=BaseMetaFactory[types_.PathInfo]  # type: ignore[misc]
 ):
