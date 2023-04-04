@@ -42,13 +42,16 @@ async def test_run_conflict(
         1. docs with an index and documentation file
         2. docs with a documentation file updated and discourse updated with non-conflicting
             content
-        3. docs with a documentation file updated and discourse updated with conflicting content
-        4. docs with a documentation file and discourse updated to resolve conflict
+        3. docs with a documentation file updated and discourse updated with conflicting content in
+            dry run mode
+        4. docs with a documentation file updated and discourse updated with conflicting content
+        5. docs with a documentation file and discourse updated to resolve conflict
     assert: then:
         1. the documentation page is created
         2. the documentation page is updated
         3. the documentation page is not updated
-        4. the documentation page is updated
+        4. the documentation page is not updated
+        5. the documentation page is updated
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
@@ -124,13 +127,47 @@ async def test_run_conflict(
         str(doc_file.relative_to(repository_path))
     )
 
-    # 3. docs with a documentation file updated and discourse updated with conflicting content
+    # 3. docs with a documentation file updated and discourse updated with conflicting content in
+    # dry run mode
     caplog.clear()
     doc_file.write_text(f"# {doc_title}\nline 1a\nline 2a\nline 3", encoding="utf-8")
     discourse_api.update_topic(
         url=doc_url, content=(doc_topic_content_3 := f"# {doc_title}\nline 1a\nline 2b\nline 3a")
     )
     mock_content_file.content = b64encode(doc_content_2.encode(encoding="utf-8"))
+
+    with pytest.raises(exceptions.InputError) as exc_info:
+        run(
+            base_path=repository_path,
+            discourse=discourse_api,
+            user_inputs=factories.UserInputsFactory(
+                dry_run=True, delete_pages=True, base_branch=None
+            ),
+        )
+
+    assert_substrings_in_string(
+        (
+            "could not automatically merge, conflicts:\\n",
+            "# doc title\\n",
+            "line 1a\\n",
+            "<<<<<<< HEAD\\n",
+            "line 2a\\n",
+            "line 3\\n",
+            "=======\\n",
+            "line 2b\\n",
+            "line 3a\\n",
+            ">>>>>>> theirs\\n",
+        ),
+        caplog.text,
+    )
+    assert_substrings_in_string(("actions", "not", "executed"), str(exc_info.value))
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert doc_table_line_1 in index_topic
+    doc_topic = discourse_api.retrieve_topic(url=doc_url)
+    assert doc_topic == doc_topic_content_3
+
+    # 4. docs with a documentation file updated and discourse updated with conflicting content
+    caplog.clear()
 
     with pytest.raises(exceptions.InputError) as exc_info:
         run(
@@ -162,7 +199,7 @@ async def test_run_conflict(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_topic_content_3
 
-    # 4. docs with a documentation file and discourse updated to resolve conflict
+    # 5. docs with a documentation file and discourse updated to resolve conflict
     caplog.clear()
     doc_file.write_text(
         doc_content_4 := f"# {doc_title}\nline 1a\nline 2c\nline 3a", encoding="utf-8"

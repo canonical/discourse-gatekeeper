@@ -64,18 +64,15 @@ def fixture_repository_path(tmp_path: Path) -> Path:
     return repo_path
 
 
+# upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
-    upstream_git_repo: Repo,
+    upstream_git_repo: Repo,  # pylint: disable=unused-argument
     upstream_repository_path: Path,
     repository_path: Path,
     test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
-    # uptream_repository is added to create a dependency for the current fixture in order to ensure
-    # that the repository can be cloned after the upstream has fully initialized.
-    del upstream_git_repo
-
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
     repo.git.fetch()
     repo.git.checkout(test_branch)
@@ -131,12 +128,9 @@ def fixture_patch_create_repository_client(
 ) -> None:
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
-    def mock_create_repository_client(access_token: str | None, base_path: Path):
+    def mock_create_repository_client(**_kwargs):
         """Mock create_repository_client patch function."""  # noqa: DCO020
         # to accept keywords as arguments
-        del access_token
-        del base_path
-
         return repository_client  # noqa: DCO030
 
     monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)
