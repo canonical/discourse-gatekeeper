@@ -130,7 +130,6 @@ def fixture_patch_create_repository_client(
 
     def mock_create_repository_client(**_kwargs):
         """Mock create_repository_client patch function."""  # noqa: DCO020
-        # to accept keywords as arguments
         return repository_client  # noqa: DCO030
 
     monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)
