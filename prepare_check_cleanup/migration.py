@@ -6,7 +6,6 @@
 import argparse
 import json
 import logging
-import os
 import sys
 from contextlib import suppress
 from enum import Enum
@@ -17,16 +16,16 @@ from github.GitRef import GitRef
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from prepare_check_cleanup import exit_
+from prepare_check_cleanup import exit_, output
+from src.constants import (
+    DOCUMENTATION_FOLDER_NAME,
+    DOCUMENTATION_INDEX_FILENAME,
+    NAVIGATION_TABLE_START,
+)
 from src.discourse import create_discourse
 from src.exceptions import DiscourseError
-from src.index import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_INDEX_FILENAME
-from src.pull_request import (
-    ACTIONS_PULL_REQUEST_TITLE,
-    DEFAULT_BRANCH_NAME,
-    create_repository_client,
-)
-from src.reconcile import NAVIGATION_TABLE_START
+from src.pull_request import DEFAULT_BRANCH_NAME
+from src.repository import ACTIONS_PULL_REQUEST_TITLE, create_repository_client
 
 
 class Action(str, Enum):
@@ -78,8 +77,7 @@ def main() -> None:
         case Action.CHECK_PULL_REQUEST.value:
             exit_.with_result(check_pull_request(**action_kwargs))
         case Action.CLEANUP.value:
-            cleanup(**action_kwargs)
-            sys.exit(0)
+            exit_.with_result(cleanup(**action_kwargs))
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
@@ -110,14 +108,8 @@ def prepare(index_filename: str, page_filename: str, discourse_config: dict[str,
 
     topics = {"index": index_url, "page": page_url}
 
-    github_output = os.getenv("GITHUB_OUTPUT")
-    assert github_output, (
-        "the GITHUB_OUTPUT environment variable is empty or defined, "
-        "is this running in a GitHub workflow?"
-    )
-    output_file = Path(github_output)
     topics_output = json.dumps(topics, separators=(",", ":")).replace('"', '\\"')
-    output_file.write_text(f"topics={topics_output}\nindex_url={index_url}\n", encoding="utf-8")
+    output.write(f"topics={topics_output}\nindex_url={index_url}\n")
 
 
 def _create_repository_client(github_access_token: str) -> Repository:
@@ -258,14 +250,19 @@ def check_pull_request(github_access_token: str) -> bool:
 
 def cleanup(
     topics: dict[str, str], github_access_token: str, discourse_config: dict[str, str]
-) -> None:
+) -> bool:
     """Clean up testing artifacts on GitHub and Discourse.
 
     Args:
         topics: The discourse topics created for the migration.
         github_access_token: The secret required for interactions with GitHub.
         discourse_config: Details required to communicate with discourse.
+
+    Returns:
+        Whether the cleanup succeeded.
     """
+    result = True
+
     # Delete discourse topics
     discourse = create_discourse(**discourse_config)
     try:
@@ -273,6 +270,7 @@ def cleanup(
             discourse.delete_topic(url=topic_url)
     except DiscourseError as exc:
         logging.exception("cleanup failed for discourse, %s", exc)
+        result = False
 
     github_repo = _create_repository_client(github_access_token=github_access_token)
     # Delete the migration PR
@@ -282,6 +280,7 @@ def cleanup(
             migration_pull_request.edit(state="closed")
     except GithubException as exc:
         logging.exception("cleanup failed for migration pull request, %s", exc)
+        result = False
     # Delete the migration branch
     try:
         migration_branch = _get_migration_branch(github_repo=github_repo)
@@ -289,6 +288,9 @@ def cleanup(
             migration_branch.delete()
     except GithubException as exc:
         logging.exception("cleanup failed for migration branch, %s", exc)
+        result = False
+
+    return result
 
 
 if __name__ == "__main__":

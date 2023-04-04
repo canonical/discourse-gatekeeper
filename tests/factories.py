@@ -7,6 +7,7 @@
 # pylint: disable=too-few-public-methods
 
 from pathlib import Path
+from typing import Generic, TypeVar
 
 import factory
 
@@ -14,9 +15,23 @@ from src import types_
 
 from . import types
 
+T = TypeVar("T")
+
+
+class BaseMetaFactory(Generic[T], factory.base.FactoryMetaClass):
+    """Used for type hints of factories."""
+
+    # No need for docstring because it is used for type hints
+    def __call__(cls, *args, **kwargs) -> T:  # noqa: N805
+        """Used for type hints of factories."""  # noqa: DCO020
+        return super().__call__(*args, **kwargs)  # noqa: DCO030
+
 
 # The attributes of these classes are generators for the attributes of the meta class
-class PathInfoFactory(factory.Factory):
+# mypy incorrectly believes the factories don't support metaclass
+class PathInfoFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.PathInfo]  # type: ignore[misc]
+):
     # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
     # can be skipped.
     """Generate PathInfos."""  # noqa: DCO060
@@ -34,7 +49,9 @@ class PathInfoFactory(factory.Factory):
     alphabetical_rank = factory.Sequence(lambda n: n)
 
 
-class ActionReportFactory(factory.Factory):
+class ActionReportFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.ActionReport]  # type: ignore[misc]
+):
     """Generate Action reports."""  # noqa: DCO060
 
     class Meta:
@@ -71,7 +88,123 @@ class ActionReportFactory(factory.Factory):
     reason = None
 
 
-class ContentPageFactory(factory.Factory):
+class CreateActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreateAction]  # type: ignore[misc]
+):
+    """Generate CreateActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreateAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NavlinkFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.Navlink]  # type: ignore[misc]
+):
+    """Generate Navlink."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.Navlink
+        abstract = False
+
+    title = factory.Sequence(lambda n: f"navlink-title-{n}")
+    link = factory.Sequence(lambda n: f"navlink-{n}")
+
+
+class NoopActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopAction]  # type: ignore[misc]
+):
+    """Generate NoopActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink = factory.SubFactory(NavlinkFactory)
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NavlinkChangeFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NavlinkChange]  # type: ignore[misc]
+):
+    """Generate NavlinkChange."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NavlinkChange
+        abstract = False
+
+    old = factory.SubFactory(NavlinkFactory)
+    new = factory.SubFactory(NavlinkFactory)
+
+
+class ContentChangeFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.ContentChange]  # type: ignore[misc]
+):
+    """Generate ContentChange."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.ContentChange
+        abstract = False
+
+    base = factory.Sequence(lambda n: f"base {n}")
+    server = factory.Sequence(lambda n: f"server {n}")
+    local = factory.Sequence(lambda n: f"local {n}")
+
+
+class UpdateActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateAction]  # type: ignore[misc]
+):
+    """Generate UpdateActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UpdateAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink_change = factory.SubFactory(NavlinkChangeFactory)
+    content_change = factory.SubFactory(ContentChangeFactory)
+
+
+class DeleteActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteAction]  # type: ignore[misc]
+):
+    """Generate DeleteActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: f"path {n}")
+    navlink = factory.SubFactory(NavlinkFactory)
+    content = factory.Sequence(lambda n: f"content {n}")
+
+
+class ContentPageFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types.DiscoursePageMeta]  # type: ignore[misc]
+):
     """Generate discourse content page."""  # noqa: DCO060
 
     class Meta:
@@ -84,7 +217,9 @@ class ContentPageFactory(factory.Factory):
     content = factory.Sequence(lambda n: f"Content {n}")
 
 
-class UserInputDiscourseFactory(factory.Factory):
+class UserInputDiscourseFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UserInputsDiscourse]  # type: ignore[misc]
+):
     """Generate user input tuple."""  # noqa: DCO060
 
     class Meta:
@@ -99,7 +234,9 @@ class UserInputDiscourseFactory(factory.Factory):
     api_key = factory.Sequence(lambda n: f"discourse-test-key-{n}")
 
 
-class UserInputFactory(factory.Factory):
+class UserInputsFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UserInputs]  # type: ignore[misc]
+):
     """Generate user input tuple."""  # noqa: DCO060
 
     class Meta:
@@ -110,11 +247,14 @@ class UserInputFactory(factory.Factory):
 
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
+    base_branch = factory.Sequence(lambda n: f"base-branch-{n}")
     dry_run = False
     delete_pages = False
 
 
-class TableRowFactory(factory.Factory):
+class TableRowFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.TableRow]  # type: ignore[misc]
+):
     """Generate table row."""  # noqa: DCO060
 
     class Meta:
@@ -142,4 +282,4 @@ class TableRowFactory(factory.Factory):
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: f"path-{n}")
-    navlink = factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}"))
+    navlink = factory.SubFactory(NavlinkFactory)

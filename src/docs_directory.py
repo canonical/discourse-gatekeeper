@@ -9,7 +9,7 @@ from itertools import count
 from pathlib import Path
 
 from . import types_
-from .index import DOCUMENTATION_FOLDER_NAME
+from .constants import DOCUMENTATION_FOLDER_NAME
 
 
 def _get_directories_files(docs_path: Path) -> list[Path]:

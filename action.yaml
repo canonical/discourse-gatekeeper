@@ -40,6 +40,12 @@ inputs:
       Required if running in migration mode.
     required: false
     type: string
+  base_branch:
+    description: |
+      The name of the branch that contains the documentation after it has been uploaded to
+      discourse. Defaults to the default branch of the repository.
+    required: false
+    type: string
 outputs:
   urls_with_actions:
     description: |

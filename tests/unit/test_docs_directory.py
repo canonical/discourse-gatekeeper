@@ -272,14 +272,15 @@ def test__get_path_info(tmp_path: Path):
     act: when _get_path_info is called with the docs director
     assert: then the expected local path, level, table path and navlink title is returned.
     """
-    (path := tmp_path / "dir1").mkdir()
+    rel_path = "dir1"
+    (path := tmp_path / rel_path).mkdir()
     alphabetical_rank = 1
 
     returned_path_info = docs_directory._get_path_info(
         path=path, alphabetical_rank=alphabetical_rank, docs_path=tmp_path
     )
 
-    assert returned_path_info == (path, 1, "dir1", "Dir1", alphabetical_rank)
+    assert returned_path_info == (path, 1, rel_path, "Dir1", alphabetical_rank)
 
 
 # Pylint diesn't understand how the walrus operator works

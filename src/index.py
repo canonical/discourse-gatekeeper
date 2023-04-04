@@ -5,13 +5,14 @@
 
 from pathlib import Path
 
+from .constants import (
+    DOCUMENTATION_FOLDER_NAME,
+    DOCUMENTATION_INDEX_FILENAME,
+    NAVIGATION_TABLE_START,
+)
 from .discourse import Discourse
 from .exceptions import DiscourseError, ServerError
-from .reconcile import NAVIGATION_TABLE_START
 from .types_ import Index, IndexFile, Metadata, Page
-
-DOCUMENTATION_FOLDER_NAME = "docs"
-DOCUMENTATION_INDEX_FILENAME = "index.md"
 
 
 def _read_docs_index(base_path: Path) -> str | None:

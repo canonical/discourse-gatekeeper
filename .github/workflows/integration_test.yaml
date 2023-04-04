@@ -8,4 +8,4 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
-      modules: '["discourse", "reconcile", "migrate"]'
+      modules: '["discourse", "reconcile", "conflict", "migrate"]'

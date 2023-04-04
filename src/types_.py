@@ -9,6 +9,9 @@ from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
+from .discourse import Discourse
+from .repository import Client as RepositoryClient
+
 
 class UserInputsDiscourse(typing.NamedTuple):
     """Configurable user input values used to run upload-charm-docs.
@@ -37,12 +40,14 @@ class UserInputs(typing.NamedTuple):
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
+        base_branch: The branch the documentation is stored on after updating discourse.
     """
 
     discourse: UserInputsDiscourse
     dry_run: bool
     delete_pages: bool
     github_access_token: str | None
+    base_branch: str | None
 
 
 class Metadata(typing.NamedTuple):
@@ -252,12 +257,14 @@ class ContentChange(typing.NamedTuple):
     """Represents a change to the content.
 
     Attrs:
-        old: The previous content.
-        new: The new content.
+        base: The content which is the base for comparison.
+        server: The content on the server.
+        local: The content on the local disk.
     """
 
-    old: Content | None
-    new: Content | None
+    base: Content | None
+    server: Content
+    local: Content
 
 
 class IndexContentChange(typing.NamedTuple):
@@ -399,3 +406,15 @@ class IndexDocumentMeta(MigrationFileMeta):
     """
 
     content: str
+
+
+class Clients(typing.NamedTuple):
+    """Collection of clients needed during execution.
+
+    Attrs:
+        discourse: Discourse client.
+        repository: Client for the repository.
+    """
+
+    discourse: Discourse
+    repository: RepositoryClient

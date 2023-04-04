@@ -8,6 +8,7 @@
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 import pytest
@@ -180,7 +181,7 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
             doc_row := factories.TableRowFactory(is_document=True, path="doc-1"),
             Path(),
             types_.DocumentMeta(
-                path=Path("doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+                path=Path("doc-1.md"), link=cast(str, doc_row.navlink.link), table_row=doc_row
             ),
             id="single doc file",
         ),
@@ -188,7 +189,9 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
             doc_row := factories.TableRowFactory(is_document=True, path="group-1-doc-1"),
             Path("group-1"),
             types_.DocumentMeta(
-                path=Path("group-1/doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+                path=Path("group-1/doc-1.md"),
+                link=cast(str, doc_row.navlink.link),
+                table_row=doc_row,
             ),
             id="nested doc file",
         ),
@@ -196,7 +199,9 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
             doc_row := factories.TableRowFactory(is_document=True, path="group-2-doc-1"),
             Path("group-1"),
             types_.DocumentMeta(
-                path=Path("group-1/group-2-doc-1.md"), link=doc_row.navlink.link, table_row=doc_row
+                path=Path("group-1/group-2-doc-1.md"),
+                link=cast(str, doc_row.navlink.link),
+                table_row=doc_row,
             ),
             id="typo in nested doc file path",
         ),
@@ -265,7 +270,9 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),),
             (
                 types_.DocumentMeta(
-                    path=Path("doc-1.md"), link=doc_row_1.navlink.link, table_row=doc_row_1
+                    path=Path("doc-1.md"),
+                    link=cast(str, cast(str, doc_row_1.navlink.link)),
+                    table_row=doc_row_1,
                 ),
             ),
             id="single initial document",
@@ -282,10 +289,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             ),
             (
                 types_.DocumentMeta(
-                    path=Path("doc-1.md"), link=doc_row_1.navlink.link, table_row=doc_row_1
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
                 ),
                 types_.DocumentMeta(
-                    path=Path("doc-2.md"), link=doc_row_2.navlink.link, table_row=doc_row_2
+                    path=Path("doc-2.md"),
+                    link=cast(str, doc_row_2.navlink.link),
+                    table_row=doc_row_2,
                 ),
             ),
             id="two documents",
@@ -308,7 +319,9 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             ),
             (
                 types_.DocumentMeta(
-                    path=Path("doc-1.md"), link=doc_row_1.navlink.link, table_row=doc_row_1
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
                 ),
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
             ),
@@ -322,7 +335,9 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
                 types_.DocumentMeta(
-                    path=Path("doc-1.md"), link=doc_row_1.navlink.link, table_row=doc_row_1
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
                 ),
             ),
             id="distinct group and document",
@@ -335,7 +350,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.DocumentMeta(
                     path=Path("group-1/doc-1.md"),
-                    link=doc_row_1.navlink.link,
+                    link=cast(str, doc_row_1.navlink.link),
                     table_row=doc_row_1,
                 ),
             ),
@@ -372,7 +387,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
                 types_.DocumentMeta(
                     path=Path("doc-1.md"),
-                    link=doc_row_1.navlink.link,
+                    link=cast(str, doc_row_1.navlink.link),
                     table_row=doc_row_1,
                 ),
                 types_.GitkeepMeta(path=Path("group-2/.gitkeep"), table_row=group_row_2),
@@ -390,7 +405,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.DocumentMeta(
                     path=Path("group-1/doc-1.md"),
-                    link=nested_doc_row_1.navlink.link,
+                    link=cast(str, nested_doc_row_1.navlink.link),
                     table_row=nested_doc_row_1,
                 ),
                 types_.GitkeepMeta(path=Path("group-2/.gitkeep"), table_row=group_row_2),
@@ -410,7 +425,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.DocumentMeta(
                     path=Path("group-1/doc-1.md"),
-                    link=nested_doc_row_1.navlink.link,
+                    link=cast(str, nested_doc_row_1.navlink.link),
                     table_row=nested_doc_row_1,
                 ),
                 types_.GitkeepMeta(
@@ -432,12 +447,12 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.DocumentMeta(
                     path=Path("group-1/doc-1.md"),
-                    link=nested_doc_row_1.navlink.link,
+                    link=cast(str, nested_doc_row_1.navlink.link),
                     table_row=nested_doc_row_1,
                 ),
                 types_.DocumentMeta(
                     path=Path("group-1/doc-2.md"),
-                    link=nested_doc_row_2.navlink.link,
+                    link=cast(str, nested_doc_row_2.navlink.link),
                     table_row=nested_doc_row_2,
                 ),
             ),
@@ -457,7 +472,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
                 ),
                 types_.DocumentMeta(
                     path=Path("doc-1.md"),
-                    link=doc_row_1.navlink.link,
+                    link=cast(str, doc_row_1.navlink.link),
                     table_row=doc_row_1,
                 ),
             ),
@@ -479,7 +494,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
                 ),
                 types_.DocumentMeta(
                     path=Path("group-1/doc-1.md"),
-                    link=nested_doc_row_1.navlink.link,
+                    link=cast(str, nested_doc_row_1.navlink.link),
                     table_row=nested_doc_row_1,
                 ),
             ),
@@ -498,7 +513,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             (
                 types_.DocumentMeta(
                     path=Path("group-1/group-2/doc-1.md"),
-                    link=nested_doc_row_1.navlink.link,
+                    link=cast(str, nested_doc_row_1.navlink.link),
                     table_row=nested_doc_row_1,
                 ),
             ),

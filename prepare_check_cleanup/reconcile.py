@@ -9,25 +9,36 @@ import json
 import logging
 import sys
 from enum import Enum
+from pathlib import Path
 
-from prepare_check_cleanup import exit_
+from github import Github
+from github.GithubException import GithubException, UnknownObjectException
+
+from prepare_check_cleanup import exit_, output
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
+from src.pull_request import BRANCH_PREFIX
+
+_UPDATE_BRANCH = f"{BRANCH_PREFIX}/update-test"
 
 
 class Action(str, Enum):
     """The actions the utility can take.
 
     Attrs:
-        CHECK_DRAFT: Check that the draft integration test succeeded.
-        CHECK_CREATE: Check that the create integration test succeeded.
-        CHECK_DELETE_TOPICS: Check that the delete_topics integration test succeeded.
-        CHECK_DELETE: Check that the delete integration test succeeded.
+        CHECK_DRAFT: Check that the draft e2e test succeeded.
+        CHECK_CREATE: Check that the create e2e test succeeded.
+        PREPARE_UPDATE: Prepare for the update test.
+        CHECK_UPDATE: Check that the update e2e test succeeded.
+        CHECK_DELETE_TOPICS: Check that the delete_topics e2e test succeeded.
+        CHECK_DELETE: Check that the delete e2e test succeeded.
         CLEANUP: Discourse cleanup after the testing.
     """
 
     CHECK_DRAFT = "check-draft"
     CHECK_CREATE = "check-create"
+    PREPARE_UPDATE = "prepare-update"
+    CHECK_UPDATE = "check-update"
     CHECK_DELETE_TOPICS = "check-delete-topics"
     CHECK_DELETE = "check-delete"
     CLEANUP = "cleanup"
@@ -71,6 +82,15 @@ def main() -> None:
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
+        case Action.PREPARE_UPDATE.value:
+            prepare_update(**action_kwargs)
+            sys.exit(0)
+        case Action.CHECK_UPDATE.value:
+            exit_.with_result(
+                check_update(
+                    urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
+                )
+            )
         case Action.CHECK_DELETE_TOPICS.value:
             exit_.with_result(
                 check_delete_topics(
@@ -84,8 +104,9 @@ def main() -> None:
                 )
             )
         case Action.CLEANUP.value:
-            cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
-            sys.exit(0)
+            exit_.with_result(
+                cleanup(urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs)
+            )
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
@@ -161,7 +182,7 @@ def _check_url_result(
     if sorted(results := urls_with_actions.values()) != sorted(expected_result):
         logging.error(
             "%s check failed, the result is not as expected, "
-            "expected: %s, got: %s, urls_with_actions=%s",
+            "got: %s, expected: %s, urls_with_actions=%s",
             test_name,
             results,
             expected_result,
@@ -212,6 +233,84 @@ def check_create(
         Whether the test succeeded.
     """
     test_name = "create"
+    if not _check_url_count(
+        urls_with_actions=urls_with_actions,
+        expected_count=len(expected_url_results),
+        test_name=test_name,
+    ):
+        return False
+
+    if not _check_url_result(
+        urls_with_actions=urls_with_actions,
+        expected_result=expected_url_results,
+        test_name=test_name,
+    ):
+        return False
+
+    if not _check_url_retrieve(
+        urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
+    ):
+        return False
+
+    logging.info("%s check succeeded", test_name)
+    return True
+
+
+def prepare_update(github_token: str, repo: str, filename: str) -> None:
+    """Prepare for the update action.
+
+    Create a branch and push a file to that branch.
+
+    Args:
+        github_token: Token for communication with GitHub.
+        repo: The name of the repository.
+        filename: The name of the file to push to the branch.
+    """
+    github_client = Github(login_or_token=github_token)
+    github_repo = github_client.get_repo(repo)
+    base = github_repo.get_branch(github_repo.default_branch)
+    github_repo.create_git_ref(ref=f"refs/heads/{_UPDATE_BRANCH}", sha=base.commit.sha)
+
+    # Delete the file if it already exists in the branch
+    with contextlib.suppress(UnknownObjectException):
+        contents = github_repo.get_contents(filename, ref=_UPDATE_BRANCH)
+        assert not isinstance(contents, list)
+        assert isinstance(contents.path, str)
+        github_repo.delete_file(
+            contents.path,
+            "remove pre-existing file for update test",
+            contents.sha,
+            branch=_UPDATE_BRANCH,
+        )
+
+    # Create the file in the branch
+    github_repo.create_file(
+        filename,
+        "file for update test",
+        Path(filename).read_text(encoding="utf-8"),
+        branch=_UPDATE_BRANCH,
+    )
+
+    output.write(f"update_branch={_UPDATE_BRANCH}\n")
+
+
+def check_update(
+    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
+) -> bool:
+    """Check that the update test succeeded.
+
+    Success is indicated by that there are the expected number of URLs with the expected result and
+    that retrieving the URLs succeeds.
+
+    Args:
+        urls_with_actions: The URLs that had any actions against them.
+        discourse: Client to the documentation server.
+        expected_url_results: The expected url results.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    test_name = "update"
     if not _check_url_count(
         urls_with_actions=urls_with_actions,
         expected_count=len(expected_url_results),
@@ -328,16 +427,39 @@ def check_delete(
     return True
 
 
-def cleanup(urls_with_actions: dict[str, str], discourse: Discourse) -> None:
+def cleanup(
+    urls_with_actions: dict[str, str], discourse: Discourse, github_token: str, repo: str
+) -> bool:
     """Delete all URLs.
 
     Args:
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
+        github_token: Token for communication with GitHub.
+        repo: The name of the repository.
+
+    Returns:
+        Whether the cleanup succeeded.
     """
+    result = True
+
     for url in urls_with_actions.keys():
-        with contextlib.suppress(DiscourseError):
+        try:
             discourse.delete_topic(url=url)
+        except DiscourseError as exc:
+            logging.exception("cleanup failed for discourse, %s", exc)
+            result = False
+
+    try:
+        github_client = Github(login_or_token=github_token)
+        github_repo = github_client.get_repo(repo)
+        update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
+        update_branch.delete()
+    except GithubException as exc:
+        logging.exception("cleanup failed for GitHub, %s", exc)
+        result = False
+
+    return result
 
 
 if __name__ == "__main__":

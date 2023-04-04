@@ -37,8 +37,8 @@ def fixture_test_branch() -> str:
     return "test"
 
 
-@pytest.fixture(name="upstream_repository")
-def fixture_upstream_repository(
+@pytest.fixture(name="upstream_git_repo")
+def fixture_upstream_git_repo(
     upstream_repository_path: Path, default_branch: str, test_branch: str
 ) -> Repo:
     """Initialize upstream repository."""
@@ -64,18 +64,15 @@ def fixture_repository_path(tmp_path: Path) -> Path:
     return repo_path
 
 
-@pytest.fixture(name="repository")
-def fixture_repository(
-    upstream_repository: Repo,
+# upstream_git_repo is required although not used
+@pytest.fixture(name="git_repo")
+def fixture_git_repo(
+    upstream_git_repo: Repo,  # pylint: disable=unused-argument
     upstream_repository_path: Path,
     repository_path: Path,
     test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
-    # uptream_repository is added to create a dependency for the current fixture in order to ensure
-    # that the repository can be cloned after the upstream has fully initialized.
-    del upstream_repository
-
     repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
     repo.git.fetch()
     repo.git.checkout(test_branch)
@@ -119,10 +116,10 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    repository: Repo, mock_github_repo: Repository
+    git_repo: Repo, mock_github_repo: Repository
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
-    return pull_request.RepositoryClient(repository=repository, github_repository=mock_github_repo)
+    return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
 
 
 @pytest.fixture(name="patch_create_repository_client")
@@ -131,12 +128,8 @@ def fixture_patch_create_repository_client(
 ) -> None:
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
-    def mock_create_repository_client(access_token: str | None, base_path: Path):
+    def mock_create_repository_client(**_kwargs):
         """Mock create_repository_client patch function."""  # noqa: DCO020
-        # to accept keywords as arguments
-        del access_token
-        del base_path
-
         return repository_client  # noqa: DCO030
 
     monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)

@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, index, types_
+from src import constants, discourse, index, types_
 from src.exceptions import DiscourseError, ServerError
 
 from .helpers import assert_substrings_in_string
@@ -34,7 +34,7 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then None is returned.
     """
-    docs_directory = tmp_path / index.DOCUMENTATION_FOLDER_NAME
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
     docs_directory.mkdir()
 
     returned_content = index._read_docs_index(base_path=tmp_path)
@@ -123,7 +123,7 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     "page, expected_content",
     [
         pytest.param(
-            index.NAVIGATION_TABLE_START,
+            constants.NAVIGATION_TABLE_START,
             "",
             id="navigation table only",
         ),
@@ -138,12 +138,12 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
             id="multiline content only",
         ),
         pytest.param(
-            f"{(content := 'Page content')}{index.NAVIGATION_TABLE_START}",
+            f"{(content := 'Page content')}{constants.NAVIGATION_TABLE_START}",
             content,
             id="page with content and navigation table",
         ),
         pytest.param(
-            f"{(content := 'page content')}{index.NAVIGATION_TABLE_START}\ncontent-afterwards",
+            f"{(content := 'page content')}{constants.NAVIGATION_TABLE_START}\ncontent-afterwards",
             content,
             id="page with content after the navigation table",
         ),
