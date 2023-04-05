@@ -357,7 +357,7 @@ def test_get_file_content_branch(monkeypatch: pytest.MonkeyPatch, repository_cli
     path = "path 1"
     branch = "branch 1"
 
-    returned_content = repository_client.get_file_content(path=path, branch=branch)
+    returned_content = repository_client.get_file_content(path=path, ref=branch)
 
     assert returned_content == content
     mock_github_repository.get_contents.assert_called_once_with(path, branch)

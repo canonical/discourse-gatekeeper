@@ -141,12 +141,12 @@ class Client:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_file_content(self, path: str, branch: str | None = None) -> str:
-        """Get the content of a file from the default branch.
+    def get_file_content(self, path: str, ref: str | None = None) -> str:
+        """Get the content of a file from the default branch or a specific ref.
 
         Args:
             path: The path to the file.
-            branch: The branch to retrieve the file from.
+            ref: The branch, commit SHA or similar ref to retrieve the file from.
 
         Returns:
             The content of the file on the default branch.
@@ -159,8 +159,8 @@ class Client:
         try:
             content_file = (
                 self._github_repo.get_contents(path)
-                if branch is None
-                else self._github_repo.get_contents(path, branch)
+                if ref is None
+                else self._github_repo.get_contents(path, ref)
             )
         except UnknownObjectException as exc:
             raise RepositoryFileNotFoundError(
