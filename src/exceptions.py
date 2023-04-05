@@ -48,5 +48,9 @@ class RepositoryFileNotFoundError(BaseError):
     """A problem retrieving a file from a git repository occurred."""
 
 
+class RepositoryTagNotFoundError(BaseError):
+    """A problem retrieving a tag from a git repository occurred."""
+
+
 class ContentError(BaseError):
     """A problem with the content occurred."""
