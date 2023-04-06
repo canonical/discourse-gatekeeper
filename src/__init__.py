@@ -99,6 +99,13 @@ def _run_migrate(base_path: Path, metadata: Metadata, clients: Clients) -> dict[
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
+
+    # Remove docs folder and recreate content from discourse
+    docs_path = base_path / DOCUMENTATION_FOLDER_NAME
+
+    if docs_path.exists():
+        docs_path.rmdir()
+
     index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
@@ -112,7 +119,16 @@ def _run_migrate(base_path: Path, metadata: Metadata, clients: Clients) -> dict[
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
 
-    pr_link = create_pull_request(repository=clients.repository)
+    # Check difference with main
+    if not repository.is_dirty(default_branch):
+        return ...
+
+    pull_request = repository.get_or_create_pull_request("upload-charm-docs/migrate")
+
+    if repository.is_dirty(pull_request.head.ref):
+        repository.update_branch("time and date or relevant message")
+
+    # pr_link = create_pull_request(repository=repository)
 
     return {pr_link: ActionResult.SUCCESS}
 
@@ -137,8 +153,14 @@ def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[
         access_token=user_inputs.github_access_token, base_path=base_path
     )
     clients = Clients(discourse=discourse, repository=repository)
-    if metadata.docs and not has_docs_dir:
-        return _run_migrate(base_path=base_path, metadata=metadata, clients=clients)
+
+    # Run this only if the reference to discourse exists
+    if metadata.docs:
+        return _run_migrate(
+            base_path=base_path,
+            metadata=metadata,
+            clients=clients
+        )
     if has_docs_dir:
         return _run_reconcile(
             base_path=base_path, metadata=metadata, clients=clients, user_inputs=user_inputs

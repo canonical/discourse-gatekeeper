@@ -128,6 +128,10 @@ def main() -> None:
         api_username=user_inputs.discourse.api_username,
         api_key=user_inputs.discourse.api_key,
     )
+
+
+
+
     urls_with_actions_dict = run(
         base_path=pathlib.Path(),
         discourse=discourse,
