@@ -22,7 +22,12 @@ from github.Repository import Repository
 
 from src import repository
 from src.constants import DOCUMENTATION_FOLDER_NAME
-from src.exceptions import InputError, RepositoryClientError, RepositoryFileNotFoundError
+from src.exceptions import (
+    InputError,
+    RepositoryClientError,
+    RepositoryFileNotFoundError,
+    RepositoryTagNotFoundError,
+)
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
@@ -243,6 +248,165 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     returned_url = repository_client.create_pull_request("branchname-1")
 
     assert returned_url == mock_pull_request.html_url
+
+
+def test_get_tag_file_content_tag_github_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that raises an exception during
+        tag operations
+    act: when get_tag_file_content is called
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_git_ref.side_effect = [
+        GithubException(status=401, data="unauthorized", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_tag_file_content(path="path 1", tag_name="tag 1")
+
+    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+
+
+def test_get_tag_file_content_tag_unknown_object_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that raises an
+        UnknownObjectException exception during tag operations
+    act: when get_tag_file_content is called
+    assert: RepositoryFileNotFoundError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_git_ref.side_effect = [
+        UnknownObjectException(status=404, data="File not found error", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+
+    with pytest.raises(RepositoryTagNotFoundError) as exc:
+        repository_client.get_tag_file_content(path="path 1", tag_name=tag_name)
+
+    assert_substrings_in_string(("not", "retrieve", "tag", tag_name), str(exc.value).lower())
+
+
+def test_get_tag_file_content_content_github_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that raises an exception during
+        content operations
+    act: when get_tag_file_content is called
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.side_effect = [
+        GithubException(status=401, data="unauthorized", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.get_tag_file_content(path="path 1", tag_name="tag 1")
+
+    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+
+
+def test_get_tag_file_content_unknown_object_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that raises an
+        UnknownObjectException exception during content operations
+    act: when get_tag_file_content is called
+    assert: RepositoryFileNotFoundError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.side_effect = [
+        UnknownObjectException(status=404, data="File not found error", headers=None)
+    ]
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    path = "path 1"
+
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
+        repository_client.get_tag_file_content(path=path, tag_name=tag_name)
+
+    assert_substrings_in_string(
+        ("not", "retrieve", "file", tag_name, path), str(exc.value).lower()
+    )
+
+
+def test_get_tag_file_content_list(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+    """
+    arrange: given Client with a mocked github repository client that returns a list
+    act: when get_tag_file_content is called
+    assert: RepositoryFileNotFoundError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_contents.return_value = []
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    path = "path 1"
+
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
+        repository_client.get_tag_file_content(path=path, tag_name=tag_name)
+
+    assert_substrings_in_string(
+        ("path", "matched", "more", "file", tag_name, path), str(exc.value).lower()
+    )
+
+
+def test_get_tag_file_content_content_none(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked github repository client that returns None
+        content
+    act: when get_tag_file_content is called
+    assert: RepositoryFileNotFoundError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    mock_content_file.content = None
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    path = "path 1"
+
+    with pytest.raises(RepositoryFileNotFoundError) as exc:
+        repository_client.get_tag_file_content(path=path, tag_name=tag_name)
+
+    assert_substrings_in_string(("path", "not", "file", path, tag_name), str(exc.value).lower())
+
+
+def test_get_tag_file_content(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+    """
+    arrange: given path, Client with a mocked github repository client that returns content
+    act: when get_tag_file_content is called with the path
+    assert: then the content is returned.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    content = "content 1"
+    mock_content_file.content = base64.b64encode(content.encode(encoding="utf-8"))
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    path = "path 1"
+
+    returned_content = repository_client.get_tag_file_content(path=path, tag_name=tag_name)
+
+    assert returned_content == content
+    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
+    mock_github_repository.get_git_tag.assert_called_once_with(
+        mock_github_repository.get_git_ref.return_value.object.sha
+    )
+    mock_github_repository.get_contents.assert_called_once_with(
+        path, mock_github_repository.get_git_tag.return_value.object.sha
+    )
 
 
 def test_get_file_content_github_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):

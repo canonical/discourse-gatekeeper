@@ -205,16 +205,20 @@ class Client:
             content_file = self._github_repo.get_contents(path, git_tag.object.sha)
         except UnknownObjectException as exc:
             raise RepositoryFileNotFoundError(
-                f"Could not retrieve the file at {path=}. {exc=!r}"
+                f"Could not retrieve the file at {path=} for tag {tag_name}. {exc=!r}"
             ) from exc
         except GithubException as exc:
             raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
 
         if isinstance(content_file, list):
-            raise RepositoryFileNotFoundError(f"Path matched more than one file {path=}.")
+            raise RepositoryFileNotFoundError(
+                f"Path matched more than one file {path=} for tag {tag_name}."
+            )
 
         if content_file.content is None:
-            raise RepositoryFileNotFoundError(f"Path did not match a file {path=}.")
+            raise RepositoryFileNotFoundError(
+                f"Path did not match a file {path=} for tag {tag_name}."
+            )
 
         return base64.b64decode(content_file.content).decode("utf-8")
 
