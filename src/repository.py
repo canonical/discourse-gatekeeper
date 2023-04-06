@@ -159,17 +159,17 @@ class Client:
         Raises:
             RepositoryClientError: if there is a problem with communicating with GitHub
         """
-        # Delete the tag if it exists
-        with suppress(UnknownObjectException):
-            tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
-            tag_ref.delete()
-
-        # Create the new tag
         try:
+            # Delete the tag if it exists
+            with suppress(UnknownObjectException):
+                tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
+                tag_ref.delete()
+
+            # Create the new tag
             tag_object = self._github_repo.create_git_tag(
                 tag_name, TAG_MESSAGE, commit_sha, "commit"
             )
-            self._github_repo.create_git_ref(f"refs/tags/{tag_object.tag}", tag_object.sha)
+            self._github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
         except GithubException as exc:
             raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
 

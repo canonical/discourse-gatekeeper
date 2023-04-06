@@ -250,6 +250,108 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     assert returned_url == mock_pull_request.html_url
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        pytest.param("get_git_ref", id="get_git_ref"),
+        pytest.param("create_git_tag", id="create_git_tag"),
+        pytest.param("create_git_ref", id="create_git_ref"),
+    ],
+)
+def test_tag_commit_tag_github_error(
+    method: str, monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given tag name and commit sha, Client with a mocked github repository client where a
+        given method raises GithubException
+    act: when tag_commit is called with the tag name and commit sha
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    getattr(mock_github_repository, method).side_effect = GithubException(
+        status=401, data="Unauthorized", headers=None
+    )
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.tag_commit(tag_name="tag 1", commit_sha="sha 1")
+
+    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+
+
+def test_tag_commit_tag_delete_tag_github_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given tag name and commit sha, Client with a mocked github repository client where a
+        deleting a tag raises GithubException
+    act: when tag_commit is called with the tag name and commit sha
+    assert: RepositoryClientError is raised.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_git_ref.return_value.delete.side_effect = GithubException(
+        status=401, data="Unauthorized", headers=None
+    )
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.tag_commit(tag_name="tag 1", commit_sha="sha 1")
+
+    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+
+
+def test_tag_commit_tag_not_exists(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+    """
+    arrange: given tag name and commit sha, Client with a mocked github repository client where
+        retrieving the tag raises UnknownObjectException
+    act: when tag_commit is called with the tag name and commit sha
+    assert: then the functions are called to create the tag.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_git_ref.side_effect = UnknownObjectException(
+        status=404, data="Tag not found error", headers=None
+    )
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    commit_sha = "sha 1"
+
+    repository_client.tag_commit(tag_name=tag_name, commit_sha=commit_sha)
+
+    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
+    mock_github_repository.get_git_ref.return_value.delete.assert_not_called()
+
+    mock_github_repository.create_git_tag.assert_called_once_with(
+        tag_name, repository.TAG_MESSAGE, commit_sha, "commit"
+    )
+    mock_github_repository.create_git_ref.assert_called_once_with(
+        f"refs/tags/{tag_name}", mock_github_repository.create_git_tag.return_value.sha
+    )
+
+
+def test_tag_commit_tag_exists(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+    """
+    arrange: given tag name and commit sha, Client with a mocked github repository client
+    act: when tag_commit is called with the tag name and commit sha
+    assert: then the functions are called to create the tag.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    commit_sha = "sha 1"
+
+    repository_client.tag_commit(tag_name=tag_name, commit_sha=commit_sha)
+
+    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
+    mock_github_repository.get_git_ref.return_value.delete.assert_called_once_with()
+
+    mock_github_repository.create_git_tag.assert_called_once_with(
+        tag_name, repository.TAG_MESSAGE, commit_sha, "commit"
+    )
+    mock_github_repository.create_git_ref.assert_called_once_with(
+        f"refs/tags/{tag_name}", mock_github_repository.create_git_tag.return_value.sha
+    )
+
+
 def test_get_tag_file_content_tag_github_error(
     monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
@@ -260,9 +362,9 @@ def test_get_tag_file_content_tag_github_error(
     assert: RepositoryClientError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_git_ref.side_effect = [
-        GithubException(status=401, data="unauthorized", headers=None)
-    ]
+    mock_github_repository.get_git_ref.side_effect = GithubException(
+        status=401, data="unauthorized", headers=None
+    )
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
@@ -281,9 +383,9 @@ def test_get_tag_file_content_tag_unknown_object_error(
     assert: RepositoryFileNotFoundError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_git_ref.side_effect = [
-        UnknownObjectException(status=404, data="File not found error", headers=None)
-    ]
+    mock_github_repository.get_git_ref.side_effect = UnknownObjectException(
+        status=404, data="File not found error", headers=None
+    )
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
     tag_name = "tag 1"
 
@@ -303,9 +405,9 @@ def test_get_tag_file_content_content_github_error(
     assert: RepositoryClientError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_contents.side_effect = [
-        GithubException(status=401, data="unauthorized", headers=None)
-    ]
+    mock_github_repository.get_contents.side_effect = GithubException(
+        status=401, data="unauthorized", headers=None
+    )
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
@@ -324,9 +426,9 @@ def test_get_tag_file_content_unknown_object_error(
     assert: RepositoryFileNotFoundError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_contents.side_effect = [
-        UnknownObjectException(status=404, data="File not found error", headers=None)
-    ]
+    mock_github_repository.get_contents.side_effect = UnknownObjectException(
+        status=404, data="File not found error", headers=None
+    )
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
     tag_name = "tag 1"
     path = "path 1"
@@ -384,8 +486,9 @@ def test_get_tag_file_content_content_none(
 
 def test_get_tag_file_content(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
-    arrange: given path, Client with a mocked github repository client that returns content
-    act: when get_tag_file_content is called with the path
+    arrange: given path, tag name, Client with a mocked github repository client that returns
+        content
+    act: when get_tag_file_content is called with the path and tag name
     assert: then the content is returned.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
