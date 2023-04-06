@@ -10,6 +10,19 @@ from pathlib import Path
 from . import exceptions, types_
 from .constants import NAVIGATION_TABLE_START
 from .discourse import Discourse
+from .repository import Client as RepositoryClient
+
+
+class Clients(typing.NamedTuple):
+    """Collection of clients needed during execution.
+
+    Attrs:
+        discourse: Discourse client.
+        repository: Client for the repository.
+    """
+
+    discourse: Discourse
+    repository: RepositoryClient
 
 
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
@@ -116,7 +129,7 @@ def _local_and_server_dir_local_group_server(
 
 
 def _local_and_server_file_local_group_server(
-    path_info: types_.PathInfo, table_row: types_.TableRow, clients: types_.Clients
+    path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
 ) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
     """Handle the case where the item is a file locally and a grouping on the server.
 
@@ -160,7 +173,7 @@ def _local_and_server_file_local_group_server(
 def _local_and_server_file_local_page_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
-    clients: types_.Clients,
+    clients: Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[
@@ -232,7 +245,7 @@ def _local_and_server_file_local_page_server(
 def _local_and_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
-    clients: types_.Clients,
+    clients: Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[
@@ -341,7 +354,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 def _calculate_action(
     path_info: types_.PathInfo | None,
     table_row: types_.TableRow | None,
-    clients: types_.Clients,
+    clients: Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
@@ -384,7 +397,7 @@ def _calculate_action(
 def run(
     path_infos: typing.Iterable[types_.PathInfo],
     table_rows: typing.Iterable[types_.TableRow],
-    clients: types_.Clients,
+    clients: Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:

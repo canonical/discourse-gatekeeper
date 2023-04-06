@@ -13,33 +13,44 @@ DEFAULT_BRANCH_NAME = f"{BRANCH_PREFIX}/migrate"
 ACTIONS_COMMIT_MESSAGE = "migrate docs from server"
 
 
-def create_pull_request(repository: RepositoryClient) -> str:
+def create_pull_request(repository: RepositoryClient, base: str) -> str:
     """Create pull request for changes in given repository path.
 
     Args:
         repository: A git client to interact with local and remote git repository.
+        base: base branch or tag against to which the PR is opened
 
     Raises:
-        InputError: if pull request branch name is invalid or the a branch
-        with same name already exists.
+        InputError: when the repository is not dirty, hence resulting on an empty pull-request
 
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    if not repository.is_dirty():
+    if not repository.is_dirty(base):
         raise InputError("No files seem to be migrated. Please add contents upstream first.")
-    if repository.check_branch_exists(branch_name=DEFAULT_BRANCH_NAME):
-        raise InputError(
-            f"Branch {DEFAULT_BRANCH_NAME} already exists."
-            f"Please try again after removing {DEFAULT_BRANCH_NAME}."
-        )
 
-    logging.info("create new branch %s", DEFAULT_BRANCH_NAME)
-    repository.create_branch(
-        branch_name=DEFAULT_BRANCH_NAME,
-        commit_msg=ACTIONS_COMMIT_MESSAGE,
-    )
-    logging.info("create pull request %s", DEFAULT_BRANCH_NAME)
-    pull_request_web_link = repository.create_pull_request(branch_name=DEFAULT_BRANCH_NAME)
+    with repository.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
+        DEFAULT_BRANCH_NAME
+    ) as repo:
+        msg = str(repo.summary)
+        logging.info("Creating new branch with new commit: %s", msg)
+        repo.update_branch(msg, force=True)
+        pr_link = repo.create_pull_request(DEFAULT_BRANCH_NAME)
+        logging.info("Opening new PR with community contribution: %s", pr_link)
 
-    return pull_request_web_link
+    return pr_link
+
+
+def update_pull_request(repository: RepositoryClient, branch: str) -> None:
+    """Update and push changes to the given branch.
+
+    Args:
+        repository: RepositoryClient object
+        branch: name of the branch to be updated
+    """
+    with repository.with_branch(branch) as repo:
+        if repo.is_dirty():
+            repo.pull()
+            msg = str(repo.summary)
+            logging.info("Updating PR with new commit: %s", msg)
+            repo.update_branch(msg)

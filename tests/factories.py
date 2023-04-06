@@ -228,8 +228,8 @@ class UserInputDiscourseFactory(
         model = types_.UserInputsDiscourse
         abstract = False
 
-    hostname = factory.Sequence(lambda n: f"http://discourse/{n}")
-    category_id = factory.Sequence(lambda n: n)
+    hostname = factory.Sequence(lambda n: f"discourse/{n}")
+    category_id = factory.Sequence(lambda n: f"{n}")
     api_username = factory.Sequence(lambda n: f"discourse-test-user-{n}")
     api_key = factory.Sequence(lambda n: f"discourse-test-key-{n}")
 

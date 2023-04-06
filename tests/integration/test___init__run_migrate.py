@@ -9,13 +9,15 @@
 import logging
 from itertools import chain
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import constants, metadata, migration, pull_request, run
+from src import Clients, constants, metadata, migration, pull_request, run_migrate
 from src.discourse import Discourse
+from src.repository import Client as RepositoryClient
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -34,6 +36,7 @@ async def test_run_migrate(
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
+    mock_github_repo: MagicMock,
 ):
     """
     arrange: given running discourse server
@@ -98,9 +101,11 @@ async def test_run_migrate(
         path=repository_path,
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+        ),
         user_inputs=factories.UserInputsFactory(),
     )
 
@@ -123,9 +128,11 @@ async def test_run_migrate(
     caplog.clear()
     git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+        ),
         user_inputs=factories.UserInputsFactory(),
     )
 

@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
-
+import logging
 from itertools import tee
 from pathlib import Path
 
@@ -10,19 +10,17 @@ from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .discourse import Discourse
-from .docs_directory import has_docs_directory
+from .discourse import create_discourse
 from .docs_directory import read as read_docs_directory
+from .download import recreate_docs
 from .exceptions import InputError
-from .index import contents_from_page
 from .index import get as get_index
-from .metadata import get as get_metadata
-from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import create_pull_request
-from .reconcile import run as run_reconcile
+from .pull_request import DEFAULT_BRANCH_NAME, create_pull_request, update_pull_request
+from .reconcile import Clients
+from .reconcile import run as get_reconcile_actions
 from .repository import create_repository_client
-from .types_ import ActionResult, Clients, Metadata, UserInputs
+from .types_ import ActionResult, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
@@ -30,14 +28,33 @@ GETTING_STARTED = (
 )
 
 
-def _run_reconcile(
-    base_path: Path, metadata: Metadata, clients: Clients, user_inputs: UserInputs
-) -> dict[str, str]:
+def get_clients(user_inputs: UserInputs, base_path: Path) -> Clients:
+    """Return Clients object.
+
+    Args:
+        user_inputs: inputs provided via environment
+        base_path: path where the git repository is stored
+
+    Returns:
+        Clients object embedding both Discourse API and Repository clients
+    """
+    return Clients(
+        discourse=create_discourse(
+            hostname=user_inputs.discourse.hostname,
+            category_id=user_inputs.discourse.category_id,
+            api_username=user_inputs.discourse.api_username,
+            api_key=user_inputs.discourse.api_key,
+        ),
+        repository=create_repository_client(
+            access_token=user_inputs.github_access_token, base_path=base_path
+        ),
+    )
+
+
+def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
     Args:
-        base_path: The base path of the repository.
-        metadata: Information about the charm.
         clients: The clients to interact with things like discourse and the repository.
         user_inputs: Configurable inputs for running upload-charm-docs.
 
@@ -48,13 +65,24 @@ def _run_reconcile(
         InputError: if there are any problems with executing any of the actions.
 
     """
+    if not clients.repository.has_docs_directory:
+        logging.warning(
+            "Cannot run any reconcile to Discourse as there is not any docs folder "
+            "present in the repository"
+        )
+
+        return {}
+
+    metadata = clients.repository.metadata
+    base_path = clients.repository.base_path
+
     index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     path_infos = read_docs_directory(docs_path=base_path / DOCUMENTATION_FOLDER_NAME)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
     table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
-    actions = run_reconcile(
+    actions = get_reconcile_actions(
         path_infos=path_infos,
         table_rows=table_rows,
         clients=clients,
@@ -94,60 +122,39 @@ def _run_reconcile(
     return urls_with_actions
 
 
-def _run_migrate(base_path: Path, metadata: Metadata, clients: Clients) -> dict[str, str]:
+def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
     Args:
-        base_path: The base path of the repository.
-        metadata: Information about the charm.
         clients: The clients to interact with things like discourse and the repository.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
-    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
-    server_content = (
-        index.server.content if index.server is not None and index.server.content else ""
-    )
-    index_content = contents_from_page(server_content)
-    table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
-    migrate_contents(
-        table_rows=table_rows,
-        index_content=index_content,
-        discourse=clients.discourse,
-        docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
-    )
+    if not clients.repository.metadata.docs:
+        logging.warning(
+            "Cannot run any migration from Discourse as there is not discourse "
+            "link present in the metadata."
+        )
+        return {}
 
-    pr_link = create_pull_request(repository=clients.repository)
+    # Check difference with main
+    if not recreate_docs(clients, user_inputs.base_tag_name):
+        logging.info(
+            "No community contribution found. Discourse is inline with %s",
+            user_inputs.base_tag_name,
+        )
+        return {}
+
+    pr_link = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
+
+    if pr_link is not None:
+        logging.info("upload-charm-documents pull request already open at %s", pr_link)
+        update_pull_request(clients.repository, DEFAULT_BRANCH_NAME)
+    else:
+        logging.info("PR not existing: creating a new one...")
+        pr_link = create_pull_request(clients.repository, user_inputs.base_tag_name)
 
     return {pr_link: ActionResult.SUCCESS}
-
-
-def run(base_path: Path, discourse: Discourse, user_inputs: UserInputs) -> dict[str, str]:
-    """Interact with charmhub to upload documentation or migrate to local repository.
-
-    Args:
-        base_path: The base path to look for the metadata file in.
-        discourse: A client to the documentation server.
-        user_inputs: Configurable inputs for running upload-charm-docs.
-
-    Raises:
-        InputError: if no valid running mode is matched.
-
-    Returns:
-        All the URLs that had an action with the result of that action.
-    """
-    metadata = get_metadata(base_path)
-    has_docs_dir = has_docs_directory(base_path=base_path)
-    repository = create_repository_client(
-        access_token=user_inputs.github_access_token, base_path=base_path
-    )
-    clients = Clients(discourse=discourse, repository=repository)
-    if metadata.docs and not has_docs_dir:
-        return _run_migrate(base_path=base_path, metadata=metadata, clients=clients)
-    if has_docs_dir:
-        return _run_reconcile(
-            base_path=base_path, metadata=metadata, clients=clients, user_inputs=user_inputs
-        )
-    raise InputError(GETTING_STARTED)

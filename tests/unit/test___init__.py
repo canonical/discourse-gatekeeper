@@ -2,10 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for execution."""
-
-# Need access to protected functions for testing
-# pylint: disable=protected-access
-
+import logging
 from pathlib import Path
 from unittest import mock
 
@@ -13,59 +10,87 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import (
+from src import (  # GETTING_STARTED,
     DOCUMENTATION_FOLDER_NAME,
-    GETTING_STARTED,
-    _run_migrate,
-    _run_reconcile,
+    Clients,
     constants,
     discourse,
     exceptions,
-    index,
-    metadata,
+    get_clients,
     pull_request,
-    run,
+    run_migrate,
+    run_reconcile,
     types_,
 )
+from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 
 from .. import factories
+from ..conftest import BASE_REMOTE_BRANCH
 from .helpers import assert_substrings_in_string, create_metadata_yaml
 
+# Need access to protected functions for testing
+# pylint: disable=protected-access
 
-def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients):
+
+@mock.patch("github.Github.get_repo")
+def test_setup_clients(git_repo_with_remote):
+    """
+    arrange: given a local path and user_inputs
+    act: when get_clients is called
+    assert: then the Discourse and RepositoryClients are instantiated appropriately
+    """
+    path = Path(git_repo_with_remote.working_dir)
+
+    user_inputs = factories.UserInputsFactory()
+    clients = get_clients(user_inputs=user_inputs, base_path=path)
+
+    assert clients.repository.base_path == path
+
+    assert clients.discourse._category_id == int(user_inputs.discourse.category_id)
+    assert clients.discourse._base_path == f"https://{user_inputs.discourse.hostname}"
+    assert clients.discourse._api_username == user_inputs.discourse.api_username
+    assert clients.discourse._api_key == user_inputs.discourse.api_key
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_reconcile_empty_local_server(mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs folder and mocked discourse
     act: when _run_reconcile is called
     assert: then an index page is created with empty navigation table.
     """
-    meta = types_.Metadata(name="name 1", docs=None)
     mocked_clients.discourse.create_topic.return_value = (url := "url 1")
+
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    returned_page_interactions = _run_reconcile(
-        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
-    )
+    (mocked_clients.repository.base_path / "docs").mkdir()
+
+    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
-    mocked_clients.repository.tag_commit.assert_called_once_with(
-        tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
-    )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
-def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_reconcile_local_empty_server(mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called
     assert: then a documentation page is created and an index page is created with a navigation
         page with a reference to the documentation page.
     """
-    name = "name 1"
-    meta = types_.Metadata(name=name, docs=None)
-    (docs_folder := tmp_path / "docs").mkdir()
+    name = mocked_clients.repository.metadata.name
+
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
     (docs_folder / "page.md").write_text(page_content := "page content")
     mocked_clients.discourse.create_topic.side_effect = [
@@ -74,9 +99,7 @@ def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients):
     ]
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    returned_page_interactions = _run_reconcile(
-        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
-    )
+    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     assert mocked_clients.discourse.create_topic.call_count == 2
     mocked_clients.discourse.create_topic.assert_any_call(
@@ -89,50 +112,50 @@ def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients):
             f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
-    mocked_clients.repository.tag_commit.assert_called_once_with(
-        tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
-    )
     assert returned_page_interactions == {
         page_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
     }
 
 
-def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_clients):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
     act: when _run_reconcile is called with dry run mode enabled
     assert: no pages are created.
     """
-    meta = types_.Metadata(name="name 1", docs=None)
-    (docs_folder := tmp_path / "docs").mkdir()
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content")
     user_inputs = factories.UserInputsFactory(dry_run=True, delete_pages=True)
 
-    returned_page_interactions = _run_reconcile(
-        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
-    )
+    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_not_called()
-    mocked_clients.repository.tag_commit.assert_not_called()
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_reconcile_local_empty_server_error(mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs directory and mocked discourse
         that raises an exception
     act: when _run_reconcile is called
     assert: no pages are created.
     """
-    meta = types_.Metadata(name="name 1", docs=None)
     mocked_clients.discourse.create_topic.side_effect = exceptions.DiscourseError
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    returned_page_interactions = _run_reconcile(
-        base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
-    )
+    (mocked_clients.repository.base_path / "docs").mkdir()
+
+    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
@@ -141,17 +164,21 @@ def test__run_reconcile_local_empty_server_error(tmp_path: Path, mocked_clients)
     assert not returned_page_interactions
 
 
-def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="index-url"),
+)
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__run_reconcile_local_server_conflict(mock_tag, mocked_clients):
     """
     arrange: given metadata with name and docs and docs folder with a file and mocked discourse
         with content that conflicts with the local content
     act: when _run_reconcile is called
     assert: InputError is raised.
     """
-    name = "name 1"
-    index_url = "index-url"
-    meta = types_.Metadata(name=name, docs=index_url)
-    (docs_folder := tmp_path / "docs").mkdir()
+    repository_client = mocked_clients.repository
+
+    (docs_folder := repository_client.base_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content := "index content")
     main_page_content = "page content 1"
     (docs_folder / "page.md").write_text(local_page_content := "page content 2")
@@ -164,53 +191,76 @@ def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
         ),
         server_page_content,
     ]
-    mocked_clients.repository.get_file_content_from_tag.return_value = main_page_content
+    mock_tag.return_value = main_page_content
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:
-        _run_reconcile(
-            base_path=tmp_path, metadata=meta, clients=mocked_clients, user_inputs=user_inputs
+        run_reconcile(
+            clients=mocked_clients,
+            user_inputs=user_inputs,
         )
 
     assert_substrings_in_string(("actions", "not", "executed"), str(exc_info.value))
     assert mocked_clients.discourse.retrieve_topic.call_count == 2
-    mocked_clients.discourse.retrieve_topic.assert_any_call(url=index_url)
+    mocked_clients.discourse.retrieve_topic.assert_any_call(url=repository_client.metadata.docs)
     mocked_clients.discourse.retrieve_topic.assert_any_call(url=page_url)
 
 
-def test__run_migrate_server_error_index(
-    tmp_path: Path, repository_client: pull_request.RepositoryClient
-):
+@mock.patch("src.repository.Client.metadata", types_.Metadata(name="name 1", docs=None))
+def test__run_reconcile_no_docs(caplog, mocked_clients):
+    """
+    arrange: given metadata with name and no docs and no docs folder and mocked discourse
+    act: when _run_reconcile is called
+    assert: Nothing is done, and empty result is return with a warning.
+    """
+    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
+
+    with caplog.at_level(logging.WARNING):
+        output = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+
+    assert len(output) == 0
+    assert len(caplog.records) == 1
+    assert "Cannot run any reconcile to Discourse" in caplog.records[0].message
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+def test__run_migrate_server_error_index(repository_client: pull_request.RepositoryClient):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during index file fetching
     act: when _run_migrate is called
     assert: Server error is raised with page retrieval fail.
     """
-    meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
+    user_inputs = factories.UserInputsFactory()
+
+    repository_client.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
 
     with pytest.raises(exceptions.ServerError) as exc:
-        _run_migrate(
-            base_path=tmp_path,
-            metadata=meta,
-            clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
+        run_migrate(
+            clients=Clients(discourse=mocked_discourse, repository=repository_client),
+            user_inputs=user_inputs,
         )
 
     assert "Index page retrieval failed" == str(exc.value)
 
 
-def test__run_migrate_server_error_topic(
-    repository_path: Path, repository_client: pull_request.RepositoryClient
-):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+def test__run_migrate_server_error_topic(mocked_clients):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during topic retrieval
     act: when _run_migrate is called
     assert: MigrationError is raised.
     """
-    index_url = "http://discourse/t/docs"
+    user_inputs = factories.UserInputsFactory()
     index_content = """Content Title
 
     Content description.
@@ -221,23 +271,54 @@ def test__run_migrate_server_error_topic(
     | -- | -- | -- |
     | 1 | path-1 | [Link](/t/link-to-1) |
     """
-    meta = types_.Metadata(name="name 1", docs=index_url)
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = [index_content, exceptions.DiscourseError]
+    mocked_clients.discourse.retrieve_topic.side_effect = [
+        index_content,
+        exceptions.DiscourseError,
+    ]
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
 
     with pytest.raises(exceptions.MigrationError):
-        _run_migrate(
-            base_path=repository_path,
-            metadata=meta,
-            clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
+        run_migrate(
+            clients=mocked_clients,
+            user_inputs=user_inputs,
         )
 
 
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_migrate_no_docs_information(caplog, mocked_clients):
+    """
+    arrange: given metadata with name and docs but no docs directory and mocked discourse
+        that raises an exception during topic retrieval
+    act: when _run_migrate is called
+    assert: MigrationError is raised.
+    """
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_migration_reports = run_migrate(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
+
+    assert len(returned_migration_reports) == 0
+    assert len(caplog.records) == 1
+    assert "Cannot run any migration from Discourse" in caplog.records[0].message
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
 def test__run_migrate(
-    repository_path: Path,
+    mocked_clients,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
-    repository_client: pull_request.RepositoryClient,
     mock_pull_request: PullRequest,
 ):
     """
@@ -251,17 +332,19 @@ def test__run_migrate(
     index_table = f"""{constants.NAVIGATION_TABLE_START}
     | 1 | path-1 | [Tutorials](link-1) |"""
     index_page = f"{index_content}{index_table}"
-    meta = types_.Metadata(name="name 1", docs="http://discourse/t/docs")
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = [
+
+    mocked_clients.discourse.retrieve_topic.side_effect = [
         index_page,
         (link_content := "link 1 content"),
     ]
 
-    returned_migration_reports = _run_migrate(
-        base_path=repository_path,
-        metadata=meta,
-        clients=types_.Clients(discourse=mocked_discourse, repository=repository_client),
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients,
+        user_inputs=user_inputs,
     )
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
@@ -272,51 +355,156 @@ def test__run_migrate(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == index_page
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
-@pytest.mark.usefixtures("patch_create_repository_client")
-def test_run_no_docs_no_dir(repository_path: Path):
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
+def test__run_migrate_with_pull_request(
+    _,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
+):
     """
-    arrange: given a path with a metadata.yaml that has no docs key and no docs directory
-        and mocked discourse
-    act: when run is called
-    assert: InputError is raised with a guide to getting started.
+    arrange: given metadata with name and docs and docs directory with updated content
+        and pull request already open and mocked discourse
+    act: when _run_migrate is called
+    assert: docs are migrated and the remote branch is updated.
     """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repository_path)
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    # mock_get_pull.return_value = "test-url"
+
+    index_content = """Content header.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, f"{navlink_page} new"]
+
+    # Set up remote repository with content
+    (docs_folder := upstream_repository_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "path-1").mkdir()
+    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+
+    # commit data to upstream
+    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head.checkout()
+
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "first commit of documentation")
+    upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
+
     user_inputs = factories.UserInputsFactory()
 
-    with pytest.raises(exceptions.InputError) as exc:
-        # run is repeated in unit tests / integration tests
-        _ = run(
-            base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
-        )  # pylint: disable=duplicate-code
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
 
-    assert str(exc.value) == GETTING_STARTED
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients,
+        user_inputs=user_inputs,
+    )
+
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+
+    assert "first commit of documentation" not in upstream_git_repo.head.commit.message
+    assert (
+        upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+    ).read_text() == f"{navlink_page} new"
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
+def test__run_migrate_with_pull_request_no_modification(
+    _,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
+):
+    """
+    arrange: given metadata with name and docs and docs directory with same content
+        and pull request already open and mocked discourse
+    act: when _run_migrate is called
+    assert: docs are migrated and the remote branch is left intact.
+    """
+    # mock_get_pull.return_value = "test-url"
+
+    index_content = """Content header.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    # Set up remote repository with content
+    (docs_folder := upstream_repository_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "path-1").mkdir()
+    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+
+    # commit data to upstream
+    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head.checkout()
+
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "first commit of documentation")
+    _hash = upstream_git_repo.head.ref.commit.hexsha
+    upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
+
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients,
+        user_inputs=user_inputs,
+    )
+
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+
+    assert "first commit of documentation" in upstream_git_repo.head.commit.message
+    assert upstream_git_repo.head.ref.commit.hexsha == _hash
 
 
 @pytest.mark.usefixtures("patch_create_repository_client")
-def test_run_no_docs_empty_dir(repository_path: Path):
+def test_run_no_docs_empty_dir(mocked_clients):
     """
     arrange: given a path with a metadata.yaml that has no docs key and has empty docs directory
         and mocked discourse
     act: when run is called
     assert: then an index page is created with empty navigation table.
     """
-    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: name 1", path=repository_path)
-    (repository_path / index.DOCUMENTATION_FOLDER_NAME).mkdir()
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.create_topic.return_value = (url := "url 1")
+    repository_path = mocked_clients.repository.base_path
+
+    create_metadata_yaml(content=f"{METADATA_NAME_KEY}: name 1", path=repository_path)
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    mocked_clients.discourse.create_topic.return_value = (url := "url 1")
     user_inputs = factories.UserInputsFactory()
 
     # run is repeated in unit tests / integration tests
-    returned_page_interactions = run(
-        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
+    returned_page_interactions = run_reconcile(
+        clients=mocked_clients, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
-    mocked_discourse.create_topic.assert_called_once_with(
+    mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
@@ -325,7 +513,7 @@ def test_run_no_docs_empty_dir(repository_path: Path):
 
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
-    repository_path: Path,
+    mocked_clients,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
@@ -337,8 +525,10 @@ def test_run_no_docs_dir(
     assert: then docs from the server is migrated into local docs path and the files created
         are return as the result.
     """
+    repository_path = mocked_clients.repository.base_path
+
     create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name 1\n" f"{metadata.METADATA_DOCS_KEY}: docsUrl",
+        content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: docsUrl",
         path=repository_path,
     )
     index_content = """Content header.
@@ -349,13 +539,14 @@ def test_run_no_docs_dir(
     | 2 | file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
     user_inputs = factories.UserInputsFactory()
 
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
     # run is repeated in unit tests / integration tests
-    returned_migration_reports = run(
-        base_path=repository_path, discourse=mocked_discourse, user_inputs=user_inputs
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
@@ -366,5 +557,48 @@ def test_run_no_docs_dir(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == index_page
     assert path_file.read_text(encoding="utf-8") == navlink_page
+
+
+def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
+    """
+    arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
+        and mocked discourse (with tag and main branch aligned)
+    act: when run_migrate is called
+    assert: then nothing is done as the two versions are the compatible.
+    """
+    repository_path = mocked_clients.repository.base_path
+
+    create_metadata_yaml(
+        content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: https://discourse/t/docs",
+        path=repository_path,
+    )
+    index_content = """Content header.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "path-1").mkdir()
+    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+
+    mocked_clients.repository.switch("main").update_branch("First document version")
+
+    user_inputs = factories.UserInputsFactory()
+    mocked_clients.repository._git_repo.git.tag(user_inputs.base_tag_name)
+
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_migration_reports = run_migrate(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
+
+    assert len(returned_migration_reports) == 0
+    assert any("No community contribution found" in record.message for record in caplog.records)

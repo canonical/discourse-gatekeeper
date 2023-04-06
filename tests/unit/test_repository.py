@@ -3,16 +3,18 @@
 
 """Unit tests for git."""
 
+import base64
+
 # Need access to protected functions for testing
 # pylint: disable=protected-access
-
-import base64
+import os
 import secrets
 from collections.abc import Callable
 from pathlib import Path
 from unittest import mock
 
 import pytest
+from git import Git
 from git.exc import GitCommandError
 from git.repo import Repo
 from github import Github
@@ -105,6 +107,7 @@ def test_check_branch_exists(
     assert: True is returned.
     """
     branch_name = "check-branch-exists"
+
     head = upstream_git_repo.create_head(branch_name)
     head.checkout()
     (upstream_repository_path / "filler-file").touch()
@@ -112,6 +115,34 @@ def test_check_branch_exists(
     upstream_git_repo.git.commit("-m", "test")
 
     assert repository_client.check_branch_exists(branch_name)
+
+
+def test_current_branch_switch_main(repository_client):
+    """
+    arrange: given a repository in a detached state
+    act: we switch branch to main
+    assert: current_branch should provide first the commit hash and then the main name
+    """
+    _hash = repository_client.current_branch
+
+    repository_client.switch("main")
+
+    assert repository_client.current_branch == "main"
+    assert repository_client._git_repo.head.ref.commit.hexsha == _hash
+
+
+def test_current_branch_switch_to_tag(repository_client):
+    """
+    arrange: given a repository in a detached state
+    act: we first tag the commit and then switch to the tag
+    assert: current_branch should provide first the commit hash and then the tag name
+    """
+    _hash = repository_client.current_branch
+
+    repository_client._git_repo.git.tag("my-tag")
+
+    assert repository_client.current_branch != _hash
+    assert repository_client.current_branch == "my-tag"
 
 
 def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
@@ -122,11 +153,11 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
     """
     err_str = "mocked error"
     mock_git_repository = mock.MagicMock(spec=Repo)
-    mock_git_repository.git.commit.side_effect = [GitCommandError(err_str)]
+    mock_git_repository.git.branch.side_effect = [GitCommandError(err_str)]
     monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_branch(branch_name="test-create-branch", commit_msg="commit-1")
+        repository_client.switch("main").create_branch(branch_name="test-create-branch")
 
     assert_substrings_in_string(
         ("unexpected error creating new branch", err_str), str(exc.value).lower()
@@ -135,7 +166,6 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
 
 def test_create_branch(
     repository_client: Client,
-    repository_path: Path,
     upstream_git_repo: Repo,
 ):
     """
@@ -144,6 +174,8 @@ def test_create_branch(
     assert: a new branch is successfully created upstream with only the files in the `repo/docs`
         directory.
     """
+    repository_path = repository_client.base_path
+
     root_file = repository_path / "test.txt"
     root_file.write_text("content 1", encoding="utf-8")
     docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
@@ -156,7 +188,9 @@ def test_create_branch(
     (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     # mypy false positive in lib due to getter/setter not being next to each other.
     assert any(
@@ -175,7 +209,6 @@ def test_create_branch(
 
 def test_create_branch_checkout_clash_default(
     repository_client: Client,
-    repository_path: Path,
     upstream_git_repo: Repo,
     default_branch: str,
 ):
@@ -185,6 +218,8 @@ def test_create_branch_checkout_clash_default(
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
     """
+    repository_path = repository_client.base_path
+
     root_file = repository_path / default_branch
     root_file.write_text("content 1", encoding="utf-8")
     branch_name = "test-create-branch"
@@ -193,20 +228,22 @@ def test_create_branch_checkout_clash_default(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
 
-def test_create_branch_checkout_clash_created(
-    repository_client: Client, repository_path: Path, upstream_git_repo: Repo
-):
+def test_create_branch_checkout_clash_created(repository_client: Client, upstream_git_repo: Repo):
     """
     arrange: given Client and a file with the same name as the requested branch and a
         file in the docs folder
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
     """
+    repository_path = repository_client.base_path
+
     branch_name = "test-create-branch"
     root_file = repository_path / branch_name
     root_file.write_text("content 1", encoding="utf-8")
@@ -215,7 +252,9 @@ def test_create_branch_checkout_clash_created(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
@@ -618,9 +657,6 @@ def test_create_repository_client(
     act: when create_repository_client is called
     assert: RepositoryClient is returned.
     """
-    # The origin is initialised to be local, need to update it to be remote
-    origin = git_repo.remote("origin")
-    git_repo.delete_remote(origin)
     git_repo.create_remote("origin", "https://github.com/test-user/test-repo.git")
     test_token = secrets.token_hex(16)
     mock_github_client = mock.MagicMock(spec=Github)
@@ -632,3 +668,241 @@ def test_create_repository_client(
     )
 
     assert isinstance(returned_client, repository.Client)
+
+
+def test_repository_summary_modified(repository_client):
+    """
+    arrange: given repository with a modified file with respect to the head
+    act: when summary is called
+    assert: The DiffSummary object represents the modified file.
+    """
+    (repository_client.base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False)
+
+    assert len(repository_client.summary.modified) == 0
+
+    (repository_client.base_path / "file-1.txt").write_text("My second version")
+
+    assert len(repository_client.summary.modified) == 1
+    assert list(repository_client.summary.modified)[0] == "file-1.txt"
+
+
+def test_repository_summary_new(repository_client):
+    """
+    arrange: given repository with a new file with respect to the head
+    act: when summary is called
+    assert: The DiffSummary object represents the new file.
+    """
+    (repository_client.base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False)
+
+    assert len(repository_client.summary.new) == 0
+
+    (repository_client.base_path / "file-2.txt").write_text("My second version")
+
+    assert len(repository_client.summary.new) == 1
+    assert list(repository_client.summary.new)[0] == "file-2.txt"
+
+
+def test_repository_summary_remove(repository_client):
+    """
+    arrange: given repository with a removed file with respect to the head
+    act: when summary is called
+    assert: The DiffSummary object represents the remove file.
+    """
+    (repository_client.base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False)
+
+    assert len(repository_client.summary.removed) == 0
+
+    os.remove(repository_client.base_path / "file-1.txt")
+
+    assert len(repository_client.summary.removed) == 1
+    assert list(repository_client.summary.removed)[0] == "file-1.txt"
+
+
+def test_repository_summary_invalid_operation(repository_client):
+    """
+    arrange: given repository
+    act: when summary is added to a non DiffSummary object
+    assert: an exception ValueError is raised.
+    """
+    with pytest.raises(ValueError):
+        _ = repository_client.summary + 1.0
+
+
+def test_repository_pull_default_branch(
+    repository_client, upstream_git_repo, upstream_repository_path
+):
+    """
+    arrange: given repository with an updated upstream
+    act: when the pull method of the repository is called
+    assert: the new commits are pulled from the upstream
+    """
+    branch_name = "main"
+
+    repository_client.switch(branch_name)
+
+    (repository_client.base_path / "filler-file-1").touch()
+
+    repository_client.update_branch("commit 1")
+
+    upstream_git_repo.git.checkout(branch_name)
+    first_hash = upstream_git_repo.head.ref.commit.hexsha
+    (upstream_repository_path / "filler-file-2").touch()
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "test")
+    second_hash = upstream_git_repo.head.ref.commit.hexsha
+
+    assert repository_client._git_repo.head.ref.commit.hexsha == first_hash
+    repository_client.pull()
+    assert repository_client._git_repo.head.ref.commit.hexsha == second_hash
+
+
+def test_repository_pull_other_branch(
+    repository_client, upstream_git_repo, upstream_repository_path
+):
+    """
+    arrange: given repository with an updated upstream
+    act: when the pull method of the repository is called from a different branch
+    assert: the new commits are pulled from the upstream in the not-checkout branch
+    """
+    branch_name = "other-branch"
+
+    repository_client.create_branch(branch_name).switch(branch_name)
+
+    (repository_client.base_path / "filler-file-1").touch()
+
+    repository_client.update_branch("commit 1")
+
+    upstream_git_repo.git.checkout(branch_name)
+    first_hash = upstream_git_repo.head.ref.commit.hexsha
+    (upstream_repository_path / "filler-file-2").touch()
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "test")
+    second_hash = upstream_git_repo.head.ref.commit.hexsha
+
+    assert repository_client._git_repo.head.ref.commit.hexsha == first_hash
+    repository_client.switch("main").pull(branch_name)
+    assert repository_client._git_repo.head.ref.commit.hexsha != second_hash
+    repository_client.switch(branch_name)
+    assert repository_client._git_repo.head.ref.commit.hexsha == second_hash
+
+
+def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when getting stashes deltas (pop)
+    act: when switch branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+
+    def side_effect(*args):
+        """Mock function.
+
+        Args:
+            args: positional arguments
+
+        Raises:
+            GitCommandError: when providing pop
+        """
+        if len(args) > 0 and args[0] == "pop":
+            raise GitCommandError("mocked error")
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.stash = mock.Mock(side_effect=side_effect)
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.switch("branchname-1")
+
+    assert_substrings_in_string(
+        ("unexpected error when switching branch to branchname-1"), str(exc.value).lower()
+    )
+
+
+def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits
+    act: when update branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+    repository_client.switch("main")
+
+    def side_effect(*args):
+        """Mock function.
+
+        Args:
+            args: positional arguments
+
+        Raises:
+            GitCommandError: when providing pop
+        """
+        raise GitCommandError("mocked error")
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.push = mock.Mock(side_effect=side_effect)
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.update_branch("my-message")
+
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
+    """
+    arrange: given Client with a mocked local github client that mock an existing pull request on
+        branch "main"
+    act: when get repository get_pull_request method is called with the branch main
+    assert: that the method returns the pull-request url.
+    """
+    mock_git_repository = mock.MagicMock(spec=Repository)
+    mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
+    monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
+
+    pull_request_link = repository_client.get_pull_request("main")
+
+    assert pull_request_link is not None
+    assert pull_request_link == "test_url"
+
+
+def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
+    """
+    arrange: given Client with a mocked local github client that mock an existing pull request on
+        branch "main"
+    act: when get repository get_pull_request is called with another branch other than main
+    assert: that None is return.
+    """
+    mock_git_repository = mock.MagicMock(spec=Repository)
+    mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
+    monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
+
+    pull_request_link = repository_client.get_pull_request("not-existing")
+
+    assert pull_request_link is None
+
+
+def test_get_multiple_pull_request_error(
+    monkeypatch, repository_client: Client, mock_pull_request
+):
+    """
+    arrange: given Client with a mocked local github client that mock an condition where
+        multiple pull request for branch "main" exists
+    act: when get repository get_pull_request is called with branch main
+    assert: an exception is returned
+    """
+    mock_git_repository = mock.MagicMock(spec=Repository)
+    mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request, mock_pull_request])
+    monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        _ = repository_client.get_pull_request("main")
+
+    assert_substrings_in_string(("more than one open pull request"), str(exc.value).lower())
