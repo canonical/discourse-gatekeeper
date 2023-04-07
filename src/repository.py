@@ -6,15 +6,21 @@
 import base64
 import logging
 import re
-from contextlib import suppress
+from contextlib import contextmanager, suppress
+from functools import cached_property
 from pathlib import Path
+from typing import Optional
 
 from git import GitCommandError
 from git.repo import Repo
 from github import Github
+from github import PullRequest
 from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
+from src.docs_directory import has_docs_directory
+from src.metadata import get as get_metadata
+from src.types_ import Metadata
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -58,6 +64,69 @@ class Client:
         self._github_repo = github_repository
         self._configure_git_user()
 
+    @cached_property
+    def base_path(self) -> Path:
+        return Path(self._git_repo.working_dir)
+
+    @property
+    def metadata(self) -> Metadata:
+        return get_metadata(self.base_path)
+
+    @property
+    def has_docs_directory(self) -> bool:
+        return has_docs_directory(self.base_path)
+
+    @property
+    def current_branch(self) -> str:
+        return self._git_repo.head.name
+
+    @contextmanager
+    def with_branch(self, branch_name: str) -> 'Client':
+        current_branch = self.current_branch
+
+        yield self.switch(branch_name)
+
+        self.switch(current_branch)
+
+    def switch(self, branch_name: str) -> 'Client':
+        is_dirty = self.is_dirty()
+
+        if is_dirty:
+            self._git_repo.git.stash()
+
+        local_branches = {ref.name for ref in self._git_repo.branches}
+
+        if branch_name in local_branches or self.check_branch_exists(branch_name):
+            self._git_repo.git.checkout(branch_name, "--")
+        else:
+            self._git_repo.git.checkout("-b", branch_name)
+
+        if is_dirty:
+            self._git_repo.git.stash("pop")
+
+        return self
+
+    def create_branch(self, branch_name: str, base: Optional[str] = None) -> 'Client':
+        current_branch = self.current_branch
+        self._git_repo.git.checkout("-f -b", branch_name, base or self.current_branch)
+        self.switch(current_branch)
+        return self
+
+    def update_branch(
+            self, commit_msg: str, branch_name: str | None = None, force: bool = False
+    ) -> 'Client':
+        try:
+            self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
+            self._git_repo.git.commit("-m", f"'{commit_msg}'")
+            self._git_repo.git.push(
+                "-u" + (" -f" if force else ""),
+                ORIGIN_NAME, branch_name or self.current_branch
+            )
+        except GitCommandError as exc:
+            raise RepositoryClientError(
+                f"Unexpected error updating branch {branch_name}. {exc=!r}") from exc
+        return self
+
     def _configure_git_user(self) -> None:
         """Configure action git profile defaults.
 
@@ -66,16 +135,16 @@ class Client:
         config_reader = self._git_repo.config_reader(config_level="repository")
         with self._git_repo.config_writer(config_level="repository") as config_writer:
             if not config_reader.has_section(
-                CONFIG_USER_SECTION_NAME
+                    CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_NAME):
                 config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
             if not config_reader.has_section(
-                CONFIG_USER_SECTION_NAME
+                    CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
-    def check_branch_exists(self, branch_name: str) -> bool:
-        """Check if branch exists on remote.
+    def check_branch_exists(self, branch_name: str | None = None, ) -> bool:
+        """Check if branch exists locally or remotely.
 
         Args:
             branch_name: Branch name to check on remote.
@@ -87,7 +156,7 @@ class Client:
             True if branch already exists, False otherwise.
         """
         try:
-            self._git_repo.git.fetch(ORIGIN_NAME, branch_name)
+            self._git_repo.git.fetch(ORIGIN_NAME, branch_name or self.current_branch)
             return True
         except GitCommandError as exc:
             if "couldn't find remote ref" in exc.stderr:
@@ -96,39 +165,20 @@ class Client:
                 f"Unexpected error checking existing branch. {exc=!r}"
             ) from exc
 
-    def create_branch(self, branch_name: str, commit_msg: str) -> None:
-        """Create new branch with existing changes using the default branch as the base.
-
-        Args:
-            branch_name: New branch name.
-            commit_msg: Commit message for current changes.
-
-        Raises:
-            RepositoryClientError: if unexpected error occurred during git operation.
-        """
-        default_branch = self._github_repo.default_branch
-        try:
-            self._git_repo.git.fetch(ORIGIN_NAME, default_branch)
-            self._git_repo.git.checkout(default_branch, "--")
-            self._git_repo.git.checkout("-b", branch_name)
-            self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
-            self._git_repo.git.commit("-m", f"'{commit_msg}'")
-            self._git_repo.git.push("-u", ORIGIN_NAME, branch_name)
-        except GitCommandError as exc:
-            raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
+    def get_pull_request(self, branch_name: str) -> Optional[str]:
+        open_pull = [
+            pull
+            for pull in self._github_repo.get_pulls(head=branch_name)
+            if pull.head.ref == branch_name
+        ]
+        if len(open_pull) > 1:
+            raise ...
+        elif len(open_pull) == 0:
+            return None
+        else:
+            return open_pull[0].html_url
 
     def create_pull_request(self, branch_name: str) -> str:
-        """Create a pull request from given branch to the default branch.
-
-        Args:
-            branch_name: Branch name from which the pull request will be created.
-
-        Raises:
-            RepositoryClientError: if unexpected error occurred during git operation.
-
-        Returns:
-            The web url to pull request page.
-        """
         try:
             pull_request = self._github_repo.create_pull(
                 title=ACTIONS_PULL_REQUEST_TITLE,
@@ -143,13 +193,33 @@ class Client:
 
         return pull_request.html_url
 
-    def is_dirty(self) -> bool:
+    def get_or_create_pull_request(self, branch_name: str | None = None) -> str:
+        """Create a pull request from given branch to the default branch.
+
+        Args:
+            branch_name: Branch name from which the pull request will be created.
+
+        Raises:
+            RepositoryClientError: if unexpected error occurred during git operation.
+
+        Returns:
+            The web url to pull request page.
+        """
+        _branch_name = branch_name or self.current_branch
+
+        return self.get_pull_request(_branch_name) or self.create_pull_request(_branch_name)
+
+    def is_dirty(self, branch_name: str | Optional = None) -> bool:
         """Check if repository path has any changes including new files.
 
         Returns:
             True if any changes have occurred.
         """
-        return self._git_repo.is_dirty(untracked_files=True)
+        if branch_name is None:
+            return self._git_repo.is_dirty(untracked_files=True)
+        else:
+            with self.with_branch(branch_name) as client:
+                return client.is_dirty()
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.
