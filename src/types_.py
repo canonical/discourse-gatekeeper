@@ -9,9 +9,6 @@ from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .discourse import Discourse
-from .repository import Client as RepositoryClient
-
 
 class UserInputsDiscourse(typing.NamedTuple):
     """Configurable user input values used to run upload-charm-docs.
@@ -406,15 +403,3 @@ class IndexDocumentMeta(MigrationFileMeta):
     """
 
     content: str
-
-
-class Clients(typing.NamedTuple):
-    """Collection of clients needed during execution.
-
-    Attrs:
-        discourse: Discourse client.
-        repository: Client for the repository.
-    """
-
-    discourse: Discourse
-    repository: RepositoryClient

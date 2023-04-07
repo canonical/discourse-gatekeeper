@@ -10,6 +10,19 @@ from pathlib import Path
 from . import exceptions, types_
 from .constants import NAVIGATION_TABLE_START
 from .discourse import Discourse
+from .repository import Client as RepositoryClient
+
+
+class Clients(typing.NamedTuple):
+    """Collection of clients needed during execution.
+
+    Attrs:
+        discourse: Discourse client.
+        repository: Client for the repository.
+    """
+
+    discourse: Discourse
+    repository: RepositoryClient
 
 
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
@@ -57,8 +70,8 @@ def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str
 
 
 def _local_and_server_validation(
-    path_info: types_.PathInfo,
-    table_row: types_.TableRow,
+        path_info: types_.PathInfo,
+        table_row: types_.TableRow,
 ) -> None:
     """Input checks before execution.
 
@@ -81,11 +94,11 @@ def _local_and_server_validation(
 
 
 def _local_and_server(
-    path_info: types_.PathInfo,
-    table_row: types_.TableRow,
-    clients: types_.Clients,
-    base_path: Path,
-    user_inputs: types_.UserInputs,
+        path_info: types_.PathInfo,
+        table_row: types_.TableRow,
+        clients: Clients,
+        base_path: Path,
+        user_inputs: types_.UserInputs,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -265,11 +278,11 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
 
 def _calculate_action(
-    path_info: types_.PathInfo | None,
-    table_row: types_.TableRow | None,
-    clients: types_.Clients,
-    base_path: Path,
-    user_inputs: types_.UserInputs,
+        path_info: types_.PathInfo | None,
+        table_row: types_.TableRow | None,
+        clients: Clients,
+        base_path: Path,
+        user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
@@ -308,11 +321,11 @@ def _calculate_action(
 
 
 def run(
-    path_infos: typing.Iterable[types_.PathInfo],
-    table_rows: typing.Iterable[types_.TableRow],
-    clients: types_.Clients,
-    base_path: Path,
-    user_inputs: types_.UserInputs,
+        path_infos: typing.Iterable[types_.PathInfo],
+        table_rows: typing.Iterable[types_.TableRow],
+        clients: Clients,
+        base_path: Path,
+        user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
@@ -365,8 +378,8 @@ def run(
 
 
 def index_page(
-    index: types_.Index,
-    table_rows: typing.Iterable[types_.TableRow],
+        index: types_.Index,
+        table_rows: typing.Iterable[types_.TableRow],
 ) -> types_.AnyIndexAction:
     """Reconcile differences for the index page.
 

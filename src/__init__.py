@@ -2,15 +2,14 @@
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
-
+import logging
 from itertools import tee
-from pathlib import Path
+import shutil
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .pull_request import DEFAULT_BRANCH_NAME
 from .discourse import Discourse
 from .docs_directory import has_docs_directory
 from .docs_directory import read as read_docs_directory
@@ -20,10 +19,11 @@ from .index import get as get_index
 from .metadata import get as get_metadata
 from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
+from .pull_request import DEFAULT_BRANCH_NAME
 from .pull_request import create_pull_request
-from .reconcile import run as run_reconcile
+from .reconcile import run as run_reconcile, Clients
 from .repository import create_repository_client
-from .types_ import ActionResult, Clients, Metadata, UserInputs
+from .types_ import ActionResult, Metadata, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
@@ -32,7 +32,7 @@ GETTING_STARTED = (
 
 
 def run_reconcile(
-    clients: Clients, user_inputs: UserInputs
+        clients: Clients, user_inputs: UserInputs
 ) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
@@ -84,8 +84,8 @@ def run_reconcile(
         str(report.location): report.result
         for report in reports
         if report.location is not None
-        and report.location != DRY_RUN_NAVLINK_LINK
-        and report.location != FAIL_NAVLINK_LINK
+           and report.location != DRY_RUN_NAVLINK_LINK
+           and report.location != FAIL_NAVLINK_LINK
     }
 
 
@@ -107,7 +107,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     docs_path = base_path / DOCUMENTATION_FOLDER_NAME
 
     if docs_path.exists():
-        docs_path.rmdir()
+        shutil.rmtree(docs_path)
 
     index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     server_content = (
@@ -124,6 +124,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     # Check difference with main
     if not clients.repository.is_dirty(user_inputs.base_branch):
+        logging.info(
+            f"No community contribution found. Discourse is inline with {user_inputs.base_branch}"
+        )
         return {}
 
     pull_request = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
@@ -134,11 +137,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
                 repo.update_branch("time and date or relevant message")
     else:
         with clients.repository.create_branch(
-            DEFAULT_BRANCH_NAME, user_inputs.base_branch
+                DEFAULT_BRANCH_NAME, user_inputs.base_branch
         ).with_branch(DEFAULT_BRANCH_NAME) as repo:
-            repo.update_branch("time and date or relevant message",force=True)
+            repo.update_branch("time and date or relevant message", force=True)
             pull_request = repo.create_pull_request(DEFAULT_BRANCH_NAME)
 
     return {pull_request: ActionResult.SUCCESS}
-
-
