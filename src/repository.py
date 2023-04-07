@@ -78,7 +78,7 @@ class Client:
 
     @property
     def current_branch(self) -> str:
-        return self._git_repo.head.name
+        return self._git_repo.active_branch.name
 
     @contextmanager
     def with_branch(self, branch_name: str) -> 'Client':
@@ -92,39 +92,39 @@ class Client:
         is_dirty = self.is_dirty()
 
         if is_dirty:
+            self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.stash()
 
-        local_branches = {ref.name for ref in self._git_repo.branches}
-
-        if branch_name in local_branches or self.check_branch_exists(branch_name):
+        try:
             self._git_repo.git.checkout(branch_name, "--")
-        else:
-            self._git_repo.git.checkout("-b", branch_name)
-
-        if is_dirty:
-            self._git_repo.git.stash("pop")
+        finally:
+            if is_dirty:
+                self._git_repo.git.stash("pop")
+                self._git_repo.git.reset(DOCUMENTATION_FOLDER_NAME)
 
         return self
 
     def create_branch(self, branch_name: str, base: Optional[str] = None) -> 'Client':
-        current_branch = self.current_branch
-        self._git_repo.git.checkout("-f -b", branch_name, base or self.current_branch)
-        self.switch(current_branch)
+        with self.with_branch(base or self.current_branch) as repo:
+            branches = {branch.name for branch in repo._git_repo.branches}
+            if branch_name in branches:
+                repo._git_repo.git.branch("-D", branch_name)
+
+            repo._git_repo.git.checkout("-b", branch_name)
         return self
 
-    def update_branch(
-            self, commit_msg: str, branch_name: str | None = None, force: bool = False
-    ) -> 'Client':
+    def update_branch(self, commit_msg: str, force: bool = False, push: bool = True) -> 'Client':
         try:
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
-            self._git_repo.git.push(
-                "-u" + (" -f" if force else ""),
-                ORIGIN_NAME, branch_name or self.current_branch
-            )
+            if push:
+                self._git_repo.git.push(
+                    "-u", "-f" if force else "",
+                    ORIGIN_NAME, self.current_branch
+                )
         except GitCommandError as exc:
             raise RepositoryClientError(
-                f"Unexpected error updating branch {branch_name}. {exc=!r}") from exc
+                f"Unexpected error updating branch {self.current_branch}. {exc=!r}") from exc
         return self
 
     def _configure_git_user(self) -> None:
@@ -143,8 +143,8 @@ class Client:
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
-    def check_branch_exists(self, branch_name: str | None = None, ) -> bool:
-        """Check if branch exists locally or remotely.
+    def check_branch_exists(self, branch_name: str | None = None) -> bool:
+        """Check if branch exists remotely.
 
         Args:
             branch_name: Branch name to check on remote.
@@ -209,7 +209,7 @@ class Client:
 
         return self.get_pull_request(_branch_name) or self.create_pull_request(_branch_name)
 
-    def is_dirty(self, branch_name: str | Optional = None) -> bool:
+    def is_dirty(self, branch_name: Optional[str] = None) -> bool:
         """Check if repository path has any changes including new files.
 
         Returns:
