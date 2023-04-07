@@ -118,10 +118,11 @@ class Client:
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
-                self._git_repo.git.push(
-                    "-u", "-f" if force else "",
-                    ORIGIN_NAME, self.current_branch
-                )
+                args = ["-u"]
+                if force:
+                    args.append("-f")
+                args.extend([ORIGIN_NAME, self.current_branch])
+                self._git_repo.git.push(*args)
         except GitCommandError as exc:
             raise RepositoryClientError(
                 f"Unexpected error updating branch {self.current_branch}. {exc=!r}") from exc
