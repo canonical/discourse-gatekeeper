@@ -9,12 +9,12 @@ import re
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence, NamedTuple
 
 from git import GitCommandError
+from git.diff import Diff
 from git.repo import Repo
 from github import Github
-from github import PullRequest
 from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
@@ -39,6 +39,47 @@ PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
 CONFIG_USER_SECTION_NAME = "user"
 CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
 CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
+
+
+class DiffSummary(NamedTuple):
+    is_dirty: bool
+    new: Sequence[str]
+    removed: Sequence[str]
+    modified: Sequence[str]
+
+    @classmethod
+    def from_raw_diff(cls, diffs: Sequence[Diff]):
+        new_files = {diff.a_path for diff in diffs if diff.new_file}
+        removed_files = {diff.a_path for diff in diffs if diff.deleted_file}
+        modified_files = {diff.a_path for diff in diffs if diff.renamed_file}.union(
+            diff.a_path for diff in diffs if diff.change_type == "M"
+        )
+
+        return DiffSummary(
+            is_dirty=len(diffs) > 0,
+            new=list(new_files),
+            removed=list(removed_files),
+            modified=list(modified_files)
+        )
+
+    def __add__(self, other: 'DiffSummary'):
+        if not isinstance(other, DiffSummary):
+            raise ValueError("I can add only DiffSummary classes")
+
+        return DiffSummary(
+            is_dirty=self.is_dirty or other.is_dirty,
+            new=list(set(self.new).union(other.new)),
+            removed=list(set(self.removed).union(other.removed)),
+            modified=list(set(self.modified).union(other.modified)),
+        )
+
+    def __str__(self) -> str:
+        modified_str = [f"modified: {','.join(self.modified)}"] if len(self.modified) > 0 else []
+        new_str = [f"new: {','.join(self.new)}"] if len(self.new) > 0 else []
+        removed_str = [f"removed: {','.join(self.removed)}"] if len(self.removed) > 0 else []
+        return " // ".join(
+            modified_str + new_str + removed_str
+        )
 
 
 class Client:
@@ -79,6 +120,20 @@ class Client:
 
         self.switch(current_branch)
 
+    @property
+    def summary(self) -> DiffSummary:
+        self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
+
+        return DiffSummary.from_raw_diff(self._git_repo.index.diff(None)) + \
+            DiffSummary.from_raw_diff(self._git_repo.head.commit.diff())
+
+    def pull(self, branch_name: Optional[str] = None) -> None:
+        if branch_name is None:
+            self._git_repo.git.pull()
+        else:
+            with self.with_branch(branch_name) as repo:
+                repo.pull()
+
     def switch(self, branch_name: str) -> 'Client':
         is_dirty = self.is_dirty()
 
@@ -90,7 +145,15 @@ class Client:
             self._git_repo.git.checkout(branch_name, "--")
         finally:
             if is_dirty:
-                self._git_repo.git.stash("pop")
+                try:
+                    self._git_repo.git.stash("pop")
+                except GitCommandError as exc:
+                    if "CONFLICT" in exc.stdout:
+                        self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
+                    else:
+                        raise RepositoryClientError(
+                            f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
+                        ) from exc
                 self._git_repo.git.reset(DOCUMENTATION_FOLDER_NAME)
 
         return self
