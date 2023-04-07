@@ -96,25 +96,9 @@ def run_reconcile(
     return urls_with_actions
 
 
-def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
-    """Migrate existing docs from charmhub to local repository.
-
-    Args:
-        clients: The clients to interact with things like discourse and the repository.
-
-    Returns:
-        A single key-value pair dictionary containing a link to the Pull Request containing
-        migrated documentation as key and successful action result as value.
-    """
-
-    # Remove docs folder and recreate content from discourse
+def download_from_discourse(clients: Clients) -> None:
     base_path = clients.repository.base_path
     metadata = clients.repository.metadata
-
-    docs_path = base_path / DOCUMENTATION_FOLDER_NAME
-
-    if docs_path.exists():
-        shutil.rmtree(docs_path)
 
     index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
     server_content = (
@@ -129,6 +113,29 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
 
+
+
+def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
+    """Migrate existing docs from charmhub to local repository.
+
+    Args:
+        clients: The clients to interact with things like discourse and the repository.
+
+    Returns:
+        A single key-value pair dictionary containing a link to the Pull Request containing
+        migrated documentation as key and successful action result as value.
+    """
+
+    # Remove docs folder and recreate content from discourse
+    clients.repository.switch(user_inputs.base_branch).pull()
+
+    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+
+    if docs_path.exists():
+        shutil.rmtree(docs_path)
+
+    download_from_discourse(clients)
+
     # Check difference with main
     if not clients.repository.is_dirty(user_inputs.base_branch):
         logging.info(
@@ -136,17 +143,23 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         )
         return {}
 
-    pull_request = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
+    pr_link = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
 
-    if pull_request is not None:
+    if pr_link is not None:
+        logging.info(f"upload-charm-documents pull request already open at {pr_link}")
         with clients.repository.with_branch(DEFAULT_BRANCH_NAME) as repo:
             if repo.is_dirty():
-                repo.update_branch("time and date or relevant message")
+                msg = str(repo.summary)
+                logging.info(f"Updating PR with new commit: {msg}")
+                repo.update_branch(msg)
     else:
         with clients.repository.create_branch(
                 DEFAULT_BRANCH_NAME, user_inputs.base_branch
         ).with_branch(DEFAULT_BRANCH_NAME) as repo:
-            repo.update_branch("time and date or relevant message", force=True)
-            pull_request = repo.create_pull_request(DEFAULT_BRANCH_NAME)
+            msg = str(repo.summary)
+            logging.info(f"Creating new branch with new commit: {msg}")
+            repo.update_branch(msg, force=True)
+            pr_link = repo.create_pull_request(DEFAULT_BRANCH_NAME)
+            logging.info(f"Opening new PR with community contribution: {pr_link}")
 
-    return {pull_request: ActionResult.SUCCESS}
+    return {pr_link: ActionResult.SUCCESS}
