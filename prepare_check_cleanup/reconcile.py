@@ -194,7 +194,7 @@ def _check_url_result(
     return True
 
 
-def _get_tage_name() -> str:
+def _get_tag_name() -> str:
     """Get the name of the tag to use for the content.
 
     Returns:
@@ -216,7 +216,7 @@ def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist:
     Returns:
         Whether the test succeeded.
     """
-    tag_name = _get_tage_name()
+    tag_name = _get_tag_name()
 
     tag_exists = False
     with contextlib.suppress(UnknownObjectException):
@@ -227,8 +227,10 @@ def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist:
         return True
 
     logging.error(
-        "%s check failed, the tag existence check is not as expected, got: %s, expected: %s",
+        "%s check failed for tag %s, the tag existence check is not as expected, got: %s, "
+        "expected: %s",
         test_name,
+        tag_name,
         tag_exists,
         should_exist,
     )
@@ -319,7 +321,7 @@ def prepare_update(github_token: str, repo: str, filename: str) -> bool:
     github_repo = github_client.get_repo(repo)
 
     # Check that the tag doesn't exist
-    if _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=False):
+    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=False):
         return False
 
     base = github_repo.get_branch(github_repo.default_branch)
@@ -348,7 +350,7 @@ def prepare_update(github_token: str, repo: str, filename: str) -> bool:
     commit_sha = commit.sha
 
     # Tag the commit
-    tag_name = _get_tage_name()
+    tag_name = _get_tag_name()
     tag_object = github_repo.create_git_tag(tag_name, "tag for update test", commit_sha, "commit")
     github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
 
@@ -529,7 +531,7 @@ def cleanup(
     try:
         github_client = Github(login_or_token=github_token)
         github_repo = github_client.get_repo(repo)
-        tag_name = _get_tage_name()
+        tag_name = _get_tag_name()
         update_tag = github_repo.get_git_ref(f"tags/{tag_name}")
         update_tag.delete()
     except GithubException as exc:
