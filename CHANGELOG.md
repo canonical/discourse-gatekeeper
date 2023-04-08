@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [v0.3.0] - 2023-04-04
+
+### Changed
+
+- The action now checks for conflicts with any edits directly on discourse and
+  will fail the content update if there are conflicts. The git merge algorithm
+  is used to merge content where there are no conflicts with the new content in
+  git and the changed content on discourse. The `base_branch` input can be used
+  to set the branch that contains the content for the base of the comparison for
+  conflicts. It should be the branch targeted by pull requests and from which
+  releases are usually done. This input is optional and defaults to the default
+  branch of the repository.
+- The `github_token` input has been changed to be required as it is now also
+  required during reconciliation to retrieve the content that was last pushed
+  from git to discousrse as a base for checking for content conflicts and
+  merging content.
+
 ## [v0.2.3] - 2023-01-25
 
 ### Added

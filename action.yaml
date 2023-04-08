@@ -36,9 +36,9 @@ inputs:
     type: integer
   github_token:
     description: |
-      The github access token (secrets.GITHUB_TOKEN) to create pull request on Github.
-      Required if running in migration mode.
-    required: false
+      The github access token (secrets.GITHUB_TOKEN) to create pull request on Github and retrieve
+      the current documentation
+    required: true
     type: string
   base_tag_name:
     description: |
