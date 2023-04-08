@@ -18,7 +18,6 @@ from github.Repository import Repository
 from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-from src.pull_request import BRANCH_PREFIX
 
 
 class Action(str, Enum):
