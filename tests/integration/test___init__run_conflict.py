@@ -120,7 +120,8 @@ async def test_run_conflict(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == f"# {doc_title}\nline 1a\nline 2\nline 3a"
     mock_github_repo.get_contents.assert_called_once_with(
-        str(doc_file.relative_to(repository_path))
+        str(doc_file.relative_to(repository_path)),
+        mock_github_repo.get_git_tag.return_value.object.sha,
     )
 
     # 3. docs with a documentation file updated and discourse updated with conflicting content in
