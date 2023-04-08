@@ -9,20 +9,16 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import cast
 
 import yaml
 from github import Github
-from github.Commit import Commit
 from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
-from prepare_check_cleanup import exit_, output
+from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.pull_request import BRANCH_PREFIX
-
-_UPDATE_BRANCH = f"{BRANCH_PREFIX}/update-test"
 
 
 class Action(str, Enum):
@@ -31,7 +27,6 @@ class Action(str, Enum):
     Attrs:
         CHECK_DRAFT: Check that the draft e2e test succeeded.
         CHECK_CREATE: Check that the create e2e test succeeded.
-        PREPARE_UPDATE: Prepare for the update test.
         CHECK_UPDATE: Check that the update e2e test succeeded.
         CHECK_DELETE_TOPICS: Check that the delete_topics e2e test succeeded.
         CHECK_DELETE: Check that the delete e2e test succeeded.
@@ -40,7 +35,6 @@ class Action(str, Enum):
 
     CHECK_DRAFT = "check-draft"
     CHECK_CREATE = "check-create"
-    PREPARE_UPDATE = "prepare-update"
     CHECK_UPDATE = "check-update"
     CHECK_DELETE_TOPICS = "check-delete-topics"
     CHECK_DELETE = "check-delete"
@@ -85,8 +79,6 @@ def main() -> None:
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
-        case Action.PREPARE_UPDATE.value:
-            exit_.with_result(prepare_update(**action_kwargs))
         case Action.CHECK_UPDATE.value:
             exit_.with_result(
                 check_update(
@@ -301,64 +293,6 @@ def check_create(
     return True
 
 
-def prepare_update(github_token: str, repo: str, filename: str) -> bool:
-    """Prepare for the update action.
-
-    Create a branch and push a file to that branch.
-
-    Args:
-        github_token: Token for communication with GitHub.
-        repo: The name of the repository.
-        filename: The name of the file to push to the branch.
-
-    Returns:
-        Whether the preparation succeeded.
-
-    """
-    test_name = "prepare-update"
-
-    github_client = Github(login_or_token=github_token)
-    github_repo = github_client.get_repo(repo)
-
-    # Check that the tag doesn't exist
-    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=False):
-        return False
-
-    base = github_repo.get_branch(github_repo.default_branch)
-    github_repo.create_git_ref(ref=f"refs/heads/{_UPDATE_BRANCH}", sha=base.commit.sha)
-
-    # Delete the file if it already exists in the branch
-    with contextlib.suppress(UnknownObjectException):
-        contents = github_repo.get_contents(filename, ref=_UPDATE_BRANCH)
-        assert not isinstance(contents, list)
-        assert isinstance(contents.path, str)
-        github_repo.delete_file(
-            contents.path,
-            "remove pre-existing file for update test",
-            contents.sha,
-            branch=_UPDATE_BRANCH,
-        )
-
-    # Create the file in the branch
-    created_file = github_repo.create_file(
-        filename,
-        "file for update test",
-        Path(filename).read_text(encoding="utf-8"),
-        branch=_UPDATE_BRANCH,
-    )
-    commit = cast(Commit, created_file["commit"])
-    commit_sha = commit.sha
-
-    # Tag the commit
-    tag_name = _get_tag_name()
-    tag_object = github_repo.create_git_tag(tag_name, "tag for update test", commit_sha, "commit")
-    github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
-
-    output.write(f"update_branch={_UPDATE_BRANCH}\n")
-
-    return True
-
-
 def check_update(
     urls_with_actions: dict[str, str],
     discourse: Discourse,
@@ -536,14 +470,6 @@ def cleanup(
         update_tag.delete()
     except GithubException as exc:
         logging.exception("cleanup failed for GitHub update tag, %s", exc)
-        result = False
-
-    # Delete the update branch
-    try:
-        update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
-        update_branch.delete()
-    except GithubException as exc:
-        logging.exception("cleanup failed for GitHub update branch, %s", exc)
         result = False
 
     return result
