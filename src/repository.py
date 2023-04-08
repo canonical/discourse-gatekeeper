@@ -222,42 +222,6 @@ class Client:
 
         return base64.b64decode(content_file.content).decode("utf-8")
 
-    def get_file_content(self, path: str, ref: str | None = None) -> str:
-        """Get the content of a file from the default branch or a specific ref.
-
-        Args:
-            path: The path to the file.
-            ref: The branch, commit SHA or similar ref to retrieve the file from.
-
-        Returns:
-            The content of the file on the default branch.
-
-        Raises:
-            RepositoryFileNotFoundError: if the file could not be retrieved from GitHub, more than
-                one file is returned or a non-file is returned
-            RepositoryClientError: if there is a problem with communicating with GitHub
-        """
-        try:
-            content_file = (
-                self._github_repo.get_contents(path)
-                if ref is None
-                else self._github_repo.get_contents(path, ref)
-            )
-        except UnknownObjectException as exc:
-            raise RepositoryFileNotFoundError(
-                f"Could not retrieve the file at {path=}. {exc=!r}"
-            ) from exc
-        except GithubException as exc:
-            raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
-
-        if isinstance(content_file, list):
-            raise RepositoryFileNotFoundError(f"Path matched more than one file {path=}.")
-
-        if content_file.content is None:
-            raise RepositoryFileNotFoundError(f"Path did not match a file {path=}.")
-
-        return base64.b64decode(content_file.content).decode("utf-8")
-
 
 def _get_repository_name_from_git_url(remote_url: str) -> str:
     """Get repository name from git remote URL.
