@@ -12,7 +12,7 @@ from enum import Enum
 from pathlib import Path
 
 import yaml
-from github import Github
+from github import Github, Repository
 from github.GithubException import GithubException, UnknownObjectException
 
 from prepare_check_cleanup import exit_, output
@@ -84,8 +84,7 @@ def main() -> None:
                 )
             )
         case Action.PREPARE_UPDATE.value:
-            prepare_update(**action_kwargs)
-            sys.exit(0)
+            exit_.with_result(prepare_update(**action_kwargs))
         case Action.CHECK_UPDATE.value:
             exit_.with_result(
                 check_update(
@@ -203,6 +202,35 @@ def _get_tage_name() -> str:
     return yaml.safe_load(Path("action.yaml"))["inputs"]["base_tag_name"]["default"]
 
 
+def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist: bool) -> bool:
+    """Check that the content tag exists.
+
+    Args:
+        github_repo: The client to the GitHub repository.
+        should_exist: Whether the tag should exist
+        test_name: The name of the test to include in the logging message.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    tag_name = _get_tage_name()
+
+    tag_exists = False
+    with contextlib.suppress(UnknownObjectException):
+        github_repo.get_git_ref(f"tags/{tag_name}")
+        tag_exists = True
+
+    if tag_exists == should_exist:
+        return True
+
+    logging.error(
+        "%s check failed, the tag existence check is not as expected, got: %s, expected: %s",
+        test_name,
+        tag_exists,
+        should_exist,
+    )
+
+
 def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
     """Check that the draft test succeeded.
 
@@ -267,7 +295,7 @@ def check_create(
     return True
 
 
-def prepare_update(github_token: str, repo: str, filename: str) -> None:
+def prepare_update(github_token: str, repo: str, filename: str) -> bool:
     """Prepare for the update action.
 
     Create a branch and push a file to that branch.
@@ -277,8 +305,15 @@ def prepare_update(github_token: str, repo: str, filename: str) -> None:
         repo: The name of the repository.
         filename: The name of the file to push to the branch.
     """
+    test_name = "prepare-update"
+
     github_client = Github(login_or_token=github_token)
     github_repo = github_client.get_repo(repo)
+
+    # Check that the tag doesn't exist
+    if _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=False):
+        return False
+
     base = github_repo.get_branch(github_repo.default_branch)
     github_repo.create_git_ref(ref=f"refs/heads/{_UPDATE_BRANCH}", sha=base.commit.sha)
 
@@ -310,9 +345,15 @@ def prepare_update(github_token: str, repo: str, filename: str) -> None:
 
     output.write(f"update_branch={_UPDATE_BRANCH}\n")
 
+    return True
+
 
 def check_update(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
+    urls_with_actions: dict[str, str],
+    discourse: Discourse,
+    expected_url_results: list[str],
+    repo: str,
+    github_token: str,
 ) -> bool:
     """Check that the update test succeeded.
 
@@ -323,6 +364,8 @@ def check_update(
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
         expected_url_results: The expected url results.
+        repo: The name of the repository.
+        github_token: Token for communication with GitHub.
 
     Returns:
         Whether the test succeeded.
@@ -345,6 +388,11 @@ def check_update(
     if not _check_url_retrieve(
         urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
     ):
+        return False
+
+    github_client = Github(login_or_token=github_token)
+    github_repo = github_client.get_repo(repo)
+    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=True):
         return False
 
     logging.info("%s check succeeded", test_name)
@@ -481,8 +529,6 @@ def cleanup(
 
     # Delete the update branch
     try:
-        github_client = Github(login_or_token=github_token)
-        github_repo = github_client.get_repo(repo)
         update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
         update_branch.delete()
     except GithubException as exc:
