@@ -167,7 +167,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True, base_branch=None),
+        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)

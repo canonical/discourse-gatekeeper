@@ -80,9 +80,7 @@ async def test_run_conflict(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, base_branch=None
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert len(urls_with_actions) == 2
@@ -110,9 +108,7 @@ async def test_run_conflict(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, base_branch=None
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -140,9 +136,7 @@ async def test_run_conflict(
         run(
             base_path=repository_path,
             discourse=discourse_api,
-            user_inputs=factories.UserInputsFactory(
-                dry_run=True, delete_pages=True, base_branch=None
-            ),
+            user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
         )
 
     assert_substrings_in_string(
@@ -173,9 +167,7 @@ async def test_run_conflict(
         run(
             base_path=repository_path,
             discourse=discourse_api,
-            user_inputs=factories.UserInputsFactory(
-                dry_run=False, delete_pages=True, base_branch=None
-            ),
+            user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
         )
 
     assert_substrings_in_string(
@@ -209,9 +201,7 @@ async def test_run_conflict(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, base_branch=None
-        ),
+        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
