@@ -11,6 +11,7 @@ import sys
 from enum import Enum
 from pathlib import Path
 
+import yaml
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
 
@@ -192,6 +193,16 @@ def _check_url_result(
     return True
 
 
+def _get_tage_name() -> str:
+    """Get the name of the tag to use for the content.
+
+    Returns:
+        The name of the tag.
+
+    """
+    return yaml.safe_load(Path("action.yaml"))["inputs"]["base_tag_name"]["default"]
+
+
 def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
     """Check that the draft test succeeded.
 
@@ -284,12 +295,18 @@ def prepare_update(github_token: str, repo: str, filename: str) -> None:
         )
 
     # Create the file in the branch
-    github_repo.create_file(
+    created_file = github_repo.create_file(
         filename,
         "file for update test",
         Path(filename).read_text(encoding="utf-8"),
         branch=_UPDATE_BRANCH,
     )
+    commit_sha = created_file["commit"]["sha"]
+
+    # Tag the commit
+    tag_name = _get_tage_name()
+    tag_object = github_repo.create_git_tag(tag_name, "tag for update test", commit_sha, "commit")
+    github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
 
     output.write(f"update_branch={_UPDATE_BRANCH}\n")
 
@@ -443,6 +460,7 @@ def cleanup(
     """
     result = True
 
+    # Delete topics from discourse
     for url in urls_with_actions.keys():
         try:
             discourse.delete_topic(url=url)
@@ -450,13 +468,25 @@ def cleanup(
             logging.exception("cleanup failed for discourse, %s", exc)
             result = False
 
+    # Delete the update tag
+    try:
+        github_client = Github(login_or_token=github_token)
+        github_repo = github_client.get_repo(repo)
+        tag_name = _get_tage_name()
+        update_tag = github_repo.get_git_ref(f"tags/{tag_name}")
+        update_tag.delete()
+    except GithubException as exc:
+        logging.exception("cleanup failed for GitHub update tag, %s", exc)
+        result = False
+
+    # Delete the update branch
     try:
         github_client = Github(login_or_token=github_token)
         github_repo = github_client.get_repo(repo)
         update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
         update_branch.delete()
     except GithubException as exc:
-        logging.exception("cleanup failed for GitHub, %s", exc)
+        logging.exception("cleanup failed for GitHub update branch, %s", exc)
         result = False
 
     return result
