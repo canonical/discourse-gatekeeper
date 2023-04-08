@@ -199,15 +199,21 @@ def _local_and_server(
 
     try:
         path = str(path_info.local_path.relative_to(base_path))
-        base_content = clients.repository.get_file_content(
-            path=path, branch=user_inputs.base_branch
+        base_content = clients.repository.get_tag_file_content(
+            path=path, tag_name=user_inputs.base_tag_name
         )
     except exceptions.RepositoryFileNotFoundError:
         base_content = None
+    except exceptions.RepositoryTagNotFoundError as exc:
+        raise exceptions.ReconcilliationError(
+            f"Tag {user_inputs.base_tag_name} not defined on the repository, please tag the "
+            "commit with the content matching discourse with the tag "
+            f"{user_inputs.base_tag_name!r}"
+        ) from exc
     except exceptions.RepositoryClientError as exc:
         raise exceptions.ReconcilliationError(
             f"Unable to retrieve content for path from branch, {path=}, "
-            f"branch={user_inputs.base_branch}"
+            f"tag_name={user_inputs.base_tag_name}"
         ) from exc
     return (
         types_.UpdateAction(

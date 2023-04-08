@@ -157,7 +157,7 @@ def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
         ),
         server_page_content,
     ]
-    mocked_clients.repository.get_file_content.return_value = main_page_content
+    mocked_clients.repository.get_tag_file_content.return_value = main_page_content
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:
