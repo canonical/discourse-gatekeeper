@@ -199,7 +199,8 @@ def _get_tage_name() -> str:
         The name of the tag.
 
     """
-    return yaml.safe_load(Path("action.yaml"))["inputs"]["base_tag_name"]["default"]
+    actions_yaml = Path("action.yaml").read_text(encoding="utf-8")
+    return yaml.safe_load(actions_yaml)["inputs"]["base_tag_name"]["default"]
 
 
 def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist: bool) -> bool:
