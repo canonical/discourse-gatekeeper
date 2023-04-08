@@ -7,7 +7,6 @@
 # pylint: disable=protected-access,too-many-locals
 
 from pathlib import Path
-from typing import cast
 from unittest import mock
 
 import pytest

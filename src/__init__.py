@@ -78,7 +78,7 @@ def _run_reconcile(
         dry_run=user_inputs.dry_run,
         delete_pages=user_inputs.delete_pages,
     )
-    urls_with_actions = {
+    urls_with_actions: dict[str, str] = {
         str(report.location): report.result
         for report in reports
         if report.location is not None

@@ -7,7 +7,6 @@ import base64
 import logging
 import re
 from contextlib import suppress
-from functools import cache
 from pathlib import Path
 
 from git import GitCommandError
