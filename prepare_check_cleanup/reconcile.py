@@ -7,13 +7,15 @@ import argparse
 import contextlib
 import json
 import logging
-import sys
 from enum import Enum
 from pathlib import Path
+from typing import cast
 
 import yaml
-from github import Github, Repository
+from github import Github
+from github.Commit import Commit
 from github.GithubException import GithubException, UnknownObjectException
+from github.Repository import Repository
 
 from prepare_check_cleanup import exit_, output
 from src.discourse import Discourse, create_discourse
@@ -230,6 +232,7 @@ def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist:
         tag_exists,
         should_exist,
     )
+    return False
 
 
 def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
@@ -305,6 +308,10 @@ def prepare_update(github_token: str, repo: str, filename: str) -> bool:
         github_token: Token for communication with GitHub.
         repo: The name of the repository.
         filename: The name of the file to push to the branch.
+
+    Returns:
+        Whether the preparation succeeded.
+
     """
     test_name = "prepare-update"
 
@@ -337,7 +344,8 @@ def prepare_update(github_token: str, repo: str, filename: str) -> bool:
         Path(filename).read_text(encoding="utf-8"),
         branch=_UPDATE_BRANCH,
     )
-    commit_sha = created_file["commit"]["sha"]
+    commit = cast(Commit, created_file["commit"])
+    commit_sha = commit.sha
 
     # Tag the commit
     tag_name = _get_tage_name()
