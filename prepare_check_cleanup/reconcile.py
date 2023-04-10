@@ -196,12 +196,11 @@ def _get_tag_name() -> str:
     return yaml.safe_load(actions_yaml)["inputs"]["base_tag_name"]["default"]
 
 
-def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist: bool) -> bool:
+def _check_git_tag_exists(test_name: str, github_repo: Repository) -> bool:
     """Check that the content tag exists.
 
     Args:
         github_repo: The client to the GitHub repository.
-        should_exist: Whether the tag should exist
         test_name: The name of the test to include in the logging message.
 
     Returns:
@@ -209,23 +208,12 @@ def _check_git_tag_exists(test_name: str, github_repo: Repository, should_exist:
     """
     tag_name = _get_tag_name()
 
-    tag_exists = False
-    with contextlib.suppress(UnknownObjectException):
+    try:
         github_repo.get_git_ref(f"tags/{tag_name}")
-        tag_exists = True
-
-    if tag_exists == should_exist:
-        return True
-
-    logging.error(
-        "%s check failed for tag %s, the tag existence check is not as expected, got: %s, "
-        "expected: %s",
-        test_name,
-        tag_name,
-        tag_exists,
-        should_exist,
-    )
-    return False
+    except UnknownObjectException:
+        logging.error("%s check failed for tag %s, the tag does not exist", test_name, tag_name)
+        return False
+    return True
 
 
 def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
@@ -336,7 +324,7 @@ def check_update(
 
     github_client = Github(login_or_token=github_token)
     github_repo = github_client.get_repo(repo)
-    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo, should_exist=True):
+    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo):
         return False
 
     logging.info("%s check succeeded", test_name)
