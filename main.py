@@ -36,10 +36,8 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    # Always defined since the input has a default value
-    base_tag_name = typing.cast(str, os.getenv("INPUT_BASE_TAG_NAME"))
-    # Always defined by GitHub
-    commit_sha = typing.cast(str, os.getenv("GITHUB_SHA"))
+    base_tag_name = os.environ["INPUT_BASE_TAG_NAME"]
+    commit_sha = os.environ["GITHUB_SHA"]
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
