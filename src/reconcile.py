@@ -198,7 +198,7 @@ def _local_and_server_file_local_page_server(
 
     try:
         path = str(path_info.local_path.relative_to(base_path))
-        base_content = clients.repository.get_tag_file_content(
+        base_content = clients.repository.get_file_content_from_tag(
             path=path, tag_name=user_inputs.base_tag_name
         )
     except exceptions.RepositoryFileNotFoundError:

@@ -172,7 +172,7 @@ class Client:
         except GithubException as exc:
             raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
 
-    def get_tag_file_content(self, path: str, tag_name: str) -> str:
+    def get_file_content_from_tag(self, path: str, tag_name: str) -> str:
         """Get the content of a file for a specific tag.
 
         Args:
