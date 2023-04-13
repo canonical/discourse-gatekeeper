@@ -211,7 +211,7 @@ def _local_and_server_file_local_page_server(
         ) from exc
     except exceptions.RepositoryClientError as exc:
         raise exceptions.ReconcilliationError(
-            f"Unable to retrieve content for path from branch, {path=}, "
+            f"Unable to retrieve content for path from tag, {path=}, "
             f"tag_name={user_inputs.base_tag_name}"
         ) from exc
     return (
