@@ -3,14 +3,15 @@
 
 """Library for uploading docs to charmhub."""
 import logging
-from itertools import tee
 import shutil
+from itertools import tee
+from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .discourse import Discourse
+from .discourse import Discourse, create_discourse
 from .docs_directory import has_docs_directory
 from .docs_directory import read as read_docs_directory
 from .exceptions import InputError
@@ -31,6 +32,21 @@ GETTING_STARTED = (
 )
 
 
+def get_clients(user_inputs: types_.UserInputs, base_path: Path) -> Clients:
+    return Clients(
+        discourse=create_discourse(
+            hostname=user_inputs.discourse.hostname,
+            category_id=user_inputs.discourse.category_id,
+            api_username=user_inputs.discourse.api_username,
+            api_key=user_inputs.discourse.api_key,
+        ),
+        repository=create_repository_client(
+            access_token=user_inputs.github_access_token,
+            base_path=base_path
+        )
+    )
+
+
 def run_reconcile(
         clients: Clients, user_inputs: UserInputs
 ) -> dict[str, str]:
@@ -47,6 +63,13 @@ def run_reconcile(
         InputError: if there are any problems with executing any of the actions.
 
     """
+
+    if not clients.repository.has_docs_directory:
+        logging.warning("Cannot run any reconcile to Discourse as there is not any docs folder "
+                        "present in the repository")
+
+        return {}
+
     metadata = clients.repository.metadata
     base_path = clients.repository.base_path
 
@@ -114,7 +137,6 @@ def download_from_discourse(clients: Clients) -> None:
     )
 
 
-
 def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     """Migrate existing docs from charmhub to local repository.
 
@@ -125,6 +147,10 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
+    if not clients.repository.metadata.docs:
+        logging.warning("Cannot run any migration from Discourse as there is not discourse "
+                        "link present in the metadata.")
+        return {}
 
     # Remove docs folder and recreate content from discourse
     clients.repository.switch(user_inputs.base_branch).pull()
