@@ -9,7 +9,7 @@
 import base64
 import secrets
 from pathlib import Path
-from typing import Callable
+from collections.abc import Callable
 from unittest import mock
 
 import pytest
