@@ -8,8 +8,8 @@
 
 import base64
 import secrets
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 from unittest import mock
 
 import pytest
