@@ -326,7 +326,7 @@ def test_tag_commit_tag_exists(monkeypatch: pytest.MonkeyPatch, repository_clien
     """
     arrange: given tag name and commit sha, Client with a mocked github repository client
     act: when tag_commit is called with the tag name and commit sha
-    assert: then the functions are called to create the tag.
+    assert: then the functions are called to delete the pre-existing and create the new tag.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
