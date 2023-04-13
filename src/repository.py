@@ -34,7 +34,10 @@ ACTIONS_PULL_REQUEST_BODY = (
     "existing documentation from server to the git repository."
 )
 PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
-TAG_MESSAGE = "tag created by upload-charm-docs to mark the latest push to discourse"
+TAG_MESSAGE = (
+    "tag created by upload-charm-docs to mark the latest push to discourse, managed by "
+    "upload-charm-docs, changes or removal of this tag may lead to unexpected behaviour"
+)
 
 CONFIG_USER_SECTION_NAME = "user"
 CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
