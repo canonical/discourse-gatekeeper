@@ -6,6 +6,7 @@
 import base64
 import logging
 import re
+from contextlib import suppress
 from pathlib import Path
 
 from git import GitCommandError
@@ -15,7 +16,12 @@ from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .exceptions import InputError, RepositoryClientError, RepositoryFileNotFoundError
+from .exceptions import (
+    InputError,
+    RepositoryClientError,
+    RepositoryFileNotFoundError,
+    RepositoryTagNotFoundError,
+)
 
 GITHUB_HOSTNAME = "github.com"
 ORIGIN_NAME = "origin"
@@ -28,6 +34,10 @@ ACTIONS_PULL_REQUEST_BODY = (
     "existing documentation from server to the git repository."
 )
 PR_LINK_NO_CHANGE = "<not created due to no changes in repository>"
+TAG_MESSAGE = (
+    "tag created by upload-charm-docs to mark the latest push to discourse, managed by "
+    "upload-charm-docs, changes or removal of this tag may lead to unexpected behaviour"
+)
 
 CONFIG_USER_SECTION_NAME = "user"
 CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
@@ -141,39 +151,78 @@ class Client:
         """
         return self._git_repo.is_dirty(untracked_files=True)
 
-    def get_file_content(self, path: str, branch: str | None = None) -> str:
-        """Get the content of a file from the default branch.
+    def tag_commit(self, tag_name: str, commit_sha: str) -> None:
+        """Tag a commit, if the tag already exists, it is deleted first.
+
+        Args:
+            tag_name: The name of the tag.
+            commit_sha: The SHA of the commit to tag.
+
+        Raises:
+            RepositoryClientError: if there is a problem with communicating with GitHub
+        """
+        try:
+            # Delete the tag if it exists
+            with suppress(UnknownObjectException):
+                tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
+                tag_ref.delete()
+
+            # Create the new tag
+            tag_object = self._github_repo.create_git_tag(
+                tag_name, TAG_MESSAGE, commit_sha, "commit"
+            )
+            self._github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
+        except GithubException as exc:
+            raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
+
+    def get_file_content_from_tag(self, path: str, tag_name: str) -> str:
+        """Get the content of a file for a specific tag.
 
         Args:
             path: The path to the file.
-            branch: The branch to retrieve the file from.
+            tag_name: The name of the tag.
 
         Returns:
-            The content of the file on the default branch.
+            The content of the file for the tag.
 
         Raises:
+            RepositoryTagNotFoundError: if the tag could not be found in the repository.
             RepositoryFileNotFoundError: if the file could not be retrieved from GitHub, more than
                 one file is returned or a non-file is returned
             RepositoryClientError: if there is a problem with communicating with GitHub
         """
+        # Get the tag
         try:
-            content_file = (
-                self._github_repo.get_contents(path)
-                if branch is None
-                else self._github_repo.get_contents(path, branch)
-            )
+            # Need both steps, the ref allows for retrieval by tag name
+            tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
+            # The ref does not contain the commit SHA, need to retrieve the tag object
+            git_tag = self._github_repo.get_git_tag(tag_ref.object.sha)
+        except UnknownObjectException as exc:
+            raise RepositoryTagNotFoundError(
+                f"Could not retrieve the tag {tag_name=}. {exc=!r}"
+            ) from exc
+        except GithubException as exc:
+            raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
+
+        # Get the file contents
+        try:
+            content_file = self._github_repo.get_contents(path, git_tag.object.sha)
         except UnknownObjectException as exc:
             raise RepositoryFileNotFoundError(
-                f"Could not retrieve the file at {path=}. {exc=!r}"
+                f"Could not retrieve the file at {path=} for tag {tag_name}. {exc=!r}"
             ) from exc
         except GithubException as exc:
             raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
 
         if isinstance(content_file, list):
-            raise RepositoryFileNotFoundError(f"Path matched more than one file {path=}.")
+            raise RepositoryFileNotFoundError(
+                f"Path matched more than one file {path=} for tag {tag_name}."
+            )
 
         if content_file.content is None:
-            raise RepositoryFileNotFoundError(f"Path did not match a file {path=}.")
+            raise RepositoryFileNotFoundError(
+                f"Path did not match a file {path=} for tag {tag_name}."
+            )
 
         return base64.b64decode(content_file.content).decode("utf-8")
 

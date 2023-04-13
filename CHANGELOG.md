@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The base for the content comparison is no longer based on using a branch.
+  Instead, the action will look for a tag with a default value of
+  `upload-charm-docs/base-content` which can be changed using the
+  `base_tag_name` input. This ensures that the comparison can be made even if
+  the action is run on the default branch. The action will now fail if the
+  `base_tag_name` is not found on the repository.
+- On a successful run in reconciliation mode with dry run not enabled, the
+  action will automatically add the `base_tag_name` tag to the commit on which
+  it was run.
+- The `base_branch` input has been deprecated and will be removed in a future
+  release. It is no longer in use.
+
 ## [v0.3.0] - 2023-04-04
 
 ### Changed

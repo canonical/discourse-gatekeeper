@@ -78,13 +78,20 @@ def _run_reconcile(
         dry_run=user_inputs.dry_run,
         delete_pages=user_inputs.delete_pages,
     )
-    return {
+    urls_with_actions: dict[str, str] = {
         str(report.location): report.result
         for report in reports
         if report.location is not None
         and report.location != DRY_RUN_NAVLINK_LINK
         and report.location != FAIL_NAVLINK_LINK
     }
+
+    if not user_inputs.dry_run:
+        clients.repository.tag_commit(
+            tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
+        )
+
+    return urls_with_actions
 
 
 def _run_migrate(base_path: Path, metadata: Metadata, clients: Clients) -> dict[str, str]:

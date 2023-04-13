@@ -80,6 +80,155 @@ def _local_and_server_validation(
         )
 
 
+def _local_and_server_dir_local_group_server(
+    path_info: types_.PathInfo, table_row: types_.TableRow
+) -> tuple[types_.UpdateAction | types_.NoopAction, ...]:
+    """Handle the case where the item is a directory locally and a grouping on the server.
+
+    Args:
+        path_info: Information about the local documentation file.
+        table_row: A row from the navigation table.
+
+    Returns:
+        The action to execute against the server.
+
+    """
+    if table_row.navlink.title == path_info.navlink_title:
+        return (
+            types_.NoopAction(
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink=table_row.navlink,
+                content=None,
+            ),
+        )
+    return (
+        types_.UpdateAction(
+            level=path_info.level,
+            path=path_info.table_path,
+            navlink_change=types_.NavlinkChange(
+                old=table_row.navlink,
+                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+            ),
+            content_change=None,
+        ),
+    )
+
+
+def _local_and_server_file_local_group_server(
+    path_info: types_.PathInfo, table_row: types_.TableRow, clients: types_.Clients
+) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
+    """Handle the case where the item is a file locally and a grouping on the server.
+
+    Args:
+        path_info: Information about the local documentation file.
+        table_row: A row from the navigation table.
+        clients: The clients to interact with things like discourse and the repository.
+
+    Returns:
+        The action to execute against the server.
+
+    Raises:
+        ReconcilliationError:
+            - If certain edge cases occur that are not expected, such as table_row.navlink.link for
+              a page on the server.
+    """
+    # This is an edge case that can't actually occur because table_row.is_group is based on
+    # whether the navlink link is None so this case would have been caught in the local
+    # directory and server group case, here for defensive programming if definition of is_group
+    # is buggy or changed
+    if table_row.navlink.link is None:  # pragma: no cover
+        raise exceptions.ReconcilliationError(
+            f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
+        )
+    return (
+        types_.DeleteAction(
+            level=path_info.level,
+            path=path_info.table_path,
+            navlink=table_row.navlink,
+            content=clients.discourse.retrieve_topic(url=table_row.navlink.link),
+        ),
+        types_.CreateAction(
+            level=path_info.level,
+            path=path_info.table_path,
+            navlink_title=path_info.navlink_title,
+            content=None,
+        ),
+    )
+
+
+def _local_and_server_file_local_page_server(
+    path_info: types_.PathInfo,
+    table_row: types_.TableRow,
+    clients: types_.Clients,
+    base_path: Path,
+    user_inputs: types_.UserInputs,
+) -> tuple[
+    types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
+]:
+    """Handle the case where the item is a file locally and a page on the server.
+
+    Args:
+        path_info: Information about the local documentation file.
+        table_row: A row from the navigation table.
+        clients: The clients to interact with things like discourse and the repository.
+        base_path: The base path of the repository.
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        The action to execute against the server.
+
+    Raises:
+        ReconcilliationError:
+            - If there was a problem retrieving content from GitHub.
+            - If the expected tag does not exist on the server.
+    """
+    local_content = path_info.local_path.read_text(encoding="utf-8").strip()
+    server_content = _get_server_content(table_row=table_row, discourse=clients.discourse)
+
+    if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
+        return (
+            types_.NoopAction(
+                level=path_info.level,
+                path=path_info.table_path,
+                navlink=table_row.navlink,
+                content=local_content,
+            ),
+        )
+
+    try:
+        path = str(path_info.local_path.relative_to(base_path))
+        base_content = clients.repository.get_file_content_from_tag(
+            path=path, tag_name=user_inputs.base_tag_name
+        )
+    except exceptions.RepositoryFileNotFoundError:
+        base_content = None
+    except exceptions.RepositoryTagNotFoundError as exc:
+        raise exceptions.ReconcilliationError(
+            f"Tag {user_inputs.base_tag_name} not defined on the repository, please tag the "
+            "commit with the content matching discourse with the tag "
+            f"{user_inputs.base_tag_name!r}"
+        ) from exc
+    except exceptions.RepositoryClientError as exc:
+        raise exceptions.ReconcilliationError(
+            f"Unable to retrieve content for path from tag, {path=}, "
+            f"tag_name={user_inputs.base_tag_name}"
+        ) from exc
+    return (
+        types_.UpdateAction(
+            level=path_info.level,
+            path=path_info.table_path,
+            navlink_change=types_.NavlinkChange(
+                old=table_row.navlink,
+                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+            ),
+            content_change=types_.ContentChange(
+                base=base_content, server=server_content, local=local_content
+            ),
+        ),
+    )
+
+
 def _local_and_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
@@ -113,64 +262,20 @@ def _local_and_server(
     Returns:
         The action to execute against the server.
 
-    Raises:
-        ReconcilliationError:
-            - If the table path or level do not match for the path info and table row.
-            - If certain edge cases occur that are not expected, such as table_row.navlink.link for
-              a page on the server.
-            - If there was a problem retrieving content from GitHub.
     """
     _local_and_server_validation(path_info=path_info, table_row=table_row)
 
     # Is a directory locally and a grouping on the server
     if path_info.local_path.is_dir() and table_row.is_group:
-        if table_row.navlink.title == path_info.navlink_title:
-            return (
-                types_.NoopAction(
-                    level=path_info.level,
-                    path=path_info.table_path,
-                    navlink=table_row.navlink,
-                    content=None,
-                ),
-            )
-        return (
-            types_.UpdateAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink_change=types_.NavlinkChange(
-                    old=table_row.navlink,
-                    new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
-                ),
-                content_change=None,
-            ),
-        )
+        return _local_and_server_dir_local_group_server(path_info=path_info, table_row=table_row)
 
     # Is a directory locally and a page on the server
     if path_info.local_path.is_dir():
-        # This is an edge case that can't actually occur because table_row.is_group is based on
-        # whether the navlink link is None so this case would have been caught in the local
-        # directory and server group case, here for defensive programming if definition of is_group
-        # is buggy or changed
-        if table_row.navlink.link is None:  # pragma: no cover
-            raise exceptions.ReconcilliationError(
-                f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
-            )
-        return (
-            types_.DeleteAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink=table_row.navlink,
-                content=clients.discourse.retrieve_topic(url=table_row.navlink.link),
-            ),
-            types_.CreateAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink_title=path_info.navlink_title,
-                content=None,
-            ),
+        return _local_and_server_file_local_group_server(
+            path_info=path_info, table_row=table_row, clients=clients
         )
 
-    # Is a page locally and a grouping on the server, only need to create the page since the
+    # Is a file locally and a grouping on the server, only need to create the page since the
     # grouping is automatically removed from the navigation table since the directory has been
     # removed locally
     if table_row.is_group:
@@ -183,44 +288,13 @@ def _local_and_server(
             ),
         )
 
-    # Is a page locally and on the server
-    local_content = path_info.local_path.read_text(encoding="utf-8").strip()
-    server_content = _get_server_content(table_row=table_row, discourse=clients.discourse)
-
-    if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
-        return (
-            types_.NoopAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink=table_row.navlink,
-                content=local_content,
-            ),
-        )
-
-    try:
-        path = str(path_info.local_path.relative_to(base_path))
-        base_content = clients.repository.get_file_content(
-            path=path, branch=user_inputs.base_branch
-        )
-    except exceptions.RepositoryFileNotFoundError:
-        base_content = None
-    except exceptions.RepositoryClientError as exc:
-        raise exceptions.ReconcilliationError(
-            f"Unable to retrieve content for path from branch, {path=}, "
-            f"branch={user_inputs.base_branch}"
-        ) from exc
-    return (
-        types_.UpdateAction(
-            level=path_info.level,
-            path=path_info.table_path,
-            navlink_change=types_.NavlinkChange(
-                old=table_row.navlink,
-                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
-            ),
-            content_change=types_.ContentChange(
-                base=base_content, server=server_content, local=local_content
-            ),
-        ),
+    # Is a file locally and page on the server
+    return _local_and_server_file_local_page_server(
+        path_info=path_info,
+        table_row=table_row,
+        clients=clients,
+        base_path=base_path,
+        user_inputs=user_inputs,
     )
 
 
