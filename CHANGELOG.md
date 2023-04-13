@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.4.0] - 2023-04-13
+
 ### Changed
 
 - The base for the content comparison is no longer based on using a branch.
