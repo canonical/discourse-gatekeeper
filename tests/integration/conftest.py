@@ -58,7 +58,7 @@ async def discourse(model: Model) -> Application:
         """
         return (await model.get_status())["applications"]["discourse-k8s"].status["status"]
 
-    for _ in range(120):
+    for _ in range(200):
         if await get_discourse_status() != "waiting":
             break
         await asyncio.sleep(10)

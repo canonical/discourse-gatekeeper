@@ -96,20 +96,24 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{constants.NAVIGATION_TABLE_START}".strip()
     assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
+    mock_github_repo.create_git_ref.assert_not_called()
 
     # 2. docs with an index file
     caplog.clear()
+    user_inputs_2 = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        base_path=repository_path, discourse=discourse_api, user_inputs=user_inputs_2
     )
 
     assert tuple(urls_with_actions) == (index_url,)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{index_content}{constants.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
+    mock_github_repo.create_git_ref.assert_called_once_with(
+        f"refs/tags/{user_inputs_2.base_tag_name}",
+        mock_github_repo.create_git_tag.return_value.sha,
+    )
 
     # 3. docs with a documentation file added in dry run mode
     caplog.clear()
@@ -163,7 +167,7 @@ async def test_run(
     urls_with_actions = run(
         base_path=repository_path,
         discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True, base_branch=None),
+        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -173,7 +177,8 @@ async def test_run(
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_1
     mock_github_repo.get_contents.assert_called_once_with(
-        str(doc_file.relative_to(repository_path))
+        str(doc_file.relative_to(repository_path)),
+        mock_github_repo.get_git_tag.return_value.object.sha,
     )
 
     # 6. docs with a documentation file updated

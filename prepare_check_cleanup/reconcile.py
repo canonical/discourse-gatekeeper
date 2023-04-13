@@ -7,19 +7,17 @@ import argparse
 import contextlib
 import json
 import logging
-import sys
 from enum import Enum
 from pathlib import Path
 
+import yaml
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
+from github.Repository import Repository
 
-from prepare_check_cleanup import exit_, output
+from prepare_check_cleanup import exit_
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-from src.pull_request import BRANCH_PREFIX
-
-_UPDATE_BRANCH = f"{BRANCH_PREFIX}/update-test"
 
 
 class Action(str, Enum):
@@ -28,7 +26,6 @@ class Action(str, Enum):
     Attrs:
         CHECK_DRAFT: Check that the draft e2e test succeeded.
         CHECK_CREATE: Check that the create e2e test succeeded.
-        PREPARE_UPDATE: Prepare for the update test.
         CHECK_UPDATE: Check that the update e2e test succeeded.
         CHECK_DELETE_TOPICS: Check that the delete_topics e2e test succeeded.
         CHECK_DELETE: Check that the delete e2e test succeeded.
@@ -37,7 +34,6 @@ class Action(str, Enum):
 
     CHECK_DRAFT = "check-draft"
     CHECK_CREATE = "check-create"
-    PREPARE_UPDATE = "prepare-update"
     CHECK_UPDATE = "check-update"
     CHECK_DELETE_TOPICS = "check-delete-topics"
     CHECK_DELETE = "check-delete"
@@ -82,9 +78,6 @@ def main() -> None:
                     urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
                 )
             )
-        case Action.PREPARE_UPDATE.value:
-            prepare_update(**action_kwargs)
-            sys.exit(0)
         case Action.CHECK_UPDATE.value:
             exit_.with_result(
                 check_update(
@@ -192,6 +185,37 @@ def _check_url_result(
     return True
 
 
+def _get_tag_name() -> str:
+    """Get the name of the tag to use for the content.
+
+    Returns:
+        The name of the tag.
+
+    """
+    actions_yaml = Path("action.yaml").read_text(encoding="utf-8")
+    return yaml.safe_load(actions_yaml)["inputs"]["base_tag_name"]["default"]
+
+
+def _check_git_tag_exists(test_name: str, github_repo: Repository) -> bool:
+    """Check that the content tag exists.
+
+    Args:
+        github_repo: The client to the GitHub repository.
+        test_name: The name of the test to include in the logging message.
+
+    Returns:
+        Whether the test succeeded.
+    """
+    tag_name = _get_tag_name()
+
+    try:
+        github_repo.get_git_ref(f"tags/{tag_name}")
+    except UnknownObjectException:
+        logging.error("%s check failed for tag %s, the tag does not exist", test_name, tag_name)
+        return False
+    return True
+
+
 def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[str]) -> bool:
     """Check that the draft test succeeded.
 
@@ -256,46 +280,12 @@ def check_create(
     return True
 
 
-def prepare_update(github_token: str, repo: str, filename: str) -> None:
-    """Prepare for the update action.
-
-    Create a branch and push a file to that branch.
-
-    Args:
-        github_token: Token for communication with GitHub.
-        repo: The name of the repository.
-        filename: The name of the file to push to the branch.
-    """
-    github_client = Github(login_or_token=github_token)
-    github_repo = github_client.get_repo(repo)
-    base = github_repo.get_branch(github_repo.default_branch)
-    github_repo.create_git_ref(ref=f"refs/heads/{_UPDATE_BRANCH}", sha=base.commit.sha)
-
-    # Delete the file if it already exists in the branch
-    with contextlib.suppress(UnknownObjectException):
-        contents = github_repo.get_contents(filename, ref=_UPDATE_BRANCH)
-        assert not isinstance(contents, list)
-        assert isinstance(contents.path, str)
-        github_repo.delete_file(
-            contents.path,
-            "remove pre-existing file for update test",
-            contents.sha,
-            branch=_UPDATE_BRANCH,
-        )
-
-    # Create the file in the branch
-    github_repo.create_file(
-        filename,
-        "file for update test",
-        Path(filename).read_text(encoding="utf-8"),
-        branch=_UPDATE_BRANCH,
-    )
-
-    output.write(f"update_branch={_UPDATE_BRANCH}\n")
-
-
 def check_update(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
+    urls_with_actions: dict[str, str],
+    discourse: Discourse,
+    expected_url_results: list[str],
+    repo: str,
+    github_token: str,
 ) -> bool:
     """Check that the update test succeeded.
 
@@ -306,6 +296,8 @@ def check_update(
         urls_with_actions: The URLs that had any actions against them.
         discourse: Client to the documentation server.
         expected_url_results: The expected url results.
+        repo: The name of the repository.
+        github_token: Token for communication with GitHub.
 
     Returns:
         Whether the test succeeded.
@@ -328,6 +320,11 @@ def check_update(
     if not _check_url_retrieve(
         urls_with_actions=urls_with_actions, discourse=discourse, test_name=test_name
     ):
+        return False
+
+    github_client = Github(login_or_token=github_token)
+    github_repo = github_client.get_repo(repo)
+    if not _check_git_tag_exists(test_name=test_name, github_repo=github_repo):
         return False
 
     logging.info("%s check succeeded", test_name)
@@ -443,6 +440,7 @@ def cleanup(
     """
     result = True
 
+    # Delete topics from discourse
     for url in urls_with_actions.keys():
         try:
             discourse.delete_topic(url=url)
@@ -450,13 +448,15 @@ def cleanup(
             logging.exception("cleanup failed for discourse, %s", exc)
             result = False
 
+    # Delete the update tag
     try:
         github_client = Github(login_or_token=github_token)
         github_repo = github_client.get_repo(repo)
-        update_branch = github_repo.get_git_ref(f"heads/{_UPDATE_BRANCH}")
-        update_branch.delete()
+        tag_name = _get_tag_name()
+        update_tag = github_repo.get_git_ref(f"tags/{tag_name}")
+        update_tag.delete()
     except GithubException as exc:
-        logging.exception("cleanup failed for GitHub, %s", exc)
+        logging.exception("cleanup failed for GitHub update tag, %s", exc)
         result = False
 
     return result

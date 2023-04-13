@@ -37,14 +37,17 @@ class UserInputs(typing.NamedTuple):
             migration mode.
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
-        base_branch: The branch the documentation is stored on after updating discourse.
+        base_tag_name: The name of the tag identifying the commit on which the documentation is
+            stored on after updating discourse.
+        commit_sha: The SHA of the commit the action is running on.
     """
 
     discourse: UserInputsDiscourse
     dry_run: bool
     delete_pages: bool
     github_access_token: str | None
-    base_branch: str | None
+    base_tag_name: str
+    commit_sha: str
 
 
 class Metadata(typing.NamedTuple):

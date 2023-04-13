@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The base for the content comparison is no longer based on using a branch.
+  Instead, the action will look for a tag with a default value of
+  `upload-charm-docs/base-content` which can be changed using the
+  `base_tag_name` input. This ensures that the comparison can be made even if
+  the action is run on the default branch. The action will now fail if the
+  `base_tag_name` is not found on the repository.
+- On a successful run in reconciliation mode with dry run not enabled, the
+  action will automatically add the `base_tag_name` tag to the commit on which
+  it was run.
+- The `base_branch` input has been deprecated and will be removed in a future
+  release. It is no longer in use.
+
+## [v0.3.0] - 2023-04-04
+
+### Changed
+
+- The action now checks for conflicts with any edits directly on discourse and
+  will fail the content update if there are conflicts. The git merge algorithm
+  is used to merge content where there are no conflicts with the new content in
+  git and the changed content on discourse. The `base_branch` input can be used
+  to set the branch that contains the content for the base of the comparison for
+  conflicts. It should be the branch targeted by pull requests and from which
+  releases are usually done. This input is optional and defaults to the default
+  branch of the repository.
+- The `github_token` input has been changed to be required as it is now also
+  required during reconciliation to retrieve the content that was last pushed
+  from git to discousrse as a base for checking for content conflicts and
+  merging content.
+
 ## [v0.2.3] - 2023-01-25
 
 ### Added

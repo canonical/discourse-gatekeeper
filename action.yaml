@@ -36,14 +36,20 @@ inputs:
     type: integer
   github_token:
     description: |
-      The github access token (secrets.GITHUB_TOKEN) to create pull request on Github.
-      Required if running in migration mode.
+      The github access token (secrets.GITHUB_TOKEN) to create pull request on Github and retrieve
+      the current documentation
+    required: true
+    type: string
+  base_tag_name:
+    description: |
+      The name of the tag that contains the documentation after it has been uploaded to
+      discourse.
     required: false
     type: string
+    default: "upload-charm-docs/base-content"
   base_branch:
     description: |
-      The name of the branch that contains the documentation after it has been uploaded to
-      discourse. Defaults to the default branch of the repository.
+      DEPRECATED - here for backwards compatibility. This input is no longer used.
     required: false
     type: string
 outputs:

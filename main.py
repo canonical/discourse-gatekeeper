@@ -39,7 +39,8 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    base_branch = os.getenv("INPUT_BASE_BRANCH")
+    base_tag_name = os.environ["INPUT_BASE_TAG_NAME"]
+    commit_sha = os.environ["GITHUB_SHA"]
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -51,7 +52,8 @@ def _parse_env_vars() -> types_.UserInputs:
         delete_pages=delete_topics,
         dry_run=dry_run,
         github_access_token=github_access_token,
-        base_branch=base_branch,
+        base_tag_name=base_tag_name,
+        commit_sha=commit_sha,
     )
 
 

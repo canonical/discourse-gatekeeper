@@ -50,6 +50,9 @@ def test__run_reconcile_empty_local_server(tmp_path: Path, mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
+    mocked_clients.repository.tag_commit.assert_called_once_with(
+        tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
+    )
     assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
 
 
@@ -86,6 +89,9 @@ def test__run_reconcile_local_empty_server(tmp_path: Path, mocked_clients):
             f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
+    mocked_clients.repository.tag_commit.assert_called_once_with(
+        tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
+    )
     assert returned_page_interactions == {
         page_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
@@ -109,6 +115,7 @@ def test__run_reconcile_local_empty_server_dry_run(tmp_path: Path, mocked_client
     )
 
     mocked_clients.discourse.create_topic.assert_not_called()
+    mocked_clients.repository.tag_commit.assert_not_called()
     assert not returned_page_interactions
 
 
@@ -157,7 +164,7 @@ def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
         ),
         server_page_content,
     ]
-    mocked_clients.repository.get_file_content.return_value = main_page_content
+    mocked_clients.repository.get_file_content_from_tag.return_value = main_page_content
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:

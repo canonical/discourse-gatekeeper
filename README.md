@@ -132,5 +132,6 @@ discourse.
 
 Note that `git merge` will not make any changes on your branch. The content that
 was last pushed to discourse is determined by getting the content from a given
-file from the default branch of the repository. A different branch can be
-configured using the `base_branch` input.
+file from a commit with the `upload-charm-docs/base-content` tag. A different
+tag can be configured using the `base_tag_name` input. If the tag does not
+exist, the action will fail and request for the tag to be created.
