@@ -9,6 +9,7 @@
 import base64
 import secrets
 from pathlib import Path
+from typing import Callable
 from unittest import mock
 
 import pytest
@@ -251,15 +252,29 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
 
 
 @pytest.mark.parametrize(
-    "method",
+    "get_method",
     [
-        pytest.param("get_git_ref", id="get_git_ref"),
-        pytest.param("create_git_tag", id="create_git_tag"),
-        pytest.param("create_git_ref", id="create_git_ref"),
+        pytest.param(
+            lambda mock_github_repository: mock_github_repository.get_git_ref, id="get_git_ref"
+        ),
+        pytest.param(
+            lambda mock_github_repository: mock_github_repository.create_git_tag,
+            id="create_git_tag",
+        ),
+        pytest.param(
+            lambda mock_github_repository: mock_github_repository.create_git_ref,
+            id="create_git_ref",
+        ),
+        pytest.param(
+            lambda mock_github_repository: mock_github_repository.get_git_ref.return_value.delete,
+            id="get_git_ref.return_value.delete",
+        ),
     ],
 )
 def test_tag_commit_tag_github_error(
-    method: str, monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    get_method: Callable[[Repository], mock.MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+    repository_client: Client,
 ):
     """
     arrange: given tag name and commit sha, Client with a mocked github repository client where a
@@ -268,28 +283,7 @@ def test_tag_commit_tag_github_error(
     assert: RepositoryClientError is raised.
     """
     mock_github_repository = mock.MagicMock(spec=Repository)
-    getattr(mock_github_repository, method).side_effect = GithubException(
-        status=401, data="Unauthorized", headers=None
-    )
-    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
-
-    with pytest.raises(RepositoryClientError) as exc:
-        repository_client.tag_commit(tag_name="tag 1", commit_sha="sha 1")
-
-    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
-
-
-def test_tag_commit_tag_delete_tag_github_error(
-    monkeypatch: pytest.MonkeyPatch, repository_client: Client
-):
-    """
-    arrange: given tag name and commit sha, Client with a mocked github repository client where a
-        deleting a tag raises GithubException
-    act: when tag_commit is called with the tag name and commit sha
-    assert: RepositoryClientError is raised.
-    """
-    mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_git_ref.return_value.delete.side_effect = GithubException(
+    get_method(mock_github_repository).side_effect = GithubException(
         status=401, data="Unauthorized", headers=None
     )
     monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
