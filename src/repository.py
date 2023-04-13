@@ -193,7 +193,9 @@ class Client:
         """
         # Get the tag
         try:
+            # Need both steps, the ref allows for retrieval by tag name
             tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
+            # The ref does not contain the commit SHA, need to retrieve the tag object
             git_tag = self._github_repo.get_git_tag(tag_ref.object.sha)
         except UnknownObjectException as exc:
             raise RepositoryTagNotFoundError(
