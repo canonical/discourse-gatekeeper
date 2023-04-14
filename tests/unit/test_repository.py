@@ -122,11 +122,11 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
     """
     err_str = "mocked error"
     mock_git_repository = mock.MagicMock(spec=Repo)
-    mock_git_repository.git.commit.side_effect = [GitCommandError(err_str)]
+    mock_git_repository.git.branch.side_effect = [GitCommandError(err_str)]
     monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_branch(branch_name="test-create-branch", commit_msg="commit-1")
+        repository_client.switch("main").create_branch(branch_name="test-create-branch")
 
     assert_substrings_in_string(
         ("unexpected error creating new branch", err_str), str(exc.value).lower()
@@ -135,7 +135,6 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
 
 def test_create_branch(
     repository_client: Client,
-    repository_path: Path,
     upstream_git_repo: Repo,
 ):
     """
@@ -144,6 +143,8 @@ def test_create_branch(
     assert: a new branch is successfully created upstream with only the files in the `repo/docs`
         directory.
     """
+    repository_path = repository_client.base_path
+
     root_file = repository_path / "test.txt"
     root_file.write_text("content 1", encoding="utf-8")
     docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
@@ -156,7 +157,11 @@ def test_create_branch(
     (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client\
+        .switch("main")\
+        .create_branch(branch_name=branch_name)\
+        .switch(branch_name)\
+        .update_branch(commit_msg="commit-1", push=True)
 
     # mypy false positive in lib due to getter/setter not being next to each other.
     assert any(
@@ -175,7 +180,6 @@ def test_create_branch(
 
 def test_create_branch_checkout_clash_default(
     repository_client: Client,
-    repository_path: Path,
     upstream_git_repo: Repo,
     default_branch: str,
 ):
@@ -185,6 +189,8 @@ def test_create_branch_checkout_clash_default(
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
     """
+    repository_path = repository_client.base_path
+
     root_file = repository_path / default_branch
     root_file.write_text("content 1", encoding="utf-8")
     branch_name = "test-create-branch"
@@ -193,13 +199,17 @@ def test_create_branch_checkout_clash_default(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client\
+        .switch("main")\
+        .create_branch(branch_name=branch_name)\
+        .switch(branch_name)\
+        .update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
 
 def test_create_branch_checkout_clash_created(
-    repository_client: Client, repository_path: Path, upstream_git_repo: Repo
+    repository_client: Client, upstream_git_repo: Repo
 ):
     """
     arrange: given Client and a file with the same name as the requested branch and a
@@ -207,6 +217,8 @@ def test_create_branch_checkout_clash_created(
     act: when _create_branch is called
     assert: a new branch is successfully created upstream with one or more files.
     """
+    repository_path = repository_client.base_path
+
     branch_name = "test-create-branch"
     root_file = repository_path / branch_name
     root_file.write_text("content 1", encoding="utf-8")
@@ -215,7 +227,11 @@ def test_create_branch_checkout_clash_created(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.create_branch(branch_name=branch_name, commit_msg="commit-1")
+    repository_client\
+        .switch("main")\
+        .create_branch(branch_name=branch_name)\
+        .switch(branch_name)\
+        .update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 

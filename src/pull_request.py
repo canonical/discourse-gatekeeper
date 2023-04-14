@@ -5,6 +5,7 @@
 
 import logging
 
+from .exceptions import InputError
 from .repository import Client as RepositoryClient
 
 BRANCH_PREFIX = "upload-charm-docs"
@@ -19,17 +20,23 @@ def create_pull_request(repository: RepositoryClient, base: str) -> str:
         repository: A git client to interact with local and remote git repository.
         base: base branch or tag against to which the PR is opened
 
+    Raises:
+        InputError: when the repository is not dirty, hence resulting on an empty pull-request
+
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
+    if not repository.is_dirty(base):
+        raise InputError("No files seem to be migrated. Please add contents upstream first.")
+
     with repository.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
         DEFAULT_BRANCH_NAME
     ) as repo:
         msg = str(repo.summary)
-        logging.info(f"Creating new branch with new commit: {msg}")
+        logging.info("Creating new branch with new commit: %s", msg)
         repo.update_branch(msg, force=True)
         pr_link = repo.create_pull_request(DEFAULT_BRANCH_NAME)
-        logging.info(f"Opening new PR with community contribution: {pr_link}")
+        logging.info("Opening new PR with community contribution: %s", pr_link)
 
     return pr_link
 
@@ -45,5 +52,5 @@ def update_pull_request(repository: RepositoryClient, branch: str) -> None:
         if repo.is_dirty():
             repo.pull()
             msg = str(repo.summary)
-            logging.info(f"Updating PR with new commit: {msg}")
+            logging.info("Updating PR with new commit: %s", msg)
             repo.update_branch(msg)

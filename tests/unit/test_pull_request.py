@@ -26,8 +26,9 @@ def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient)
     act: when create_pull_request is called
     assert: InputError is raised.
     """
+
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(repository=repository_client.switch("main"), base="main")
 
     assert_substrings_in_string(
         ("no files seem to be migrated. please add contents upstream first.",),
@@ -39,13 +40,14 @@ def test_create_pull_request_existing_branch(
     repository_client: RepositoryClient,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
-    repository_path: Path,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
     act: when create_pull_request is called
     assert: InputError is raised.
     """
+    repository_path = repository_client.switch("main").base_path
+
     docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
     (repository_path / docs_folder).mkdir()
     filler_file = docs_folder / "filler-file"
@@ -60,7 +62,7 @@ def test_create_pull_request_existing_branch(
     upstream_git_repo.git.commit("-m", "test")
 
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client)
+        pull_request.create_pull_request(repository=repository_client, base="main")
 
     assert_substrings_in_string(
         (
@@ -91,7 +93,7 @@ def test_create_pull_request(
     filler_text = "filler-text"
     (repository_path / filler_file).write_text(filler_text)
 
-    returned_pr_link = pull_request.create_pull_request(repository=repository_client)
+    returned_pr_link = pull_request.create_pull_request(repository=repository_client, base="main")
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url

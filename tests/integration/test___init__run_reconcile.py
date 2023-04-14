@@ -16,8 +16,9 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import constants, exceptions, metadata, run
+from src import Clients, constants, exceptions, metadata, run_reconcile
 from src.discourse import Discourse
+from src.repository import Client, Repo
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -86,9 +87,10 @@ async def test_run(
         index_content := "index content 1", encoding="utf-8"
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    repository_client = Client(Repo(repository_path), mock_github_repo)
+
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
@@ -102,8 +104,9 @@ async def test_run(
     caplog.clear()
     user_inputs_2 = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    urls_with_actions = run(
-        base_path=repository_path, discourse=discourse_api, user_inputs=user_inputs_2
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=user_inputs_2,
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -122,9 +125,8 @@ async def test_run(
         doc_content_1 := "doc content 1", encoding="utf-8"
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=True,
             delete_pages=True,
@@ -139,9 +141,8 @@ async def test_run(
     # 4. docs with a documentation file added
     caplog.clear()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -164,9 +165,8 @@ async def test_run(
     mock_content_file.content = b64encode(doc_content_1.encode(encoding="utf-8"))
     mock_github_repo.get_contents.return_value = mock_content_file
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
@@ -184,9 +184,8 @@ async def test_run(
     # 6. docs with a documentation file updated
     caplog.clear()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -205,9 +204,8 @@ async def test_run(
     nested_dir_table_key = "nested-dir"
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -226,9 +224,8 @@ async def test_run(
         nested_dir_doc_content := "nested dir doc content 1", encoding="utf-8"
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -251,9 +248,8 @@ async def test_run(
     caplog.clear()
     nested_dir_doc_file.unlink()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
     )
 
@@ -270,9 +266,8 @@ async def test_run(
     # disabled
     caplog.clear()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=False),
     )
 
@@ -289,9 +284,8 @@ async def test_run(
     caplog.clear()
     nested_dir.rmdir()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -306,9 +300,8 @@ async def test_run(
     caplog.clear()
     doc_file.unlink()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -325,9 +318,8 @@ async def test_run(
     caplog.clear()
     index_file.unlink()
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 

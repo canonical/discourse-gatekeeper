@@ -143,14 +143,15 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     # Check difference with main
     if not recreate_docs(clients, user_inputs.base_tag_name):
         logging.info(
-            f"No community contribution found. Discourse is inline with {user_inputs.base_tag_name}"
+            "No community contribution found. Discourse is inline with %s",
+            user_inputs.base_tag_name,
         )
         return {}
 
     pr_link = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
 
     if pr_link is not None:
-        logging.info(f"upload-charm-documents pull request already open at {pr_link}")
+        logging.info("upload-charm-documents pull request already open at %s", pr_link)
         update_pull_request(clients.repository, DEFAULT_BRANCH_NAME)
     else:
         logging.info("PR not existing: creating a new one...")

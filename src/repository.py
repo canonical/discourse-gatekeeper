@@ -10,7 +10,7 @@ from contextlib import contextmanager, suppress
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, FrozenSet, Iterator, NamedTuple, Optional, Sequence
+from typing import Any, FrozenSet, Iterator, NamedTuple, Optional, Sequence, Set
 
 from git import GitCommandError
 from git.diff import Diff
@@ -137,8 +137,7 @@ class Client:
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
         summary: summary of the differences against the most recent commit
-
-
+        branches: list of all branches
     """
 
     def __init__(self, repository: Repo, github_repository: Repository) -> None:
@@ -159,7 +158,7 @@ class Client:
         Returns:
             Path of the repository.
         """
-        return Path(self._git_repo.working_dir)
+        return Path(self._git_repo.working_tree_dir)
 
     @property
     def metadata(self) -> Metadata:
@@ -175,6 +174,11 @@ class Client:
     def current_branch(self) -> str:
         """Return the current branch."""
         return self._git_repo.active_branch.name
+
+    @property
+    def branches(self) -> Set[str]:
+        """Return all local branches."""
+        return {branch.name for branch in self._git_repo.heads}
 
     @contextmanager
     def with_branch(self, branch_name: str) -> Iterator["Client"]:
@@ -225,7 +229,7 @@ class Client:
         Returns:
             Repository object with the branch switched.
         """
-        is_dirty = self.is_dirty()
+        is_dirty = self.is_dirty() and self.has_docs_directory
 
         if is_dirty:
             self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
@@ -273,12 +277,13 @@ class Client:
         Returns:
             Repository client object.
         """
-        with self.with_branch(base or self.current_branch) as repo:
-            branches = {branch.name for branch in repo._git_repo.heads}
-            if branch_name in branches:
-                repo._git_repo.git.branch("-D", branch_name)
+        try:
+            if branch_name in self.branches:
+                self._git_repo.git.branch("-D", branch_name)
+            self._git_repo.git.branch(branch_name, base or self.current_branch)
+        except GitCommandError as exc:
+            raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
-            repo._git_repo.git.checkout("-b", branch_name)
         return self
 
     def update_branch(self, commit_msg: str, push: bool = True, force: bool = False) -> "Client":
@@ -369,10 +374,10 @@ class Client:
             raise RepositoryClientError(
                 f"More than one open pull request with branch {branch_name}"
             )
-        elif len(open_pull) == 0:
+        if len(open_pull) == 0:
             return None
-        else:
-            return open_pull[0].html_url
+
+        return open_pull[0].html_url
 
     def create_pull_request(self, branch_name: str) -> str:
         """Create pull request using the provided branch.
@@ -424,9 +429,9 @@ class Client:
         """
         if branch_name is None:
             return self._git_repo.is_dirty(untracked_files=True)
-        else:
-            with self.with_branch(branch_name) as client:
-                return client.is_dirty()
+
+        with self.with_branch(branch_name) as client:
+            return client.is_dirty()
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.

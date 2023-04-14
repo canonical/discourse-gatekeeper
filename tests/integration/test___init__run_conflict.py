@@ -19,8 +19,9 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import constants, exceptions, metadata, run
+from src import Clients, constants, exceptions, metadata, run_reconcile
 from src.discourse import Discourse
+from src.repository import Client, Repo
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -77,9 +78,10 @@ async def test_run_conflict(
         doc_content_1 := f"# {doc_title}\nline 1\nline 2\nline 3", encoding="utf-8"
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    repository_client = Client(Repo(repository_path), mock_github_repo)
+
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -105,9 +107,8 @@ async def test_run_conflict(
     mock_content_file.content = b64encode(doc_content_1.encode(encoding="utf-8"))
     mock_github_repo.get_contents.return_value = mock_content_file
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
@@ -134,9 +135,8 @@ async def test_run_conflict(
     mock_content_file.content = b64encode(doc_content_2.encode(encoding="utf-8"))
 
     with pytest.raises(exceptions.InputError) as exc_info:
-        run(
-            base_path=repository_path,
-            discourse=discourse_api,
+        run_reconcile(
+            clients=Clients(discourse=discourse_api, repository=repository_client),
             user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
         )
 
@@ -165,9 +165,8 @@ async def test_run_conflict(
     caplog.clear()
 
     with pytest.raises(exceptions.InputError) as exc_info:
-        run(
-            base_path=repository_path,
-            discourse=discourse_api,
+        run_reconcile(
+            clients=Clients(discourse=discourse_api, repository=repository_client),
             user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
         )
 
@@ -199,9 +198,8 @@ async def test_run_conflict(
     )
     discourse_api.update_topic(url=doc_url, content=doc_content_4)
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
     )
 
