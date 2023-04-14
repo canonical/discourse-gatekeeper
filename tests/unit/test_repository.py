@@ -508,6 +508,35 @@ def test_get_file_content_from_tag(monkeypatch: pytest.MonkeyPatch, repository_c
     )
 
 
+def test_get_file_content_from_tag_commit_tag(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given path, tag name, Client with a mocked github repository client that returns
+        content and tag that is a commit tag
+    act: when get_file_content_from_tag is called with the path and tag name
+    assert: then the content is returned.
+    """
+    mock_github_repository = mock.MagicMock(spec=Repository)
+    mock_github_repository.get_git_ref.return_value.object.type = "commit"
+    mock_content_file = mock.MagicMock(spec=ContentFile)
+    content = "content 1"
+    mock_content_file.content = base64.b64encode(content.encode(encoding="utf-8"))
+    mock_github_repository.get_contents.return_value = mock_content_file
+    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    tag_name = "tag 1"
+    path = "path 1"
+
+    returned_content = repository_client.get_file_content_from_tag(path=path, tag_name=tag_name)
+
+    assert returned_content == content
+    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
+    mock_github_repository.get_git_tag.assert_not_called()
+    mock_github_repository.get_contents.assert_called_once_with(
+        path, mock_github_repository.get_git_ref.return_value.object.sha
+    )
+
+
 @pytest.mark.parametrize(
     "remote_url",
     [

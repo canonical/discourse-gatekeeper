@@ -195,8 +195,12 @@ class Client:
         try:
             # Need both steps, the ref allows for retrieval by tag name
             tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
-            # The ref does not contain the commit SHA, need to retrieve the tag object
-            git_tag = self._github_repo.get_git_tag(tag_ref.object.sha)
+            if tag_ref.object.type == "commit":
+                commit_sha = tag_ref.object.sha
+            else:
+                # The ref does not contain the commit SHA, need to retrieve the tag object
+                git_tag = self._github_repo.get_git_tag(tag_ref.object.sha)
+                commit_sha = git_tag.object.sha
         except UnknownObjectException as exc:
             raise RepositoryTagNotFoundError(
                 f"Could not retrieve the tag {tag_name=}. {exc=!r}"
@@ -206,7 +210,7 @@ class Client:
 
         # Get the file contents
         try:
-            content_file = self._github_repo.get_contents(path, git_tag.object.sha)
+            content_file = self._github_repo.get_contents(path, commit_sha)
         except UnknownObjectException as exc:
             raise RepositoryFileNotFoundError(
                 f"Could not retrieve the file at {path=} for tag {tag_name}. {exc=!r}"
