@@ -37,6 +37,7 @@ def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient)
 
 
 def test_create_pull_request_existing_branch(
+    tmp_path: Path,
     repository_client: RepositoryClient,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
@@ -44,42 +45,54 @@ def test_create_pull_request_existing_branch(
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
     act: when create_pull_request is called
-    assert: InputError is raised.
+    assert: The remove branch is overridden
     """
-    repository_path = repository_client.switch("main").base_path
+    branch_name = pull_request.DEFAULT_BRANCH_NAME
 
     docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
-    (repository_path / docs_folder).mkdir()
     filler_file = docs_folder / "filler-file"
+
+    # Update docs branch from third repository
+    third_repo_path = tmp_path / "third"
+    third_repo = upstream_git_repo.clone(third_repo_path)
+    third_repo.git.checkout("-b", branch_name)
+
+    (third_repo_path / docs_folder).mkdir()
+    (third_repo_path / filler_file).touch()
+    third_repo.git.add(".")
+    third_repo.git.commit("-m", "test")
+
+    hash1 = third_repo.head.commit
+
+    third_repo.git.push("--set-upstream", "origin", branch_name)
+
+    repository_client.check_branch_exists(branch_name)
+    repository_client.switch(branch_name).pull()
+
+    hash2 = repository_client._git_repo.head.commit
+
+    # make sure the hash of the upload-charm-docs/migrate branch agree
+    assert hash1 == hash2
+
+    repository_path = repository_client.switch("main").base_path
+
+    (repository_path / docs_folder).mkdir()
     (repository_path / filler_file).write_text("filler-content")
 
-    branch_name = pull_request.DEFAULT_BRANCH_NAME
-    head = upstream_git_repo.create_head(branch_name)
-    head.checkout()
-    (upstream_repository_path / docs_folder).mkdir()
-    (upstream_repository_path / filler_file).touch()
-    upstream_git_repo.git.add(".")
-    upstream_git_repo.git.commit("-m", "test")
+    pr_link = pull_request.create_pull_request(repository=repository_client, base="main")
 
-    with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client, base="main")
+    repository_client.switch(branch_name).pull()
 
-    assert_substrings_in_string(
-        (
-            "branch",
-            "already exists",
-            "please try again after removing",
-            pull_request.DEFAULT_BRANCH_NAME,
-        ),
-        str(exc.value).lower(),
-    )
+    hash3 = repository_client._git_repo.head.commit
+
+    # Make sure that the upload-charm-docs/migrate branch has now be overridden
+    assert hash2 != hash3
 
 
 def test_create_pull_request(
     repository_client: RepositoryClient,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
-    repository_path: Path,
     mock_pull_request: PullRequest,
 ):
     """
@@ -87,11 +100,15 @@ def test_create_pull_request(
     act: when create_pull_request is called
     assert: changes are pushed to default branch and pull request link is returned.
     """
+    repository_path = repository_client.base_path
+
     docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
     (repository_path / docs_folder).mkdir()
     filler_file = docs_folder / "filler.txt"
     filler_text = "filler-text"
     (repository_path / filler_file).write_text(filler_text)
+
+    repository_client.switch("main")
 
     returned_pr_link = pull_request.create_pull_request(repository=repository_client, base="main")
 

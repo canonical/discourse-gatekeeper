@@ -173,7 +173,7 @@ def test__run_reconcile_local_server_conflict(tmp_path: Path, mocked_clients):
 
 
 @mock.patch(
-    "repository.RepositoryClient.metadata",
+    "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate_server_error_index(repository_client: pull_request.RepositoryClient):

@@ -605,9 +605,6 @@ def test_create_repository_client(
     act: when create_repository_client is called
     assert: RepositoryClient is returned.
     """
-    # The origin is initialised to be local, need to update it to be remote
-    origin = git_repo.remote("origin")
-    git_repo.delete_remote(origin)
     git_repo.create_remote("origin", "https://github.com/test-user/test-repo.git")
     test_token = secrets.token_hex(16)
     mock_github_client = mock.MagicMock(spec=Github)
