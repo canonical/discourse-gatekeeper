@@ -20,11 +20,10 @@ from .index import get as get_index
 from .metadata import get as get_metadata
 from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import DEFAULT_BRANCH_NAME
-from .pull_request import create_pull_request
-from .reconcile import run as run_reconcile, Clients
+from .pull_request import create_pull_request, DEFAULT_BRANCH_NAME, update_pull_request
+from .reconcile import run as get_reconcile_actions, Clients
 from .repository import create_repository_client
-from .download import download_from_discourse
+from .download import recreate_docs
 from .types_ import ActionResult, Metadata, UserInputs
 
 GETTING_STARTED = (
@@ -80,7 +79,7 @@ def run_reconcile(
         index.server.content if index.server is not None and index.server.content else ""
     )
     table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
-    actions = run_reconcile(
+    actions = get_reconcile_actions(
         path_infos=path_infos,
         table_rows=table_rows,
         clients=clients,
@@ -135,20 +134,10 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
                         "link present in the metadata.")
         return {}
 
-    # Remove docs folder and recreate content from discourse
-    clients.repository.switch(user_inputs.base_branch).pull()
-
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
-
-    if docs_path.exists():
-        shutil.rmtree(docs_path)
-
-    download_from_discourse(clients)
-
     # Check difference with main
-    if not clients.repository.is_dirty(user_inputs.base_branch):
+    if not recreate_docs(clients, user_inputs.base_tag_name):
         logging.info(
-            f"No community contribution found. Discourse is inline with {user_inputs.base_branch}"
+            f"No community contribution found. Discourse is inline with {user_inputs.base_tag_name}"
         )
         return {}
 
@@ -156,19 +145,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     if pr_link is not None:
         logging.info(f"upload-charm-documents pull request already open at {pr_link}")
-        with clients.repository.with_branch(DEFAULT_BRANCH_NAME) as repo:
-            if repo.is_dirty():
-                msg = str(repo.summary)
-                logging.info(f"Updating PR with new commit: {msg}")
-                repo.update_branch(msg)
+        update_pull_request(clients.repository, DEFAULT_BRANCH_NAME)
     else:
-        with clients.repository.create_branch(
-                DEFAULT_BRANCH_NAME, user_inputs.base_branch
-        ).with_branch(DEFAULT_BRANCH_NAME) as repo:
-            msg = str(repo.summary)
-            logging.info(f"Creating new branch with new commit: {msg}")
-            repo.update_branch(msg, force=True)
-            pr_link = repo.create_pull_request(DEFAULT_BRANCH_NAME)
-            logging.info(f"Opening new PR with community contribution: {pr_link}")
+        logging.info("PR not existing: creating a new one...")
+        pr_link = create_pull_request(clients.repository, user_inputs.base_tag_name)
 
     return {pr_link: ActionResult.SUCCESS}

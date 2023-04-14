@@ -8,8 +8,9 @@ import logging
 import re
 from contextlib import contextmanager, suppress
 from functools import cached_property
+from itertools import chain
 from pathlib import Path
-from typing import Optional, Sequence, NamedTuple
+from typing import Optional, FrozenSet, NamedTuple, Sequence
 
 from git import GitCommandError
 from git.diff import Diff
@@ -52,23 +53,23 @@ CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
 
 class DiffSummary(NamedTuple):
     is_dirty: bool
-    new: Sequence[str]
-    removed: Sequence[str]
-    modified: Sequence[str]
+    new: FrozenSet[str]
+    removed: FrozenSet[str]
+    modified: FrozenSet[str]
 
     @classmethod
     def from_raw_diff(cls, diffs: Sequence[Diff]):
         new_files = {diff.a_path for diff in diffs if diff.new_file}
         removed_files = {diff.a_path for diff in diffs if diff.deleted_file}
-        modified_files = {diff.a_path for diff in diffs if diff.renamed_file}.union(
-            diff.a_path for diff in diffs if diff.change_type == "M"
-        )
+        modified_files = {
+            diff.a_path for diff in diffs if diff.renamed_file or diff.change_type == "M"
+        }
 
         return DiffSummary(
             is_dirty=len(diffs) > 0,
-            new=list(new_files),
-            removed=list(removed_files),
-            modified=list(modified_files)
+            new=frozenset(new_files),
+            removed=frozenset(removed_files),
+            modified=frozenset(modified_files)
         )
 
     def __add__(self, other: 'DiffSummary'):
@@ -77,18 +78,17 @@ class DiffSummary(NamedTuple):
 
         return DiffSummary(
             is_dirty=self.is_dirty or other.is_dirty,
-            new=list(set(self.new).union(other.new)),
-            removed=list(set(self.removed).union(other.removed)),
-            modified=list(set(self.modified).union(other.modified)),
+            new=frozenset(self.new).union(other.new),
+            removed=frozenset(self.removed).union(other.removed),
+            modified=frozenset(self.modified).union(other.modified),
         )
 
     def __str__(self) -> str:
-        modified_str = [f"modified: {','.join(self.modified)}"] if len(self.modified) > 0 else []
-        new_str = [f"new: {','.join(self.new)}"] if len(self.new) > 0 else []
-        removed_str = [f"removed: {','.join(self.removed)}"] if len(self.removed) > 0 else []
-        return " // ".join(
-            modified_str + new_str + removed_str
-        )
+        modified_str = (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 \
+            else tuple()
+        new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else tuple()
+        removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else tuple()
+        return " // ".join(chain(modified_str, new_str, removed_str))
 
 
 class Client:
@@ -125,9 +125,10 @@ class Client:
     def with_branch(self, branch_name: str) -> 'Client':
         current_branch = self.current_branch
 
-        yield self.switch(branch_name)
-
-        self.switch(current_branch)
+        try:
+            yield self.switch(branch_name)
+        finally:
+            self.switch(current_branch)
 
     @property
     def summary(self) -> DiffSummary:
@@ -154,18 +155,20 @@ class Client:
             self._git_repo.git.checkout(branch_name, "--")
         finally:
             if is_dirty:
-                try:
-                    self._git_repo.git.stash("pop")
-                except GitCommandError as exc:
-                    if "CONFLICT" in exc.stdout:
-                        self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
-                    else:
-                        raise RepositoryClientError(
-                            f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
-                        ) from exc
+                self._safe_pop_stash(branch_name)
                 self._git_repo.git.reset(DOCUMENTATION_FOLDER_NAME)
-
         return self
+
+    def _safe_pop_stash(self, branch_name: str):
+        try:
+            self._git_repo.git.stash("pop")
+        except GitCommandError as exc:
+            if "CONFLICT" in exc.stdout:
+                self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
+            else:
+                raise RepositoryClientError(
+                    f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
+                ) from exc
 
     def create_branch(self, branch_name: str, base: Optional[str] = None) -> 'Client':
         with self.with_branch(base or self.current_branch) as repo:
@@ -236,7 +239,9 @@ class Client:
             if pull.head.ref == branch_name
         ]
         if len(open_pull) > 1:
-            raise ...
+            raise RepositoryClientError(
+                f"More than one open pull request with branch {branch_name}"
+            )
         elif len(open_pull) == 0:
             return None
         else:

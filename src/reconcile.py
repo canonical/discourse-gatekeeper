@@ -129,7 +129,7 @@ def _local_and_server_dir_local_group_server(
 
 
 def _local_and_server_file_local_group_server(
-    path_info: types_.PathInfo, table_row: types_.TableRow, clients: types_.Clients
+    path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
 ) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
     """Handle the case where the item is a file locally and a grouping on the server.
 
@@ -173,7 +173,7 @@ def _local_and_server_file_local_group_server(
 def _local_and_server_file_local_page_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,
-    clients: types_.Clients,
+    clients: Clients,
     base_path: Path,
     user_inputs: types_.UserInputs,
 ) -> tuple[

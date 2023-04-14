@@ -3,6 +3,10 @@
 
 """Library for downloading docs folder from charmhub."""
 
+import shutil
+
+from git import GitCommandError
+
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .index import contents_from_page
 from .index import get as get_index
@@ -27,3 +31,35 @@ def download_from_discourse(clients: Clients) -> None:
         discourse=clients.discourse,
         docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
     )
+
+
+def recreate_docs(clients: Clients, base: str) -> bool:
+    """
+    Recreate the docs folder and checks whether the docs folder is aligned with base branch/tag
+
+    Args:
+        clients: Clients object containing Repository and Discourse API clients
+        base: branch or tag to be compared to
+
+    Returns:
+        boolean representing whether any differences have occurred
+    """
+
+    clients.repository.switch(base)
+
+    try:
+        clients.repository.pull()
+    except GitCommandError:
+        # The branch is either detached or there is no remote branch. In these cases there is no
+        # reason for pulling anything
+        pass
+
+    # Remove docs folder and recreate content from discourse
+    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+
+    if docs_path.exists():
+        shutil.rmtree(docs_path)
+
+    download_from_discourse(clients)
+
+    return clients.repository.is_dirty()
