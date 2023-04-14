@@ -10,7 +10,7 @@ from contextlib import contextmanager, suppress
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Optional, FrozenSet, NamedTuple, Sequence
+from typing import Any, FrozenSet, Iterator, NamedTuple, Optional, Sequence
 
 from git import GitCommandError
 from git.diff import Diff
@@ -22,6 +22,7 @@ from github.Repository import Repository
 from src.docs_directory import has_docs_directory
 from src.metadata import get as get_metadata
 from src.types_ import Metadata
+
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -52,29 +53,60 @@ CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
 
 
 class DiffSummary(NamedTuple):
+    """Class representing the summary of the dirty status of a repository.
+
+    Attrs:
+        is_dirty: boolean indicated whether there is any delta
+        new: list of files added in the delta
+        removed: list of files removed in the delta
+        modified: list of files modified in the delta
+    """
+
     is_dirty: bool
     new: FrozenSet[str]
     removed: FrozenSet[str]
     modified: FrozenSet[str]
 
     @classmethod
-    def from_raw_diff(cls, diffs: Sequence[Diff]):
-        new_files = {diff.a_path for diff in diffs if diff.new_file}
-        removed_files = {diff.a_path for diff in diffs if diff.deleted_file}
+    def from_raw_diff(cls, diffs: Sequence[Diff]) -> "DiffSummary":
+        """Return a DiffSummary class from a sequence of git.Diff objects.
+
+        Args:
+            diffs: list of git.Diff objects representing the delta between two snapshots.
+
+        Returns:
+            DiffSummary class
+        """
+        new_files = {diff.a_path for diff in diffs if diff.new_file if diff.a_path}
+        removed_files = {diff.a_path for diff in diffs if diff.deleted_file if diff.a_path}
         modified_files = {
-            diff.a_path for diff in diffs if diff.renamed_file or diff.change_type == "M"
+            diff.a_path
+            for diff in diffs
+            if diff.renamed_file or diff.change_type == "M"
+            if diff.a_path
         }
 
         return DiffSummary(
             is_dirty=len(diffs) > 0,
             new=frozenset(new_files),
             removed=frozenset(removed_files),
-            modified=frozenset(modified_files)
+            modified=frozenset(modified_files),
         )
 
-    def __add__(self, other: 'DiffSummary'):
+    def __add__(self, other: Any) -> "DiffSummary":
+        """Add two instances of DiffSummary classes.
+
+        Args:
+            other: DiffSummary object to be added
+
+        Raises:
+            ValueError: when the other parameter is not a DiffSummary object
+
+        Returns:
+            merged DiffSummary class
+        """
         if not isinstance(other, DiffSummary):
-            raise ValueError("I can add only DiffSummary classes")
+            raise ValueError("add operation is only implemented for DiffSummary classes")
 
         return DiffSummary(
             is_dirty=self.is_dirty or other.is_dirty,
@@ -84,15 +116,30 @@ class DiffSummary(NamedTuple):
         )
 
     def __str__(self) -> str:
-        modified_str = (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 \
-            else tuple()
+        """Return string representation of the differences.
+
+        Returns:
+            string representing the new, modified and removed files
+        """
+        modified_str = (
+            (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 else tuple()
+        )
         new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else tuple()
         removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else tuple()
         return " // ".join(chain(modified_str, new_str, removed_str))
 
 
 class Client:
-    """Wrapper for git/git-server related functionalities."""
+    """Wrapper for git/git-server related functionalities.
+
+    Attrs:
+        metadata: Metadata object of the charm
+        has_docs_directory: whether the repository has a docs directory
+        current_branch: current git branch used in the repository
+        summary: summary of the differences against the most recent commit
+
+
+    """
 
     def __init__(self, repository: Repo, github_repository: Repository) -> None:
         """Construct.
@@ -107,22 +154,40 @@ class Client:
 
     @cached_property
     def base_path(self) -> Path:
+        """Return the Path of the repository.
+
+        Returns:
+            Path of the repository.
+        """
         return Path(self._git_repo.working_dir)
 
     @property
     def metadata(self) -> Metadata:
+        """Return the Metadata object of the charm."""
         return get_metadata(self.base_path)
 
     @property
     def has_docs_directory(self) -> bool:
+        """Return whether the repository has a docs directory."""
         return has_docs_directory(self.base_path)
 
     @property
     def current_branch(self) -> str:
+        """Return the current branch."""
         return self._git_repo.active_branch.name
 
     @contextmanager
-    def with_branch(self, branch_name: str) -> 'Client':
+    def with_branch(self, branch_name: str) -> Iterator["Client"]:
+        """Return a context for operating within the given branch.
+
+        At the end of the 'with' block, the branch is switched back to what it was initially.
+
+        Args:
+            branch_name: name of the branch
+
+        Yields:
+            Context to operate on the provided branch
+        """
         current_branch = self.current_branch
 
         try:
@@ -132,19 +197,34 @@ class Client:
 
     @property
     def summary(self) -> DiffSummary:
+        """Return a summary of the differences against the most recent commit."""
         self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
 
-        return DiffSummary.from_raw_diff(self._git_repo.index.diff(None)) + \
-            DiffSummary.from_raw_diff(self._git_repo.head.commit.diff())
+        return DiffSummary.from_raw_diff(
+            self._git_repo.index.diff(None)
+        ) + DiffSummary.from_raw_diff(self._git_repo.head.commit.diff())
 
     def pull(self, branch_name: Optional[str] = None) -> None:
+        """Pull content from remote for the provided branch.
+
+        Args:
+            branch_name: branch to be pulled from the remote
+        """
         if branch_name is None:
             self._git_repo.git.pull()
         else:
             with self.with_branch(branch_name) as repo:
                 repo.pull()
 
-    def switch(self, branch_name: str) -> 'Client':
+    def switch(self, branch_name: str) -> "Client":
+        """Switch branch for the repository.
+
+        Args:
+            branch_name: name of the branch to switch to.
+
+        Returns:
+            Repository object with the branch switched.
+        """
         is_dirty = self.is_dirty()
 
         if is_dirty:
@@ -159,7 +239,15 @@ class Client:
                 self._git_repo.git.reset(DOCUMENTATION_FOLDER_NAME)
         return self
 
-    def _safe_pop_stash(self, branch_name: str):
+    def _safe_pop_stash(self, branch_name: str) -> None:
+        """Pop stashed changes for given branch.
+
+        Args:
+            branch_name: name of the branch
+
+        Raises:
+            RepositoryClientError: if the pop encounter a critical error.
+        """
         try:
             self._git_repo.git.stash("pop")
         except GitCommandError as exc:
@@ -170,16 +258,43 @@ class Client:
                     f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
                 ) from exc
 
-    def create_branch(self, branch_name: str, base: Optional[str] = None) -> 'Client':
+    def create_branch(self, branch_name: str, base: Optional[str] = None) -> "Client":
+        """Create a new branch.
+
+        Note that this will not switch branch. To create and switch branch, please pipe the two
+        operations together:
+
+        repository.create_branch(branch_name).switch(branch_name)
+
+        Args:
+            branch_name: name of the branch to be created
+            base: branch or tag to be branched from
+
+        Returns:
+            Repository client object.
+        """
         with self.with_branch(base or self.current_branch) as repo:
-            branches = {branch.name for branch in repo._git_repo.branches}
+            branches = {branch.name for branch in repo._git_repo.heads}
             if branch_name in branches:
                 repo._git_repo.git.branch("-D", branch_name)
 
             repo._git_repo.git.checkout("-b", branch_name)
         return self
 
-    def update_branch(self, commit_msg: str, force: bool = False, push: bool = True) -> 'Client':
+    def update_branch(self, commit_msg: str, push: bool = True, force: bool = False) -> "Client":
+        """Update branch with a new commit.
+
+        Args:
+            commit_msg: commit message to be committed to the branch
+            push: push new changes to remote branches
+            force: when pushing to remove, use force flag
+
+        Raises:
+            RepositoryClientError: if any error are encountered in the update process
+
+        Returns:
+            Repository client with the updated branch
+        """
         try:
             self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
@@ -191,7 +306,8 @@ class Client:
                 self._git_repo.git.push(*args)
         except GitCommandError as exc:
             raise RepositoryClientError(
-                f"Unexpected error updating branch {self.current_branch}. {exc=!r}") from exc
+                f"Unexpected error updating branch {self.current_branch}. {exc=!r}"
+            ) from exc
         return self
 
     def _configure_git_user(self) -> None:
@@ -202,11 +318,11 @@ class Client:
         config_reader = self._git_repo.config_reader(config_level="repository")
         with self._git_repo.config_writer(config_level="repository") as config_writer:
             if not config_reader.has_section(
-                    CONFIG_USER_SECTION_NAME
+                CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_NAME):
                 config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
             if not config_reader.has_section(
-                    CONFIG_USER_SECTION_NAME
+                CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
@@ -233,6 +349,17 @@ class Client:
             ) from exc
 
     def get_pull_request(self, branch_name: str) -> Optional[str]:
+        """Return open pull request matching the provided branch name.
+
+        Args:
+            branch_name: branch name to select open pull requests.
+
+        Raises:
+            RepositoryClientError: if more than one PR is open with the given branch name
+
+        Returns:
+            link to the PR. If no PR is found, None is returned.
+        """
         open_pull = [
             pull
             for pull in self._github_repo.get_pulls(head=branch_name)
@@ -248,6 +375,17 @@ class Client:
             return open_pull[0].html_url
 
     def create_pull_request(self, branch_name: str) -> str:
+        """Create pull request using the provided branch.
+
+        Args:
+            branch_name: name of the branch used to open the pull request.
+
+        Raises:
+            RepositoryClientError: if any error are encountered when creating the pull request.
+
+        Returns:
+            link to the opened pull request.
+        """
         try:
             pull_request = self._github_repo.create_pull(
                 title=ACTIONS_PULL_REQUEST_TITLE,
@@ -268,9 +406,6 @@ class Client:
         Args:
             branch_name: Branch name from which the pull request will be created.
 
-        Raises:
-            RepositoryClientError: if unexpected error occurred during git operation.
-
         Returns:
             The web url to pull request page.
         """
@@ -280,6 +415,9 @@ class Client:
 
     def is_dirty(self, branch_name: Optional[str] = None) -> bool:
         """Check if repository path has any changes including new files.
+
+        Args:
+            branch_name: name of the branch to be checked against dirtiness
 
         Returns:
             True if any changes have occurred.

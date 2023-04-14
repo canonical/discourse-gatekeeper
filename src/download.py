@@ -16,6 +16,11 @@ from .reconcile import Clients
 
 
 def download_from_discourse(clients: Clients) -> None:
+    """Download docs folder locally from Discourse.
+
+    Args:
+        clients: Clients object
+    """
     base_path = clients.repository.base_path
     metadata = clients.repository.metadata
 
@@ -34,8 +39,7 @@ def download_from_discourse(clients: Clients) -> None:
 
 
 def recreate_docs(clients: Clients, base: str) -> bool:
-    """
-    Recreate the docs folder and checks whether the docs folder is aligned with base branch/tag
+    """Recreate the docs folder and checks whether the docs folder is aligned with base branch/tag.
 
     Args:
         clients: Clients object containing Repository and Discourse API clients
@@ -44,7 +48,6 @@ def recreate_docs(clients: Clients, base: str) -> bool:
     Returns:
         boolean representing whether any differences have occurred
     """
-
     clients.repository.switch(base)
 
     try:

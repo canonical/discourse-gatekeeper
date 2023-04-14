@@ -22,9 +22,9 @@ def create_pull_request(repository: RepositoryClient, base: str) -> str:
     Returns:
         Pull request URL string. None if no pull request was created/modified.
     """
-    with repository.create_branch(
-            DEFAULT_BRANCH_NAME, base
-    ).with_branch(DEFAULT_BRANCH_NAME) as repo:
+    with repository.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
+        DEFAULT_BRANCH_NAME
+    ) as repo:
         msg = str(repo.summary)
         logging.info(f"Creating new branch with new commit: {msg}")
         repo.update_branch(msg, force=True)
@@ -35,6 +35,12 @@ def create_pull_request(repository: RepositoryClient, base: str) -> str:
 
 
 def update_pull_request(repository: RepositoryClient, branch: str) -> None:
+    """Update and push changes to the given branch.
+
+    Args:
+        repository: RepositoryClient object
+        branch: name of the branch to be updated
+    """
     with repository.with_branch(branch) as repo:
         if repo.is_dirty():
             repo.pull()

@@ -3,7 +3,6 @@
 
 """Library for uploading docs to charmhub."""
 import logging
-import shutil
 from itertools import tee
 from pathlib import Path
 
@@ -11,20 +10,17 @@ from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .discourse import Discourse, create_discourse
-from .docs_directory import has_docs_directory
+from .discourse import create_discourse
 from .docs_directory import read as read_docs_directory
-from .exceptions import InputError
-from .index import contents_from_page
-from .index import get as get_index
-from .metadata import get as get_metadata
-from .migration import run as migrate_contents
-from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import create_pull_request, DEFAULT_BRANCH_NAME, update_pull_request
-from .reconcile import run as get_reconcile_actions, Clients
-from .repository import create_repository_client
 from .download import recreate_docs
-from .types_ import ActionResult, Metadata, UserInputs
+from .exceptions import InputError
+from .index import get as get_index
+from .navigation_table import from_page as navigation_table_from_page
+from .pull_request import DEFAULT_BRANCH_NAME, create_pull_request, update_pull_request
+from .reconcile import Clients
+from .reconcile import run as get_reconcile_actions
+from .repository import create_repository_client
+from .types_ import ActionResult, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
@@ -32,7 +28,16 @@ GETTING_STARTED = (
 )
 
 
-def get_clients(user_inputs: types_.UserInputs, base_path: Path) -> Clients:
+def get_clients(user_inputs: UserInputs, base_path: Path) -> Clients:
+    """Return Clients object.
+
+    Args:
+        user_inputs: inputs provided via environment
+        base_path: path where the git repository is stored
+
+    Returns:
+        Clients object embedding both Discourse API and Repository clients
+    """
     return Clients(
         discourse=create_discourse(
             hostname=user_inputs.discourse.hostname,
@@ -41,15 +46,12 @@ def get_clients(user_inputs: types_.UserInputs, base_path: Path) -> Clients:
             api_key=user_inputs.discourse.api_key,
         ),
         repository=create_repository_client(
-            access_token=user_inputs.github_access_token,
-            base_path=base_path
-        )
+            access_token=user_inputs.github_access_token, base_path=base_path
+        ),
     )
 
 
-def run_reconcile(
-        clients: Clients, user_inputs: UserInputs
-) -> dict[str, str]:
+def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     """Upload the documentation to charmhub.
 
     Args:
@@ -63,10 +65,11 @@ def run_reconcile(
         InputError: if there are any problems with executing any of the actions.
 
     """
-
     if not clients.repository.has_docs_directory:
-        logging.warning("Cannot run any reconcile to Discourse as there is not any docs folder "
-                        "present in the repository")
+        logging.warning(
+            "Cannot run any reconcile to Discourse as there is not any docs folder "
+            "present in the repository"
+        )
 
         return {}
 
@@ -107,8 +110,8 @@ def run_reconcile(
         str(report.location): report.result
         for report in reports
         if report.location is not None
-           and report.location != DRY_RUN_NAVLINK_LINK
-           and report.location != FAIL_NAVLINK_LINK
+        and report.location != DRY_RUN_NAVLINK_LINK
+        and report.location != FAIL_NAVLINK_LINK
     }
 
     if not user_inputs.dry_run:
@@ -124,14 +127,17 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
+        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         A single key-value pair dictionary containing a link to the Pull Request containing
         migrated documentation as key and successful action result as value.
     """
     if not clients.repository.metadata.docs:
-        logging.warning("Cannot run any migration from Discourse as there is not discourse "
-                        "link present in the metadata.")
+        logging.warning(
+            "Cannot run any migration from Discourse as there is not discourse "
+            "link present in the metadata."
+        )
         return {}
 
     # Check difference with main

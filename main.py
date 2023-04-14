@@ -16,7 +16,7 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, types_, get_clients, run_migrate, run_reconcile
+from src import GETTING_STARTED, exceptions, get_clients, run_migrate, run_reconcile, types_
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
@@ -56,6 +56,14 @@ def _parse_env_vars() -> types_.UserInputs:
 
 
 def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
+    """Serialize dictionary output into a string to be outputted to GitHub.
+
+    Args:
+        urls_with_actions_dict: dictionary output representing results of processes
+
+    Returns:
+        string representing the dictionary to be outputted to GitHub
+    """
     compact_json = partial(json.dumps, separators=(",", ":"))
 
     urls_with_actions = compact_json(urls_with_actions_dict)
@@ -67,12 +75,12 @@ def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
 
 
 def _write_github_output(
-        **urls_with_actions_dicts: dict[str, str],
+    **urls_with_actions_dicts: dict[str, str],
 ) -> None:
     """Writes results produced by the action to github_output.
 
     Args:
-        urls_with_actions_dict: list of key value pairs of link to result of action.
+        urls_with_actions_dicts: list of key value pairs of link to result of action.
 
     Raises:
         InputError: if not running inside a github actions environment.
@@ -110,8 +118,16 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> T:
-        """Replacement function."""
+    def wrapper(*args: typing.Any, **kwargs: typing.Any) -> T:
+        """Replacement function.
+
+        Args:
+            args: variable arguments
+            kwargs: variable named arguments
+
+        Returns:
+            output
+        """
         initial_cwd = Path.cwd()
         try:
             with tempfile.TemporaryDirectory() as tempdir_name:
@@ -130,12 +146,30 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
 
 @execute_in_tmpdir
 def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
+    """Main to migrate content from Discourse to Git repository.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
     clients = get_clients(user_inputs, path)
     return run_migrate(clients=clients, user_inputs=user_inputs)
 
 
 @execute_in_tmpdir
 def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
+    """Main to reconcile content from Git repository to Discourse.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
     clients = get_clients(user_inputs, path)
     return run_reconcile(clients=clients, user_inputs=user_inputs)
 
@@ -155,10 +189,7 @@ def main() -> None:
     reconcile_urls_with_actions = main_reconcile()
 
     # Write output
-    _write_github_output(
-        migrate=migrate_urls_with_actions,
-        reconcile=reconcile_urls_with_actions
-    )
+    _write_github_output(migrate=migrate_urls_with_actions, reconcile=reconcile_urls_with_actions)
 
 
 if __name__ == "__main__":
