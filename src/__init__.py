@@ -24,6 +24,7 @@ from .pull_request import DEFAULT_BRANCH_NAME
 from .pull_request import create_pull_request
 from .reconcile import run as run_reconcile, Clients
 from .repository import create_repository_client
+from .download import download_from_discourse
 from .types_ import ActionResult, Metadata, UserInputs
 
 GETTING_STARTED = (
@@ -117,24 +118,6 @@ def run_reconcile(
         )
 
     return urls_with_actions
-
-
-def download_from_discourse(clients: Clients) -> None:
-    base_path = clients.repository.base_path
-    metadata = clients.repository.metadata
-
-    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
-    server_content = (
-        index.server.content if index.server is not None and index.server.content else ""
-    )
-    index_content = contents_from_page(server_content)
-    table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
-    migrate_contents(
-        table_rows=table_rows,
-        index_content=index_content,
-        discourse=clients.discourse,
-        docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
-    )
 
 
 def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
