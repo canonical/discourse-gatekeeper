@@ -47,11 +47,6 @@ inputs:
     required: false
     type: string
     default: "upload-charm-docs/base-content"
-  base_branch:
-    description: |
-      DEPRECATED - here for backwards compatibility. This input is no longer used.
-    required: false
-    type: string
 outputs:
   urls_with_actions:
     description: |

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [v0.5.0] - 2023-04-13
+
+### Changed
+
+- Removed `base_branch` input.
+
 ## [v0.4.0] - 2023-04-13
 
 ### Changed
