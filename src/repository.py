@@ -193,12 +193,14 @@ class Client:
         """
         # Get the tag
         try:
-            # Need both steps, the ref allows for retrieval by tag name
             tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
+            # git has 2 types of tags, lightweight and annotated tags:
+            # https://git-scm.com/book/en/v2/Git-Basics-Tagging
             if tag_ref.object.type == "commit":
+                # lightweight tag, the SHA of the tag is the commit SHA
                 commit_sha = tag_ref.object.sha
             else:
-                # The ref does not contain the commit SHA, need to retrieve the tag object
+                # annotated tag, need to retrieve the commit SHA linked to the tag
                 git_tag = self._github_repo.get_git_tag(tag_ref.object.sha)
                 commit_sha = git_tag.object.sha
         except UnknownObjectException as exc:
