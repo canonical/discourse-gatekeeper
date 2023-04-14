@@ -8,6 +8,11 @@
 
 - Removed `base_branch` input.
 
+### Fixed
+
+- Add support for handling tags that are directly linked to a commit which
+  resulted in a failure before.
+
 ## [v0.4.0] - 2023-04-13
 
 ### Changed
