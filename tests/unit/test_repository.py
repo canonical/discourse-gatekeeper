@@ -157,11 +157,9 @@ def test_create_branch(
     (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
-    repository_client\
-        .switch("main")\
-        .create_branch(branch_name=branch_name)\
-        .switch(branch_name)\
-        .update_branch(commit_msg="commit-1", push=True)
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     # mypy false positive in lib due to getter/setter not being next to each other.
     assert any(
@@ -199,18 +197,14 @@ def test_create_branch_checkout_clash_default(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client\
-        .switch("main")\
-        .create_branch(branch_name=branch_name)\
-        .switch(branch_name)\
-        .update_branch(commit_msg="commit-1", push=True)
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
 
-def test_create_branch_checkout_clash_created(
-    repository_client: Client, upstream_git_repo: Repo
-):
+def test_create_branch_checkout_clash_created(repository_client: Client, upstream_git_repo: Repo):
     """
     arrange: given Client and a file with the same name as the requested branch and a
         file in the docs folder
@@ -227,11 +221,9 @@ def test_create_branch_checkout_clash_created(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client\
-        .switch("main")\
-        .create_branch(branch_name=branch_name)\
-        .switch(branch_name)\
-        .update_branch(commit_msg="commit-1", push=True)
+    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+        branch_name
+    ).update_branch(commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 

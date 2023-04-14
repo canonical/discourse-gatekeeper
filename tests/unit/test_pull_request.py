@@ -26,7 +26,6 @@ def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient)
     act: when create_pull_request is called
     assert: InputError is raised.
     """
-
     with pytest.raises(InputError) as exc:
         pull_request.create_pull_request(repository=repository_client.switch("main"), base="main")
 
@@ -40,7 +39,6 @@ def test_create_pull_request_existing_branch(
     tmp_path: Path,
     repository_client: RepositoryClient,
     upstream_git_repo: Repo,
-    upstream_repository_path: Path,
 ):
     """
     arrange: given RepositoryClient and an upstream repository that already has migration branch
@@ -87,6 +85,7 @@ def test_create_pull_request_existing_branch(
 
     # Make sure that the upload-charm-docs/migrate branch has now be overridden
     assert hash2 != hash3
+    assert pr_link == "test_url"
 
 
 def test_create_pull_request(

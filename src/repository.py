@@ -158,7 +158,7 @@ class Client:
         Returns:
             Path of the repository.
         """
-        return Path(self._git_repo.working_tree_dir)
+        return Path(self._git_repo.working_dir)
 
     @property
     def metadata(self) -> Metadata:
@@ -173,7 +173,16 @@ class Client:
     @property
     def current_branch(self) -> str:
         """Return the current branch."""
-        return self._git_repo.active_branch.name
+        try:
+            return self._git_repo.active_branch.name
+        except TypeError:
+            tag = next(
+                (tag for tag in self._git_repo.tags if tag.commit == self._git_repo.head.commit),
+                None,
+            )
+            if tag:
+                return tag.name
+            return self._git_repo.head.commit.hexsha
 
     @property
     def branches(self) -> Set[str]:
@@ -232,7 +241,7 @@ class Client:
         is_dirty = self.is_dirty() and self.has_docs_directory
 
         if is_dirty:
-            self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
+            self._git_repo.git.add(".")
             self._git_repo.git.stash()
 
         try:
@@ -240,7 +249,7 @@ class Client:
         finally:
             if is_dirty:
                 self._safe_pop_stash(branch_name)
-                self._git_repo.git.reset(DOCUMENTATION_FOLDER_NAME)
+                self._git_repo.git.reset()
         return self
 
     def _safe_pop_stash(self, branch_name: str) -> None:
@@ -273,6 +282,9 @@ class Client:
         Args:
             branch_name: name of the branch to be created
             base: branch or tag to be branched from
+
+        Raises:
+            RepositoryClientError: if an error occur when creating a new branch
 
         Returns:
             Repository client object.

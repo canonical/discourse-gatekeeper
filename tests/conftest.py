@@ -49,12 +49,10 @@ def fixture_repository_path(tmp_path: Path) -> Path:
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
     repository_path: Path,
-    upstream_repository_path: Path,
     default_branch: str,
     test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
-
     repo = Repo.init(repository_path)
     repo.git.checkout("-b", default_branch)
     (repository_path / ".gitkeep").touch()
@@ -70,13 +68,9 @@ def fixture_git_repo(
 
 
 @pytest.fixture(name="upstream_git_repo")
-def fixture_upstream_git_repo(
-    upstream_repository_path: Path, repository_path: Path
-) -> Repo:
+def fixture_upstream_git_repo(upstream_repository_path: Path, repository_path: Path) -> Repo:
     """Initialize upstream repository."""
-    upstream_repository = Repo.clone_from(
-        url=repository_path, to_path=upstream_repository_path
-    )
+    upstream_repository = Repo.clone_from(url=repository_path, to_path=upstream_repository_path)
 
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
@@ -118,10 +112,11 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    git_repo: Repo, mock_github_repo: Repository, upstream_git_repo: Repo,
+    git_repo: Repo,
+    mock_github_repo: Repository,
+    upstream_git_repo: Repo,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
-
     git_repo.git.remote("add", "origin", upstream_git_repo.working_tree_dir)
 
     return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
