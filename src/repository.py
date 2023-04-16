@@ -158,7 +158,7 @@ class Client:
         Returns:
             Path of the repository.
         """
-        return Path(self._git_repo.working_dir)
+        return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir)
 
     @property
     def metadata(self) -> Metadata:

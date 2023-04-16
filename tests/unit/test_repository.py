@@ -95,7 +95,6 @@ def test_check_branch_not_exists(repository_client: Client):
     """
     assert not repository_client.check_branch_exists("no-such-branchname")
 
-
 def test_check_branch_exists(
     repository_client: Client, upstream_git_repo: Repo, upstream_repository_path: Path
 ):
@@ -105,6 +104,7 @@ def test_check_branch_exists(
     assert: True is returned.
     """
     branch_name = "check-branch-exists"
+
     head = upstream_git_repo.create_head(branch_name)
     head.checkout()
     (upstream_repository_path / "filler-file").touch()

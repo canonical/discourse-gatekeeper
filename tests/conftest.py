@@ -70,7 +70,11 @@ def fixture_git_repo(
 @pytest.fixture(name="upstream_git_repo")
 def fixture_upstream_git_repo(upstream_repository_path: Path, repository_path: Path) -> Repo:
     """Initialize upstream repository."""
-    upstream_repository = Repo.clone_from(url=repository_path, to_path=upstream_repository_path)
+    upstream_repository = Repo.clone_from(
+        url=repository_path, to_path=upstream_repository_path
+    )
+
+    upstream_repository.git.checkout("-b", "origin-repo")
 
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
@@ -110,14 +114,23 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
     return mocked_github
 
 
+@pytest.fixture(name="git_repo_with_remote")
+def fixture_git_repo_with_remote(
+    git_repo: Repo
+) -> Repo:
+    git_repo.git.remote("add", "origin", "https://github.com/canonical/non-existing-repo.git")
+    return git_repo
+
+
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
     git_repo: Repo,
     mock_github_repo: Repository,
+    upstream_repository_path: Path,
     upstream_git_repo: Repo,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
-    git_repo.git.remote("add", "origin", upstream_git_repo.working_tree_dir)
+    git_repo.git.remote("add", "origin", upstream_repository_path)
 
     return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
 
