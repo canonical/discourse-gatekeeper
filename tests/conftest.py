@@ -16,6 +16,10 @@ from github.Requester import Requester
 import src
 from src import pull_request
 
+# This is a fake branch to be used in the remote repository to prevent conflicts when
+# pushing main. Another option would be to use remote bare repository, but this would
+# make it more difficult to perform checks and create pre-conditions
+BASE_REMOTE_BRANCH = "origin-repo-branch"
 
 @pytest.fixture(name="upstream_repository_path")
 def fixture_upstream_repository_path(tmp_path: Path) -> Path:
@@ -74,7 +78,7 @@ def fixture_upstream_git_repo(upstream_repository_path: Path, repository_path: P
         url=repository_path, to_path=upstream_repository_path
     )
 
-    upstream_repository.git.checkout("-b", "origin-repo")
+    upstream_repository.git.checkout("-b", BASE_REMOTE_BRANCH)
 
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")

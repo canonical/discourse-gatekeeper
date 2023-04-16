@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
+from ..conftest import BASE_REMOTE_BRANCH
 
 from src import (  # GETTING_STARTED,
     DOCUMENTATION_FOLDER_NAME,
@@ -289,6 +290,33 @@ def test__run_migrate_server_error_topic(mocked_clients):
 
 @mock.patch(
     "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_migrate_no_docs_information(caplog, mocked_clients):
+    """
+    arrange: given metadata with name and docs but no docs directory and mocked discourse
+        that raises an exception during topic retrieval
+    act: when _run_migrate is called
+    assert: MigrationError is raised.
+    """
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_migration_reports = run_migrate(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
+
+    assert len(returned_migration_reports) == 0
+    assert len(caplog.records) == 1
+    assert "Cannot run any migration from Discourse" in caplog.records[0].message
+
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate(
@@ -331,8 +359,140 @@ def test__run_migrate(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == index_page
     assert path_file.read_text(encoding="utf-8") == link_content
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+@mock.patch(
+    "src.repository.Client.get_pull_request", return_value="test_url"
+)
+def test__run_migrate_with_pull_request(
+        _,
+        mocked_clients,
+        upstream_git_repo: Repo,
+        upstream_repository_path: Path,
+        mock_pull_request: PullRequest,
+
+):
+    """
+    arrange: given metadata with name and docs and docs directory with updated content
+        and pull request already open and mocked discourse
+    act: when _run_migrate is called
+    assert: docs are migrated and the remote branch is updated.
+    """
+    # mock_get_pull.return_value = "test-url"
+
+    index_content = """Content header.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, f"{navlink_page} new"]
+
+    # Set up remote repository with content
+    (docs_folder := upstream_repository_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "path-1").mkdir()
+    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+
+    # commit data to upstream
+    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head.checkout()
+
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "first commit of documentation")
+    upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
+
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients,
+        user_inputs=user_inputs,
+    )
+
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+
+    assert "first commit of documentation" not in upstream_git_repo.head.commit.message
+    assert (
+        upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+    ).read_text() == f"{navlink_page} new"
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
+)
+@mock.patch(
+    "src.repository.Client.get_pull_request", return_value="test_url"
+)
+def test__run_migrate_with_pull_request_no_modification(
+        _,
+        mocked_clients,
+        upstream_git_repo: Repo,
+        upstream_repository_path: Path,
+        mock_pull_request: PullRequest,
+
+):
+    """
+    arrange: given metadata with name and docs and docs directory with same content
+        and pull request already open and mocked discourse
+    act: when _run_migrate is called
+    assert: docs are migrated and the remote branch is left intact.
+    """
+    # mock_get_pull.return_value = "test-url"
+
+    index_content = """Content header.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | path-1 | [empty-navlink]() |
+    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    # Set up remote repository with content
+    (docs_folder := upstream_repository_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "path-1").mkdir()
+    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+
+    # commit data to upstream
+    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head.checkout()
+
+    upstream_git_repo.git.add(".")
+    upstream_git_repo.git.commit("-m", "first commit of documentation")
+    hash = upstream_git_repo.head.ref.commit.hexsha
+    upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
+
+    user_inputs = factories.UserInputsFactory()
+
+    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+
+    returned_migration_reports = run_migrate(
+        clients=mocked_clients,
+        user_inputs=user_inputs,
+    )
+
+    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+
+    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+
+    assert "first commit of documentation" in upstream_git_repo.head.commit.message
+    assert upstream_git_repo.head.ref.commit.hexsha == hash
+
 
 
 @pytest.mark.usefixtures("patch_create_repository_client")
@@ -408,11 +568,12 @@ def test_run_no_docs_dir(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == index_page
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
 def test_run_migrate_same_content_local_and_server(
+        caplog,
         mocked_clients,
         upstream_git_repo: Repo
 ):
@@ -449,12 +610,11 @@ def test_run_migrate_same_content_local_and_server(
     user_inputs = factories.UserInputsFactory()
     mocked_clients.repository._git_repo.git.tag(user_inputs.base_tag_name)
 
-    # run is repeated in unit tests / integration tests
-    returned_migration_reports = run_migrate(
-        clients=mocked_clients, user_inputs=user_inputs
-    )  # pylint: disable=duplicate-code
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_migration_reports = run_migrate(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
 
-    print(returned_migration_reports)
-
-
-
+    assert len(returned_migration_reports) == 0
+    assert any("No community contribution found" in record.message for record in caplog.records)

@@ -28,7 +28,9 @@ def download_from_discourse(clients: Clients) -> None:
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    index_content = contents_from_page(server_content)
+    # index_content = contents_from_page(server_content)
+    # TODO: I'm not sure about this bit above. We should talk about this
+    index_content = server_content
     table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
     migrate_contents(
         table_rows=table_rows,

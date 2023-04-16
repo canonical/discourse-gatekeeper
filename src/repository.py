@@ -313,7 +313,7 @@ class Client:
             Repository client with the updated branch
         """
         try:
-            self._git_repo.git.add("-A", DOCUMENTATION_FOLDER_NAME)
+            self._git_repo.git.add("-A", ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
                 args = ["-u"]
