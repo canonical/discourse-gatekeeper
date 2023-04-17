@@ -243,6 +243,7 @@ class Client:
             self._git_repo.git.stash()
 
         try:
+            self._git_repo.git.fetch("--all")
             self._git_repo.git.checkout(branch_name, "--")
         finally:
             if is_dirty:

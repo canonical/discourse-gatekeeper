@@ -66,12 +66,7 @@ def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
     """
     compact_json = partial(json.dumps, separators=(",", ":"))
 
-    urls_with_actions = compact_json(urls_with_actions_dict)
-    if urls_with_actions_dict:
-        *_, index_url = urls_with_actions_dict.keys()
-    else:
-        index_url = ""
-    return f"urls_with_actions={urls_with_actions}\nindex_url={index_url}\n"
+    return compact_json(urls_with_actions_dict)
 
 
 def _write_github_output(
@@ -93,14 +88,13 @@ def _write_github_output(
             f"{GETTING_STARTED}"
         )
 
-    github_output_path = pathlib.Path(github_output)
+    output = ""
 
     for key, urls_with_actions_dict in urls_with_actions_dicts.items():
         if len(urls_with_actions_dict) > 0:
-            github_output_path.write_text(
-                f"{key}\n{_serialize_for_github(urls_with_actions_dict)}",
-                encoding="utf-8",
-            )
+            output += f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+
+    pathlib.Path(github_output).write_text(output, encoding="utf-8")
 
 
 def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
