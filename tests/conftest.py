@@ -60,17 +60,17 @@ def fixture_git_repo(
 ) -> Repo:
     """Create repository with mocked upstream."""
     repo = Repo.init(repository_path)
-    repo.git.checkout("-b", default_branch)
-    (repository_path / ".gitkeep").touch()
-    repo.git.add(".")
-    repo.git.commit("-m", "'initial commit'")
-    repo.git.checkout("-b", test_branch)
 
     writer = repo.config_writer()
     writer.set_value("user", "name", repository.ACTIONS_USER_NAME)
     writer.set_value("user", "email", repository.ACTIONS_USER_EMAIL)
     writer.release()
 
+    repo.git.checkout("-b", default_branch)
+    (repository_path / ".gitkeep").touch()
+    repo.git.add(".")
+    repo.git.commit("-m", "'initial commit'")
+    repo.git.checkout("-b", test_branch)
 
     # Go into detached head mode to reflect how GitHub performs the checkout
     repo.head.set_reference(repo.head.commit.hexsha)
