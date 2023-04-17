@@ -648,7 +648,7 @@ def test_create_repository_client_no_token(
 
 def test_create_repository_client(
     monkeypatch: pytest.MonkeyPatch,
-    git_repo: Repo,
+    git_repo_with_remote: Repo,
     repository_path: Path,
     mock_github_repo: Repository,
 ):
@@ -657,7 +657,8 @@ def test_create_repository_client(
     act: when create_repository_client is called
     assert: RepositoryClient is returned.
     """
-    git_repo.create_remote("origin", "https://github.com/test-user/test-repo.git")
+    _ = git_repo_with_remote
+
     test_token = secrets.token_hex(16)
     mock_github_client = mock.MagicMock(spec=Github)
     mock_github_client.get_repo.returns = mock_github_repo
