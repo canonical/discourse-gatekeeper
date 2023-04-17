@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [v0.5.0] - 2023-04-18
+
+### Changed
+
+- Removed `base_branch` input.
+
 ### Fixed
 
 - Add support for handling tags that are directly linked to a commit which
