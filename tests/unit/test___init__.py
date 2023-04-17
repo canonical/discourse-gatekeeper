@@ -33,12 +33,14 @@ from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
 @mock.patch("github.Github.get_repo")
-def test_setup_clients(git_repo_with_remote):
+def test_setup_clients(get_repo_mock, git_repo_with_remote):
     """
     arrange: given a local path and user_inputs
     act: when get_clients is called
     assert: then the Discourse and RepositoryClients are instantiated appropriately
     """
+    get_repo_mock.return_value = git_repo_with_remote
+
     path = Path(git_repo_with_remote.working_dir)
 
     user_inputs = factories.UserInputsFactory()

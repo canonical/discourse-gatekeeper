@@ -15,6 +15,7 @@ from github.Requester import Requester
 
 import src
 from src import pull_request
+from src import repository
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would
@@ -64,6 +65,12 @@ def fixture_git_repo(
     repo.git.add(".")
     repo.git.commit("-m", "'initial commit'")
     repo.git.checkout("-b", test_branch)
+
+    writer = repo.config_writer()
+    writer.set_value("user", "name", repository.ACTIONS_USER_NAME)
+    writer.set_value("user", "email", repository.ACTIONS_USER_EMAIL)
+    writer.release()
+
 
     # Go into detached head mode to reflect how GitHub performs the checkout
     repo.head.set_reference(repo.head.commit.hexsha)
@@ -128,10 +135,10 @@ def fixture_git_repo_with_remote(git_repo: Repo) -> Repo:
 def fixture_repository_client(
     git_repo: Repo,
     mock_github_repo: Repository,
-    upstream_repository_path: Path,
+    upstream_git_repo: Repo,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
-    git_repo.git.remote("add", "origin", upstream_repository_path)
+    git_repo.git.remote("add", "origin", upstream_git_repo.working_dir)
 
     return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
 
