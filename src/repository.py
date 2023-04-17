@@ -22,6 +22,7 @@ from github.Repository import Repository
 from src.docs_directory import has_docs_directory
 from src.metadata import get as get_metadata
 from src.types_ import Metadata
+
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -334,11 +335,11 @@ class Client:
         config_reader = self._git_repo.config_reader(config_level="repository")
         with self._git_repo.config_writer(config_level="repository") as config_writer:
             if not config_reader.has_section(
-                    CONFIG_USER_SECTION_NAME
+                CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_NAME):
                 config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
             if not config_reader.has_section(
-                    CONFIG_USER_SECTION_NAME
+                CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 

@@ -4,6 +4,7 @@
 """Unit tests for git."""
 
 import base64
+
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 import os
@@ -30,8 +31,9 @@ from src.exceptions import (
     RepositoryFileNotFoundError,
     RepositoryTagNotFoundError,
 )
-from src.repository import Client
 from src.pull_request import DEFAULT_BRANCH_NAME
+from src.repository import Client
+
 from .helpers import assert_substrings_in_string
 
 
@@ -98,7 +100,7 @@ def test_check_branch_not_exists(repository_client: Client):
 
 
 def test_check_branch_exists(
-        repository_client: Client, upstream_git_repo: Repo, upstream_repository_path: Path
+    repository_client: Client, upstream_git_repo: Repo, upstream_repository_path: Path
 ):
     """
     arrange: given Client with an upstream repository with check-branch-exists branch
@@ -165,8 +167,8 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
 
 
 def test_create_branch(
-        repository_client: Client,
-        upstream_git_repo: Repo,
+    repository_client: Client,
+    upstream_git_repo: Repo,
 ):
     """
     arrange: given Client and newly created files in `repo` and `repo/docs` directories
@@ -208,9 +210,9 @@ def test_create_branch(
 
 
 def test_create_branch_checkout_clash_default(
-        repository_client: Client,
-        upstream_git_repo: Repo,
-        default_branch: str,
+    repository_client: Client,
+    upstream_git_repo: Repo,
+    default_branch: str,
 ):
     """
     arrange: given Client and a file with the same name as the default branch and a file
@@ -311,9 +313,9 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     ],
 )
 def test_tag_commit_tag_github_error(
-        get_method: Callable[[Repository], mock.MagicMock],
-        monkeypatch: pytest.MonkeyPatch,
-        repository_client: Client,
+    get_method: Callable[[Repository], mock.MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+    repository_client: Client,
 ):
     """
     arrange: given tag name and commit sha, Client with a mocked github repository client where a
@@ -386,7 +388,7 @@ def test_tag_commit_tag_exists(monkeypatch: pytest.MonkeyPatch, repository_clien
 
 
 def test_get_file_content_from_tag_tag_github_error(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that raises an exception during
@@ -407,7 +409,7 @@ def test_get_file_content_from_tag_tag_github_error(
 
 
 def test_get_file_content_from_tag_tag_unknown_object_error(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that raises an
@@ -429,7 +431,7 @@ def test_get_file_content_from_tag_tag_unknown_object_error(
 
 
 def test_get_file_content_from_tag_content_github_error(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that raises an exception during
@@ -450,7 +452,7 @@ def test_get_file_content_from_tag_content_github_error(
 
 
 def test_get_file_content_from_tag_unknown_object_error(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that raises an
@@ -475,7 +477,7 @@ def test_get_file_content_from_tag_unknown_object_error(
 
 
 def test_get_file_content_from_tag_list(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that returns a list
@@ -497,7 +499,7 @@ def test_get_file_content_from_tag_list(
 
 
 def test_get_file_content_from_tag_content_none(
-        monkeypatch: pytest.MonkeyPatch, repository_client: Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
 ):
     """
     arrange: given Client with a mocked github repository client that returns None
@@ -592,13 +594,13 @@ def test_get_repository_name(remote_url: str, expected_repository_name: str):
     assert: GitError is raised.
     """
     assert (
-            repository._get_repository_name_from_git_url(remote_url=remote_url)
-            == expected_repository_name
+        repository._get_repository_name_from_git_url(remote_url=remote_url)
+        == expected_repository_name
     )
 
 
 def test_create_repository_client_no_token(
-        repository_path: Path,
+    repository_path: Path,
 ):
     """
     arrange: given valid repository path and empty access_token
@@ -618,10 +620,10 @@ def test_create_repository_client_no_token(
 
 
 def test_create_repository_client(
-        monkeypatch: pytest.MonkeyPatch,
-        git_repo: Repo,
-        repository_path: Path,
-        mock_github_repo: Repository,
+    monkeypatch: pytest.MonkeyPatch,
+    git_repo: Repo,
+    repository_path: Path,
+    mock_github_repo: Repository,
 ):
     """
     arrange: given valid repository path and a valid access_token and a mocked github client
@@ -703,7 +705,7 @@ def test_repository_summary_invalid_operation(repository_client):
 
 
 def test_repository_pull_default_branch(
-        repository_client, upstream_git_repo, upstream_repository_path
+    repository_client, upstream_git_repo, upstream_repository_path
 ):
     """
     arrange: given repository with an updated upstream
@@ -731,7 +733,7 @@ def test_repository_pull_default_branch(
 
 
 def test_repository_pull_other_branch(
-        repository_client, upstream_git_repo, upstream_repository_path
+    repository_client, upstream_git_repo, upstream_repository_path
 ):
     """
     arrange: given repository with an updated upstream
@@ -767,6 +769,7 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     act: when switch branch is called
     assert: RepositoryClientError is raised from GitCommandError.
     """
+
     def side_effect(*args):
         if len(args) > 0 and args[0] == "pop":
             raise GitCommandError("mocked error")
@@ -809,9 +812,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
 
-    assert_substrings_in_string(
-        (f"unexpected error updating branch"), str(exc.value).lower()
-    )
+    assert_substrings_in_string((f"unexpected error updating branch"), str(exc.value).lower())
 
 
 def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
@@ -847,7 +848,9 @@ def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, m
     assert pr is None
 
 
-def test_get_multiple_pull_request_error(monkeypatch, repository_client: Client, mock_pull_request):
+def test_get_multiple_pull_request_error(
+    monkeypatch, repository_client: Client, mock_pull_request
+):
     """
     arrange: given Client with a mocked local github client that mock an condition where
         multiple pull request for branch "main" exists
@@ -861,8 +864,4 @@ def test_get_multiple_pull_request_error(monkeypatch, repository_client: Client,
     with pytest.raises(RepositoryClientError) as exc:
         pr = repository_client.get_pull_request("main")
 
-    assert_substrings_in_string(
-        (f"more than one open pull request"), str(exc.value).lower()
-    )
-
-
+    assert_substrings_in_string((f"more than one open pull request"), str(exc.value).lower())

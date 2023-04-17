@@ -9,7 +9,6 @@ from unittest import mock
 import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
-from ..conftest import BASE_REMOTE_BRANCH
 
 from src import (  # GETTING_STARTED,
     DOCUMENTATION_FOLDER_NAME,
@@ -17,16 +16,17 @@ from src import (  # GETTING_STARTED,
     constants,
     discourse,
     exceptions,
+    get_clients,
     pull_request,
     run_migrate,
     run_reconcile,
     types_,
-    get_clients
 )
 from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
-from .helpers import assert_substrings_in_string, create_metadata_yaml
-from .. import factories
 
+from .. import factories
+from ..conftest import BASE_REMOTE_BRANCH
+from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
@@ -314,16 +314,15 @@ def test__run_migrate_no_docs_information(caplog, mocked_clients):
     assert "Cannot run any migration from Discourse" in caplog.records[0].message
 
 
-
 @mock.patch(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate(
-        mocked_clients,
-        upstream_git_repo: Repo,
-        upstream_repository_path: Path,
-        mock_pull_request: PullRequest,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
@@ -367,16 +366,13 @@ def test__run_migrate(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch(
-    "src.repository.Client.get_pull_request", return_value="test_url"
-)
+@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
 def test__run_migrate_with_pull_request(
-        _,
-        mocked_clients,
-        upstream_git_repo: Repo,
-        upstream_repository_path: Path,
-        mock_pull_request: PullRequest,
-
+    _,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given metadata with name and docs and docs directory with updated content
@@ -433,16 +429,13 @@ def test__run_migrate_with_pull_request(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch(
-    "src.repository.Client.get_pull_request", return_value="test_url"
-)
+@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
 def test__run_migrate_with_pull_request_no_modification(
-        _,
-        mocked_clients,
-        upstream_git_repo: Repo,
-        upstream_repository_path: Path,
-        mock_pull_request: PullRequest,
-
+    _,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given metadata with name and docs and docs directory with same content
@@ -494,7 +487,6 @@ def test__run_migrate_with_pull_request_no_modification(
     assert upstream_git_repo.head.ref.commit.hexsha == hash
 
 
-
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_empty_dir(mocked_clients):
     """
@@ -524,10 +516,10 @@ def test_run_no_docs_empty_dir(mocked_clients):
 
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_dir(
-        mocked_clients,
-        upstream_git_repo: Repo,
-        upstream_repository_path: Path,
-        mock_pull_request: PullRequest,
+    mocked_clients,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given a path with a metadata.yaml that has docs key and no docs directory
@@ -573,9 +565,7 @@ def test_run_no_docs_dir(
 
 
 def test_run_migrate_same_content_local_and_server(
-        caplog,
-        mocked_clients,
-        upstream_git_repo: Repo
+    caplog, mocked_clients, upstream_git_repo: Repo
 ):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
