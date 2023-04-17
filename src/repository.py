@@ -121,9 +121,7 @@ class DiffSummary(NamedTuple):
         Returns:
             string representing the new, modified and removed files
         """
-        modified_str = (
-            (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 else ()
-        )
+        modified_str = (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 else ()
         new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else ()
         removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else ()
         return " // ".join(chain(modified_str, new_str, removed_str))

@@ -4,8 +4,8 @@
 """Library for downloading docs folder from charmhub."""
 
 import shutil
-
 from contextlib import suppress
+
 from git import GitCommandError
 
 from .constants import DOCUMENTATION_FOLDER_NAME

@@ -7,7 +7,6 @@ import base64
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
-import os
 import secrets
 from collections.abc import Callable
 from pathlib import Path
