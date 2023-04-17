@@ -5,6 +5,7 @@
 
 import shutil
 
+from contextlib import suppress
 from git import GitCommandError
 
 from .constants import DOCUMENTATION_FOLDER_NAME
@@ -51,12 +52,10 @@ def recreate_docs(clients: Clients, base: str) -> bool:
     """
     clients.repository.switch(base)
 
-    try:
-        clients.repository.pull()
-    except GitCommandError:
+    with suppress(GitCommandError):
         # The branch is either detached or there is no remote branch. In these cases there is no
         # reason for pulling anything
-        pass
+        clients.repository.pull()
 
     # Remove docs folder and recreate content from discourse
     docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME

@@ -716,7 +716,7 @@ def test_repository_summary_remove(repository_client):
 
     assert len(repository_client.summary.removed) == 0
 
-    os.remove(repository_client.base_path / "file-1.txt")
+    (repository_client.base_path / "file-1.txt").unlink()
 
     assert len(repository_client.summary.removed) == 1
     assert list(repository_client.summary.removed)[0] == "file-1.txt"
@@ -807,7 +807,7 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
         Raises:
             GitCommandError: when providing pop
         """
-        if len(args) > 0 and args[0] == "pop":
+        if args and args[0] == "pop":
             raise GitCommandError("mocked error")
 
     mock_git_repository = mock.MagicMock(spec=Git)

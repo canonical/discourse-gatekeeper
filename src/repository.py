@@ -122,10 +122,10 @@ class DiffSummary(NamedTuple):
             string representing the new, modified and removed files
         """
         modified_str = (
-            (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 else tuple()
+            (f"modified: {','.join(self.modified)}",) if len(self.modified) > 0 else ()
         )
-        new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else tuple()
-        removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else tuple()
+        new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else ()
+        removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else ()
         return " // ".join(chain(modified_str, new_str, removed_str))
 
 
@@ -386,7 +386,7 @@ class Client:
             raise RepositoryClientError(
                 f"More than one open pull request with branch {branch_name}"
             )
-        if len(open_pull) == 0:
+        if not open_pull:
             return None
 
         return open_pull[0].html_url

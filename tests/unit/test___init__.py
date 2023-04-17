@@ -220,7 +220,7 @@ def test__run_reconcile_no_docs(caplog, mocked_clients):
     with caplog.at_level(logging.WARNING):
         output = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
-    assert len(output) == 0
+    assert not output
     assert len(caplog.records) == 1
     assert "Cannot run any reconcile to Discourse" in caplog.records[0].message
 
@@ -308,7 +308,7 @@ def test__run_migrate_no_docs_information(caplog, mocked_clients):
             clients=mocked_clients, user_inputs=user_inputs
         )  # pylint: disable=duplicate-code
 
-    assert len(returned_migration_reports) == 0
+    assert not returned_migration_reports
     assert len(caplog.records) == 1
     assert "Cannot run any migration from Discourse" in caplog.records[0].message
 
@@ -602,5 +602,5 @@ def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
             clients=mocked_clients, user_inputs=user_inputs
         )  # pylint: disable=duplicate-code
 
-    assert len(returned_migration_reports) == 0
+    assert not returned_migration_reports
     assert any("No community contribution found" in record.message for record in caplog.records)
