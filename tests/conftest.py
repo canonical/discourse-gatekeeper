@@ -14,7 +14,7 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
-from src import pull_request, repository
+from src import pull_request
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would
@@ -53,15 +53,13 @@ def fixture_repository_path(tmp_path: Path) -> Path:
 # upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
-    repository_path: Path,
-    upstream_git_repo,
-    default_branch: str,
-    test_branch: str,
+        repository_path: Path,
+        upstream_git_repo,
+        default_branch: str,
+        test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
-    repo = Repo.clone_from(
-        url=upstream_git_repo.working_dir, to_path=repository_path
-    )
+    repo = Repo.clone_from(url=upstream_git_repo.working_dir, to_path=repository_path)
 
     repo.git.checkout("-b", default_branch)
 
@@ -73,11 +71,8 @@ def fixture_git_repo(
 
 
 @pytest.fixture(name="upstream_git_repo")
-def fixture_upstream_git_repo(
-        upstream_repository_path: Path, default_branch: str
-) -> Repo:
+def fixture_upstream_git_repo(upstream_repository_path: Path, default_branch: str) -> Repo:
     """Initialize upstream repository."""
-
     upstream_repository = Repo.init(upstream_repository_path)
 
     writer = upstream_repository.config_writer()
@@ -136,8 +131,8 @@ def fixture_git_repo_with_remote(git_repo: Repo) -> Repo:
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    git_repo: Repo,
-    mock_github_repo: Repository,
+        git_repo: Repo,
+        mock_github_repo: Repository,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
     return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
@@ -145,7 +140,7 @@ def fixture_repository_client(
 
 @pytest.fixture(name="patch_create_repository_client")
 def fixture_patch_create_repository_client(
-    monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
+        monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
 ) -> None:
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
