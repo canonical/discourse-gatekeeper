@@ -63,11 +63,6 @@ def fixture_git_repo(
         url=upstream_git_repo.working_dir, to_path=repository_path
     )
 
-    writer = repo.config_writer()
-    writer.set_value("user", "name", repository.ACTIONS_USER_NAME)
-    writer.set_value("user", "email", repository.ACTIONS_USER_EMAIL)
-    writer.release()
-
     repo.git.checkout("-b", default_branch)
 
     # Go into detached head mode to reflect how GitHub performs the checkout
