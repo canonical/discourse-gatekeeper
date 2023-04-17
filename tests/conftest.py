@@ -14,6 +14,7 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
+from src.constants import DOCUMENTATION_TAG
 from src import pull_request
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
@@ -85,6 +86,7 @@ def fixture_upstream_git_repo(upstream_repository_path: Path, default_branch: st
     upstream_repository.git.commit("-m", "'initial commit'")
 
     upstream_repository.git.checkout("-b", BASE_REMOTE_BRANCH)
+    upstream_repository.git.tag(DOCUMENTATION_TAG)
 
     return upstream_repository
 

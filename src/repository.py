@@ -180,7 +180,12 @@ class Client:
             )
             if tag:
                 return tag.name
-            return self._git_repo.head.commit.hexsha
+            return self.current_commit
+
+    @property
+    def current_commit(self) -> str:
+        """Return the current branch."""
+        return self._git_repo.head.commit.hexsha
 
     @property
     def branches(self) -> Set[str]:
@@ -430,6 +435,12 @@ class Client:
 
         with self.with_branch(branch_name) as client:
             return client.is_dirty()
+
+    def tag_exists(self, tag_name: str):
+        return any([
+            tag_name == tag.name
+            for tag in self._git_repo.tags
+        ])
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.

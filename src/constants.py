@@ -6,6 +6,7 @@
 The use of this module should be limited to cases where the constant is not better placed in
 another module or to resolve circular imports.
 """
+DOCUMENTATION_TAG = "upload-docs-tag"
 
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOCUMENTATION_INDEX_FILENAME = "index.md"

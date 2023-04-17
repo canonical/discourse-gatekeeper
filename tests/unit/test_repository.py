@@ -23,7 +23,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from src import repository
-from src.constants import DOCUMENTATION_FOLDER_NAME
+from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from src.exceptions import (
     InputError,
     RepositoryClientError,
@@ -122,6 +122,8 @@ def test_current_branch_switch_main(repository_client):
     act: we switch branch to main
     assert: current_branch should provide first the commit hash and then the main name
     """
+    repository_client._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+
     _hash = repository_client.current_branch
 
     repository_client.switch("main")

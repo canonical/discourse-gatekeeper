@@ -145,6 +145,30 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
+def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients):
+    """
+    arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
+        and the upload-docs-tag is destroyed before calling run_reconcile
+    act: when _run_reconcile is called with dry run mode enabled
+    assert: no pages are created.
+    """
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text("index content")
+    (docs_folder / "page.md").write_text("page content")
+    user_inputs = factories.UserInputsFactory(dry_run=True, delete_pages=True)
+
+    mocked_clients.repository._git_repo.git.tag("-d", user_inputs.base_tag_name)
+
+    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+
+    mocked_clients.discourse.create_topic.assert_not_called()
+    assert not returned_page_interactions
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
 def test__run_reconcile_local_empty_server_error(mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs directory and mocked discourse
@@ -223,6 +247,41 @@ def test__run_reconcile_no_docs(caplog, mocked_clients):
     assert not output
     assert len(caplog.records) == 1
     assert "Cannot run any reconcile to Discourse" in caplog.records[0].message
+    assert "not any docs folder" in caplog.records[0].message
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs="http://discourse/t/docs")
+)
+def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
+    """
+    arrange: given metadata with name and docs and docs folder and mocked discourse and repository
+        at the same commit as the documentation tag
+    act: when _run_reconcile is called
+    assert: Nothing is done, and empty result is return with an info.
+    """
+    repository_client = mocked_clients.repository
+
+    (docs_folder := repository_client.base_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text("index content")
+    (docs_folder / "page.md").write_text("page content 2")
+
+    repository_client.switch("main").update_branch("First commit of documentation")
+
+    repository_client._git_repo.git.tag("my-tag")
+    user_inputs = factories.UserInputsFactory(
+        commit_sha=repository_client.current_commit,
+        base_tag_name="my-tag"
+    )
+
+    with caplog.at_level(logging.WARNING):
+        output = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+
+    assert not output
+    assert len(caplog.records) == 1
+    assert "Cannot run any reconcile to Discourse" in caplog.records[0].message
+    assert "same commit" in caplog.records[0].message
+
 
 
 @mock.patch(
@@ -240,7 +299,7 @@ def test__run_migrate_server_error_index(repository_client: pull_request.Reposit
     mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     user_inputs = factories.UserInputsFactory()
 
-    repository_client.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    repository_client.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     with pytest.raises(exceptions.ServerError) as exc:
         run_migrate(
@@ -278,7 +337,7 @@ def test__run_migrate_server_error_topic(mocked_clients):
         exceptions.DiscourseError,
     ]
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     with pytest.raises(exceptions.MigrationError):
         run_migrate(
@@ -300,7 +359,7 @@ def test__run_migrate_no_docs_information(caplog, mocked_clients):
     """
     user_inputs = factories.UserInputsFactory()
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     with caplog.at_level(logging.INFO):
         # run is repeated in unit tests / integration tests
@@ -342,7 +401,7 @@ def test__run_migrate(
 
     user_inputs = factories.UserInputsFactory()
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     returned_migration_reports = run_migrate(
         clients=mocked_clients,
@@ -407,7 +466,7 @@ def test__run_migrate_with_pull_request(
 
     user_inputs = factories.UserInputsFactory()
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     returned_migration_reports = run_migrate(
         clients=mocked_clients,
@@ -471,7 +530,7 @@ def test__run_migrate_with_pull_request_no_modification(
 
     user_inputs = factories.UserInputsFactory()
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     returned_migration_reports = run_migrate(
         clients=mocked_clients,
@@ -544,7 +603,7 @@ def test_run_no_docs_dir(
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
     user_inputs = factories.UserInputsFactory()
 
-    mocked_clients.repository.switch("main")._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository.switch("main")._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     # run is repeated in unit tests / integration tests
     returned_migration_reports = run_migrate(
@@ -594,7 +653,7 @@ def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
     mocked_clients.repository.switch("main").update_branch("First document version")
 
     user_inputs = factories.UserInputsFactory()
-    mocked_clients.repository._git_repo.git.tag(user_inputs.base_tag_name)
+    mocked_clients.repository._git_repo.git.tag("-f", user_inputs.base_tag_name)
 
     with caplog.at_level(logging.INFO):
         # run is repeated in unit tests / integration tests

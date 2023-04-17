@@ -73,6 +73,15 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
         return {}
 
+    if clients.repository.tag_exists(user_inputs.base_tag_name):
+        with clients.repository.with_branch(user_inputs.base_tag_name) as repo:
+            if repo.current_commit == user_inputs.commit_sha:
+                logging.warning(
+                    f"Cannot run any reconcile to Discourse as we are at the same commit "
+                    f"of the tag {user_inputs.base_tag_name}"
+                )
+                return {}
+
     metadata = clients.repository.metadata
     base_path = clients.repository.base_path
 
