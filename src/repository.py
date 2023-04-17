@@ -22,7 +22,6 @@ from github.Repository import Repository
 from src.docs_directory import has_docs_directory
 from src.metadata import get as get_metadata
 from src.types_ import Metadata
-
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -211,7 +210,7 @@ class Client:
     @property
     def summary(self) -> DiffSummary:
         """Return a summary of the differences against the most recent commit."""
-        self._git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
+        self._git_repo.git.add(".")
 
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
@@ -238,7 +237,7 @@ class Client:
         Returns:
             Repository object with the branch switched.
         """
-        is_dirty = self.is_dirty() and self.has_docs_directory
+        is_dirty = self.is_dirty()
 
         if is_dirty:
             self._git_repo.git.add(".")
@@ -335,11 +334,11 @@ class Client:
         config_reader = self._git_repo.config_reader(config_level="repository")
         with self._git_repo.config_writer(config_level="repository") as config_writer:
             if not config_reader.has_section(
-                CONFIG_USER_SECTION_NAME
+                    CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_NAME):
                 config_writer.set_value(*CONFIG_USER_NAME, ACTIONS_USER_NAME)
             if not config_reader.has_section(
-                CONFIG_USER_SECTION_NAME
+                    CONFIG_USER_SECTION_NAME
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
@@ -416,19 +415,6 @@ class Client:
             ) from exc
 
         return pull_request.html_url
-
-    def get_or_create_pull_request(self, branch_name: str | None = None) -> str:
-        """Create a pull request from given branch to the default branch.
-
-        Args:
-            branch_name: Branch name from which the pull request will be created.
-
-        Returns:
-            The web url to pull request page.
-        """
-        _branch_name = branch_name or self.current_branch
-
-        return self.get_pull_request(_branch_name) or self.create_pull_request(_branch_name)
 
     def is_dirty(self, branch_name: Optional[str] = None) -> bool:
         """Check if repository path has any changes including new files.

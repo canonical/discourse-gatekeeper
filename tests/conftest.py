@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 from git.repo import Repo
 from github import Github
+from github.PullRequestPart import PullRequestPart
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 from github.Requester import Requester
@@ -20,6 +21,7 @@ from src import pull_request
 # pushing main. Another option would be to use remote bare repository, but this would
 # make it more difficult to perform checks and create pre-conditions
 BASE_REMOTE_BRANCH = "origin-repo-branch"
+
 
 @pytest.fixture(name="upstream_repository_path")
 def fixture_upstream_repository_path(tmp_path: Path) -> Path:
@@ -52,9 +54,9 @@ def fixture_repository_path(tmp_path: Path) -> Path:
 # upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
-    repository_path: Path,
-    default_branch: str,
-    test_branch: str,
+        repository_path: Path,
+        default_branch: str,
+        test_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
     repo = Repo.init(repository_path)
@@ -95,7 +97,7 @@ def fixture_mock_pull_request() -> PullRequest:
     return PullRequest(
         requester=mock_requester,
         headers={},
-        attributes={"html_url": "test_url"},
+        attributes={"html_url": "test_url", "head": {"ref": "main"}},
         completed=False,
     )
 
@@ -120,7 +122,7 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
 
 @pytest.fixture(name="git_repo_with_remote")
 def fixture_git_repo_with_remote(
-    git_repo: Repo
+        git_repo: Repo
 ) -> Repo:
     git_repo.git.remote("add", "origin", "https://github.com/canonical/non-existing-repo.git")
     return git_repo
@@ -128,10 +130,10 @@ def fixture_git_repo_with_remote(
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    git_repo: Repo,
-    mock_github_repo: Repository,
-    upstream_repository_path: Path,
-    upstream_git_repo: Repo,
+        git_repo: Repo,
+        mock_github_repo: Repository,
+        upstream_repository_path: Path,
+        upstream_git_repo: Repo,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
     git_repo.git.remote("add", "origin", upstream_repository_path)
@@ -141,7 +143,7 @@ def fixture_repository_client(
 
 @pytest.fixture(name="patch_create_repository_client")
 def fixture_patch_create_repository_client(
-    monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
+        monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
 ) -> None:
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
