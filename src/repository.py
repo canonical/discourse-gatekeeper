@@ -6,7 +6,7 @@
 import base64
 import logging
 import re
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -446,6 +446,7 @@ class Client:
         Returns:
             bool whether the given tag exists.
         """
+        self._git_repo.git.fetch("--all", "--tags")
         return any(tag_name == tag.name for tag in self._git_repo.tags)
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
@@ -459,18 +460,16 @@ class Client:
             RepositoryClientError: if there is a problem with communicating with GitHub
         """
         try:
-            # Delete the tag if it exists
-            with suppress(UnknownObjectException):
-                tag_ref = self._github_repo.get_git_ref(f"tags/{tag_name}")
-                tag_ref.delete()
+            if self.tag_exists(tag_name):
+                logging.info("Removing tag %s", tag_name)
+                self._git_repo.git.tag("-d", tag_name)
+                self._git_repo.git.push("--delete", "origin", tag_name)
 
-            # Create the new tag
-            tag_object = self._github_repo.create_git_tag(
-                tag_name, TAG_MESSAGE, commit_sha, "commit"
-            )
-            self._github_repo.create_git_ref(f"refs/tags/{tag_name}", tag_object.sha)
-        except GithubException as exc:
-            raise RepositoryClientError(f"Communication with GitHub failed. {exc=!r}") from exc
+            self._git_repo.git.tag(tag_name, commit_sha)
+            self._git_repo.git.push("origin", tag_name)
+
+        except GitCommandError as exc:
+            raise RepositoryClientError(f"Tagging commit failed. {exc=!r}") from exc
 
     def get_file_content_from_tag(self, path: str, tag_name: str) -> str:
         """Get the content of a file for a specific tag.

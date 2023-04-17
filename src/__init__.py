@@ -9,7 +9,7 @@ from pathlib import Path
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
-from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from .constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from .discourse import create_discourse
 from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
@@ -125,7 +125,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     if not user_inputs.dry_run:
         clients.repository.tag_commit(
-            tag_name=DOCUMENTATION_TAG, commit_sha=user_inputs.commit_sha
+            tag_name=DOCUMENTATION_TAG, commit_sha=clients.repository.current_commit
         )
 
     return urls_with_actions
@@ -148,6 +148,13 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             "link present in the metadata."
         )
         return {}
+
+    logging.info(f"Tag exists: {clients.repository.tag_exists(DOCUMENTATION_TAG)}")
+
+    if not clients.repository.tag_exists(DOCUMENTATION_TAG):
+        with clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+            main_hash = repo.current_commit
+        clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
 
     # Check difference with main
     if not recreate_docs(clients, DOCUMENTATION_TAG):

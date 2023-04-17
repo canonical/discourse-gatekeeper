@@ -89,8 +89,9 @@ def _write_github_output(
     output = ""
 
     for key, urls_with_actions_dict in urls_with_actions_dicts.items():
-        if len(urls_with_actions_dict) > 0:
-            output += f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+        output += f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+
+    logging.info(f"Output: {output}")
 
     pathlib.Path(github_output).write_text(output, encoding="utf-8")
 

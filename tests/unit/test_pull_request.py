@@ -13,7 +13,7 @@ from git.repo import Repo
 from github.PullRequest import PullRequest
 
 from src import pull_request, repository
-from src.constants import DOCUMENTATION_FOLDER_NAME
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME
 from src.exceptions import InputError
 from src.pull_request import RepositoryClient
 
@@ -27,7 +27,9 @@ def test_create_pull_request_no_dirty_files(repository_client: RepositoryClient)
     assert: InputError is raised.
     """
     with pytest.raises(InputError) as exc:
-        pull_request.create_pull_request(repository=repository_client.switch("main"), base="main")
+        pull_request.create_pull_request(
+            repository=repository_client.switch(DEFAULT_BRANCH), base=DEFAULT_BRANCH
+        )
 
     assert_substrings_in_string(
         ("no files seem to be migrated. please add contents upstream first.",),
@@ -78,12 +80,12 @@ def test_create_pull_request_existing_branch(
     # make sure the hash of the upload-charm-docs/migrate branch agree
     assert hash1 == hash2
 
-    repository_path = repository_client.switch("main").base_path
+    repository_path = repository_client.switch(DEFAULT_BRANCH).base_path
 
     (repository_path / docs_folder).mkdir()
     (repository_path / filler_file).write_text("filler-content")
 
-    pr_link = pull_request.create_pull_request(repository=repository_client, base="main")
+    pr_link = pull_request.create_pull_request(repository=repository_client, base=DEFAULT_BRANCH)
 
     repository_client.switch(branch_name).pull()
 
@@ -113,9 +115,11 @@ def test_create_pull_request(
     filler_text = "filler-text"
     (repository_path / filler_file).write_text(filler_text)
 
-    repository_client.switch("main")
+    repository_client.switch(DEFAULT_BRANCH)
 
-    returned_pr_link = pull_request.create_pull_request(repository=repository_client, base="main")
+    returned_pr_link = pull_request.create_pull_request(
+        repository=repository_client, base=DEFAULT_BRANCH
+    )
 
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url

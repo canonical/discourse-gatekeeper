@@ -8,7 +8,6 @@ import base64
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 import secrets
-from collections.abc import Callable
 from pathlib import Path
 from unittest import mock
 
@@ -23,7 +22,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from src import repository
-from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from src.exceptions import (
     InputError,
     RepositoryClientError,
@@ -116,19 +115,23 @@ def test_check_branch_exists(
     assert repository_client.check_branch_exists(branch_name)
 
 
-def test_current_branch_switch_main(repository_client):
+def test_current_branch_switch_main(
+        repository_client,
+        upstream_git_repo
+):
     """
     arrange: given a repository in a detached state
     act: we switch branch to main
     assert: current_branch should provide first the commit hash and then the main name
     """
     repository_client._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+    upstream_git_repo.git.tag("-d", DOCUMENTATION_TAG)
 
     _hash = repository_client.current_branch
 
-    repository_client.switch("main")
+    repository_client.switch(DEFAULT_BRANCH)
 
-    assert repository_client.current_branch == "main"
+    assert repository_client.current_branch == DEFAULT_BRANCH
     assert repository_client._git_repo.head.ref.commit.hexsha == _hash
 
 
@@ -158,7 +161,7 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
     monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.switch("main").create_branch(branch_name="test-create-branch")
+        repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name="test-create-branch")
 
     assert_substrings_in_string(
         ("unexpected error creating new branch", err_str), str(exc.value).lower()
@@ -189,7 +192,7 @@ def test_create_branch(
     (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
-    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+    repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
     ).update_branch(commit_msg="commit-1", push=True)
 
@@ -229,7 +232,7 @@ def test_create_branch_checkout_clash_default(
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+    repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
     ).update_branch(commit_msg="commit-1", push=True)
 
@@ -253,7 +256,7 @@ def test_create_branch_checkout_clash_created(repository_client: Client, upstrea
     docs_file = docs_dir / "test.txt"
     (repository_path / docs_file).write_text("content 2", encoding="utf-8")
 
-    repository_client.switch("main").create_branch(branch_name=branch_name).switch(
+    repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
     ).update_branch(commit_msg="commit-1", push=True)
 
@@ -291,99 +294,64 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     assert returned_url == mock_pull_request.html_url
 
 
-@pytest.mark.parametrize(
-    "get_method",
-    [
-        pytest.param(
-            lambda mock_github_repository: mock_github_repository.get_git_ref, id="get_git_ref"
-        ),
-        pytest.param(
-            lambda mock_github_repository: mock_github_repository.create_git_tag,
-            id="create_git_tag",
-        ),
-        pytest.param(
-            lambda mock_github_repository: mock_github_repository.create_git_ref,
-            id="create_git_ref",
-        ),
-        pytest.param(
-            lambda mock_github_repository: mock_github_repository.get_git_ref.return_value.delete,
-            id="get_git_ref.return_value.delete",
-        ),
-    ],
-)
-def test_tag_commit_tag_github_error(
-    get_method: Callable[[Repository], mock.MagicMock],
-    monkeypatch: pytest.MonkeyPatch,
-    repository_client: Client,
-):
+def test_tag_commit_tag_error(monkeypatch, repository_client: Client):
     """
-    arrange: given tag name and commit sha, Client with a mocked github repository client where a
-        given method raises GithubException
-    act: when tag_commit is called with the tag name and commit sha
-    assert: RepositoryClientError is raised.
+    arrange: given Client with a mocked local git repository client that raises an
+        exception
+    act: when tag_commit is called
+    assert: RepositoryClientError is raised from GitCommandError.
     """
-    mock_github_repository = mock.MagicMock(spec=Repository)
-    get_method(mock_github_repository).side_effect = GithubException(
-        status=401, data="Unauthorized", headers=None
-    )
-    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
+    err_str = "mocked error"
+    mock_git_repository = mock.MagicMock(spec=Repo)
+    mock_git_repository.git.tag.side_effect = [GitCommandError(err_str)]
+    monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.tag_commit(tag_name="tag 1", commit_sha="sha 1")
+        repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    assert_substrings_in_string(("unauthorized", "401"), str(exc.value).lower())
+    assert_substrings_in_string(("tagging commit failed", err_str), str(exc.value).lower())
 
 
-def test_tag_commit_tag_not_exists(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+def test_tag_commit_tag_not_exists(repository_client: Client, upstream_git_repo):
     """
-    arrange: given tag name and commit sha, Client with a mocked github repository client where
-        retrieving the tag raises UnknownObjectException
+    arrange: given tag name and commit sha and no tag DOCUMENTATION_TAG exists locally or remotely
     act: when tag_commit is called with the tag name and commit sha
     assert: then the functions are called to create the tag.
     """
-    mock_github_repository = mock.MagicMock(spec=Repository)
-    mock_github_repository.get_git_ref.side_effect = UnknownObjectException(
-        status=404, data="Tag not found error", headers=None
-    )
-    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
-    tag_name = "tag 1"
-    commit_sha = "sha 1"
+    repository_client._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+    upstream_git_repo.git.tag("-d", DOCUMENTATION_TAG)
 
-    repository_client.tag_commit(tag_name=tag_name, commit_sha=commit_sha)
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
-    mock_github_repository.get_git_ref.return_value.delete.assert_not_called()
-
-    mock_github_repository.create_git_tag.assert_called_once_with(
-        tag_name, repository.TAG_MESSAGE, commit_sha, "commit"
-    )
-    mock_github_repository.create_git_ref.assert_called_once_with(
-        f"refs/tags/{tag_name}", mock_github_repository.create_git_tag.return_value.sha
-    )
+    assert any((DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags))
+    assert any((DOCUMENTATION_TAG == tag.name for tag in upstream_git_repo.tags))
 
 
-def test_tag_commit_tag_exists(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
     """
-    arrange: given tag name and commit sha, Client with a mocked github repository client
+    arrange: given tag name and commit sha and tag DOCUMENTATION_TAG exists locally or remotely
+        on a different commit
     act: when tag_commit is called with the tag name and commit sha
-    assert: then the functions are called to delete the pre-existing and create the new tag.
+    assert: then the functions are called to update the tag, locally and remotely.
     """
-    mock_github_repository = mock.MagicMock(spec=Repository)
-    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
-    tag_name = "tag 1"
-    commit_sha = "sha 1"
+    with repository_client.with_branch(DOCUMENTATION_TAG) as repo:
+        previous_hash = repo.current_commit
 
-    repository_client.tag_commit(tag_name=tag_name, commit_sha=commit_sha)
+    (repository_client.base_path / "placeholder.md").touch()
 
-    mock_github_repository.get_git_ref.assert_called_once_with(f"tags/{tag_name}")
-    mock_github_repository.get_git_ref.return_value.delete.assert_called_once_with()
+    repository_client.switch(DEFAULT_BRANCH).update_branch("my new commit")
 
-    mock_github_repository.create_git_tag.assert_called_once_with(
-        tag_name, repository.TAG_MESSAGE, commit_sha, "commit"
-    )
-    mock_github_repository.create_git_ref.assert_called_once_with(
-        f"refs/tags/{tag_name}", mock_github_repository.create_git_tag.return_value.sha
-    )
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
+    assert any((DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags))
+
+    with repository_client.with_branch(DOCUMENTATION_TAG) as repo:
+        new_hash = repo.current_commit
+        assert new_hash != previous_hash
+
+    tag = [tag for tag in upstream_git_repo.tags if tag.name == DOCUMENTATION_TAG][0]
+    assert tag.commit.hexsha != previous_hash
+    assert tag.commit.hexsha == new_hash
 
 
 def test_get_file_content_from_tag_tag_github_error(
@@ -741,7 +709,7 @@ def test_repository_pull_default_branch(
     act: when the pull method of the repository is called
     assert: the new commits are pulled from the upstream
     """
-    branch_name = "main"
+    branch_name = DEFAULT_BRANCH
 
     repository_client.switch(branch_name)
 
@@ -785,7 +753,7 @@ def test_repository_pull_other_branch(
     second_hash = upstream_git_repo.head.ref.commit.hexsha
 
     assert repository_client._git_repo.head.ref.commit.hexsha == first_hash
-    repository_client.switch("main").pull(branch_name)
+    repository_client.switch(DEFAULT_BRANCH).pull(branch_name)
     assert repository_client._git_repo.head.ref.commit.hexsha != second_hash
     repository_client.switch(branch_name)
     assert repository_client._git_repo.head.ref.commit.hexsha == second_hash
@@ -832,7 +800,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     act: when update branch is called
     assert: RepositoryClientError is raised from GitCommandError.
     """
-    repository_client.switch("main")
+    repository_client.switch(DEFAULT_BRANCH)
 
     def side_effect(*args):
         """Mock function.
@@ -861,7 +829,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
 def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
     """
     arrange: given Client with a mocked local github client that mock an existing pull request on
-        branch "main"
+        branch DEFAULT_BRANCH
     act: when get repository get_pull_request method is called with the branch main
     assert: that the method returns the pull-request url.
     """
@@ -869,7 +837,7 @@ def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pu
     mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
-    pull_request_link = repository_client.get_pull_request("main")
+    pull_request_link = repository_client.get_pull_request(DEFAULT_BRANCH)
 
     assert pull_request_link is not None
     assert pull_request_link == "test_url"
@@ -878,7 +846,7 @@ def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pu
 def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
     """
     arrange: given Client with a mocked local github client that mock an existing pull request on
-        branch "main"
+        branch DEFAULT_BRANCH
     act: when get repository get_pull_request is called with another branch other than main
     assert: that None is return.
     """
@@ -896,7 +864,7 @@ def test_get_multiple_pull_request_error(
 ):
     """
     arrange: given Client with a mocked local github client that mock an condition where
-        multiple pull request for branch "main" exists
+        multiple pull request for branch DEFAULT_BRANCH exists
     act: when get repository get_pull_request is called with branch main
     assert: an exception is returned
     """
@@ -905,6 +873,6 @@ def test_get_multiple_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        _ = repository_client.get_pull_request("main")
+        _ = repository_client.get_pull_request(DEFAULT_BRANCH)
 
     assert_substrings_in_string(("more than one open pull request"), str(exc.value).lower())

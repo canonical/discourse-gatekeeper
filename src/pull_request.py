@@ -32,6 +32,7 @@ def create_pull_request(repository: RepositoryClient, base: str) -> str:
     with repository.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
         DEFAULT_BRANCH_NAME
     ) as repo:
+        logging.info(repo._git_repo.git.status())
         msg = str(repo.summary)
         logging.info("Creating new branch with new commit: %s", msg)
         repo.update_branch(msg, force=True)
@@ -52,5 +53,6 @@ def update_pull_request(repository: RepositoryClient, branch: str) -> None:
         if repo.is_dirty():
             repo.pull()
             msg = str(repo.summary)
+            logging.info(f"Summary: {msg}")
             logging.info("Updating PR with new commit: %s", msg)
             repo.update_branch(msg)
