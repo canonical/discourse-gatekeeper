@@ -8,7 +8,7 @@ import typing
 from pathlib import Path
 
 from . import exceptions, types_
-from .constants import NAVIGATION_TABLE_START
+from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
 from .discourse import Discourse
 from .repository import Client as RepositoryClient
 
@@ -175,7 +175,6 @@ def _local_and_server_file_local_page_server(
     table_row: types_.TableRow,
     clients: Clients,
     base_path: Path,
-    user_inputs: types_.UserInputs,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -186,7 +185,6 @@ def _local_and_server_file_local_page_server(
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The action to execute against the server.
@@ -212,20 +210,20 @@ def _local_and_server_file_local_page_server(
     try:
         path = str(path_info.local_path.relative_to(base_path))
         base_content = clients.repository.get_file_content_from_tag(
-            path=path, tag_name=user_inputs.base_tag_name
+            path=path, tag_name=DOCUMENTATION_TAG
         )
     except exceptions.RepositoryFileNotFoundError:
         base_content = None
     except exceptions.RepositoryTagNotFoundError as exc:
         raise exceptions.ReconcilliationError(
-            f"Tag {user_inputs.base_tag_name} not defined on the repository, please tag the "
+            f"Tag {DOCUMENTATION_TAG} not defined on the repository, please tag the "
             "commit with the content matching discourse with the tag "
-            f"{user_inputs.base_tag_name!r}"
+            f"{DOCUMENTATION_TAG!r}"
         ) from exc
     except exceptions.RepositoryClientError as exc:
         raise exceptions.ReconcilliationError(
-            f"Unable to retrieve content for path from tag, {path=}, "
-            f"tag_name={user_inputs.base_tag_name}"
+            f"Unable to retrieve content for path from tag, {path}, "
+            f"tag_name={DOCUMENTATION_TAG}"
         ) from exc
     return (
         types_.UpdateAction(
@@ -247,7 +245,6 @@ def _local_and_server(
     table_row: types_.TableRow,
     clients: Clients,
     base_path: Path,
-    user_inputs: types_.UserInputs,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -270,7 +267,6 @@ def _local_and_server(
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The action to execute against the server.
@@ -307,7 +303,6 @@ def _local_and_server(
         table_row=table_row,
         clients=clients,
         base_path=base_path,
-        user_inputs=user_inputs,
     )
 
 
@@ -356,7 +351,6 @@ def _calculate_action(
     table_row: types_.TableRow | None,
     clients: Clients,
     base_path: Path,
-    user_inputs: types_.UserInputs,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
@@ -365,7 +359,6 @@ def _calculate_action(
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The action to take for the page.
@@ -383,11 +376,7 @@ def _calculate_action(
         return (_server_only(table_row=table_row, discourse=clients.discourse),)
     if path_info is not None and table_row is not None:
         return _local_and_server(
-            path_info=path_info,
-            table_row=table_row,
-            clients=clients,
-            base_path=base_path,
-            user_inputs=user_inputs,
+            path_info=path_info, table_row=table_row, clients=clients, base_path=base_path
         )
 
     # Something weird has happened since all cases should already be covered
@@ -399,7 +388,6 @@ def run(
     table_rows: typing.Iterable[types_.TableRow],
     clients: Clients,
     base_path: Path,
-    user_inputs: types_.UserInputs,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
@@ -421,7 +409,6 @@ def run(
         path_infos: Information about the local documentation files.
         table_rows: Rows from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
 
     Returns:
         The actions required to reconcile differences between the documentation server and local
@@ -440,13 +427,7 @@ def run(
     sorted_remaining_table_row_keys = sorted(table_row_lookup.keys() - path_info_lookup.keys())
     keys = itertools.chain(sorted_path_info_keys, sorted_remaining_table_row_keys)
     return itertools.chain.from_iterable(
-        _calculate_action(
-            path_info_lookup.get(key),
-            table_row_lookup.get(key),
-            clients,
-            base_path,
-            user_inputs,
-        )
+        _calculate_action(path_info_lookup.get(key), table_row_lookup.get(key), clients, base_path)
         for key in keys
     )
 

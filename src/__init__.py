@@ -9,7 +9,7 @@ from pathlib import Path
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
-from .constants import DOCUMENTATION_FOLDER_NAME
+from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from .discourse import create_discourse
 from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
@@ -73,12 +73,13 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
         return {}
 
-    if clients.repository.tag_exists(user_inputs.base_tag_name):
-        with clients.repository.with_branch(user_inputs.base_tag_name) as repo:
+    if clients.repository.tag_exists(DOCUMENTATION_TAG):
+        with clients.repository.with_branch(DOCUMENTATION_TAG) as repo:
             if repo.current_commit == user_inputs.commit_sha:
                 logging.warning(
-                    f"Cannot run any reconcile to Discourse as we are at the same commit "
-                    f"of the tag {user_inputs.base_tag_name}"
+                    "Cannot run any reconcile to Discourse as we are at the same commit "
+                    "of the tag %s",
+                    DOCUMENTATION_TAG,
                 )
                 return {}
 
@@ -96,7 +97,6 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         table_rows=table_rows,
         clients=clients,
         base_path=base_path,
-        user_inputs=user_inputs,
     )
 
     # tee creates a copy of the iterator which is needed as check_conflicts consumes the iterator
@@ -125,7 +125,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     if not user_inputs.dry_run:
         clients.repository.tag_commit(
-            tag_name=user_inputs.base_tag_name, commit_sha=user_inputs.commit_sha
+            tag_name=DOCUMENTATION_TAG, commit_sha=user_inputs.commit_sha
         )
 
     return urls_with_actions
@@ -150,10 +150,11 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         return {}
 
     # Check difference with main
-    if not recreate_docs(clients, user_inputs.base_tag_name):
+    if not recreate_docs(clients, DOCUMENTATION_TAG):
         logging.info(
-            "No community contribution found. Discourse is inline with %s",
-            user_inputs.base_tag_name,
+            "No community contribution found in commit %s. Discourse is inline with %s",
+            user_inputs.commit_sha,
+            DOCUMENTATION_TAG,
         )
         return {}
 
@@ -164,6 +165,6 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         update_pull_request(clients.repository, DEFAULT_BRANCH_NAME)
     else:
         logging.info("PR not existing: creating a new one...")
-        pr_link = create_pull_request(clients.repository, user_inputs.base_tag_name)
+        pr_link = create_pull_request(clients.repository, DOCUMENTATION_TAG)
 
     return {pr_link: ActionResult.SUCCESS}

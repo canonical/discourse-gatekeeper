@@ -14,8 +14,8 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
-from src.constants import DOCUMENTATION_TAG
 from src import pull_request
+from src.constants import DOCUMENTATION_TAG
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would

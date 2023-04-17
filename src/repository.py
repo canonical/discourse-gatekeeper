@@ -134,6 +134,7 @@ class Client:
         metadata: Metadata object of the charm
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
+        current_commit: current commit checkout in the repository
         summary: summary of the differences against the most recent commit
         branches: list of all branches
     """
@@ -436,11 +437,16 @@ class Client:
         with self.with_branch(branch_name) as client:
             return client.is_dirty()
 
-    def tag_exists(self, tag_name: str):
-        return any([
-            tag_name == tag.name
-            for tag in self._git_repo.tags
-        ])
+    def tag_exists(self, tag_name: str) -> bool:
+        """Check if a given tag exists.
+
+        Args:
+            tag_name: name of the tag to be checked for existence
+
+        Returns:
+            bool whether the given tag exists.
+        """
+        return any(tag_name == tag.name for tag in self._git_repo.tags)
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.

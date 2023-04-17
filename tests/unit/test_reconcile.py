@@ -89,7 +89,6 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
 
 
@@ -158,7 +157,6 @@ def test__local_and_server_file_same(local_content: str, server_content: str, mo
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -188,7 +186,6 @@ def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_
     mock_get_file.side_effect = exceptions.RepositoryClientError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -196,16 +193,15 @@ def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=user_inputs,
         )
 
     assert_substrings_in_string(
-        ("unable", "retrieve", str(relative_path), user_inputs.base_tag_name),
+        ("unable", "retrieve", str(relative_path), constants.DOCUMENTATION_TAG),
         str(exc_info.value).lower(),
     )
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
@@ -228,7 +224,6 @@ def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file,
     mock_get_file.side_effect = exceptions.RepositoryTagNotFoundError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -236,15 +231,14 @@ def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file,
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=user_inputs,
         )
 
     assert_substrings_in_string(
-        ("tag", "not", "defined", user_inputs.base_tag_name), str(exc_info.value).lower()
+        ("tag", "not", "defined", constants.DOCUMENTATION_TAG), str(exc_info.value).lower()
     )
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
@@ -266,14 +260,12 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
     mock_get_file.side_effect = exceptions.RepositoryFileNotFoundError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -287,7 +279,7 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
     assert returned_action.content_change.base is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
@@ -310,14 +302,12 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     mock_get_file.return_value = base_content
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -331,7 +321,7 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     assert returned_action.content_change.base == base_content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
@@ -353,14 +343,12 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
     mock_get_file.return_value = content
     navlink = types_.Navlink(title="title 2", link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -375,7 +363,7 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
     assert returned_action.content_change.local == content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
@@ -398,7 +386,6 @@ def test__local_and_server_directory_same(mock_get_file, mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -429,7 +416,6 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -463,7 +449,6 @@ def test__local_and_server_directory_to_file(mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.CreateAction)
@@ -494,7 +479,6 @@ def test__local_and_server_file_to_directory(mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert len(returned_actions) == 2
@@ -583,7 +567,6 @@ def test__calculate_action_error(tmp_path: Path, mocked_clients):
             table_row=None,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
 
 
@@ -651,7 +634,6 @@ def test__calculate_action(
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, expected_action_type)
@@ -776,7 +758,6 @@ def test_run(  # pylint: disable=too-many-arguments
             table_rows=table_rows,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
     )
 

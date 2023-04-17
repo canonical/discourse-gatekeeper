@@ -11,7 +11,6 @@ from typing import Generic, TypeVar
 
 import factory
 
-from src.constants import DOCUMENTATION_TAG
 from src import types_
 
 from . import types
@@ -248,7 +247,6 @@ class UserInputsFactory(
 
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
-    base_tag_name = DOCUMENTATION_TAG
     commit_sha = factory.Sequence(lambda n: f"commit-sha-{n}")
     dry_run = False
     delete_pages = False
