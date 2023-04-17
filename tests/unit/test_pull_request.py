@@ -12,7 +12,7 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import pull_request
+from src import pull_request, repository
 from src.constants import DOCUMENTATION_FOLDER_NAME
 from src.exceptions import InputError
 from src.pull_request import RepositoryClient
@@ -53,6 +53,12 @@ def test_create_pull_request_existing_branch(
     # Update docs branch from third repository
     third_repo_path = tmp_path / "third"
     third_repo = upstream_git_repo.clone(third_repo_path)
+
+    writer = third_repo.config_writer()
+    writer.set_value("user", "name", repository.ACTIONS_USER_NAME)
+    writer.set_value("user", "email", repository.ACTIONS_USER_EMAIL)
+    writer.release()
+
     third_repo.git.checkout("-b", branch_name)
 
     (third_repo_path / docs_folder).mkdir()

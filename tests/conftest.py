@@ -14,8 +14,7 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
-from src import pull_request
-from src import repository
+from src import pull_request, repository
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would
