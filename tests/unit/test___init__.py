@@ -33,13 +33,12 @@ from .helpers import assert_substrings_in_string, create_metadata_yaml
 
 
 @mock.patch("github.Github.get_repo")
-def test_setup_clients(mock_github_repo, git_repo_with_remote):
+def test_setup_clients(git_repo_with_remote):
     """
     arrange: given a local path and user_inputs
     act: when get_clients is called
     assert: then the Discourse and RepositoryClients are instantiated appropriately
     """
-
     path = Path(git_repo_with_remote.working_dir)
 
     user_inputs = factories.UserInputsFactory()
@@ -214,8 +213,6 @@ def test__run_reconcile_no_docs(caplog, mocked_clients):
     act: when _run_reconcile is called
     assert: Nothing is done, and empty result is return with a warning.
     """
-    repository_client = mocked_clients.repository
-
     user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
     with caplog.at_level(logging.WARNING):
@@ -467,7 +464,7 @@ def test__run_migrate_with_pull_request_no_modification(
 
     upstream_git_repo.git.add(".")
     upstream_git_repo.git.commit("-m", "first commit of documentation")
-    hash = upstream_git_repo.head.ref.commit.hexsha
+    _hash = upstream_git_repo.head.ref.commit.hexsha
     upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
 
     user_inputs = factories.UserInputsFactory()
@@ -484,7 +481,7 @@ def test__run_migrate_with_pull_request_no_modification(
     upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
     assert "first commit of documentation" in upstream_git_repo.head.commit.message
-    assert upstream_git_repo.head.ref.commit.hexsha == hash
+    assert upstream_git_repo.head.ref.commit.hexsha == _hash
 
 
 @pytest.mark.usefixtures("patch_create_repository_client")
@@ -564,16 +561,13 @@ def test_run_no_docs_dir(
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
-def test_run_migrate_same_content_local_and_server(
-    caplog, mocked_clients, upstream_git_repo: Repo
-):
+def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
         and mocked discourse (with tag and main branch aligned)
     act: when run_migrate is called
     assert: then nothing is done as the two versions are the compatible.
     """
-
     repository_path = mocked_clients.repository.base_path
 
     create_metadata_yaml(

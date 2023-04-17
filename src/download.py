@@ -8,7 +8,6 @@ import shutil
 from git import GitCommandError
 
 from .constants import DOCUMENTATION_FOLDER_NAME
-from .index import contents_from_page
 from .index import get as get_index
 from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
@@ -29,7 +28,7 @@ def download_from_discourse(clients: Clients) -> None:
         index.server.content if index.server is not None and index.server.content else ""
     )
     # index_content = contents_from_page(server_content)
-    # TODO: I'm not sure about this bit above. We should talk about this
+    # TODO: I'm not sure about this bit above. We should talk about this  # pylint: disable=W0511
     index_content = server_content
     table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
     migrate_contents(

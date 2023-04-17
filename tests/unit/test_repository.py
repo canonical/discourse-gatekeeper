@@ -17,7 +17,7 @@ import pytest
 from git import Git
 from git.exc import GitCommandError
 from git.repo import Repo
-from github import Github, PullRequestPart
+from github import Github
 from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest
@@ -31,7 +31,6 @@ from src.exceptions import (
     RepositoryFileNotFoundError,
     RepositoryTagNotFoundError,
 )
-from src.pull_request import DEFAULT_BRANCH_NAME
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
@@ -124,13 +123,12 @@ def test_current_branch_switch_main(repository_client):
     act: we switch branch to main
     assert: current_branch should provide first the commit hash and then the main name
     """
-
-    hash = repository_client.current_branch
+    _hash = repository_client.current_branch
 
     repository_client.switch("main")
 
     assert repository_client.current_branch == "main"
-    assert repository_client._git_repo.head.ref.commit.hexsha == hash
+    assert repository_client._git_repo.head.ref.commit.hexsha == _hash
 
 
 def test_current_branch_switch_to_tag(repository_client):
@@ -139,11 +137,11 @@ def test_current_branch_switch_to_tag(repository_client):
     act: we first tag the commit and then switch to the tag
     assert: current_branch should provide first the commit hash and then the tag name
     """
-
-    hash = repository_client.current_branch
+    _hash = repository_client.current_branch
 
     repository_client._git_repo.git.tag("my-tag")
 
+    assert repository_client.current_branch != _hash
     assert repository_client.current_branch == "my-tag"
 
 
@@ -771,10 +769,16 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     """
 
     def side_effect(*args):
+        """Mock function.
+
+        Args:
+            args: positional arguments
+
+        Raises:
+            GitCommandError: when providing pop
+        """
         if len(args) > 0 and args[0] == "pop":
             raise GitCommandError("mocked error")
-        else:
-            return None
 
     mock_git_repository = mock.MagicMock(spec=Git)
     mock_git_repository.add = mock.Mock(return_value=None)
@@ -800,6 +804,14 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     repository_client.switch("main")
 
     def side_effect(*args):
+        """Mock function.
+
+        Args:
+            args: positional arguments
+
+        Raises:
+            GitCommandError: when providing pop
+        """
         raise GitCommandError("mocked error")
 
     mock_git_repository = mock.MagicMock(spec=Git)
@@ -812,7 +824,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
 
-    assert_substrings_in_string((f"unexpected error updating branch"), str(exc.value).lower())
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
 
 
 def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
@@ -826,10 +838,10 @@ def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pu
     mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
-    pr = repository_client.get_pull_request("main")
+    pull_request_link = repository_client.get_pull_request("main")
 
-    assert pr is not None
-    assert pr == "test_url"
+    assert pull_request_link is not None
+    assert pull_request_link == "test_url"
 
 
 def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
@@ -843,9 +855,9 @@ def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, m
     mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
-    pr = repository_client.get_pull_request("not-existing")
+    pull_request_link = repository_client.get_pull_request("not-existing")
 
-    assert pr is None
+    assert pull_request_link is None
 
 
 def test_get_multiple_pull_request_error(
@@ -862,6 +874,6 @@ def test_get_multiple_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        pr = repository_client.get_pull_request("main")
+        _ = repository_client.get_pull_request("main")
 
-    assert_substrings_in_string((f"more than one open pull request"), str(exc.value).lower())
+    assert_substrings_in_string(("more than one open pull request"), str(exc.value).lower())

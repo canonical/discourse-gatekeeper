@@ -10,7 +10,6 @@ import pytest
 from git.repo import Repo
 from github import Github
 from github.PullRequest import PullRequest
-from github.PullRequestPart import PullRequestPart
 from github.Repository import Repository
 from github.Requester import Requester
 
@@ -120,6 +119,7 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
 
 @pytest.fixture(name="git_repo_with_remote")
 def fixture_git_repo_with_remote(git_repo: Repo) -> Repo:
+    """Get a repo with a mock remote."""
     git_repo.git.remote("add", "origin", "https://github.com/canonical/non-existing-repo.git")
     return git_repo
 
@@ -129,7 +129,6 @@ def fixture_repository_client(
     git_repo: Repo,
     mock_github_repo: Repository,
     upstream_repository_path: Path,
-    upstream_git_repo: Repo,
 ) -> pull_request.RepositoryClient:
     """Get repository client."""
     git_repo.git.remote("add", "origin", upstream_repository_path)
