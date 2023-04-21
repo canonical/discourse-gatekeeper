@@ -83,6 +83,8 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
                 )
                 return {}
 
+    # clients.repository.switch(user_inputs.commit_sha)
+
     metadata = clients.repository.metadata
     base_path = clients.repository.base_path
 

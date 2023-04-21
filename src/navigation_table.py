@@ -70,7 +70,7 @@ def _line_to_row(line: str) -> types_.TableRow:
         raise NavigationTableParseError(f"Invalid table row, {line=!r}")
 
     level = int(match.group(1))
-    path = match.group(2)
+    path: types_.TablePath = (match.group(2),)
     navlink_title = match.group(3)
     navlink_link = match.group(4)
 
@@ -135,7 +135,20 @@ def from_page(page: str, discourse: Discourse) -> typing.Iterator[types_.TableRo
 
     table = match.group(0)
     return (
-        _check_table_row_write_permission(_line_to_row(line), discourse=discourse)
-        for line in table.splitlines()
-        if not _filter_line(line)
+        _check_table_row_write_permission(row, discourse=discourse)
+        for row in generate_table_row(table.splitlines())
     )
+
+
+def generate_table_row(lines):
+    level = 0
+    prefix = ()
+
+    for line in lines:
+        if not _filter_line(line):
+            row = _line_to_row(line)
+
+            prefix = prefix[:len(prefix) - (level-row.level) - 1] + row.path
+            level = row.level
+
+            yield types_.TableRow(row.level, prefix, row.navlink)

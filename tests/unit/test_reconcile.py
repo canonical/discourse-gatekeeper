@@ -680,7 +680,7 @@ def test__calculate_action(
         ),
         pytest.param(
             (),
-            (table_row_1 := factories.TableRowFactory(level=1, path="path 1", is_group=True),),
+            (table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),),
             (types_.DeleteAction,),
             ((table_row_1.level, table_row_1.path),),
             id="empty path infos single table row",
@@ -688,8 +688,8 @@ def test__calculate_action(
         pytest.param(
             (),
             (
-                table_row_1 := factories.TableRowFactory(level=1, path="path 1", is_group=True),
-                table_row_2 := factories.TableRowFactory(level=2, path="path 2", is_group=True),
+                table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),
+                table_row_2 := factories.TableRowFactory(level=2, path=("path 2",), is_group=True),
             ),
             (types_.DeleteAction, types_.DeleteAction),
             ((table_row_1.level, table_row_1.path), (table_row_2.level, table_row_2.path)),
@@ -712,21 +712,21 @@ def test__calculate_action(
             (path_info_1 := factories.PathInfoFactory(level=1),),
             (
                 table_row_1 := factories.TableRowFactory(
-                    level=2, path=path_info_1.table_path, is_group=True
+                    level=2, path=("group-1",)+ path_info_1.table_path, is_group=True
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),
             (
                 (path_info_1.level, path_info_1.table_path),
-                (table_row_1.level, path_info_1.table_path),
+                (table_row_1.level, ("group-1",)+ path_info_1.table_path),
             ),
             id="single path info single table row level mismatch",
         ),
         pytest.param(
-            (path_info_1 := factories.PathInfoFactory(table_path="path 1"),),
+            (path_info_1 := factories.PathInfoFactory(table_path=("path 1",)),),
             (
                 table_row := factories.TableRowFactory(
-                    level=path_info_1.level, path="path 2", is_group=True
+                    level=path_info_1.level, path=("path 2",), is_group=True
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),

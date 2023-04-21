@@ -415,10 +415,10 @@ def run(
         files.
     """
     path_info_lookup: types_.PathInfoLookup = {
-        (path_info.level, path_info.table_path): path_info for path_info in path_infos
+        path_info.table_path: path_info for path_info in path_infos
     }
     table_row_lookup: types_.TableRowLookup = {
-        (table_row.level, table_row.path): table_row for table_row in table_rows
+        table_row.path: table_row for table_row in table_rows
     }
 
     sorted_path_info_keys = sorted(

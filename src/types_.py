@@ -107,7 +107,7 @@ class Index(typing.NamedTuple):
 
 
 Level = int
-TablePath = str
+TablePath = typing.Tuple[str]
 
 
 class PathInfo(typing.NamedTuple):
@@ -129,7 +129,7 @@ class PathInfo(typing.NamedTuple):
     alphabetical_rank: int
 
 
-PathInfoLookup = dict[tuple[Level, TablePath], PathInfo]
+PathInfoLookup = dict[TablePath, PathInfo]
 
 
 class Navlink(typing.NamedTuple):
@@ -170,12 +170,12 @@ class TableRow(typing.NamedTuple):
             The line in the navigation table.
         """
         return (
-            f"| {self.level} | {self.path} | "
+            f"| {self.level} | {self.path[-1]} | "
             f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 
 
-TableRowLookup = dict[tuple[Level, TablePath], TableRow]
+TableRowLookup = dict[TablePath, TableRow]
 
 
 @dataclasses.dataclass
