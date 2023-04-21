@@ -12,7 +12,6 @@ import pytest
 
 from src import discourse, exceptions, navigation_table, types_
 from src.exceptions import NavigationTableParseError
-
 from .helpers import assert_substrings_in_string
 
 
@@ -81,14 +80,19 @@ def test__filter_line(line, expected_result):
     [
         pytest.param("|1|a|[b]()|", (1, ("a",), ("b", None)), id="simple"),
         pytest.param(" |1|a|[b]()|", (1, ("a",), ("b", None)), id="simple leading space"),
-        pytest.param("| 1|a|[b]()|", (1, ("a",), ("b", None)), id="simple space before first column"),
-        pytest.param("|1 |a|[b]()|", (1, ("a",), ("b", None)), id="simple space after first column"),
+        pytest.param("| 1|a|[b]()|", (1, ("a",), ("b", None)),
+                     id="simple space before first column"),
+        pytest.param("|1 |a|[b]()|", (1, ("a",), ("b", None)),
+                     id="simple space after first column"),
         pytest.param(
             "|1| a|[b]()|", (1, ("a",), ("b", None)), id="simple space before second column"
         ),
-        pytest.param("|1|a |[b]()|", (1, ("a",), ("b", None)), id="simple space after second column"),
-        pytest.param("|1|a| [b]()|", (1, ("a",), ("b", None)), id="simple space before third column"),
-        pytest.param("|1|a|[b]() |", (1, ("a",), ("b", None)), id="simple space after third column"),
+        pytest.param("|1|a |[b]()|", (1, ("a",), ("b", None)),
+                     id="simple space after second column"),
+        pytest.param("|1|a| [b]()|", (1, ("a",), ("b", None)),
+                     id="simple space before third column"),
+        pytest.param("|1|a|[b]() |", (1, ("a",), ("b", None)),
+                     id="simple space after third column"),
         pytest.param("|1|a|[b]()| ", (1, ("a",), ("b", None)), id="simple trailing space"),
         pytest.param("|12|a|[b]()|", (12, ("a",), ("b", None)), id="first column multiple digits"),
         pytest.param(
@@ -120,7 +124,8 @@ def test__filter_line(line, expected_result):
             "|1|a|[?]()|", (1, ("a",), ("?", None)), id="third column title punctuation question"
         ),
         pytest.param("|1|a|[c d]()|", (1, ("a",), ("c d", None)), id="third column title space"),
-        pytest.param("|1|a|[ b]()|", (1, ("a",), ("b", None)), id="third column title space before"),
+        pytest.param("|1|a|[ b]()|", (1, ("a",), ("b", None)),
+                     id="third column title space before"),
         pytest.param("|1|a|[b ]()|", (1, ("a",), ("b", None)), id="third column title space after"),
         pytest.param(
             "|1|a|[b c]()|", (1, ("a",), ("b c", None)), id="third column title embedded space"
@@ -346,7 +351,8 @@ For details on Indico's features, see [this page](https://getindico.io/features/
     assert list(returned_table) == [
         (1, ("tutorials",), ("Tutorials", None)),
         (1, ("how-to-guides",), ("How-to guides", None)),
-        (2, ("how-to-guides", "contributing"), ("Contributing", "/t/indico-docs-contributing/6574")),
+        (
+        2, ("how-to-guides", "contributing"), ("Contributing", "/t/indico-docs-contributing/6574")),
         (
             2,
             ("how-to-guides", "cross-model-db-relations"),
@@ -359,11 +365,128 @@ For details on Indico's features, see [this page](https://getindico.io/features/
         ),
         (1, ("reference",), ("Reference", None)),
         (2, ("reference", "plugins"), ("Plugins", "/t/indico-docs-plugins/6553")),
-        (2, ("reference","theme-customisation"), ("Theme Customisation", "/t/indico-docs-themes/6554")),
-        (1, ("explanation",) , ("Explanation", None)),
+        (2, ("reference", "theme-customisation"),
+         ("Theme Customisation", "/t/indico-docs-themes/6554")),
+        (1, ("explanation",), ("Explanation", None)),
         (
             2,
             ("explanation", "charm-architecture"),
             ("Charm Architecture", "/t/indico-docs-charm-architecture/7010"),
         ),
     ]
+
+
+@pytest.mark.parametrize(
+    "table_rows, expected_table",
+    [
+        pytest.param([], [], id="empty list"),
+        pytest.param(
+            [
+                (row_1 := types_.TableRow(1, ("file-1",), types_.Navlink("Link1", None))),
+                (row_2 := types_.TableRow(1, ("file-2",), types_.Navlink("Link2", None)))
+            ],
+            [
+                types_.HierachicalTableRow(row_1, []), types_.HierachicalTableRow(row_2, [])
+            ], id="flat table"
+        ),
+        pytest.param(
+            [
+                (row_1 := types_.TableRow(1, ("group-1",), types_.Navlink("Link1", None))),
+                (row_2 := types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link2", None)))
+            ],
+            [
+                types_.HierachicalTableRow(row_1, [types_.HierachicalTableRow(row_2, [])])
+            ], id="nested table"
+        ),
+        pytest.param(
+            [
+                (row_1 := types_.TableRow(1, ("group-1",), types_.Navlink("Link1", None))),
+                (row_2 := types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link2", None))),
+                (row_3 := types_.TableRow(1, ("group-2",), types_.Navlink("Link3", None))),
+            ],
+            [
+                types_.HierachicalTableRow(row_1, [types_.HierachicalTableRow(row_2, [])]),
+                types_.HierachicalTableRow(row_3, [])
+            ], id="nested table with multiple rows"
+        ),
+        pytest.param(
+            [
+                (row_1 := types_.TableRow(1, ("group-1",), types_.Navlink("Link1", None))),
+                (
+                row_2 := types_.TableRow(2, ("group-1", "group-2"), types_.Navlink("Link2", None))),
+                (row_3 := types_.TableRow(
+                    3, ("group-1", "group-2", "file-1"), types_.Navlink("Link2", None)
+                )),
+                (row_4 := types_.TableRow(1, ("group-2",), types_.Navlink("Link3", None))),
+            ],
+            [
+                types_.HierachicalTableRow(
+                    row_1, [
+                        types_.HierachicalTableRow(row_2, [types_.HierachicalTableRow(row_3, [])])
+                    ]
+                ),
+                types_.HierachicalTableRow(row_4, [])
+            ], id="very nested table with multiple rows"
+        ),
+    ]
+)
+def test_build_hierarchical_table(
+        table_rows: list[types_.TableRow], expected_table: list[types_.HierachicalTableRow]
+):
+    assert navigation_table.build_hierarchy_table(iter(table_rows)) == expected_table
+
+
+def test_build_hierarchical_from_page_indico():
+    """
+    arrange: given Indico's navigation page
+    act: when build_hierarchical_parge is called with the table rows
+    assert: then the hierarachical table is parsed.
+    """
+    # Line is too long as the indico docs are not limited to 100 characters per line
+    # pylint: disable=line-too-long
+    indico_page = """Indico is an open-source tool for event organisation, archival and collaboration, catering to lectures, meetings, workshops and conferences.
+
+For details on Indico's features, see [this page](https://getindico.io/features/).
+
+# Navigation
+
+| Level | Path | Navlink |
+| -- | -- | -- |
+| 1 | tutorials | [Tutorials]() |
+| 1 | how-to-guides | [How-to guides]() |
+| 2 | contributing | [Contributing](/t/indico-docs-contributing/6574)|
+| 2 | cross-model-db-relations | [Cross-model DB relations](/t/indico-docs-cross-model-relations-for-pg/7009)|
+| 2 | refresh-external-resources | [Refreshing external resources](/t/indico-docs-refreshing-external-resources/7008) |
+| 1 | reference | [Reference]() |
+| 2 | plugins | [Plugins](/t/indico-docs-plugins/6553) |
+| 2 | theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
+| 1 | explanation | [Explanation]() |
+| 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
+
+    tables_rows = navigation_table.generate_table_row(indico_page.splitlines())
+
+    hierarchy = navigation_table.build_hierarchy_table(tables_rows)
+
+    # Tutorial
+    assert len(hierarchy[0].children) == 0
+
+    # How-To
+    assert len(hierarchy[1].children) == 3
+    assert set(row.id for row in hierarchy[1].children) == {
+        ("how-to-guides", "contributing"),
+        ("how-to-guides", "cross-model-db-relations"),
+        ("how-to-guides", "refresh-external-resources")
+    }
+
+    # References
+    assert len(hierarchy[2].children) == 2
+    assert set(row.id for row in hierarchy[2].children) == {
+        ("reference", "plugins"),
+        ("reference", "theme-customisation"),
+    }
+
+    # References
+    assert len(hierarchy[3].children) == 1
+    assert set(row.id for row in hierarchy[3].children) == {
+        ("explanation", "charm-architecture"),
+    }

@@ -12,9 +12,8 @@ from unittest import mock
 import pytest
 
 from src import constants, discourse, exceptions, reconcile, types_
-
-from .. import factories
 from .helpers import assert_substrings_in_string
+from .. import factories
 
 
 def test__local_only_file(tmp_path: Path):
@@ -64,12 +63,12 @@ def test__local_only_directory(tmp_path: Path):
 )
 # The arguments are needed due to parametrisation and use of fixtures
 def test__local_and_server_error(  # pylint: disable=too-many-arguments
-    path_info_level: int,
-    table_row_level: int,
-    path_info_table_path: str,
-    table_row_path: str,
-    tmp_path: Path,
-    mocked_clients,
+        path_info_level: int,
+        table_row_level: int,
+        path_info_table_path: str,
+        table_row_path: str,
+        tmp_path: Path,
+        mocked_clients,
 ):
     """
     arrange: given path info and table row where either level or table path or both do not match
@@ -615,11 +614,11 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
 )
 # pylint: enable=undefined-variable,unused-variable
 def test__calculate_action(
-    path_info: types_.PathInfo | None,
-    table_row: types_.TableRow | None,
-    expected_action_type: type[types_.AnyAction],
-    tmp_path: Path,
-    mocked_clients,
+        path_info: types_.PathInfo | None,
+        table_row: types_.TableRow | None,
+        expected_action_type: type[types_.AnyAction],
+        tmp_path: Path,
+        mocked_clients,
 ):
     """
     arrange: given path info and table row for a directory and grouping
@@ -654,27 +653,27 @@ def test__calculate_action(
         ),
         pytest.param(
             (
-                path_info_1 := factories.PathInfoFactory(alphabetical_rank=1),
-                path_info_2 := factories.PathInfoFactory(alphabetical_rank=2),
+                    path_info_1 := factories.PathInfoFactory(alphabetical_rank=1),
+                    path_info_2 := factories.PathInfoFactory(alphabetical_rank=2),
             ),
             (),
             (types_.CreateAction, types_.CreateAction),
             (
-                (path_info_1.level, path_info_1.table_path),
-                (path_info_2.level, path_info_2.table_path),
+                    (path_info_1.level, path_info_1.table_path),
+                    (path_info_2.level, path_info_2.table_path),
             ),
             id="multiple path infos empty table rows",
         ),
         pytest.param(
             (
-                path_info_1 := factories.PathInfoFactory(alphabetical_rank=2),
-                path_info_2 := factories.PathInfoFactory(alphabetical_rank=1),
+                    path_info_1 := factories.PathInfoFactory(alphabetical_rank=2),
+                    path_info_2 := factories.PathInfoFactory(alphabetical_rank=1),
             ),
             (),
             (types_.CreateAction, types_.CreateAction),
             (
-                (path_info_2.level, path_info_2.table_path),
-                (path_info_1.level, path_info_1.table_path),
+                    (path_info_2.level, path_info_2.table_path),
+                    (path_info_1.level, path_info_1.table_path),
             ),
             id="multiple path infos empty table rows alternate order",
         ),
@@ -688,8 +687,10 @@ def test__calculate_action(
         pytest.param(
             (),
             (
-                table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),
-                table_row_2 := factories.TableRowFactory(level=2, path=("path 2",), is_group=True),
+                    table_row_1 := factories.TableRowFactory(level=1, path=("path 1",),
+                                                             is_group=True),
+                    table_row_2 := factories.TableRowFactory(level=2, path=("path 2",),
+                                                             is_group=True),
             ),
             (types_.DeleteAction, types_.DeleteAction),
             ((table_row_1.level, table_row_1.path), (table_row_2.level, table_row_2.path)),
@@ -698,11 +699,11 @@ def test__calculate_action(
         pytest.param(
             (path_info_1 := factories.PathInfoFactory(),),
             (
-                factories.TableRowFactory(
-                    level=path_info_1.level,
-                    path=path_info_1.table_path,
-                    navlink=types_.Navlink(title=path_info_1.navlink_title, link=None),
-                ),
+                    factories.TableRowFactory(
+                        level=path_info_1.level,
+                        path=path_info_1.table_path,
+                        navlink=types_.Navlink(title=path_info_1.navlink_title, link=None),
+                    ),
             ),
             (types_.NoopAction,),
             ((path_info_1.level, path_info_1.table_path),),
@@ -711,23 +712,23 @@ def test__calculate_action(
         pytest.param(
             (path_info_1 := factories.PathInfoFactory(level=1),),
             (
-                table_row_1 := factories.TableRowFactory(
-                    level=2, path=("group-1",)+ path_info_1.table_path, is_group=True
-                ),
+                    table_row_1 := factories.TableRowFactory(
+                        level=2, path=("group-1",) + path_info_1.table_path, is_group=True
+                    ),
             ),
             (types_.CreateAction, types_.DeleteAction),
             (
-                (path_info_1.level, path_info_1.table_path),
-                (table_row_1.level, ("group-1",)+ path_info_1.table_path),
+                    (path_info_1.level, path_info_1.table_path),
+                    (table_row_1.level, ("group-1",) + path_info_1.table_path),
             ),
             id="single path info single table row level mismatch",
         ),
         pytest.param(
             (path_info_1 := factories.PathInfoFactory(table_path=("path 1",)),),
             (
-                table_row := factories.TableRowFactory(
-                    level=path_info_1.level, path=("path 2",), is_group=True
-                ),
+                    table_row := factories.TableRowFactory(
+                        level=path_info_1.level, path=("path 2",), is_group=True
+                    ),
             ),
             (types_.CreateAction, types_.DeleteAction),
             ((path_info_1.level, path_info_1.table_path), (path_info_1.level, table_row.path)),
@@ -738,12 +739,12 @@ def test__calculate_action(
 # pylint: enable=undefined-variable,unused-variable
 # The arguments are needed due to parametrisation and use of fixtures
 def test_run(  # pylint: disable=too-many-arguments
-    path_infos: tuple[types_.PathInfo, ...],
-    table_rows: tuple[types_.TableRow, ...],
-    expected_action_types: tuple[type[types_.AnyAction], ...],
-    expected_level_paths: tuple[tuple[types_.Level, types_.TablePath], ...],
-    tmp_path: Path,
-    mocked_clients,
+        path_infos: tuple[types_.PathInfo, ...],
+        table_rows: tuple[types_.TableRow, ...],
+        expected_action_types: tuple[type[types_.AnyAction], ...],
+        expected_level_paths: tuple[tuple[types_.Level, types_.TablePath], ...],
+        tmp_path: Path,
+        mocked_clients,
 ):
     """
     arrange: given path infos and table rows
@@ -762,14 +763,15 @@ def test_run(  # pylint: disable=too-many-arguments
     )
 
     assert (
-        tuple(type(returned_action) for returned_action in returned_actions)
-        == expected_action_types
+            tuple(type(returned_action) for returned_action in returned_actions)
+            == expected_action_types
     )
     assert (
-        tuple(
-            (returned_action.level, returned_action.path) for returned_action in returned_actions
-        )
-        == expected_level_paths
+            tuple(
+                (returned_action.level, returned_action.path) for returned_action in
+                returned_actions
+            )
+            == expected_level_paths
     )
 
 
@@ -816,8 +818,8 @@ def test_run(  # pylint: disable=too-many-arguments
             types_.CreateIndexAction(
                 title=local_title,
                 content=(
-                    f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
-                    f"{table_row.to_markdown()}"
+                        f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
+                        f"{table_row.to_markdown()}"
                 ),
             ),
             id="local only single row",
@@ -831,14 +833,14 @@ def test_run(  # pylint: disable=too-many-arguments
                 name="name 1",
             ),
             (
-                table_row_1 := factories.TableRowFactory(level=1),
-                table_row_2 := factories.TableRowFactory(level=2),
+                    table_row_1 := factories.TableRowFactory(level=1),
+                    table_row_2 := factories.TableRowFactory(level=2),
             ),
             types_.CreateIndexAction(
                 title=local_title,
                 content=(
-                    f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
-                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
+                        f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
+                        f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
                 ),
             ),
             id="local only multiple rows",
@@ -849,7 +851,7 @@ def test_run(  # pylint: disable=too-many-arguments
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content}{constants.NAVIGATION_TABLE_START}"
+                            server_content := f"{local_content}{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -864,7 +866,7 @@ def test_run(  # pylint: disable=too-many-arguments
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f" {local_content}{constants.NAVIGATION_TABLE_START}"
+                            server_content := f" {local_content}{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -879,8 +881,8 @@ def test_run(  # pylint: disable=too-many-arguments
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content.strip()}"
-                        f"{constants.NAVIGATION_TABLE_START}"
+                            server_content := f"{local_content.strip()}"
+                                              f"{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
                 name="name 1",
@@ -909,9 +911,9 @@ def test_run(  # pylint: disable=too-many-arguments
 )
 # pylint: enable=undefined-variable,unused-variable
 def test_index_page(
-    index: types_.Index,
-    table_rows: tuple[types_.TableRow],
-    expected_action: types_.AnyIndexAction,
+        index: types_.Index,
+        table_rows: tuple[types_.TableRow],
+        expected_action: types_.AnyIndexAction,
 ):
     """
     arrange: given index information and server and local table rows
@@ -921,3 +923,152 @@ def test_index_page(
     returned_action = reconcile.index_page(index=index, table_rows=table_rows)
 
     assert returned_action == expected_action
+
+
+@pytest.mark.parametrize(
+    "first_table, second_table, expected_result",
+    [
+        pytest.param(
+            table_1 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("file-1",), types_.Navlink("", None)), []
+            )],
+            table_1,
+            table_1,
+            id="same table"
+        ),
+        pytest.param(
+            table_1 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("file-1",), types_.Navlink("", None)), []
+            )],
+            table_2 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("file-2",), types_.Navlink("", None)), []
+            )],
+            table_2,
+            id="two different tables, only second survive"
+        ),
+        pytest.param(
+            table_1 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [types_.HierachicalTableRow(
+                    types_.TableRow(2, ("group-1","file-1"), types_.Navlink("Link1", None)), []
+                )]
+            )],
+            table_2 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [types_.HierachicalTableRow(
+                    types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link2", None)), []
+                )]
+            )],
+            table_2,
+            id="two different nested tables, only second survive"
+        ),
+        pytest.param(
+            table_1 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link1", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link2", None)), []
+                    ),
+                ]
+            )],
+            table_2 := [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link2", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link1", None)), []
+                    ),
+                ]
+            )],
+            table_1,
+            id="same nested tables but reshuffled, the first order is preserved"
+        ),
+        pytest.param(
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link1", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link2", None)), []
+                    ),
+                ]
+            )],
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link3", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link4", None)), []
+                    ),
+                ]
+            )],
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link4", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link3", None)), []
+                    ),
+                ]
+            )],
+            id="different nested tables and reshuffled, the first order is preserved but "
+               "with the second content"
+        ),
+        pytest.param(
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link1", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link2", None)), []
+                    ),
+                ]
+            )],
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-3"), types_.Navlink("Link5", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link3", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link4", None)), []
+                    ),
+                ]
+            )],
+            [types_.HierachicalTableRow(
+                types_.TableRow(1, ("group-1",), types_.Navlink("", None)),
+                [
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-1"), types_.Navlink("Link4", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-2"), types_.Navlink("Link3", None)), []
+                    ),
+                    types_.HierachicalTableRow(
+                        types_.TableRow(2, ("group-1", "file-3"), types_.Navlink("Link5", None)), []
+                    ),
+                ]
+            )],
+            id="different nested tables and reshuffled, the first order is preserved but "
+               "with the second content, new rows are appended at the end"
+        ),
+    ]
+)
+def test_reconcile_index(first_table, second_table, expected_result):
+    assert reconcile.reconcile_index(first_table, second_table) == expected_result

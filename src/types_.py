@@ -175,6 +175,26 @@ class TableRow(typing.NamedTuple):
         )
 
 
+class HierachicalTableRow(typing.NamedTuple):
+    head: TableRow
+    children: typing.Sequence['HierachicalTableRow']
+
+    @property
+    def is_leaf(self):
+        return len(self.children) == 0
+
+    @property
+    def id(self):
+        return self.head.path
+
+    def get_rows(self, depth: typing.Optional[int] = None) -> typing.Iterator[TableRow]:
+        yield self.head
+        if depth is None or depth != 0:
+            for child in self.children:
+                for row in child.get_rows(depth - 1 if depth else None):
+                    yield row
+
+
 TableRowLookup = dict[TablePath, TableRow]
 
 

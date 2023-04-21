@@ -11,7 +11,7 @@ from . import exceptions, types_
 from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
 from .discourse import Discourse
 from .repository import Client as RepositoryClient
-
+from .navigation_table import build_hierarchy_table
 
 class Clients(typing.NamedTuple):
     """Collection of clients needed during execution.
@@ -70,8 +70,8 @@ def _get_server_content(table_row: types_.TableRow, discourse: Discourse) -> str
 
 
 def _local_and_server_validation(
-    path_info: types_.PathInfo,
-    table_row: types_.TableRow,
+        path_info: types_.PathInfo,
+        table_row: types_.TableRow,
 ) -> None:
     """Input checks before execution.
 
@@ -94,7 +94,7 @@ def _local_and_server_validation(
 
 
 def _local_and_server_dir_local_group_server(
-    path_info: types_.PathInfo, table_row: types_.TableRow
+        path_info: types_.PathInfo, table_row: types_.TableRow
 ) -> tuple[types_.UpdateAction | types_.NoopAction, ...]:
     """Handle the case where the item is a directory locally and a grouping on the server.
 
@@ -129,7 +129,7 @@ def _local_and_server_dir_local_group_server(
 
 
 def _local_and_server_file_local_group_server(
-    path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
+        path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
 ) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
     """Handle the case where the item is a file locally and a grouping on the server.
 
@@ -171,10 +171,10 @@ def _local_and_server_file_local_group_server(
 
 
 def _local_and_server_file_local_page_server(
-    path_info: types_.PathInfo,
-    table_row: types_.TableRow,
-    clients: Clients,
-    base_path: Path,
+        path_info: types_.PathInfo,
+        table_row: types_.TableRow,
+        clients: Clients,
+        base_path: Path,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -241,10 +241,10 @@ def _local_and_server_file_local_page_server(
 
 
 def _local_and_server(
-    path_info: types_.PathInfo,
-    table_row: types_.TableRow,
-    clients: Clients,
-    base_path: Path,
+        path_info: types_.PathInfo,
+        table_row: types_.TableRow,
+        clients: Clients,
+        base_path: Path,
 ) -> tuple[
     types_.UpdateAction | types_.NoopAction | types_.CreateAction | types_.DeleteAction, ...
 ]:
@@ -347,10 +347,10 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
 
 def _calculate_action(
-    path_info: types_.PathInfo | None,
-    table_row: types_.TableRow | None,
-    clients: Clients,
-    base_path: Path,
+        path_info: types_.PathInfo | None,
+        table_row: types_.TableRow | None,
+        clients: Clients,
+        base_path: Path,
 ) -> tuple[types_.AnyAction, ...]:
     """Calculate the required action for a page.
 
@@ -384,10 +384,10 @@ def _calculate_action(
 
 
 def run(
-    path_infos: typing.Iterable[types_.PathInfo],
-    table_rows: typing.Iterable[types_.TableRow],
-    clients: Clients,
-    base_path: Path,
+        path_infos: typing.Iterable[types_.PathInfo],
+        table_rows: typing.Iterable[types_.TableRow],
+        clients: Clients,
+        base_path: Path,
 ) -> typing.Iterator[types_.AnyAction]:
     """Reconcile differences between the docs directory and documentation server.
 
@@ -433,8 +433,8 @@ def run(
 
 
 def index_page(
-    index: types_.Index,
-    table_rows: typing.Iterable[types_.TableRow],
+        index: types_.Index,
+        table_rows: typing.Iterable[types_.TableRow],
 ) -> types_.AnyIndexAction:
     """Reconcile differences for the index page.
 
@@ -445,6 +445,8 @@ def index_page(
     Returns:
         The action to take for the index page.
     """
+    table_rows = list(table_rows)
+
     table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
     local_content = (
         f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
@@ -455,8 +457,44 @@ def index_page(
 
     server_content = index.server.content.strip()
     if local_content != server_content:
+
+        from .navigation_table import generate_table_row
+
+        merged_table = reconcile_index(
+            build_hierarchy_table(generate_table_row(server_content.splitlines())),
+            build_hierarchy_table(iter(table_rows)),
+        )
+
+        table_contents = "\n".join(
+            [row.to_markdown() for hrow in merged_table for row in hrow.get_rows()]
+        )
+
+        local_content = (
+           f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
+        )
+
         return types_.UpdateIndexAction(
             content_change=types_.IndexContentChange(old=server_content, new=local_content),
             url=index.server.url,
         )
     return types_.NoopIndexAction(content=local_content, url=index.server.url)
+
+
+def reconcile_index(
+        first: typing.Sequence[types_.HierachicalTableRow],
+        second: typing.Sequence[types_.HierachicalTableRow]
+):
+    first_map = {row.id: row for row in first}
+    second_map = {row.id: row for row in second}
+
+    intersection = set(first_map).intersection(second_map)
+    to_be_added = set(second_map).difference(intersection)
+
+    return [
+        types_.HierachicalTableRow(
+            second_map[row.id].head,
+            reconcile_index(first_map[row.id].children, second_map[row.id].children)
+        )
+        for row in first
+        if row.id in intersection
+    ] + [row for row in second if row.id in to_be_added]

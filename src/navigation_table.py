@@ -152,3 +152,43 @@ def generate_table_row(lines):
             level = row.level
 
             yield types_.TableRow(row.level, prefix, row.navlink)
+
+
+def build_hierarchy_table(rows: typing.Iterator[types_.TableRow]) -> \
+        typing.Sequence[types_.HierachicalTableRow]:
+    def builder(
+            head: types_.TableRow, rows: typing.Iterator[types_.TableRow]
+    ) -> typing.Tuple[types_.HierachicalTableRow, typing.Optional[types_.TableRow]]:
+
+        try:
+            row = next(rows)
+        except StopIteration:
+            return types_.HierachicalTableRow(head, []), None
+
+        if row.level <= head.level:
+            return types_.HierachicalTableRow(head, []), row
+
+        children = []
+        while row and (row.level > head.level):
+            entity, row = builder(row, rows)
+            children.append(entity)
+
+        return types_.HierachicalTableRow(head, children), row
+
+    # try:
+    #     row = next(rows)
+    # except StopIteration:
+    #     return []
+    #
+    # elements = []
+    # while row:
+    #     entity, row = _wrapper(row, rows)
+    #     elements.append(entity)
+    #
+    # return elements
+
+    # This is less readable but it is equivalent to the code above
+    return builder(
+        types_.TableRow(level=0, path=tuple(), navlink=types_.Navlink("", None)),
+        rows
+    )[0].children
