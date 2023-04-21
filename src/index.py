@@ -8,11 +8,13 @@ from pathlib import Path
 from .constants import (
     DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
-    NAVIGATION_TABLE_START,
+    NAVIGATION_TABLE_START_REGEX,
+    REDIRECT_TABLE_START
 )
 from .discourse import Discourse
 from .exceptions import DiscourseError, ServerError
-from .types_ import Index, IndexFile, Metadata, Page
+from .navigation_table import generate_table_row
+from .types_ import Index, IndexFile, Metadata, Page, IndexContent
 
 
 def _read_docs_index(base_path: Path) -> str | None:
@@ -68,14 +70,21 @@ def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
     return Index(server=server, local=local, name=name_value)
 
 
-def contents_from_page(page: str) -> str:
+def contents_from_index(index: str) -> IndexContent:
     """Get index file contents from server page.
 
     Args:
-        page: Page contents from server.
+        index: index contents.
 
     Returns:
         Index file contents.
     """
-    contents = page.split(NAVIGATION_TABLE_START)
-    return contents[0]
+
+    header, *no_redirect_page = index.split(REDIRECT_TABLE_START)
+
+    content, *navigation_table = NAVIGATION_TABLE_START_REGEX.split(header)
+
+    return IndexContent(
+        content=content,
+        navigation_table=generate_table_row("".join(navigation_table).splitlines())
+    )

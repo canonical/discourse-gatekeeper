@@ -106,6 +106,18 @@ class Index(typing.NamedTuple):
     name: str
 
 
+class IndexContent(typing.NamedTuple):
+    """Representation of the content of the Index files divided into its three basic parts.
+
+    Atts:
+        content: base content of the file
+        navigation_table: navigation table in the file
+    """
+    content: str | None
+    navigation_table: typing.Sequence['TableRow']
+    # redirect_table: typing.Sequence['TableRow']
+
+
 Level = int
 TablePath = typing.Tuple[str]
 

@@ -117,43 +117,85 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     assert returned_index.name == name
 
 
+TABLE_ROWS = [
+    types_.TableRow(level=1, path=("tutorial",), navlink=types_.Navlink("Title1", None)),
+    types_.TableRow(level=2, path=("tutorial", "part-1"), navlink=types_.Navlink("Title2", None)),
+    types_.TableRow(level=1, path=("how-to",), navlink=types_.Navlink("Title3", None)),
+    types_.TableRow(level=1, path=("explanation",), navlink=types_.Navlink("Title4", None)),
+]
+
+TABLE_ROWS_TEXT = "\n".join([table.to_markdown() for table in TABLE_ROWS])
+
+
 # Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "page, expected_content",
+    "page, expected_content, expected_rows",
     [
         pytest.param(
-            constants.NAVIGATION_TABLE_START,
+            f"{constants.NAVIGATION_TABLE_START}\n{TABLE_ROWS_TEXT}",
             "",
+            TABLE_ROWS,
             id="navigation table only",
         ),
         pytest.param(
-            (content := "Page content"),
+            f"{(content := 'Page content')}",
             content,
-            id="page content only",
+            [],
+            id="content only",
         ),
         pytest.param(
-            (multiline_content := "Page content\nWithMultiline"),
-            multiline_content,
-            id="multiline content only",
+            f"{(content := 'Page content')}{constants.NAVIGATION_TABLE_START}\n{TABLE_ROWS_TEXT}",
+            content,
+            TABLE_ROWS,
+            id="content and navigation table",
         ),
         pytest.param(
-            f"{(content := 'Page content')}{constants.NAVIGATION_TABLE_START}",
+            f"{(content := 'Page content')}"
+            f"{constants.NAVIGATION_TABLE_START}\n{TABLE_ROWS_TEXT}\n"
+            "content-afterwards",
             content,
-            id="page with content and navigation table",
+            TABLE_ROWS,
+            id="content and navigation table, content afterwards ignored",
         ),
         pytest.param(
-            f"{(content := 'page content')}{constants.NAVIGATION_TABLE_START}\ncontent-afterwards",
+            f"{(content := 'Page content')}"
+            f"\n# Navigation\n|     Level |    Path  |Navlink|\n{TABLE_ROWS_TEXT}",
             content,
-            id="page with content after the navigation table",
+            TABLE_ROWS,
+            id="content and unformatted navigation table",
         ),
+        # pytest.param(
+        #     (content := "Page content"),
+        #     content,
+        #     id="page content only",
+        # ),
+        # pytest.param(
+        #     (multiline_content := "Page content\nWithMultiline"),
+        #     multiline_content,
+        #     id="multiline content only",
+        # ),
+        # pytest.param(
+        #     f"{(content := 'Page content')}{constants.NAVIGATION_TABLE_START}",
+        #     content,
+        #     id="page with content and navigation table",
+        # ),
+        # pytest.param(
+        #     f"{(content := 'page content')}{constants.NAVIGATION_TABLE_START}\ncontent-afterwards",
+        #     content,
+        #     id="page with content after the navigation table",
+        # ),
     ],
 )
 # pylint: enable=undefined-variable,unused-variable
-def test_get_contents_from_page(page: str, expected_content: str):
+def test_get_contents_from_page(
+        page: str, expected_content: str, expected_rows: list[types_.TableRow]
+):
     """
     arrange: given an index page from server
     act: when contents_from_page is called
     assert: contents without navigation table is returned.
     """
-    assert index.contents_from_page(page=page) == expected_content
+    index_content = index.contents_from_index(index=page)
+    assert index_content.content == expected_content
+    assert list(index_content.navigation_table) == expected_rows

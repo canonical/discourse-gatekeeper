@@ -12,6 +12,7 @@ from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
 from .discourse import Discourse
 from .repository import Client as RepositoryClient
 from .navigation_table import build_hierarchy_table
+from .index import contents_from_index
 
 class Clients(typing.NamedTuple):
     """Collection of clients needed during execution.
@@ -448,8 +449,11 @@ def index_page(
     table_rows = list(table_rows)
 
     table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
+
+    content_index = contents_from_index(index.local.content or "")
+
     local_content = (
-        f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
+        f"{content_index.content}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
     )
 
     if index.server is None:
@@ -470,7 +474,7 @@ def index_page(
         )
 
         local_content = (
-           f"{index.local.content or ''}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
+           f"{content_index.content}{NAVIGATION_TABLE_START}\n{table_contents}\n".strip()
         )
 
         return types_.UpdateIndexAction(
