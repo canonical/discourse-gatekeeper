@@ -51,6 +51,10 @@ CONFIG_USER_SECTION_NAME = "user"
 CONFIG_USER_NAME = (CONFIG_USER_SECTION_NAME, "name")
 CONFIG_USER_EMAIL = (CONFIG_USER_SECTION_NAME, "email")
 
+BRANCH_PREFIX = "upload-charm-docs"
+DEFAULT_BRANCH_NAME = f"{BRANCH_PREFIX}/migrate"
+ACTIONS_COMMIT_MESSAGE = "migrate docs from server"
+
 
 class DiffSummary(NamedTuple):
     """Class representing the summary of the dirty status of a repository.
@@ -77,8 +81,8 @@ class DiffSummary(NamedTuple):
         Returns:
             DiffSummary class
         """
-        new_files = {diff.a_path for diff in diffs if diff.new_file if diff.a_path}
-        removed_files = {diff.a_path for diff in diffs if diff.deleted_file if diff.a_path}
+        new_files = {diff.a_path for diff in diffs if diff.new_file and diff.a_path}
+        removed_files = {diff.a_path for diff in diffs if diff.deleted_file and diff.a_path}
         modified_files = {
             diff.a_path
             for diff in diffs
@@ -348,27 +352,20 @@ class Client:
             ) or not config_reader.get_value(*CONFIG_USER_EMAIL):
                 config_writer.set_value(*CONFIG_USER_EMAIL, ACTIONS_USER_EMAIL)
 
-    def check_branch_exists(self, branch_name: str | None = None) -> bool:
-        """Check if branch exists remotely.
+    def is_same_commit(self, tag: str, commit: str) -> bool:
+        """Return whether tag and commit coincides.
 
         Args:
-            branch_name: Branch name to check on remote.
-
-        Raises:
-            RepositoryClientError: if unexpected error occurred during git operation.
+            tag: name of the tag
+            commit: sha of the commit
 
         Returns:
-            True if branch already exists, False otherwise.
+            True if the two pointers coincides, False otherwise.
         """
-        try:
-            self._git_repo.git.fetch(ORIGIN_NAME, branch_name or self.current_branch)
-            return True
-        except GitCommandError as exc:
-            if "couldn't find remote ref" in exc.stderr:
-                return False
-            raise RepositoryClientError(
-                f"Unexpected error checking existing branch. {exc=!r}"
-            ) from exc
+        if self.tag_exists(tag):
+            with self.with_branch(tag) as repo:
+                return repo.current_commit == commit
+        return False
 
     def get_pull_request(self, branch_name: str) -> Optional[str]:
         """Return open pull request matching the provided branch name.
@@ -396,31 +393,45 @@ class Client:
 
         return open_pull[0].html_url
 
-    def create_pull_request(self, branch_name: str) -> str:
-        """Create pull request using the provided branch.
+    def create_pull_request(self, base: str) -> str:
+        """Create pull request for changes in given repository path.
 
         Args:
-            branch_name: name of the branch used to open the pull request.
+            base: tag against to which the PR is opened
 
         Raises:
-            RepositoryClientError: if any error are encountered when creating the pull request.
+            InputError: when the repository is not dirty, hence resulting on an empty pull-request
 
         Returns:
-            link to the opened pull request.
+            Pull request URL string. None if no pull request was created/modified.
         """
-        try:
-            pull_request = self._github_repo.create_pull(
-                title=ACTIONS_PULL_REQUEST_TITLE,
-                body=ACTIONS_PULL_REQUEST_BODY,
-                base=self._github_repo.default_branch,
-                head=branch_name,
-            )
-        except GithubException as exc:
-            raise RepositoryClientError(
-                f"Unexpected error creating pull request. {exc=!r}"
-            ) from exc
+        if not self.is_dirty(base):
+            raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
-        return pull_request.html_url
+        with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
+            DEFAULT_BRANCH_NAME
+        ) as repo:
+            msg = str(repo.summary)
+            logging.info("Creating new branch with new commit: %s", msg)
+            repo.update_branch(msg, force=True)
+            pr_link = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME)
+            logging.info("Opening new PR with community contribution: %s", pr_link)
+
+        return pr_link
+
+    def update_pull_request(self, branch: str) -> None:
+        """Update and push changes to the given branch.
+
+        Args:
+            branch: name of the branch to be updated
+        """
+        with self.with_branch(branch) as repo:
+            if repo.is_dirty():
+                repo.pull()
+                msg = str(repo.summary)
+                logging.info("Summary: %s", msg)
+                logging.info("Updating PR with new commit: %s", msg)
+                repo.update_branch(msg)
 
     def is_dirty(self, branch_name: Optional[str] = None) -> bool:
         """Check if repository path has any changes including new files.
@@ -527,6 +538,32 @@ class Client:
             )
 
         return base64.b64decode(content_file.content).decode("utf-8")
+
+
+def _create_github_pull_request(github_repo: Repository, branch_name: str) -> str:
+    """Create pull request using the provided branch.
+
+    Args:
+        github_repo: Github repository where to open pull request.
+        branch_name: name of the branch used to open the pull request.
+
+    Raises:
+        RepositoryClientError: if any error are encountered when creating the pull request.
+
+    Returns:
+        link to the opened pull request.
+    """
+    try:
+        pull_request = github_repo.create_pull(
+            title=ACTIONS_PULL_REQUEST_TITLE,
+            body=ACTIONS_PULL_REQUEST_BODY,
+            base=github_repo.default_branch,
+            head=branch_name,
+        )
+    except GithubException as exc:
+        raise RepositoryClientError(f"Unexpected error creating pull request. {exc=!r}") from exc
+
+    return pull_request.html_url
 
 
 def _get_repository_name_from_git_url(remote_url: str) -> str:

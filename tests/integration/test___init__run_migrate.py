@@ -15,8 +15,9 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import Clients, constants, metadata, migration, pull_request, run_migrate
+from src import Clients, constants, metadata, migration, run_migrate
 from src.discourse import Discourse
+from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
 
 from .. import factories
@@ -109,7 +110,7 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(),
     )
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
@@ -126,7 +127,7 @@ async def test_run_migrate(
 
     # 2. with no changes applied after migration
     caplog.clear()
-    git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    git_repo.git.checkout(DEFAULT_BRANCH_NAME)
 
     urls_with_actions = run_migrate(
         Clients(

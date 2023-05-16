@@ -36,7 +36,7 @@ def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=None),
             new=src_types.Navlink(title="title 2", link=None),
@@ -76,7 +76,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
@@ -127,7 +127,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
@@ -171,7 +171,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
@@ -245,7 +245,7 @@ def test__update_file_navlink_content_change_conflict(
     mocked_discourse.absolute_url.return_value = url
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
@@ -295,7 +295,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     server_content: str
     update_action = src_types.UpdateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),
@@ -345,7 +345,7 @@ def test__update_file_navlink_content_change_error():
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     update_action = src_types.UpdateAction(
         level=1,
-        path="path 1",
+        path=("path 1",),
         navlink_change=src_types.NavlinkChange(
             old=src_types.Navlink(title="title 1", link=(link := "link 1")),
             new=src_types.Navlink(title="title 2", link=link),

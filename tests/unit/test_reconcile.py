@@ -81,7 +81,7 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
         local_path=path, level=path_info_level, table_path=path_info_table_path
     )
     navlink = types_.Navlink(title=path_info.navlink_title, link="link 1")
-    table_row = types_.TableRow(level=table_row_level, path=table_row_path, navlink=navlink)
+    table_row = types_.TableRow(level=table_row_level, path=(table_row_path,), navlink=navlink)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
@@ -101,7 +101,7 @@ def test__get_server_content_missing_link():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.return_value = "content 1"
     navlink = types_.Navlink(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
@@ -116,7 +116,7 @@ def test__get_server_content_server_error():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = types_.Navlink(title="title 1", link=(navlink_link := "link 1"))
-    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
@@ -506,7 +506,7 @@ def test__server_only_file():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.return_value = (content := "content 1")
     navlink = types_.Navlink(title="title 1", link="link 1")
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
@@ -527,7 +527,7 @@ def test__server_only_file_discourse_error():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = types_.Navlink(title="title 1", link=(link := "link 1"))
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._server_only(table_row=table_row, discourse=mock_discourse)
@@ -543,7 +543,7 @@ def test__server_only_directory():
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     navlink = types_.Navlink(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
@@ -712,13 +712,13 @@ def test__calculate_action(
             (path_info_1 := factories.PathInfoFactory(level=1),),
             (
                 table_row_1 := factories.TableRowFactory(
-                    level=2, path=("group-1",)+ path_info_1.table_path, is_group=True
+                    level=2, path=("group-1",) + path_info_1.table_path, is_group=True
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),
             (
                 (path_info_1.level, path_info_1.table_path),
-                (table_row_1.level, ("group-1",)+ path_info_1.table_path),
+                (table_row_1.level, ("group-1",) + path_info_1.table_path),
             ),
             id="single path info single table row level mismatch",
         ),

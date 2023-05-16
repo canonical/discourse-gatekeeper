@@ -4,18 +4,16 @@
 """Library for downloading docs folder from charmhub."""
 
 import shutil
-from contextlib import suppress
 
-from git import GitCommandError
-
+from .clients import Clients
 from .constants import DOCUMENTATION_FOLDER_NAME
+from .index import contents_from_page
 from .index import get as get_index
 from .migration import run as migrate_contents
 from .navigation_table import from_page as navigation_table_from_page
-from .reconcile import Clients
 
 
-def download_from_discourse(clients: Clients) -> None:
+def _download_from_discourse(clients: Clients) -> None:
     """Download docs folder locally from Discourse.
 
     Args:
@@ -28,9 +26,7 @@ def download_from_discourse(clients: Clients) -> None:
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    # index_content = contents_from_page(server_content)
-    # TODO: I'm not sure about this bit above. We should talk about this  # pylint: disable=W0511
-    index_content = server_content
+    index_content = contents_from_page(server_content)
     table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
     migrate_contents(
         table_rows=table_rows,
@@ -45,17 +41,12 @@ def recreate_docs(clients: Clients, base: str) -> bool:
 
     Args:
         clients: Clients object containing Repository and Discourse API clients
-        base: branch or tag to be compared to
+        base: tag to be compared to
 
     Returns:
         boolean representing whether any differences have occurred
     """
     clients.repository.switch(base)
-
-    with suppress(GitCommandError):
-        # The branch is either detached or there is no remote branch. In these cases there is no
-        # reason for pulling anything
-        clients.repository.pull()
 
     # Remove docs folder and recreate content from discourse
     docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
@@ -63,6 +54,6 @@ def recreate_docs(clients: Clients, base: str) -> bool:
     if docs_path.exists():
         shutil.rmtree(docs_path)
 
-    download_from_discourse(clients)
+    _download_from_discourse(clients)
 
     return clients.repository.is_dirty()

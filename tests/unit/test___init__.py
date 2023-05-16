@@ -18,13 +18,14 @@ from src import (  # GETTING_STARTED,
     constants,
     discourse,
     exceptions,
-    get_clients,
-    pull_request,
     run_migrate,
     run_reconcile,
     types_,
 )
+from src.clients import get_clients
 from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
+from src.repository import DEFAULT_BRANCH_NAME
+from src.repository import Client as RepositoryClient
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH
@@ -68,11 +69,15 @@ def test__run_reconcile_empty_local_server(mocked_clients):
     """
     mocked_clients.discourse.create_topic.return_value = (url := "url 1")
 
-    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+        (repo.base_path / "dummy-file.md").touch()
+        repo.update_branch("new commit")
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
 
-    (mocked_clients.repository.base_path / "docs").mkdir()
-
-    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+        returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
@@ -94,16 +99,22 @@ def test__run_reconcile_local_empty_server(mocked_clients):
     """
     name = mocked_clients.repository.metadata.name
 
-    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_content := "index content")
-    (docs_folder / "page.md").write_text(page_content := "page content")
     mocked_clients.discourse.create_topic.side_effect = [
         (page_url := "url 1"),
         (index_url := "url 2"),
     ]
-    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (docs_folder := repo.base_path / "docs").mkdir()
+        (docs_folder / "index.md").write_text(index_content := "index content")
+        (docs_folder / "page.md").write_text(page_content := "page content")
+        repo.update_branch("new commit")
+
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
+
+        returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     assert mocked_clients.discourse.create_topic.call_count == 2
     mocked_clients.discourse.create_topic.assert_any_call(
@@ -147,10 +158,7 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
-def test__run_reconcile_local_empty_server_dry_run_no_tag(
-        mocked_clients,
-        upstream_git_repo
-):
+def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients, upstream_git_repo):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse
         and the upload-docs-tag is destroyed before calling run_reconcile
@@ -183,11 +191,17 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
     assert: no pages are created.
     """
     mocked_clients.discourse.create_topic.side_effect = exceptions.DiscourseError
-    user_inputs = factories.UserInputsFactory(dry_run=False, delete_pages=True)
 
-    (mocked_clients.repository.base_path / "docs").mkdir()
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (repo.base_path / "docs").mkdir()
+        (repo.base_path / "dummy.md").touch()
+        repo.update_branch("new commit")
 
-    returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
+
+        returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
@@ -293,7 +307,7 @@ def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-def test__run_migrate_server_error_index(repository_client: pull_request.RepositoryClient):
+def test__run_migrate_server_error_index(repository_client: RepositoryClient):
     """
     arrange: given metadata with name and docs but no docs directory and mocked discourse
         that raises an exception during index file fetching
@@ -406,7 +420,7 @@ def test__run_migrate(
         user_inputs=user_inputs,
     )
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
@@ -414,7 +428,7 @@ def test__run_migrate(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_page
+    assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
@@ -455,7 +469,7 @@ def test__run_migrate_with_pull_request(
     (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
 
     # commit data to upstream
-    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head = upstream_git_repo.create_head(DEFAULT_BRANCH_NAME)
     head.checkout()
 
     upstream_git_repo.git.add(".")
@@ -471,7 +485,7 @@ def test__run_migrate_with_pull_request(
 
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
 
     assert "first commit of documentation" not in upstream_git_repo.head.commit.message
     assert (
@@ -511,12 +525,12 @@ def test__run_migrate_with_pull_request_no_modification(
 
     # Set up remote repository with content
     (docs_folder := upstream_repository_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_page)
+    (docs_folder / "index.md").write_text(index_content)
     (docs_folder / "path-1").mkdir()
     (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
 
     # commit data to upstream
-    head = upstream_git_repo.create_head(pull_request.DEFAULT_BRANCH_NAME)
+    head = upstream_git_repo.create_head(DEFAULT_BRANCH_NAME)
     head.checkout()
 
     upstream_git_repo.git.add(".")
@@ -533,7 +547,7 @@ def test__run_migrate_with_pull_request_no_modification(
 
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
 
     assert "first commit of documentation" in upstream_git_repo.head.commit.message
     assert upstream_git_repo.head.ref.commit.hexsha == _hash
@@ -548,16 +562,19 @@ def test_run_no_docs_empty_dir(mocked_clients):
     assert: then an index page is created with empty navigation table.
     """
     repository_path = mocked_clients.repository.base_path
-
-    create_metadata_yaml(content=f"{METADATA_NAME_KEY}: name 1", path=repository_path)
-    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
     mocked_clients.discourse.create_topic.return_value = (url := "url 1")
-    user_inputs = factories.UserInputsFactory()
 
-    # run is repeated in unit tests / integration tests
-    returned_page_interactions = run_reconcile(
-        clients=mocked_clients, user_inputs=user_inputs
-    )  # pylint: disable=duplicate-code
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+        create_metadata_yaml(content=f"{METADATA_NAME_KEY}: name 1", path=repository_path)
+        (repository_path / "dummy-file.md").touch()
+        repo.update_branch("new commit")
+        user_inputs = factories.UserInputsFactory(commit_sha=repo.current_commit)
+
+        # run is repeated in unit tests / integration tests
+        returned_page_interactions = run_reconcile(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
@@ -586,12 +603,12 @@ def test_run_no_docs_dir(
         content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: docsUrl",
         path=repository_path,
     )
-    index_content = """Content header.
+    index_content = """Content header in here.
 
     Content body.\n"""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
-    | 1 | path-1 | [empty-navlink]() |
-    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    | 1 | my-path-1 | [empty-navlink]() |
+    | 2 | my-file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
@@ -602,15 +619,18 @@ def test_run_no_docs_dir(
         clients=mocked_clients, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
     ).is_file()
     assert (
-        path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+        path_file := upstream_repository_path
+        / DOCUMENTATION_FOLDER_NAME
+        / "my-path-1"
+        / "my-file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_page
+    assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
@@ -637,12 +657,12 @@ def test_run_no_docs_dir_no_tag(
         content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: docsUrl",
         path=repository_path,
     )
-    index_content = """Content header.
+    index_content = """Content header 2.
 
     Content body.\n"""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
-    | 1 | path-1 | [empty-navlink]() |
-    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    | 1 | t-path-1 | [empty-navlink]() |
+    | 2 | t-file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
@@ -653,15 +673,18 @@ def test_run_no_docs_dir_no_tag(
         clients=mocked_clients, user_inputs=user_inputs
     )  # pylint: disable=duplicate-code
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
     ).is_file()
     assert (
-        path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1" / "file-1.md"
+        path_file := upstream_repository_path
+        / DOCUMENTATION_FOLDER_NAME
+        / "t-path-1"
+        / "t-file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_page
+    assert index_file.read_text(encoding="utf-8") == index_content
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
@@ -678,20 +701,20 @@ def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
         content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: https://discourse/t/docs",
         path=repository_path,
     )
-    index_content = """Content header.
+    index_content = """Content header lorem.
 
     Content body.\n"""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
-    | 1 | path-1 | [empty-navlink]() |
-    | 2 | file-1 | [file-navlink](/file-navlink) |"""
+    | 1 | their-path-1 | [empty-navlink]() |
+    | 2 | their-file-1 | [file-navlink](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
     navlink_page = "file-navlink-content"
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_page)
-    (docs_folder / "path-1").mkdir()
-    (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
+    (docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "their-path-1").mkdir()
+    (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
 
     mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch("First document version")
 

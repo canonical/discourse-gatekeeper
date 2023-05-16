@@ -54,14 +54,25 @@ def calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
         converting to lower case.
     """
 
-    def normalizer(input_string: str):
+    def normalizer(input_string: str) -> str:
+        """Return a normalized version of the input string.
+
+        Args:
+            input_string: string to be cleaned
+
+        Returns:
+            cleaned string
+        """
         return input_string.lower().replace(" ", "-").replace("_", "-")
 
     parts = path_relative_to_docs.parts
 
     return tuple(
-        (normalizer(element) for element in
-            parts[:-1] + tuple((parts[-1].removesuffix(path_relative_to_docs.suffix),))
+        (
+            normalizer(element)
+            for element in itertools.chain(
+                parts[:-1], tuple((parts[-1].removesuffix(path_relative_to_docs.suffix),))
+            )
         )
     )
 

@@ -67,58 +67,7 @@ def test__init__name_email_set(git_repo: Repo, mock_github_repo: Repository):
     assert config_reader.get_value(*repository.CONFIG_USER_EMAIL) == user_email
 
 
-def test_check_branch_exists_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
-    """
-    arrange: given Client with a mocked local git repository client that raises an
-        exception
-    act: when _check_branch_exists is called
-    assert: RepositoryClientError is raised from GitCommandError.
-    """
-    err_str = "mocked error"
-    mock_git_repository = mock.MagicMock(spec=Repo)
-    mock_git_repository.git.fetch.side_effect = [GitCommandError(err_str)]
-    monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
-
-    with pytest.raises(RepositoryClientError) as exc:
-        repository_client.check_branch_exists("branchname-1")
-
-    assert_substrings_in_string(
-        ("unexpected error checking existing branch", err_str), str(exc.value).lower()
-    )
-
-
-def test_check_branch_not_exists(repository_client: Client):
-    """
-    arrange: given Client with an upstream repository
-    act: when _check_branch_exists is called
-    assert: False is returned.
-    """
-    assert not repository_client.check_branch_exists("no-such-branchname")
-
-
-def test_check_branch_exists(
-    repository_client: Client, upstream_git_repo: Repo, upstream_repository_path: Path
-):
-    """
-    arrange: given Client with an upstream repository with check-branch-exists branch
-    act: when _check_branch_exists is called
-    assert: True is returned.
-    """
-    branch_name = "check-branch-exists"
-
-    head = upstream_git_repo.create_head(branch_name)
-    head.checkout()
-    (upstream_repository_path / "filler-file").touch()
-    upstream_git_repo.git.add(".")
-    upstream_git_repo.git.commit("-m", "test")
-
-    assert repository_client.check_branch_exists(branch_name)
-
-
-def test_current_branch_switch_main(
-        repository_client,
-        upstream_git_repo
-):
+def test_current_branch_switch_main(repository_client, upstream_git_repo):
     """
     arrange: given a repository in a detached state
     act: we switch branch to main
@@ -263,7 +212,7 @@ def test_create_branch_checkout_clash_created(repository_client: Client, upstrea
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
 
-def test_create_pull_request_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
+def test_create_pull_request_error():
     """
     arrange: given Client with a mocked github repository client that raises an exception
     act: when _create_pull_request is called
@@ -273,10 +222,9 @@ def test_create_pull_request_error(monkeypatch: pytest.MonkeyPatch, repository_c
     mock_github_repository.create_pull.side_effect = [
         GithubException(status=500, data="Internal Server Error", headers=None)
     ]
-    monkeypatch.setattr(repository_client, "_github_repo", mock_github_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.create_pull_request(branch_name="branchname-1")
+        repository._create_github_pull_request(mock_github_repository, branch_name="mybranch-1")
 
     assert_substrings_in_string(
         ("unexpected error creating pull request", "githubexception"), str(exc.value).lower()
@@ -289,7 +237,9 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     act: when _create_pull_request is called
     assert: a pull request's page link is returned.
     """
-    returned_url = repository_client.create_pull_request("branchname-1")
+    with repository_client.create_branch("new-branch").with_branch("new-branch") as repo:
+        (repo.base_path / "dummy.md").touch()
+        returned_url = repository_client.create_pull_request(DOCUMENTATION_TAG)
 
     assert returned_url == mock_pull_request.html_url
 
@@ -352,6 +302,39 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
     tag = [tag for tag in upstream_git_repo.tags if tag.name == DOCUMENTATION_TAG][0]
     assert tag.commit.hexsha != previous_hash
     assert tag.commit.hexsha == new_hash
+
+
+def test_tag_other_commit(repository_client: Client):
+    """
+    arrange: given tag name and commit sha, with repo not place in commit sha
+    act: when tag_commit is called with the tag name and commit sha
+    assert: then tag is created pointing to commit sha, without checking out the commit.
+    """
+    mock_branch = "new-branch"
+    new_tag = "my-tag"
+
+    with repository_client.create_branch(mock_branch, DEFAULT_BRANCH).with_branch(
+        mock_branch
+    ) as repo:
+        previous_hash = repo.current_commit
+
+        (repo.base_path / "placeholder.md").touch()
+
+        repo.update_branch("my new commit")
+
+        new_hash = repo.current_commit
+
+    repository_client.switch(DEFAULT_BRANCH)
+
+    assert previous_hash == repository_client.current_commit
+
+    repository_client.tag_commit(new_tag, new_hash)
+
+    assert previous_hash == repository_client.current_commit
+
+    repository_client.switch(new_tag)
+
+    assert new_hash == repository_client.current_commit
 
 
 def test_get_file_content_from_tag_tag_github_error(
@@ -876,3 +859,105 @@ def test_get_multiple_pull_request_error(
         _ = repository_client.get_pull_request(DEFAULT_BRANCH)
 
     assert_substrings_in_string(("more than one open pull request"), str(exc.value).lower())
+
+
+def test_create_pull_request_no_dirty_files(repository_client: repository.Client):
+    """
+    arrange: given RepositoryClient with no dirty files
+    act: when create_pull_request is called
+    assert: InputError is raised.
+    """
+    with pytest.raises(InputError) as exc:
+        repository_client.switch(DEFAULT_BRANCH).create_pull_request(DEFAULT_BRANCH)
+
+    assert_substrings_in_string(
+        ("no files seem to be migrated. please add contents upstream first.",),
+        str(exc.value).lower(),
+    )
+
+
+def test_create_pull_request_existing_branch(
+    tmp_path: Path,
+    repository_client: repository.Client,
+    upstream_git_repo: Repo,
+):
+    """
+    arrange: given RepositoryClient and an upstream repository that already has migration branch
+    act: when create_pull_request is called
+    assert: The remove branch is overridden
+    """
+    branch_name = repository.DEFAULT_BRANCH_NAME
+
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    filler_file = docs_folder / "filler-file"
+
+    # Update docs branch from third repository
+    third_repo_path = tmp_path / "third"
+    third_repo = upstream_git_repo.clone(third_repo_path)
+
+    writer = third_repo.config_writer()
+    writer.set_value("user", "name", repository.ACTIONS_USER_NAME)
+    writer.set_value("user", "email", repository.ACTIONS_USER_EMAIL)
+    writer.release()
+
+    third_repo.git.checkout("-b", branch_name)
+
+    (third_repo_path / docs_folder).mkdir()
+    (third_repo_path / filler_file).touch()
+    third_repo.git.add(".")
+    third_repo.git.commit("-m", "test")
+
+    hash1 = third_repo.head.commit
+
+    third_repo.git.push("--set-upstream", "origin", branch_name)
+
+    # repository_client.check_branch_exists(branch_name)
+    repository_client.switch(branch_name).pull()
+
+    hash2 = repository_client._git_repo.head.commit
+
+    # make sure the hash of the upload-charm-docs/migrate branch agree
+    assert hash1 == hash2
+
+    repository_path = repository_client.switch(DEFAULT_BRANCH).base_path
+
+    (repository_path / docs_folder).mkdir()
+    (repository_path / filler_file).write_text("filler-content")
+
+    pr_link = repository_client.create_pull_request(base=DEFAULT_BRANCH)
+
+    repository_client.switch(branch_name).pull()
+
+    hash3 = repository_client._git_repo.head.commit
+
+    # Make sure that the upload-charm-docs/migrate branch has now be overridden
+    assert hash2 != hash3
+    assert pr_link == "test_url"
+
+
+def test_create_pull_request_function(
+    repository_client: repository.Client,
+    upstream_git_repo: Repo,
+    upstream_repository_path: Path,
+    mock_pull_request: PullRequest,
+):
+    """
+    arrange: given RepositoryClient and a repository with changed files
+    act: when create_pull_request is called
+    assert: changes are pushed to default branch and pull request link is returned.
+    """
+    repository_path = repository_client.base_path
+
+    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
+    (repository_path / docs_folder).mkdir()
+    filler_file = docs_folder / "filler.txt"
+    filler_text = "filler-text"
+    (repository_path / filler_file).write_text(filler_text)
+
+    repository_client.switch(DEFAULT_BRANCH)
+
+    returned_pr_link = repository_client.create_pull_request(base=DEFAULT_BRANCH)
+
+    upstream_git_repo.git.checkout(repository.DEFAULT_BRANCH_NAME)
+    assert returned_pr_link == mock_pull_request.html_url
+    assert (upstream_repository_path / filler_file).read_text() == filler_text

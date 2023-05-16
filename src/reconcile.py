@@ -8,21 +8,9 @@ import typing
 from pathlib import Path
 
 from . import exceptions, types_
+from .clients import Clients
 from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
 from .discourse import Discourse
-from .repository import Client as RepositoryClient
-
-
-class Clients(typing.NamedTuple):
-    """Collection of clients needed during execution.
-
-    Attrs:
-        discourse: Discourse client.
-        repository: Client for the repository.
-    """
-
-    discourse: Discourse
-    repository: RepositoryClient
 
 
 def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:

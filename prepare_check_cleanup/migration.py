@@ -24,8 +24,11 @@ from src.constants import (
 )
 from src.discourse import create_discourse
 from src.exceptions import DiscourseError
-from src.pull_request import DEFAULT_BRANCH_NAME
-from src.repository import ACTIONS_PULL_REQUEST_TITLE, create_repository_client
+from src.repository import (
+    ACTIONS_PULL_REQUEST_TITLE,
+    DEFAULT_BRANCH_NAME,
+    create_repository_client,
+)
 
 
 class Action(str, Enum):

@@ -13,14 +13,14 @@ from src import types_
     [
         pytest.param(
             types_.TableRow(
-                level=1, path="path 1", navlink=types_.Navlink(title="title 1", link="link 1")
+                level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link="link 1")
             ),
             False,
             id="not group",
         ),
         pytest.param(
             types_.TableRow(
-                level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+                level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link=None)
             ),
             True,
             id="is group",
@@ -60,6 +60,18 @@ def test_table_row_is_group(table_row: types_.TableRow, expected_is_group: bool)
                 level=2, path=("path-2",), navlink=types_.Navlink(title="title 2", link=None)
             ),
             "| 2 | path-2 | [title 2]() |",
+            id="is group",
+        ),
+        pytest.param(
+            types_.TableRow(
+                level=2,
+                path=(
+                    "path-1",
+                    "path-2",
+                ),
+                navlink=types_.Navlink(title="title 2", link=None),
+            ),
+            "| 2 | path-1-path-2 | [title 2]() |",
             id="is group",
         ),
     ],

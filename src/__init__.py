@@ -4,51 +4,25 @@
 """Library for uploading docs to charmhub."""
 import logging
 from itertools import tee
-from pathlib import Path
 
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .action import run_all as run_all_actions
 from .check import conflicts as check_conflicts
+from .clients import Clients
 from .constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from .discourse import create_discourse
 from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
 from .exceptions import InputError
 from .index import get as get_index
 from .navigation_table import from_page as navigation_table_from_page
-from .pull_request import DEFAULT_BRANCH_NAME, create_pull_request, update_pull_request
-from .reconcile import Clients
 from .reconcile import run as get_reconcile_actions
-from .repository import create_repository_client
+from .repository import DEFAULT_BRANCH_NAME
 from .types_ import ActionResult, UserInputs
 
 GETTING_STARTED = (
     "To get started with upload-charm-docs, "
     "please refer to https://github.com/canonical/upload-charm-docs#getting-started"
 )
-
-
-def get_clients(user_inputs: UserInputs, base_path: Path) -> Clients:
-    """Return Clients object.
-
-    Args:
-        user_inputs: inputs provided via environment
-        base_path: path where the git repository is stored
-
-    Returns:
-        Clients object embedding both Discourse API and Repository clients
-    """
-    return Clients(
-        discourse=create_discourse(
-            hostname=user_inputs.discourse.hostname,
-            category_id=user_inputs.discourse.category_id,
-            api_username=user_inputs.discourse.api_username,
-            api_key=user_inputs.discourse.api_key,
-        ),
-        repository=create_repository_client(
-            access_token=user_inputs.github_access_token, base_path=base_path
-        ),
-    )
 
 
 def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
@@ -73,17 +47,12 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
         return {}
 
-    if clients.repository.tag_exists(DOCUMENTATION_TAG):
-        with clients.repository.with_branch(DOCUMENTATION_TAG) as repo:
-            if repo.current_commit == user_inputs.commit_sha:
-                logging.warning(
-                    "Cannot run any reconcile to Discourse as we are at the same commit "
-                    "of the tag %s",
-                    DOCUMENTATION_TAG,
-                )
-                return {}
-
-    # clients.repository.switch(user_inputs.commit_sha)
+    if clients.repository.is_same_commit(DOCUMENTATION_TAG, user_inputs.commit_sha):
+        logging.warning(
+            "Cannot run any reconcile to Discourse as we are at the same commit of the tag %s",
+            DOCUMENTATION_TAG,
+        )
+        return {}
 
     metadata = clients.repository.metadata
     base_path = clients.repository.base_path
@@ -127,7 +96,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     if not user_inputs.dry_run:
         clients.repository.tag_commit(
-            tag_name=DOCUMENTATION_TAG, commit_sha=clients.repository.current_commit
+            tag_name=DOCUMENTATION_TAG, commit_sha=user_inputs.commit_sha
         )
 
     return urls_with_actions
@@ -151,7 +120,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         )
         return {}
 
-    logging.info(f"Tag exists: {clients.repository.tag_exists(DOCUMENTATION_TAG)}")
+    logging.info("Tag exists: %s", str(clients.repository.tag_exists(DOCUMENTATION_TAG)))
 
     if not clients.repository.tag_exists(DOCUMENTATION_TAG):
         with clients.repository.with_branch(DEFAULT_BRANCH) as repo:
@@ -159,7 +128,8 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
 
     # Check difference with main
-    if not recreate_docs(clients, DOCUMENTATION_TAG):
+    changes = recreate_docs(clients, DOCUMENTATION_TAG)
+    if not changes:
         logging.info(
             "No community contribution found in commit %s. Discourse is inline with %s",
             user_inputs.commit_sha,
@@ -171,9 +141,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
 
     if pr_link is not None:
         logging.info("upload-charm-documents pull request already open at %s", pr_link)
-        update_pull_request(clients.repository, DEFAULT_BRANCH_NAME)
+        clients.repository.update_pull_request(DEFAULT_BRANCH_NAME)
     else:
         logging.info("PR not existing: creating a new one...")
-        pr_link = create_pull_request(clients.repository, DOCUMENTATION_TAG)
+        pr_link = clients.repository.create_pull_request(DOCUMENTATION_TAG)
 
     return {pr_link: ActionResult.SUCCESS}

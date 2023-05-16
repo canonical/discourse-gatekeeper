@@ -10,7 +10,6 @@ from pathlib import Path
 
 from . import exceptions, types_
 from .discourse import Discourse
-from .docs_directory import calculate_table_path
 
 EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILENAME = ".gitkeep"
@@ -54,7 +53,7 @@ def _validate_table_rows(
         if row.level > current_group_level + 1:
             raise exceptions.InputError(
                 "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
-                f"Did you mean level {current_group_level+1}?"
+                f"Did you mean level {current_group_level + 1}?"
                 f"Row: {row.to_markdown()}"
             )
 
@@ -64,12 +63,11 @@ def _validate_table_rows(
         current_group_level = row.level if row.is_group else row.level - 1
 
 
-def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMeta:
+def _create_document_meta(row: types_.TableRow) -> types_.DocumentMeta:
     """Create document meta file for migration from table row.
 
     Args:
         row: Row containing link to document and path information.
-        path: Relative path to where the document should reside.
 
     Raises:
         MigrationError: if the table row that was passed in does not contain a link to document.
@@ -93,7 +91,6 @@ def _create_gitkeep_meta(row: types_.TableRow) -> types_.GitkeepMeta:
 
     Args:
         row: An empty group row.
-        path: Relative path to where the document should reside.
 
     Returns:
         Information required to migrate empty group.
@@ -120,7 +117,6 @@ def _extract_docs_from_table_rows(
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
     """
-    current_group_path = Path()
     previous_row: types_.TableRow | None = None
     previous_path: Path | None = None
 
@@ -140,7 +136,7 @@ def _extract_docs_from_table_rows(
         # )
 
         if not row.is_group:
-            yield _create_document_meta(row=row, path=current_group_path)
+            yield _create_document_meta(row=row)
 
         previous_row = row
         previous_path = Path(*row.path)

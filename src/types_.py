@@ -107,7 +107,7 @@ class Index(typing.NamedTuple):
 
 
 Level = int
-TablePath = typing.Tuple[str]
+TablePath = tuple[str, ...]
 
 
 class PathInfo(typing.NamedTuple):
@@ -170,7 +170,7 @@ class TableRow(typing.NamedTuple):
             The line in the navigation table.
         """
         return (
-            f"| {self.level} | {self.path[-1]} | "
+            f"| {self.level} | {'-'.join(self.path)} | "
             f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 

@@ -16,7 +16,8 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, get_clients, run_migrate, run_reconcile, types_
+from src import GETTING_STARTED, exceptions, run_migrate, run_reconcile, types_
+from src.clients import get_clients
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
@@ -86,12 +87,15 @@ def _write_github_output(
             f"{GETTING_STARTED}"
         )
 
-    output = ""
+    output: str = sum(
+        (
+            f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+            for key, urls_with_actions_dict in urls_with_actions_dicts.items()
+        ),
+        "",
+    )
 
-    for key, urls_with_actions_dict in urls_with_actions_dicts.items():
-        output += f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
-
-    logging.info(f"Output: {output}")
+    logging.info("Output: %s", output)
 
     pathlib.Path(github_output).write_text(output, encoding="utf-8")
 
