@@ -68,10 +68,10 @@ def calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
     parts = path_relative_to_docs.parts
 
     return tuple(
-            normalizer(element)
-            for element in itertools.chain(
-                parts[:-1], (parts[-1].removesuffix(path_relative_to_docs.suffix),)
-            )
+        normalizer(element)
+        for element in itertools.chain(
+            parts[:-1], (parts[-1].removesuffix(path_relative_to_docs.suffix),)
+        )
     )
 
 

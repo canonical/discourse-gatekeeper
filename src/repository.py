@@ -6,12 +6,12 @@
 import base64
 import logging
 import re
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, FrozenSet, NamedTuple, Optional, Set
-from collections.abc import Iterator, Sequence
+from typing import Any, NamedTuple
 
 from git import GitCommandError
 from git.diff import Diff
