@@ -10,7 +10,8 @@ from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, FrozenSet, Iterator, NamedTuple, Optional, Sequence, Set
+from typing import Any, FrozenSet, NamedTuple, Optional, Set
+from collections.abc import Iterator, Sequence
 
 from git import GitCommandError
 from git.diff import Diff
@@ -67,9 +68,9 @@ class DiffSummary(NamedTuple):
     """
 
     is_dirty: bool
-    new: FrozenSet[str]
-    removed: FrozenSet[str]
-    modified: FrozenSet[str]
+    new: frozenset[str]
+    removed: frozenset[str]
+    modified: frozenset[str]
 
     @classmethod
     def from_raw_diff(cls, diffs: Sequence[Diff]) -> "DiffSummary":
@@ -193,7 +194,7 @@ class Client:
         return self._git_repo.head.commit.hexsha
 
     @property
-    def branches(self) -> Set[str]:
+    def branches(self) -> set[str]:
         """Return all local branches."""
         return {branch.name for branch in self._git_repo.heads}
 
@@ -225,7 +226,7 @@ class Client:
             self._git_repo.index.diff(None)
         ) + DiffSummary.from_raw_diff(self._git_repo.head.commit.diff())
 
-    def pull(self, branch_name: Optional[str] = None) -> None:
+    def pull(self, branch_name: str | None = None) -> None:
         """Pull content from remote for the provided branch.
 
         Args:
@@ -280,7 +281,7 @@ class Client:
                     f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
                 ) from exc
 
-    def create_branch(self, branch_name: str, base: Optional[str] = None) -> "Client":
+    def create_branch(self, branch_name: str, base: str | None = None) -> "Client":
         """Create a new branch.
 
         Note that this will not switch branch. To create and switch branch, please pipe the two
@@ -367,7 +368,7 @@ class Client:
                 return repo.current_commit == commit
         return False
 
-    def get_pull_request(self, branch_name: str) -> Optional[str]:
+    def get_pull_request(self, branch_name: str) -> str | None:
         """Return open pull request matching the provided branch name.
 
         Args:
@@ -433,7 +434,7 @@ class Client:
                 logging.info("Updating PR with new commit: %s", msg)
                 repo.update_branch(msg)
 
-    def is_dirty(self, branch_name: Optional[str] = None) -> bool:
+    def is_dirty(self, branch_name: str | None = None) -> bool:
         """Check if repository path has any changes including new files.
 
         Args:

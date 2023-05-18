@@ -71,7 +71,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-        (repo.base_path / "dummy-file.md").touch()
+        (repo.base_path / "placeholder-file.md").touch()
         repo.update_branch("new commit")
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -194,7 +194,7 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (repo.base_path / "docs").mkdir()
-        (repo.base_path / "dummy.md").touch()
+        (repo.base_path / "placeholder.md").touch()
         repo.update_branch("new commit")
 
         user_inputs = factories.UserInputsFactory(
@@ -567,7 +567,7 @@ def test_run_no_docs_empty_dir(mocked_clients):
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
         create_metadata_yaml(content=f"{METADATA_NAME_KEY}: name 1", path=repository_path)
-        (repository_path / "dummy-file.md").touch()
+        (repository_path / "placeholder-file.md").touch()
         repo.update_branch("new commit")
         user_inputs = factories.UserInputsFactory(commit_sha=repo.current_commit)
 

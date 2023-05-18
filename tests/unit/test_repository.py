@@ -238,7 +238,7 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     assert: a pull request's page link is returned.
     """
     with repository_client.create_branch("new-branch").with_branch("new-branch") as repo:
-        (repo.base_path / "dummy.md").touch()
+        (repo.base_path / "placeholder.md").touch()
         returned_url = repository_client.create_pull_request(DOCUMENTATION_TAG)
 
     assert returned_url == mock_pull_request.html_url
@@ -273,8 +273,8 @@ def test_tag_commit_tag_not_exists(repository_client: Client, upstream_git_repo)
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    assert any((DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags))
-    assert any((DOCUMENTATION_TAG == tag.name for tag in upstream_git_repo.tags))
+    assert any(DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags)
+    assert any(DOCUMENTATION_TAG == tag.name for tag in upstream_git_repo.tags)
 
 
 def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
@@ -293,7 +293,7 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    assert any((DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags))
+    assert any(DOCUMENTATION_TAG == tag.name for tag in repository_client._git_repo.tags)
 
     with repository_client.with_branch(DOCUMENTATION_TAG) as repo:
         new_hash = repo.current_commit
