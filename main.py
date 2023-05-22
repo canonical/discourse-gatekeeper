@@ -87,12 +87,9 @@ def _write_github_output(
             f"{GETTING_STARTED}"
         )
 
-    output: str = sum(
-        (
-            f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
-            for key, urls_with_actions_dict in urls_with_actions_dicts.items()
-        ),
-        "",
+    output: str = ''.join(
+        f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+        for key, urls_with_actions_dict in urls_with_actions_dicts.items()
     )
 
     logging.info("Output: %s", output)
