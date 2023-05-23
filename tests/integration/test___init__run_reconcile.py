@@ -380,9 +380,4 @@ async def test_run(
         ),
     )
 
-    assert len(urls_with_actions) == 0
-
-    # assert (urls := tuple(urls_with_actions)) == (index_url,)
-    # assert_substrings_in_string(chain(urls, ("Update", "'success'")), caplog.text)
-    # index_topic = discourse_api.retrieve_topic(url=index_url)
-    # assert index_content not in index_topic
+    assert not urls_with_actions

@@ -199,7 +199,7 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
-    assert len(urls_with_actions) == 0
+    assert not urls_with_actions
     assert_substrings_in_string(
         [
             "No community contribution found in commit",
