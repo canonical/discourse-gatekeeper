@@ -20,6 +20,7 @@ import pytest
 from github.ContentFile import ContentFile
 
 from src import Clients, constants, exceptions, metadata, run_reconcile
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
 from src.repository import Client, Repo
 
@@ -56,9 +57,16 @@ async def test_run_conflict(
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
+
+    repository_client = Client(Repo(repository_path), mock_github_repo)
+
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
     )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
 
     # 1. docs with an index and documentation file
     caplog.clear()
@@ -78,11 +86,15 @@ async def test_run_conflict(
         doc_content_1 := f"# {doc_title}\nline 1\nline 2\nline 3", encoding="utf-8"
     )
 
-    repository_client = Client(Repo(repository_path), mock_github_repo)
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "1. docs with an index and documentation file"
+    )
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert len(urls_with_actions) == 2
@@ -107,9 +119,16 @@ async def test_run_conflict(
     mock_content_file.content = b64encode(doc_content_1.encode(encoding="utf-8"))
     mock_github_repo.get_contents.return_value = mock_content_file
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "2. docs with a documentation file updated and discourse updated with "
+        "non-conflicting content"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -134,10 +153,17 @@ async def test_run_conflict(
     )
     mock_content_file.content = b64encode(doc_content_2.encode(encoding="utf-8"))
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "3. docs with a documentation file updated and discourse updated with conflicting "
+        "content in dry run mode"
+    )
+
     with pytest.raises(exceptions.InputError) as exc_info:
         run_reconcile(
             clients=Clients(discourse=discourse_api, repository=repository_client),
-            user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
+            user_inputs=factories.UserInputsFactory(
+                dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
+            ),
         )
 
     assert_substrings_in_string(
@@ -164,10 +190,14 @@ async def test_run_conflict(
     # 4. docs with a documentation file updated and discourse updated with conflicting content
     caplog.clear()
 
+    repository_client.switch(DEFAULT_BRANCH)
+
     with pytest.raises(exceptions.InputError) as exc_info:
         run_reconcile(
             clients=Clients(discourse=discourse_api, repository=repository_client),
-            user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+            user_inputs=factories.UserInputsFactory(
+                dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+            ),
         )
 
     assert_substrings_in_string(
@@ -198,9 +228,15 @@ async def test_run_conflict(
     )
     discourse_api.update_topic(url=doc_url, content=doc_content_4)
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "5. docs with a documentation file and discourse updated to resolve conflict"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)

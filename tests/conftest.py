@@ -15,6 +15,7 @@ from github.Requester import Requester
 
 import src
 from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
@@ -98,7 +99,7 @@ def fixture_mock_pull_request() -> PullRequest:
     return PullRequest(
         requester=mock_requester,
         headers={},
-        attributes={"html_url": "test_url", "head": {"ref": DEFAULT_BRANCH}},
+        attributes={"html_url": "test_url", "head": {"ref": DEFAULT_BRANCH_NAME}},
         completed=False,
     )
 

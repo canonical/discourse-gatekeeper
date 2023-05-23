@@ -820,7 +820,7 @@ def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pu
     mock_git_repository.get_pulls = mock.Mock(return_value=[mock_pull_request])
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
-    pull_request_link = repository_client.get_pull_request(DEFAULT_BRANCH)
+    pull_request_link = repository_client.get_pull_request(repository.DEFAULT_BRANCH_NAME)
 
     assert pull_request_link is not None
     assert pull_request_link == "test_url"
@@ -856,7 +856,7 @@ def test_get_multiple_pull_request_error(
     monkeypatch.setattr(repository_client, "_github_repo", mock_git_repository)
 
     with pytest.raises(RepositoryClientError) as exc:
-        _ = repository_client.get_pull_request(DEFAULT_BRANCH)
+        _ = repository_client.get_pull_request(repository.DEFAULT_BRANCH_NAME)
 
     assert_substrings_in_string(("more than one open pull request"), str(exc.value).lower())
 

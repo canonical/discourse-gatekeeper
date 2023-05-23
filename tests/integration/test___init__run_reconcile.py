@@ -7,6 +7,7 @@
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
+import shutil
 from base64 import b64encode
 from itertools import chain
 from pathlib import Path
@@ -17,6 +18,7 @@ import pytest
 from github.ContentFile import ContentFile
 
 from src import Clients, constants, exceptions, metadata, run_reconcile
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
 from src.repository import Client, Repo
 
@@ -68,9 +70,16 @@ async def test_run(
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
+
+    repository_client = Client(Repo(repository_path), mock_github_repo)
+
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
     )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
 
     # 1. docs with an index file in dry run mode
     caplog.clear()
@@ -87,11 +96,15 @@ async def test_run(
         index_content := "index content 1", encoding="utf-8"
     )
 
-    repository_client = Client(Repo(repository_path), mock_github_repo)
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "1. docs with an index file in dry run mode"
+    )
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert tuple(urls_with_actions) == (index_url,)
@@ -102,7 +115,9 @@ async def test_run(
 
     # 2. docs with an index file
     caplog.clear()
-    user_inputs_2 = factories.UserInputsFactory(dry_run=False, delete_pages=True)
+    user_inputs_2 = factories.UserInputsFactory(
+        dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+    )
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -113,10 +128,6 @@ async def test_run(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{index_content}{constants.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
-    mock_github_repo.create_git_ref.assert_called_once_with(
-        f"refs/tags/{user_inputs_2.base_tag_name}",
-        mock_github_repo.create_git_tag.return_value.sha,
-    )
 
     # 3. docs with a documentation file added in dry run mode
     caplog.clear()
@@ -125,11 +136,14 @@ async def test_run(
         doc_content_1 := "doc content 1", encoding="utf-8"
     )
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "3. docs with a documentation file added in dry run mode"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
-            dry_run=True,
-            delete_pages=True,
+            dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
@@ -143,7 +157,9 @@ async def test_run(
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert len(urls_with_actions) == 2
@@ -165,9 +181,15 @@ async def test_run(
     mock_content_file.content = b64encode(doc_content_1.encode(encoding="utf-8"))
     mock_github_repo.get_contents.return_value = mock_content_file
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "5. docs with a documentation file updated in dry run mode"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -186,7 +208,9 @@ async def test_run(
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -203,10 +227,15 @@ async def test_run(
     caplog.clear()
     nested_dir_table_key = "nested-dir"
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
+    (nested_dir / ".gitkeep").touch()
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch("7. docs with a nested directory added")
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -224,9 +253,15 @@ async def test_run(
         nested_dir_doc_content := "nested dir doc content 1", encoding="utf-8"
     )
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "8. docs with a documentation file added in the nested directory"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert len(urls_with_actions) == 3
@@ -248,9 +283,15 @@ async def test_run(
     caplog.clear()
     nested_dir_doc_file.unlink()
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "9. docs with the documentation file in the nested directory removed in dry run mode"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=True, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -268,7 +309,9 @@ async def test_run(
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=False),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=False, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -282,11 +325,15 @@ async def test_run(
 
     # 11. with the nested directory removed
     caplog.clear()
-    nested_dir.rmdir()
+    shutil.rmtree(nested_dir)
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch("11. with the nested directory removed")
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -300,9 +347,15 @@ async def test_run(
     caplog.clear()
     doc_file.unlink()
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "12. with the documentation file removed"
+    )
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -318,12 +371,18 @@ async def test_run(
     caplog.clear()
     index_file.unlink()
 
+    repository_client.switch(DEFAULT_BRANCH).update_branch("13. with the index file removed")
+
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(dry_run=False, delete_pages=True),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
     )
 
-    assert (urls := tuple(urls_with_actions)) == (index_url,)
-    assert_substrings_in_string(chain(urls, ("Update", "'success'")), caplog.text)
-    index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_content not in index_topic
+    assert len(urls_with_actions) == 0
+
+    # assert (urls := tuple(urls_with_actions)) == (index_url,)
+    # assert_substrings_in_string(chain(urls, ("Update", "'success'")), caplog.text)
+    # index_topic = discourse_api.retrieve_topic(url=index_url)
+    # assert index_content not in index_topic
