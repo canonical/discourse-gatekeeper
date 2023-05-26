@@ -7,17 +7,22 @@
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 
 import logging
-from itertools import chain
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import constants, metadata, migration, pull_request, run
+from src import Clients, constants, metadata, migration, run_migrate
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
+from src.repository import DEFAULT_BRANCH_NAME
+from src.repository import Client as RepositoryClient
+from src.types_ import ActionResult
 
 from .. import factories
+from ..conftest import BASE_REMOTE_BRANCH
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
 
 pytestmark = pytest.mark.migrate
@@ -29,22 +34,24 @@ async def test_run_migrate(
     discourse_address: str,
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
-    git_repo: Repo,
     repository_path: Path,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
+    mock_github_repo: MagicMock,
 ):
     """
     arrange: given running discourse server
     act: when run is called with:
         1. with no docs dir and no custom branchname provided
         2. with no docs dir and custom branchname provided
-        3. with no changes applied after migration
+        3. with modification to an existing open PR
+        4. After merging the PR, content is in sync with Discourse
     assert: then:
         1. the documentation files are pushed to default branch
         2. the documentation files are pushed to custom branch
-        3. no operations are taken place
+        3. a new commit is added to the PR
+        4. no operation are done
     """
     caplog.set_level(logging.INFO)
     document_name = "migration name 1"
@@ -91,20 +98,28 @@ async def test_run_migrate(
         content=index_page_content,
     )
 
+    repository_client = RepositoryClient(Repo(repository_path), mock_github_repo)
+
     # 1. with no docs dir and a metadata.yaml with docs key
     caplog.clear()
+
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
         path=repository_path,
     )
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(),
+    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=repository_client,
+        ),
+        user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
-    upstream_git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
     assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
@@ -118,17 +133,77 @@ async def test_run_migrate(
     assert (group_3_path / "content-4.md").read_text(encoding="utf-8") == content_page_4.content
     assert (group_5_path := upstream_doc_dir / "group-5").is_dir()
     assert group_5_path.is_dir()
+    upstream_git_repo.git.checkout(BASE_REMOTE_BRANCH)
 
-    # 2. with no changes applied after migration
+    # 2. with no changes applied after raising PR
     caplog.clear()
-    git_repo.git.checkout(pull_request.DEFAULT_BRANCH_NAME)
 
-    urls_with_actions = run(
-        base_path=repository_path,
-        discourse=discourse_api,
-        user_inputs=factories.UserInputsFactory(),
+    mock_github_repo.get_pulls.return_value = [mock_pull_request]
+
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+        ),
+        user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
+    assert "test_url" in urls_with_actions
+    assert urls_with_actions["test_url"] == ActionResult.SUCCESS
     assert_substrings_in_string(
-        chain(urls_with_actions, ("Noop", "Noop", "Noop", "'success'")), caplog.text
+        ["upload-charm-documents pull request already open at test_url"], caplog.text
+    )
+
+    # 3. Add modification to an existing open PR
+    caplog.clear()
+
+    discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
+
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+        ),
+        user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
+    )
+
+    assert "test_url" in urls_with_actions
+    assert urls_with_actions["test_url"] == ActionResult.SUCCESS
+    assert_substrings_in_string(
+        [
+            "upload-charm-documents pull request already open at test_url",
+            "Updating PR with new commit",
+        ],
+        caplog.text,
+    )
+
+    # Simulate a PR merged
+    upstream_git_repo.git.checkout(DEFAULT_BRANCH)
+    upstream_git_repo.git.merge(DEFAULT_BRANCH_NAME)
+
+    repository_client.switch(DEFAULT_BRANCH).pull()
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
+    mock_github_repo.get_pulls.return_value = [mock_pull_request]
+
+    # 4. Content in sync with Discourse
+    caplog.clear()
+
+    discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
+
+    urls_with_actions = run_migrate(
+        Clients(
+            discourse=discourse_api,
+            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+        ),
+        user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
+    )
+
+    assert not urls_with_actions
+    assert_substrings_in_string(
+        [
+            "No community contribution found in commit",
+            f"Discourse is inline with {DOCUMENTATION_TAG}",
+        ],
+        caplog.text,
     )

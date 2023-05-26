@@ -35,7 +35,7 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     create_action = src_types.CreateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
         content=None,
     )
@@ -70,7 +70,7 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     create_action = src_types.CreateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
         content="content 1",
     )
@@ -102,7 +102,7 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     create_action = src_types.CreateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
         content=(content := "content 1"),
     )
@@ -136,7 +136,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     mocked_discourse.create_topic.return_value = (url := "url 1")
     create_action = src_types.CreateAction(
         level=(level := 1),
-        path=(path := "path 1"),
+        path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
         content=(content := "content 1"),
     )
@@ -167,7 +167,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.NoopAction(
                 level=(level := 1),
-                path=(path := "path 1"),
+                path=(path := ("path 1",)),
                 navlink=(navlink := src_types.Navlink(title="title 1", link=None)),
                 content=None,
             ),
@@ -177,7 +177,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.NoopAction(
                 level=(level := 1),
-                path=(path := "path 1"),
+                path=(path := ("path 1",)),
                 navlink=(navlink := src_types.Navlink(title="title 1", link="link 1")),
                 content="content 1",
             ),
@@ -256,7 +256,7 @@ def test__delete_not_delete(
     mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
         level=1,
-        path="path 1",
+        path=("path 1",),
         navlink=src_types.Navlink(title="title 1", link=navlink_link),
         content="content 1",
     )
@@ -292,7 +292,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     delete_action = src_types.DeleteAction(
         level=1,
-        path="path 1",
+        path=("path 1",),
         navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
@@ -326,7 +326,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     mocked_discourse.absolute_url.return_value = url
     delete_action = src_types.DeleteAction(
         level=1,
-        path="path 1",
+        path=("path 1",),
         navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
@@ -354,7 +354,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.CreateAction(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink_title="title 1",
                 content=None,
             ),
@@ -364,7 +364,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.NoopAction(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink=src_types.Navlink(title="title 1", link=None),
                 content=None,
             ),
@@ -374,7 +374,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.UpdateAction(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink_change=src_types.NavlinkChange(
                     old=src_types.Navlink(title="title 1", link=None),
                     new=src_types.Navlink(title="title 1", link=None),
@@ -387,7 +387,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
         pytest.param(
             src_types.DeleteAction(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink=src_types.Navlink(title="title 1", link=None),
                 content=None,
             ),
@@ -637,7 +637,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
             (
                 src_types.NoopAction(
                     level=(level := 1),
-                    path=(path := "path 1"),
+                    path=(path := ("path 1",)),
                     navlink=(
                         navlink := src_types.Navlink(title="title 1", link=(link := "link 1"))
                     ),
@@ -658,7 +658,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
             (
                 src_types.NoopAction(
                     level=(level_1 := 1),
-                    path=(path_1 := "path 1"),
+                    path=(path_1 := ("path 1",)),
                     navlink=(
                         navlink_1 := src_types.Navlink(title="title 1", link=(link_1 := "link 1"))
                     ),
@@ -666,7 +666,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                 ),
                 src_types.NoopAction(
                     level=(level_2 := 2),
-                    path=(path_2 := "path 2"),
+                    path=(path_2 := ("path 2",)),
                     navlink=(
                         navlink_2 := src_types.Navlink(title="title 2", link=(link_2 := "link 2"))
                     ),
