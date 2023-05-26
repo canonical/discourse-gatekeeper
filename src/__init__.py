@@ -95,6 +95,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     }
 
     if not user_inputs.dry_run:
+        logging.info(f"Tagging commit {user_inputs.commit_sha} with tag {DOCUMENTATION_TAG}")
         clients.repository.tag_commit(
             tag_name=DOCUMENTATION_TAG, commit_sha=user_inputs.commit_sha
         )
