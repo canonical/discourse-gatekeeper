@@ -128,6 +128,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             main_hash = repo.current_commit
         clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
 
+    with clients.repository.with_branch(DOCUMENTATION_TAG):
+        logging.info("Tag %s at %s", DOCUMENTATION_TAG, clients.repository.current_commit)
+
     # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
     if not changes:
