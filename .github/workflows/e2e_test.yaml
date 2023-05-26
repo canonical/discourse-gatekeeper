@@ -60,7 +60,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
       - name: Show pages
-        run: echo '${{ steps.e2e-test-draft.outputs.reconcile }}'
+        run: echo '${{ steps.e2e-test-draft.outputs.reconcile.urls }}'
       - name: Check draft
         run: |
           sudo apt update && sudo apt install python3-pip git
