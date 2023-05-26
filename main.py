@@ -92,6 +92,14 @@ def _write_github_output(
         for key, urls_with_actions_dict in urls_with_actions_dicts.items()
     )
 
+    # =========================================================================================
+    # This logic should be implemented in a more reliable fashion (rather than taking the
+    # last items)
+    if reconcile_output := urls_with_actions_dicts.get("reconcile"):
+        *_, index_url = reconcile_output.keys()
+        output += f"\nindex_url={index_url}"
+    # =========================================================================================
+
     logging.info("Output: %s", output)
 
     pathlib.Path(github_output).write_text(output, encoding="utf-8")
@@ -165,17 +173,7 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
         dictionary representing the output of the process
     """
     clients = get_clients(user_inputs, path)
-    output = run_reconcile(clients=clients, user_inputs=user_inputs)
-
-    # =========================================================================================
-    # TODO: this logic should be implemented in a more reliable fashion (rather than taking the
-    # last items)
-    if not output:
-        return {"urls": {}}
-
-    *_, index_url = output.keys()
-    return {"urls": output, "index": index_url}
-    # =========================================================================================
+    return run_reconcile(clients=clients, user_inputs=user_inputs)
 
 
 def main() -> None:
