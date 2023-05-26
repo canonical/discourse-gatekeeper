@@ -1,3 +1,5 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
 FROM python:3.11-slim
 
 RUN apt-get update && \

@@ -79,71 +79,89 @@ def test__filter_line(line, expected_result):
 @pytest.mark.parametrize(
     "line, expected_result",
     [
-        pytest.param("|1|a|[b]()|", (1, "a", ("b", None)), id="simple"),
-        pytest.param(" |1|a|[b]()|", (1, "a", ("b", None)), id="simple leading space"),
-        pytest.param("| 1|a|[b]()|", (1, "a", ("b", None)), id="simple space before first column"),
-        pytest.param("|1 |a|[b]()|", (1, "a", ("b", None)), id="simple space after first column"),
+        pytest.param("|1|a|[b]()|", (1, ("a",), ("b", None)), id="simple"),
+        pytest.param(" |1|a|[b]()|", (1, ("a",), ("b", None)), id="simple leading space"),
         pytest.param(
-            "|1| a|[b]()|", (1, "a", ("b", None)), id="simple space before second column"
-        ),
-        pytest.param("|1|a |[b]()|", (1, "a", ("b", None)), id="simple space after second column"),
-        pytest.param("|1|a| [b]()|", (1, "a", ("b", None)), id="simple space before third column"),
-        pytest.param("|1|a|[b]() |", (1, "a", ("b", None)), id="simple space after third column"),
-        pytest.param("|1|a|[b]()| ", (1, "a", ("b", None)), id="simple trailing space"),
-        pytest.param("|12|a|[b]()|", (12, "a", ("b", None)), id="first column multiple digits"),
-        pytest.param(
-            "|1|az|[b]()|", (1, "az", ("b", None)), id="second column multiple characters"
-        ),
-        pytest.param("|1|A|[b]()|", (1, "A", ("b", None)), id="second column upper case"),
-        pytest.param("|1|2|[b]()|", (1, "2", ("b", None)), id="second column digit"),
-        pytest.param("|1|_|[b]()|", (1, "_", ("b", None)), id="second column underscore"),
-        pytest.param("|1|-|[b]()|", (1, "-", ("b", None)), id="second column dash"),
-        pytest.param(
-            "|1|a|[bz]()|", (1, "a", ("bz", None)), id="third column title multiple characters"
+            "| 1|a|[b]()|", (1, ("a",), ("b", None)), id="simple space before first column"
         ),
         pytest.param(
-            "|1|a|[B]()|", (1, "a", ("B", None)), id="third column title capital character"
-        ),
-        pytest.param("|1|a|[2]()|", (1, "a", ("2", None)), id="third column title digit"),
-        pytest.param("|1|a|[_]()|", (1, "a", ("_", None)), id="third column title underscore"),
-        pytest.param("|1|a|[-]()|", (1, "a", ("-", None)), id="third column title dash"),
-        pytest.param(
-            "|1|a|[:]()|", (1, "a", (":", None)), id="third column title punctuation colon"
+            "|1 |a|[b]()|", (1, ("a",), ("b", None)), id="simple space after first column"
         ),
         pytest.param(
-            "|1|a|[!]()|", (1, "a", ("!", None)), id="third column title punctuation exclamation"
+            "|1| a|[b]()|", (1, ("a",), ("b", None)), id="simple space before second column"
         ),
         pytest.param(
-            "|1|a|[+]()|", (1, "a", ("+", None)), id="third column title punctuation plus"
+            "|1|a |[b]()|", (1, ("a",), ("b", None)), id="simple space after second column"
         ),
         pytest.param(
-            "|1|a|[?]()|", (1, "a", ("?", None)), id="third column title punctuation question"
+            "|1|a| [b]()|", (1, ("a",), ("b", None)), id="simple space before third column"
         ),
-        pytest.param("|1|a|[c d]()|", (1, "a", ("c d", None)), id="third column title space"),
-        pytest.param("|1|a|[ b]()|", (1, "a", ("b", None)), id="third column title space before"),
-        pytest.param("|1|a|[b ]()|", (1, "a", ("b", None)), id="third column title space after"),
         pytest.param(
-            "|1|a|[b c]()|", (1, "a", ("b c", None)), id="third column title embedded space"
+            "|1|a|[b]() |", (1, ("a",), ("b", None)), id="simple space after third column"
         ),
-        pytest.param("|1|a|[b](c)|", (1, "a", ("b", "c")), id="third column link defined"),
+        pytest.param("|1|a|[b]()| ", (1, ("a",), ("b", None)), id="simple trailing space"),
+        pytest.param("|12|a|[b]()|", (12, ("a",), ("b", None)), id="first column multiple digits"),
+        pytest.param(
+            "|1|az|[b]()|", (1, ("az",), ("b", None)), id="second column multiple characters"
+        ),
+        pytest.param("|1|A|[b]()|", (1, ("A",), ("b", None)), id="second column upper case"),
+        pytest.param("|1|2|[b]()|", (1, ("2",), ("b", None)), id="second column digit"),
+        pytest.param("|1|_|[b]()|", (1, ("_",), ("b", None)), id="second column underscore"),
+        pytest.param("|1|-|[b]()|", (1, ("-",), ("b", None)), id="second column dash"),
+        pytest.param(
+            "|1|a|[bz]()|", (1, ("a",), ("bz", None)), id="third column title multiple characters"
+        ),
+        pytest.param(
+            "|1|a|[B]()|", (1, ("a",), ("B", None)), id="third column title capital character"
+        ),
+        pytest.param("|1|a|[2]()|", (1, ("a",), ("2", None)), id="third column title digit"),
+        pytest.param("|1|a|[_]()|", (1, ("a",), ("_", None)), id="third column title underscore"),
+        pytest.param("|1|a|[-]()|", (1, ("a",), ("-", None)), id="third column title dash"),
+        pytest.param(
+            "|1|a|[:]()|", (1, ("a",), (":", None)), id="third column title punctuation colon"
+        ),
+        pytest.param(
+            "|1|a|[!]()|",
+            (1, ("a",), ("!", None)),
+            id="third column title punctuation exclamation",
+        ),
+        pytest.param(
+            "|1|a|[+]()|", (1, ("a",), ("+", None)), id="third column title punctuation plus"
+        ),
+        pytest.param(
+            "|1|a|[?]()|", (1, ("a",), ("?", None)), id="third column title punctuation question"
+        ),
+        pytest.param("|1|a|[c d]()|", (1, ("a",), ("c d", None)), id="third column title space"),
+        pytest.param(
+            "|1|a|[ b]()|", (1, ("a",), ("b", None)), id="third column title space before"
+        ),
+        pytest.param(
+            "|1|a|[b ]()|", (1, ("a",), ("b", None)), id="third column title space after"
+        ),
+        pytest.param(
+            "|1|a|[b c]()|", (1, ("a",), ("b c", None)), id="third column title embedded space"
+        ),
+        pytest.param("|1|a|[b](c)|", (1, ("a",), ("b", "c")), id="third column link defined"),
         pytest.param(
             "|1|a|[b] (c)|",
-            (1, "a", ("b", "c")),
+            (1, ("a",), ("b", "c")),
             id="third column white spave between title and link",
         ),
         pytest.param(
-            "|1|a|[b]( c)|", (1, "a", ("b", "c")), id="third column link whitespace before"
+            "|1|a|[b]( c)|", (1, ("a",), ("b", "c")), id="third column link whitespace before"
         ),
         pytest.param(
-            "|1|a|[b](c )|", (1, "a", ("b", "c")), id="third column link whitespace after"
+            "|1|a|[b](c )|", (1, ("a",), ("b", "c")), id="third column link whitespace after"
         ),
         pytest.param(
-            "|1|a|[b](cd)|", (1, "a", ("b", "cd")), id="third column link multiple characters"
+            "|1|a|[b](cd)|", (1, ("a",), ("b", "cd")), id="third column link multiple characters"
         ),
-        pytest.param("|1|a|[b](C)|", (1, "a", ("b", "C")), id="third column link upper case"),
-        pytest.param("|1|a|[b](2)|", (1, "a", ("b", "2")), id="third column link digit"),
-        pytest.param("|1|a|[b](/)|", (1, "a", ("b", "/")), id="third column link forward slash"),
-        pytest.param("|1|a|[b](-)|", (1, "a", ("b", "-")), id="third column link dash"),
+        pytest.param("|1|a|[b](C)|", (1, ("a",), ("b", "C")), id="third column link upper case"),
+        pytest.param("|1|a|[b](2)|", (1, ("a",), ("b", "2")), id="third column link digit"),
+        pytest.param(
+            "|1|a|[b](/)|", (1, ("a",), ("b", "/")), id="third column link forward slash"
+        ),
+        pytest.param("|1|a|[b](-)|", (1, ("a",), ("b", "-")), id="third column link dash"),
     ],
 )
 def test__line_to_row(line: str, expected_result: types_.TableRow):
@@ -175,7 +193,7 @@ def test__check_table_row_write_permission_group():
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     table_row = types_.TableRow(
-        level=1, path="path 1", navlink=types_.Navlink(title="title 1", link=None)
+        level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link=None)
     )
 
     returned_table_row = navigation_table._check_table_row_write_permission(
@@ -199,7 +217,7 @@ def test__check_table_row_write_permission_page_error():
         navigation_table._check_table_row_write_permission(
             table_row=types_.TableRow(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
             ),
             discourse=mocked_discourse,
@@ -222,7 +240,7 @@ def test__check_table_row_write_permission_page_false():
         navigation_table._check_table_row_write_permission(
             table_row=types_.TableRow(
                 level=1,
-                path="path 1",
+                path=("path 1",),
                 navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
             ),
             discourse=mocked_discourse,
@@ -241,7 +259,7 @@ def test__check_table_row_write_permission_page_true():
     mocked_discourse.check_topic_write_permission.return_value = True
     table_row = types_.TableRow(
         level=1,
-        path="path 1",
+        path=("path 1",),
         navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
     )
 
@@ -278,22 +296,32 @@ def test_from_page_missing_write_permission():
         pytest.param("|level|path|navlink|\n|-|-|-|", [], id="header, filler"),
         pytest.param(
             "|level|path|navlink|\n|-|-|-|\n|1|a|[b]()|",
-            [(1, "a", ("b", None))],
+            [(1, ("a",), ("b", None))],
             id="header, filler and single row",
         ),
         pytest.param(
             "|level|path|navlink|\n|1|a|[b]()|",
-            [(1, "a", ("b", None))],
+            [(1, ("a",), ("b", None))],
             id="header, single row",
         ),
         pytest.param(
             "text 1\n|level|path|navlink|\n|1|a|[b]()|",
-            [(1, "a", ("b", None))],
+            [(1, ("a",), ("b", None))],
             id="text, header, single row",
         ),
         pytest.param(
             "|level|path|navlink|\n|1|a|[b]()|\n|2|c|[d]()|",
-            [(1, "a", ("b", None)), (2, "c", ("d", None))],
+            [
+                (1, ("a",), ("b", None)),
+                (
+                    2,
+                    (
+                        "a",
+                        "c",
+                    ),
+                    ("d", None),
+                ),
+            ],
             id="header, multiple rows",
         ),
     ],
@@ -344,26 +372,99 @@ For details on Indico's features, see [this page](https://getindico.io/features/
     returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)
 
     assert list(returned_table) == [
-        (1, "tutorials", ("Tutorials", None)),
-        (1, "how-to-guides", ("How-to guides", None)),
-        (2, "contributing", ("Contributing", "/t/indico-docs-contributing/6574")),
+        (1, ("tutorials",), ("Tutorials", None)),
+        (1, ("how-to-guides",), ("How-to guides", None)),
         (
             2,
-            "cross-model-db-relations",
+            ("how-to-guides", "contributing"),
+            ("Contributing", "/t/indico-docs-contributing/6574"),
+        ),
+        (
+            2,
+            ("how-to-guides", "cross-model-db-relations"),
             ("Cross-model DB relations", "/t/indico-docs-cross-model-relations-for-pg/7009"),
         ),
         (
             2,
-            "refresh-external-resources",
+            ("how-to-guides", "refresh-external-resources"),
             ("Refreshing external resources", "/t/indico-docs-refreshing-external-resources/7008"),
         ),
-        (1, "reference", ("Reference", None)),
-        (2, "plugins", ("Plugins", "/t/indico-docs-plugins/6553")),
-        (2, "theme-customisation", ("Theme Customisation", "/t/indico-docs-themes/6554")),
-        (1, "explanation", ("Explanation", None)),
+        (1, ("reference",), ("Reference", None)),
+        (2, ("reference", "plugins"), ("Plugins", "/t/indico-docs-plugins/6553")),
         (
             2,
-            "charm-architecture",
+            ("reference", "theme-customisation"),
+            ("Theme Customisation", "/t/indico-docs-themes/6554"),
+        ),
+        (1, ("explanation",), ("Explanation", None)),
+        (
+            2,
+            ("explanation", "charm-architecture"),
+            ("Charm Architecture", "/t/indico-docs-charm-architecture/7010"),
+        ),
+    ]
+
+
+def test_from_page_indico_path():
+    """
+    arrange: given Indico's navigation page
+    act: when from_page is called with the page
+    assert: then the page is parsed.
+    """
+    # Line is too long as the indico docs are not limited to 100 characters per line
+    # pylint: disable=line-too-long
+    indico_page = """Indico is an open-source tool for event organisation, archival and collaboration, catering to lectures, meetings, workshops and conferences.
+
+For details on Indico's features, see [this page](https://getindico.io/features/).
+
+# Navigation
+
+| Level | Path | Navlink |
+| -- | -- | -- |
+| 1 | tutorials | [Tutorials]() |
+| 1 | how-to-guides | [How-to guides]() |
+| 2 | how-to-guides-contributing | [Contributing](/t/indico-docs-contributing/6574)|
+| 2 | how-to-guides-cross-model-db-relations | [Cross-model DB relations](/t/indico-docs-cross-model-relations-for-pg/7009)|
+| 2 | how-to-guides-refresh-external-resources | [Refreshing external resources](/t/indico-docs-refreshing-external-resources/7008) |
+| 1 | reference | [Reference]() |
+| 2 | reference-plugins | [Plugins](/t/indico-docs-plugins/6553) |
+| 2 | reference-theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
+| 1 | explanation | [Explanation]() |
+| 2 | explanation-charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse.check_topic_write_permission.return_value = True
+
+    returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)
+
+    assert list(returned_table) == [
+        (1, ("tutorials",), ("Tutorials", None)),
+        (1, ("how-to-guides",), ("How-to guides", None)),
+        (
+            2,
+            ("how-to-guides", "contributing"),
+            ("Contributing", "/t/indico-docs-contributing/6574"),
+        ),
+        (
+            2,
+            ("how-to-guides", "cross-model-db-relations"),
+            ("Cross-model DB relations", "/t/indico-docs-cross-model-relations-for-pg/7009"),
+        ),
+        (
+            2,
+            ("how-to-guides", "refresh-external-resources"),
+            ("Refreshing external resources", "/t/indico-docs-refreshing-external-resources/7008"),
+        ),
+        (1, ("reference",), ("Reference", None)),
+        (2, ("reference", "plugins"), ("Plugins", "/t/indico-docs-plugins/6553")),
+        (
+            2,
+            ("reference", "theme-customisation"),
+            ("Theme Customisation", "/t/indico-docs-themes/6554"),
+        ),
+        (1, ("explanation",), ("Explanation", None)),
+        (
+            2,
+            ("explanation", "charm-architecture"),
             ("Charm Architecture", "/t/indico-docs-charm-architecture/7010"),
         ),
     ]

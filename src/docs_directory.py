@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Class for reading the docs directory."""
-
+import itertools
 import typing
 from functools import partial
 from itertools import count
@@ -53,12 +53,25 @@ def calculate_table_path(path_relative_to_docs: Path) -> types_.TablePath:
         The relative path to the docs directory, replacing / with -, removing the extension and
         converting to lower case.
     """
-    return (
-        "-".join(part for part in path_relative_to_docs.parts)
-        .removesuffix(path_relative_to_docs.suffix)
-        .lower()
-        .replace(" ", "-")
-        .replace("_", "-")
+
+    def normalizer(input_string: str) -> str:
+        """Return a normalized version of the input string.
+
+        Args:
+            input_string: string to be cleaned
+
+        Returns:
+            cleaned string
+        """
+        return input_string.lower().replace(" ", "-").replace("_", "-")
+
+    parts = path_relative_to_docs.parts
+
+    return tuple(
+        normalizer(element)
+        for element in itertools.chain(
+            parts[:-1], (parts[-1].removesuffix(path_relative_to_docs.suffix),)
+        )
     )
 
 

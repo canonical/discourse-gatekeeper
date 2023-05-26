@@ -59,7 +59,7 @@ def _test_conflicts_parameters():
             ),
             (
                 ExpectedProblem(
-                    path=action_1.path,
+                    path="/".join(action_1.path),
                     description_contents=(
                         "cannot",
                         "execute",
@@ -88,7 +88,7 @@ def _test_conflicts_parameters():
             ),
             (
                 ExpectedProblem(
-                    path=action_1.path,
+                    path="/".join(action_1.path),
                     description_contents=(
                         "conflict",
                         *(cast(tuple, action_1.content_change)[1:]),
@@ -111,7 +111,7 @@ def _test_conflicts_parameters():
             ),
             (
                 ExpectedProblem(
-                    path=action_1.path,
+                    path="/".join(action_1.path),
                     description_contents=(
                         "conflict",
                         *(cast(tuple, action_1.content_change)[1:]),
@@ -129,7 +129,7 @@ def _test_conflicts_parameters():
             ),
             (
                 ExpectedProblem(
-                    path=action_2.path,
+                    path="/".join(action_2.path),
                     description_contents=(
                         "conflict",
                         *(cast(tuple, action_2.content_change)[1:]),
@@ -149,14 +149,14 @@ def _test_conflicts_parameters():
             ),
             (
                 ExpectedProblem(
-                    path=action_1.path,
+                    path="/".join(action_1.path),
                     description_contents=(
                         "conflict",
                         *(cast(tuple, action_1.content_change)[1:]),
                     ),
                 ),
                 ExpectedProblem(
-                    path=action_2.path,
+                    path="/".join(action_2.path),
                     description_contents=(
                         "conflict",
                         *(cast(tuple, action_2.content_change)[1:]),

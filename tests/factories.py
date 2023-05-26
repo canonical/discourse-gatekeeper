@@ -44,7 +44,7 @@ class PathInfoFactory(
 
     local_path = factory.Sequence(lambda n: Path(f"dir{n}"))
     level = factory.Sequence(lambda n: n)
-    table_path = factory.Sequence(lambda n: f"path {n}")
+    table_path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     alphabetical_rank = factory.Sequence(lambda n: n)
 
@@ -79,7 +79,7 @@ class ActionReportFactory(
     table_row = factory.Sequence(
         lambda n: types_.TableRow(
             level=n,
-            path=f"path {n}",
+            path=(f"path {n}",),
             navlink=types_.Navlink(title=f"title {n}", link=f"link {n}"),
         )
     )
@@ -100,7 +100,7 @@ class CreateActionFactory(
         abstract = False
 
     level = factory.Sequence(lambda n: n)
-    path = factory.Sequence(lambda n: f"path {n}")
+    path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     content = factory.Sequence(lambda n: f"content {n}")
 
@@ -132,7 +132,7 @@ class NoopActionFactory(
         abstract = False
 
     level = factory.Sequence(lambda n: n)
-    path = factory.Sequence(lambda n: f"path {n}")
+    path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
 
@@ -180,7 +180,7 @@ class UpdateActionFactory(
         abstract = False
 
     level = factory.Sequence(lambda n: n)
-    path = factory.Sequence(lambda n: f"path {n}")
+    path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_change = factory.SubFactory(NavlinkChangeFactory)
     content_change = factory.SubFactory(ContentChangeFactory)
 
@@ -197,7 +197,7 @@ class DeleteActionFactory(
         abstract = False
 
     level = factory.Sequence(lambda n: n)
-    path = factory.Sequence(lambda n: f"path {n}")
+    path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
 
@@ -228,8 +228,8 @@ class UserInputDiscourseFactory(
         model = types_.UserInputsDiscourse
         abstract = False
 
-    hostname = factory.Sequence(lambda n: f"http://discourse/{n}")
-    category_id = factory.Sequence(lambda n: n)
+    hostname = factory.Sequence(lambda n: f"discourse/{n}")
+    category_id = factory.Sequence(lambda n: f"{n}")
     api_username = factory.Sequence(lambda n: f"discourse-test-user-{n}")
     api_key = factory.Sequence(lambda n: f"discourse-test-key-{n}")
 
@@ -247,7 +247,6 @@ class UserInputsFactory(
 
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
-    base_tag_name = factory.Sequence(lambda n: f"base-tage-name-{n}")
     commit_sha = factory.Sequence(lambda n: f"commit-sha-{n}")
     dry_run = False
     delete_pages = False
@@ -282,5 +281,5 @@ class TableRowFactory(
         )
 
     level = factory.Sequence(lambda n: n)
-    path = factory.Sequence(lambda n: f"path-{n}")
+    path = factory.Sequence(lambda n: (f"path-{n}",))
     navlink = factory.SubFactory(NavlinkFactory)

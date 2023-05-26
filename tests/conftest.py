@@ -14,7 +14,14 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
-from src import pull_request
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from src.repository import DEFAULT_BRANCH_NAME
+from src.repository import Client as RepositoryClient
+
+# This is a fake branch to be used in the remote repository to prevent conflicts when
+# pushing main. Another option would be to use remote bare repository, but this would
+# make it more difficult to perform checks and create pre-conditions
+BASE_REMOTE_BRANCH = "origin-repo-branch"
 
 
 @pytest.fixture(name="upstream_repository_path")
@@ -28,32 +35,13 @@ def fixture_upstream_repository_path(tmp_path: Path) -> Path:
 @pytest.fixture(name="default_branch")
 def fixture_default_branch() -> str:
     """Get the default branch name."""
-    return "main"
+    return DEFAULT_BRANCH
 
 
 @pytest.fixture(name="test_branch")
 def fixture_test_branch() -> str:
     """Get the name of the branch to run tests on."""
     return "test"
-
-
-@pytest.fixture(name="upstream_git_repo")
-def fixture_upstream_git_repo(
-    upstream_repository_path: Path, default_branch: str, test_branch: str
-) -> Repo:
-    """Initialize upstream repository."""
-    upstream_repository = Repo.init(upstream_repository_path)
-    writer = upstream_repository.config_writer()
-    writer.set_value("user", "name", "upstream_user")
-    writer.set_value("user", "email", "upstream_email")
-    writer.release()
-    upstream_repository.git.checkout("-b", default_branch)
-    (upstream_repository_path / ".gitkeep").touch()
-    upstream_repository.git.add(".")
-    upstream_repository.git.commit("-m", "'initial commit'")
-    upstream_repository.git.checkout("-b", test_branch)
-
-    return upstream_repository
 
 
 @pytest.fixture(name="repository_path")
@@ -67,21 +55,41 @@ def fixture_repository_path(tmp_path: Path) -> Path:
 # upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
-    upstream_git_repo: Repo,  # pylint: disable=unused-argument
-    upstream_repository_path: Path,
     repository_path: Path,
-    test_branch: str,
+    upstream_git_repo,
+    default_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
-    repo = Repo.clone_from(url=upstream_repository_path, to_path=repository_path)
-    repo.git.fetch()
-    repo.git.checkout(test_branch)
+    repo = Repo.clone_from(url=upstream_git_repo.working_dir, to_path=repository_path)
+
+    repo.git.checkout("-b", default_branch)
 
     # Go into detached head mode to reflect how GitHub performs the checkout
     repo.head.set_reference(repo.head.commit.hexsha)
     repo.git.checkout(repo.head.commit.hexsha)
 
     return repo
+
+
+@pytest.fixture(name="upstream_git_repo")
+def fixture_upstream_git_repo(upstream_repository_path: Path, default_branch: str) -> Repo:
+    """Initialize upstream repository."""
+    upstream_repository = Repo.init(upstream_repository_path)
+
+    writer = upstream_repository.config_writer()
+    writer.set_value("user", "name", "upstream_user")
+    writer.set_value("user", "email", "upstream_email")
+    writer.release()
+
+    upstream_repository.git.checkout("-b", default_branch)
+    (upstream_repository_path / ".gitkeep").touch()
+    upstream_repository.git.add(".")
+    upstream_repository.git.commit("-m", "'initial commit'")
+
+    upstream_repository.git.checkout("-b", BASE_REMOTE_BRANCH)
+    upstream_repository.git.tag(DOCUMENTATION_TAG)
+
+    return upstream_repository
 
 
 @pytest.fixture(name="mock_pull_request")
@@ -91,7 +99,7 @@ def fixture_mock_pull_request() -> PullRequest:
     return PullRequest(
         requester=mock_requester,
         headers={},
-        attributes={"html_url": "test_url"},
+        attributes={"html_url": "test_url", "head": {"ref": DEFAULT_BRANCH_NAME}},
         completed=False,
     )
 
@@ -114,17 +122,27 @@ def fixture_mock_github(mock_github_repo: Repository) -> Github:
     return mocked_github
 
 
+@pytest.fixture(name="git_repo_with_remote")
+def fixture_git_repo_with_remote(git_repo: Repo) -> Repo:
+    """Get a repo with a mock remote."""
+    git_repo.git.remote("remove", "origin")
+
+    git_repo.git.remote("add", "origin", "https://github.com/canonical/non-existing-repo.git")
+    return git_repo
+
+
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-    git_repo: Repo, mock_github_repo: Repository
-) -> pull_request.RepositoryClient:
+    git_repo: Repo,
+    mock_github_repo: Repository,
+) -> RepositoryClient:
     """Get repository client."""
-    return pull_request.RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
+    return RepositoryClient(repository=git_repo, github_repository=mock_github_repo)
 
 
 @pytest.fixture(name="patch_create_repository_client")
 def fixture_patch_create_repository_client(
-    monkeypatch: pytest.MonkeyPatch, repository_client: pull_request.RepositoryClient
+    monkeypatch: pytest.MonkeyPatch, repository_client: RepositoryClient
 ) -> None:
     """Patch create_repository_client to return a mocked RepositoryClient."""
 
@@ -132,4 +150,4 @@ def fixture_patch_create_repository_client(
         """Mock create_repository_client patch function."""  # noqa: DCO020
         return repository_client  # noqa: DCO030
 
-    monkeypatch.setattr(src, "create_repository_client", mock_create_repository_client)
+    monkeypatch.setattr(src.clients, "create_repository_client", mock_create_repository_client)
