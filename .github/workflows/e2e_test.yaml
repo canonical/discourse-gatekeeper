@@ -65,7 +65,7 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Create self test
         id: e2e-test-create
         uses: ./
@@ -78,10 +78,10 @@ jobs:
         run: echo '${{ steps.e2e-test-create.outputs.reconcile }}'
       - name: Check create
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Add docs key to metadata
         run: |
-          echo "docs: ${{ steps.e2e-test-create.outputs.reconcile.index_url }}" >> metadata.yaml
+          echo "docs: ${{ steps.e2e-test-create.outputs.reconcile.index }}" >> metadata.yaml
           cat metadata.yaml
       - name: Update self test
         id: e2e-test-update
@@ -97,7 +97,7 @@ jobs:
         run: |
           GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
           REPO='${{ github.repository }}'
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs "{\"expected_url_results\": [\"success\", \"success\", \"success\"], \"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs "{\"expected_url_results\": [\"success\", \"success\", \"success\"], \"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Delete the alternate doc with delete_topics disabled
         run: rm docs/alternate_doc.md
       - name: Delete topics disabled self test
@@ -113,7 +113,7 @@ jobs:
         run: echo '${{ steps.e2e-test-delete-topics.outputs.reconcile }}'
       - name: Check delete topics disabled
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.e2e-test-delete-topics.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.e2e-test-delete-topics.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Delete the doc with delete_topics enabled
         run: rm docs/doc.md
       - name: Delete topics enabled self test
@@ -128,13 +128,13 @@ jobs:
         run: echo '${{ steps.e2e-test-delete.outputs.reconcile }}'
       - name: Check delete topics enabled
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.e2e-test-delete.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.e2e-test-delete.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Clean up
         if: always()
         run: |
           GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
           REPO='${{ github.repository }}'
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile.urls }}' '${{ steps.configuration.outputs.discourse }}'
   e2e-tests-migration:
     permissions: write-all
     runs-on: ubuntu-22.04
@@ -188,7 +188,7 @@ jobs:
         run: |
           # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-          echo "docs: ${{ steps.prepare-discourse.outputs.reconcile.index_url }}" >> metadata.yaml
+          echo "docs: ${{ steps.prepare-discourse.outputs.reconcile.index }}" >> metadata.yaml
           cat metadata.yaml
       - name: Run migration
         id: run-migration

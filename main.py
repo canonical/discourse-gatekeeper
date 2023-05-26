@@ -171,10 +171,10 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
     # TODO: this logic should be implemented in a more reliable fashion (rather than taking the
     # last items)
     if not output:
-        return output
+        return {"urls": {}}
+
     *_, index_url = output.keys()
-    output["index_url"] = index_url
-    return output
+    return {"urls": output, "index": index_url}
     # =========================================================================================
 
 
