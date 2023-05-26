@@ -167,16 +167,16 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
     clients = get_clients(user_inputs, path)
     output = run_reconcile(clients=clients, user_inputs=user_inputs)
 
+    # =========================================================================================
     # TODO: this logic should be implemented in a more reliable fashion (rather than taking the
     # last items)
     if not output:
-        index_url = ""
-    else:
-        *_, index_url = output.keys()
+        return output
+    *_, index_url = output.keys()
     output["index_url"] = index_url
-    # ======================
-
     return output
+    # =========================================================================================
+
 
 def main() -> None:
     """Execute the action."""
