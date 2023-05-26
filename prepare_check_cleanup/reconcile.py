@@ -8,14 +8,13 @@ import contextlib
 import json
 import logging
 from enum import Enum
-from pathlib import Path
 
-import yaml
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
 from prepare_check_cleanup import exit_
+from src.constants import DOCUMENTATION_TAG
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 
@@ -185,17 +184,6 @@ def _check_url_result(
     return True
 
 
-def _get_tag_name() -> str:
-    """Get the name of the tag to use for the content.
-
-    Returns:
-        The name of the tag.
-
-    """
-    actions_yaml = Path("action.yaml").read_text(encoding="utf-8")
-    return yaml.safe_load(actions_yaml)["inputs"]["base_tag_name"]["default"]
-
-
 def _check_git_tag_exists(test_name: str, github_repo: Repository) -> bool:
     """Check that the content tag exists.
 
@@ -206,7 +194,7 @@ def _check_git_tag_exists(test_name: str, github_repo: Repository) -> bool:
     Returns:
         Whether the test succeeded.
     """
-    tag_name = _get_tag_name()
+    tag_name = DOCUMENTATION_TAG
 
     try:
         github_repo.get_git_ref(f"tags/{tag_name}")
@@ -452,7 +440,7 @@ def cleanup(
     try:
         github_client = Github(login_or_token=github_token)
         github_repo = github_client.get_repo(repo)
-        tag_name = _get_tag_name()
+        tag_name = DOCUMENTATION_TAG
         update_tag = github_repo.get_git_ref(f"tags/{tag_name}")
         update_tag.delete()
     except GithubException as exc:

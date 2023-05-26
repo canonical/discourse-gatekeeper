@@ -58,7 +58,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     if action.content_change.base is None:
         diff = content_diff(action.content_change.server, action.content_change.local)
         problem = Problem(
-            path=action.path,
+            path="/".join(action.path),
             description=(
                 "cannot execute the update action due to not finding a file on the base branch "
                 "and there are differences between the branch and discourse content, please ensure "
@@ -74,7 +74,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
         if action_conflicts is None:
             return None
         problem = Problem(
-            path=action.path,
+            path="/".join(action.path),
             description=(
                 "cannot execute the update action due to conflicting changes on discourse, "
                 f"please resolve the conflicts and try again: \n{action_conflicts}"
