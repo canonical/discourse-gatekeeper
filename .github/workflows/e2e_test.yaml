@@ -81,7 +81,7 @@ jobs:
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Add docs key to metadata
         run: |
-          echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
+          echo "docs: ${{ steps.e2e-test-create.outputs.reconcile.index_url }}" >> metadata.yaml
           cat metadata.yaml
       - name: Update self test
         id: e2e-test-update
@@ -188,7 +188,7 @@ jobs:
         run: |
           # Create metadata.yaml file
           echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-          echo "docs: ${{ steps.prepare-discourse.outputs.index_url }}" >> metadata.yaml
+          echo "docs: ${{ steps.prepare-discourse.outputs.reconcile.index_url }}" >> metadata.yaml
           cat metadata.yaml
       - name: Run migration
         id: run-migration
