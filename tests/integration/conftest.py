@@ -39,7 +39,7 @@ async def discourse(model: Model) -> Application:
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
     await asyncio.gather(
-        model.deploy(postgres_charm_name),
+        model.deploy(postgres_charm_name, series="focal", channel="latest/stable"),
         model.deploy(redis_charm_name),
     )
     await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
