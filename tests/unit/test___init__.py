@@ -382,7 +382,7 @@ def test__run_migrate_no_docs_information(caplog, mocked_clients):
 
     assert not returned_migration_reports
     assert len(caplog.records) == 1
-    assert "Cannot run any migration from Discourse" in caplog.records[0].message
+    assert "Cannot run migration from Discourse" in caplog.records[0].message
 
 
 @mock.patch(
@@ -449,7 +449,6 @@ def test__run_migrate_with_pull_request(
     act: when _run_migrate is called
     assert: docs are migrated and the remote branch is updated.
     """
-
     index_content = """Content header.
 
     Content body.\n"""
