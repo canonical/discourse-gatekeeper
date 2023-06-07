@@ -367,10 +367,9 @@ def test__run_migrate_server_error_topic(mocked_clients):
 )
 def test__run_migrate_no_docs_information(caplog, mocked_clients):
     """
-    arrange: given metadata with name and docs but no docs directory and mocked discourse
-        that raises an exception during topic retrieval
+    arrange: given metadata with name but no docs directory and information in metadata
     act: when _run_migrate is called
-    assert: MigrationError is raised.
+    assert: Nothing is done and logs are outputted to notify that no migration was run
     """
     user_inputs = factories.UserInputsFactory()
 
@@ -450,7 +449,6 @@ def test__run_migrate_with_pull_request(
     act: when _run_migrate is called
     assert: docs are migrated and the remote branch is updated.
     """
-    # mock_get_pull.return_value = "test-url"
 
     index_content = """Content header.
 

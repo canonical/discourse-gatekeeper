@@ -275,6 +275,10 @@ class Client:
             self._git_repo.git.stash("pop")
         except GitCommandError as exc:
             if "CONFLICT" in exc.stdout:
+                logging.warning(
+                    "There were some conflicts when popping stashes on branch %s. "
+                    "Using stashed version.", branch_name
+                )
                 self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
             else:
                 raise RepositoryClientError(

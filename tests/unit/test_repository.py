@@ -911,7 +911,6 @@ def test_create_pull_request_existing_branch(
 
     third_repo.git.push("--set-upstream", "origin", branch_name)
 
-    # repository_client.check_branch_exists(branch_name)
     repository_client.switch(branch_name).pull()
 
     hash2 = repository_client._git_repo.head.commit

@@ -115,8 +115,8 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     """
     if not clients.repository.metadata.docs:
         logging.warning(
-            "Cannot run any migration from Discourse as there is not discourse "
-            "link present in the metadata."
+            "Cannot run migration from Discourse as there is no discourse "
+            "link available in metadata"
         )
         return {}
 

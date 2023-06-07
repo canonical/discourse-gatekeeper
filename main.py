@@ -113,14 +113,14 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
 
     @functools.wraps(func)
     def wrapper(*args: typing.Any, **kwargs: typing.Any) -> T:
-        """Replacement function.
+        """Wrapper to be used to running an external function on a temporary directory.
 
         Args:
-            args: variable arguments
-            kwargs: variable named arguments
+            args: positional arguments of the external function
+            kwargs: variable named arguments of the external function
 
         Returns:
-            output
+            output of the wrapped external function
         """
         initial_cwd = Path.cwd()
         try:
