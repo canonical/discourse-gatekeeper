@@ -131,10 +131,6 @@ def _extract_docs_from_table_rows(
         ):
             yield _create_gitkeep_meta(row=previous_row)
 
-        # current_group_path = _get_row_group_path(
-        #     group_path=current_group_path, previous_row=previous_row, row=row
-        # )
-
         if not row.is_group:
             yield _create_document_meta(row=row)
 
