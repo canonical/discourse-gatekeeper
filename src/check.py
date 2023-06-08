@@ -9,7 +9,8 @@ from typing import NamedTuple, TypeGuard
 
 from . import content
 from .constants import DOCUMENTATION_TAG
-from .types_ import AnyAction, UpdateAction
+from .repository import Client
+from .types_ import AnyAction, UpdateAction, UserInputs
 
 
 class Problem(NamedTuple):
@@ -90,7 +91,9 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     return problem
 
 
-def conflicts(actions: Iterable[AnyAction]) -> Iterator[Problem]:
+def conflicts(
+    actions: Iterable[AnyAction], repository: Client, user_inputs: UserInputs
+) -> Iterator[Problem]:
     """Check whether actions have any content conflicts.
 
     Args:

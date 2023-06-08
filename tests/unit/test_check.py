@@ -176,6 +176,7 @@ def test_conflicts(
     actions: tuple[types_.AnyAction, ...],
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
+    mocked_clients,
 ):
     """
     arrange: given actions
@@ -184,7 +185,13 @@ def test_conflicts(
     """
     caplog.set_level(logging.INFO)
 
-    returned_problems = tuple(check.conflicts(actions=actions))
+    returned_problems = tuple(
+        check.conflicts(
+            actions=actions,
+            repository=mocked_clients.repository,
+            user_inputs=factories.UserInputsFactory(),
+        )
+    )
 
     assert len(returned_problems) == len(expected_problems)
     for returned_problem, expected_problem in zip(returned_problems, expected_problems):
