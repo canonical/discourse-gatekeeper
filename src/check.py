@@ -7,7 +7,9 @@ import logging
 from collections.abc import Iterable, Iterator
 from typing import NamedTuple, TypeGuard
 
-from . import content
+from more_itertools import side_effect
+
+from . import constants, content
 from .constants import DOCUMENTATION_TAG
 from .repository import Client
 from .types_ import AnyAction, UpdateAction, UserInputs
@@ -24,6 +26,9 @@ class Problem(NamedTuple):
 
     path: str
     description: str
+
+
+format_path = "/".join
 
 
 class TrackPathsWithDiff:
@@ -61,10 +66,10 @@ class TrackPathsWithDiff:
             return
 
         if content_change.base != content_change.local:
-            self._base_local_diffs.append(action.path)
+            self._base_local_diffs.append(format_path(action.path))
 
         if content_change.local != content_change.server:
-            self._local_server_diffs.append(action.path)
+            self._local_server_diffs.append(format_path(action.path))
 
 
 def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
@@ -100,7 +105,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     if action.content_change.base is None:
         diff = content.diff(action.content_change.server, action.content_change.local)
         problem = Problem(
-            path="/".join(action.path),
+            path=format_path(action.path),
             description=(
                 "cannot execute the update action due to not finding a file on the "
                 f"{DOCUMENTATION_TAG} tag and there are differences between the branch and "
@@ -117,7 +122,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
         if action_conflicts is None:
             return None
         problem = Problem(
-            path="/".join(action.path),
+            path=format_path(action.path),
             description=(
                 "cannot execute the update action due to conflicting changes on discourse, "
                 f"please resolve the conflicts and try again: \n{action_conflicts}"
@@ -143,5 +148,35 @@ def conflicts(
     Yields:
         A problem for each action with a conflict
     """
+    track_paths_with_diff = TrackPathsWithDiff()
+    commit_tagged = repository.is_same_commit(
+        tag=constants.DISCOURSE_AHEAD_TAG, commit=user_inputs.commit_sha
+    )
+
     update_actions = filter(_is_update_action, actions)
+
+    update_actions = side_effect(track_paths_with_diff.process, update_actions)
+
     yield from filter(None, (_update_action_problem(action) for action in update_actions))
+
+    if not commit_tagged:
+        base_local_diffs = tuple(track_paths_with_diff.base_local_diffs)
+        local_server_diffs = tuple(track_paths_with_diff.local_server_diffs)
+
+        if base_local_diffs and local_server_diffs:
+            problem = Problem(
+                path=base_local_diffs[0],
+                description=(
+                    "detected unmerged community conttributions, these need to be resolved "
+                    "before proceeding. If the differences are not conflicting, please apply the "
+                    f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
+                    "proceed. Paths with potentially unmerged community contributions: "
+                    f"{base_local_diffs + local_server_diffs}."
+                ),
+            )
+
+            logging.error(
+                "there is a problem preventing the execution of an action, problem: %s", problem
+            )
+
+            yield problem
