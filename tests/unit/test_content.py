@@ -49,7 +49,7 @@ def test_conflicts(base: str, theirs: str, ours: str, expected_conflict: bool):
     else:
         assert result is not None
         assert_substrings_in_string(
-            ("base", base, "theirs", theirs, "ours", ours, "differences"), result
+            ("base", "theirs", "ours", "differences", content.diff(theirs, ours)), result
         )
 
 
