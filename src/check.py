@@ -7,8 +7,8 @@ import logging
 from collections.abc import Iterable, Iterator
 from typing import NamedTuple, TypeGuard
 
-from .content import conflicts as content_conflicts
-from .content import diff as content_diff
+from . import content
+from .constants import DOCUMENTATION_TAG
 from .types_ import AnyAction, UpdateAction
 
 
@@ -56,17 +56,18 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
         return None
 
     if action.content_change.base is None:
-        diff = content_diff(action.content_change.server, action.content_change.local)
+        diff = content.diff(action.content_change.server, action.content_change.local)
         problem = Problem(
             path="/".join(action.path),
             description=(
-                "cannot execute the update action due to not finding a file on the base branch "
-                "and there are differences between the branch and discourse content, please ensure "
-                f"that there are no differences and try again. Detected differences:\n{diff}"
+                "cannot execute the update action due to not finding a file on the "
+                f"{DOCUMENTATION_TAG} tag and there are differences between the branch and "
+                "discourse content, please ensure that there are no differences and try again. "
+                f"Detected differences:\n{diff}"
             ),
         )
     else:
-        action_conflicts = content_conflicts(
+        action_conflicts = content.conflicts(
             base=action.content_change.base,
             theirs=action.content_change.server,
             ours=action.content_change.local,

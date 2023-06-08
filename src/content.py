@@ -28,11 +28,16 @@ def conflicts(base: str, theirs: str, ours: str) -> str | None:
     Returns:
         The description of the merge conflicts or None if there are no conflicts.
     """
-    try:
-        merge(base=base, theirs=theirs, ours=ours)
-    except ContentError as exc:
-        return str(exc)
-    return None
+    # Handle cases that are guaranteed not to have conflicts
+    if theirs == base or ours == base or theirs == ours:
+        return None
+
+    return f"""Detected differences between base, theirs and ours,
+base: {base},
+theirs: {theirs},
+ours: {ours},
+deff: {diff(theirs, ours)}
+"""
 
 
 def merge(base: str, theirs: str, ours: str) -> str:

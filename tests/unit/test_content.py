@@ -17,26 +17,26 @@ def _test_conflicts_parameters():
         The tests.
     """
     return [
-        pytest.param("a", "a", "a", None, id="all same"),
-        pytest.param("a", "a", "b", None, id="base and theirs the same"),
-        pytest.param("a", "b", "a", None, id="base and ours the same"),
-        pytest.param("a", "b", "b", None, id="theirs and ours the same"),
-        pytest.param("a", "b", "c", ("a", "b", "c"), id="all different conflict"),
+        pytest.param("a", "a", "a", False, id="all same"),
+        pytest.param("a", "a", "b", False, id="base and theirs the same"),
+        pytest.param("a", "b", "a", False, id="base and ours the same"),
+        pytest.param("a", "b", "b", False, id="theirs and ours the same"),
+        pytest.param("a", "b", "c", True, id="all different conflict"),
         pytest.param(
             "line 1\nline 2\n line 3\n",
             "line 1a\nline 2\n line 3\n",
             "line 1\nline 2\n line 3a\n",
-            None,
-            id="all different no conflict",
+            True,
+            id="all different no git conflict",
         ),
     ]
 
 
 @pytest.mark.parametrize(
-    "base, theirs, ours, expected_contents",
+    "base, theirs, ours, expected_conflict",
     _test_conflicts_parameters(),
 )
-def test_conflicts(base: str, theirs: str, ours: str, expected_contents: tuple[str, ...] | None):
+def test_conflicts(base: str, theirs: str, ours: str, expected_conflict: bool):
     """
     arrange: given content for base, theirs and ours
     act: when conflicts is called with the content
@@ -44,12 +44,12 @@ def test_conflicts(base: str, theirs: str, ours: str, expected_contents: tuple[s
     """
     result = content.conflicts(base=base, theirs=theirs, ours=ours)
 
-    if expected_contents is None:
+    if not expected_conflict:
         assert result is None
     else:
         assert result is not None
         assert_substrings_in_string(
-            (*expected_contents, "not", "merge", "<<<<<<< HEAD", ">>>>>>> theirs"), result
+            ("base", base, "theirs", theirs, "ours", ours, "differences"), result
         )
 
 
