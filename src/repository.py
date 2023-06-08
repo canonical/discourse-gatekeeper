@@ -140,7 +140,6 @@ class Client:
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
         current_commit: current commit checkout in the repository
-        summary: summary of the differences against the most recent commit
         branches: list of all branches
     """
 
@@ -217,9 +216,12 @@ class Client:
         finally:
             self.switch(current_branch)
 
-    @property
-    def summary(self) -> DiffSummary:
-        """Return a summary of the differences against the most recent commit."""
+    def get_summary(self) -> DiffSummary:
+        """Return a summary of the differences against the most recent commit.
+
+        Returns:
+            DiffSummary object representing the summary of the differences.
+        """
         self._git_repo.git.add(".")
 
         return DiffSummary.from_raw_diff(
@@ -417,7 +419,7 @@ class Client:
         with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
             DEFAULT_BRANCH_NAME
         ) as repo:
-            msg = str(repo.summary)
+            msg = str(repo.get_summary())
             logging.info("Creating new branch with new commit: %s", msg)
             repo.update_branch(msg, force=True)
             pr_link = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME)
@@ -434,7 +436,7 @@ class Client:
         with self.with_branch(branch) as repo:
             if repo.is_dirty():
                 repo.pull()
-                msg = str(repo.summary)
+                msg = str(repo.get_summary())
                 logging.info("Summary: %s", msg)
                 logging.info("Updating PR with new commit: %s", msg)
                 repo.update_branch(msg)

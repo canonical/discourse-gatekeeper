@@ -626,62 +626,62 @@ def test_create_repository_client(
 def test_repository_summary_modified(repository_client):
     """
     arrange: given repository with a modified file with respect to the head
-    act: when summary is called
+    act: when get_summary is called
     assert: The DiffSummary object represents the modified file.
     """
     (repository_client.base_path / "file-1.txt").write_text("My first version")
     repository_client.update_branch("file-1 commit", force=False, push=False)
 
-    assert len(repository_client.summary.modified) == 0
+    assert len(repository_client.get_summary().modified) == 0
 
     (repository_client.base_path / "file-1.txt").write_text("My second version")
 
-    assert len(repository_client.summary.modified) == 1
-    assert list(repository_client.summary.modified)[0] == "file-1.txt"
+    assert len(repository_client.get_summary().modified) == 1
+    assert list(repository_client.get_summary().modified)[0] == "file-1.txt"
 
 
 def test_repository_summary_new(repository_client):
     """
     arrange: given repository with a new file with respect to the head
-    act: when summary is called
+    act: when get_summary is called
     assert: The DiffSummary object represents the new file.
     """
     (repository_client.base_path / "file-1.txt").write_text("My first version")
     repository_client.update_branch("file-1 commit", force=False, push=False)
 
-    assert len(repository_client.summary.new) == 0
+    assert len(repository_client.get_summary().new) == 0
 
     (repository_client.base_path / "file-2.txt").write_text("My second version")
 
-    assert len(repository_client.summary.new) == 1
-    assert list(repository_client.summary.new)[0] == "file-2.txt"
+    assert len(repository_client.get_summary().new) == 1
+    assert list(repository_client.get_summary().new)[0] == "file-2.txt"
 
 
 def test_repository_summary_remove(repository_client):
     """
     arrange: given repository with a removed file with respect to the head
-    act: when summary is called
+    act: when get_summary is called
     assert: The DiffSummary object represents the remove file.
     """
     (repository_client.base_path / "file-1.txt").write_text("My first version")
     repository_client.update_branch("file-1 commit", force=False, push=False)
 
-    assert len(repository_client.summary.removed) == 0
+    assert len(repository_client.get_summary().removed) == 0
 
     (repository_client.base_path / "file-1.txt").unlink()
 
-    assert len(repository_client.summary.removed) == 1
-    assert list(repository_client.summary.removed)[0] == "file-1.txt"
+    assert len(repository_client.get_summary().removed) == 1
+    assert list(repository_client.get_summary().removed)[0] == "file-1.txt"
 
 
 def test_repository_summary_invalid_operation(repository_client):
     """
     arrange: given repository
-    act: when summary is added to a non DiffSummary object
+    act: when get_summary is added to a non DiffSummary object
     assert: an exception ValueError is raised.
     """
     with pytest.raises(ValueError):
-        _ = repository_client.summary + 1.0
+        _ = repository_client.get_summary() + 1.0
 
 
 def test_repository_pull_default_branch(
