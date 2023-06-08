@@ -14,6 +14,112 @@ from .. import factories
 from .helpers import assert_substrings_in_string
 
 
+def _track_paths_with_diff_parameters():
+    """Generate parameters for the track_paths_with_diff test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param((), (), (), id="empty"),
+        pytest.param(
+            (factories.UpdateActionFactory(content_change=None),), (), (), id="single None"
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base=(base_1 := "base 1"), local=base_1, server=base_1
+                    )
+                ),
+            ),
+            (),
+            (),
+            id="single no diff",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 1", local=(local_1 := "local 1"), server=local_1
+                    ),
+                    path=(path_1 := "path 1"),
+                ),
+            ),
+            (path_1,),
+            (),
+            id="single base local diff",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base=(base_1 := "base 1"), local=base_1, server="server 1"
+                    ),
+                    path=(path_1 := "path 1"),
+                ),
+            ),
+            (),
+            (path_1,),
+            id="single local server diff",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 1", local="local 1", server="server 1"
+                    ),
+                    path=(path_1 := "path 1"),
+                ),
+            ),
+            (path_1,),
+            (path_1,),
+            id="single all diff",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 1", local="local 1", server="server 1"
+                    ),
+                    path=(path_1 := "path 1"),
+                ),
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 2", local="local 2", server="server 2"
+                    ),
+                    path=(path_2 := "path 2"),
+                ),
+            ),
+            (path_1, path_2),
+            (path_1, path_2),
+            id="multiple all diff",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "actions, expected_base_local_diffs, expected_local_server_diffs",
+    _track_paths_with_diff_parameters(),
+)
+def test_track_paths_with_diff(
+    actions: tuple[types_.UpdateAction, ...],
+    expected_base_local_diffs: tuple[str, ...],
+    expected_local_server_diffs: tuple[str, ...],
+):
+    """
+    arrange: given actions
+    act: when the actions and passed to TrackPathsWithDiff sequentually
+    assert: then the TrackPathsWithDiff has the expected base_local_diffs and local_server_diffs.
+    """
+    track_paths_with_diff = check.TrackPathsWithDiff()
+    for action in actions:
+        track_paths_with_diff.process(action)
+
+    assert tuple(track_paths_with_diff.base_local_diffs) == expected_base_local_diffs
+    assert tuple(track_paths_with_diff.local_server_diffs) == expected_local_server_diffs
+
+
 class ExpectedProblem(NamedTuple):
     """
     Attrs:

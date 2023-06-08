@@ -26,6 +26,47 @@ class Problem(NamedTuple):
     description: str
 
 
+class TrackPathsWithDiff:
+    """Keeps track of paths that have any differences.
+
+    Attrs:
+        base_local_diffs: The paths that have a difference between the base and local content.
+        local_server_diffs: The paths that have a difference between the local and server content.
+    """
+
+    def __init__(self) -> None:
+        """Construct."""
+        self._base_local_diffs = []
+        self._local_server_diffs = []
+
+    @property
+    def base_local_diffs(self) -> Iterator[str]:
+        """Get the paths with base and local diffs."""
+        return iter(self._base_local_diffs)
+
+    @property
+    def local_server_diffs(self) -> Iterator[str]:
+        """Get the paths with local and server diffs."""
+        return iter(self._local_server_diffs)
+
+    def process(self, action: UpdateAction) -> None:
+        """Record differences for a given action.
+
+        Args:
+            action: The update action to process.
+        """
+        content_change = action.content_change
+
+        if content_change is None:
+            return
+
+        if content_change.base != content_change.local:
+            self._base_local_diffs.append(action.path)
+
+        if content_change.local != content_change.server:
+            self._local_server_diffs.append(action.path)
+
+
 def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
     """Check whether an action is an UpdateAction.
 
