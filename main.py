@@ -16,11 +16,13 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, run, types_
-from src.discourse import create_discourse
+from src import GETTING_STARTED, exceptions, run_migrate, run_reconcile, types_
+from src.clients import get_clients
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
+
+T = typing.TypeVar("T")
 
 
 def _parse_env_vars() -> types_.UserInputs:
@@ -36,7 +38,6 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    base_tag_name = os.environ["INPUT_BASE_TAG_NAME"]
     commit_sha = os.environ["GITHUB_SHA"]
 
     return types_.UserInputs(
@@ -49,16 +50,31 @@ def _parse_env_vars() -> types_.UserInputs:
         delete_pages=delete_topics,
         dry_run=dry_run,
         github_access_token=github_access_token,
-        base_tag_name=base_tag_name,
         commit_sha=commit_sha,
     )
 
 
-def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
+def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
+    """Serialize dictionary output into a string to be outputted to GitHub.
+
+    Args:
+        urls_with_actions_dict: dictionary output representing results of processes
+
+    Returns:
+        string representing the dictionary to be outputted to GitHub
+    """
+    compact_json = partial(json.dumps, separators=(",", ":"))
+
+    return compact_json(urls_with_actions_dict)
+
+
+def _write_github_output(
+    **urls_with_actions_dicts: dict[str, str],
+) -> None:
     """Writes results produced by the action to github_output.
 
     Args:
-        urls_with_actions_dict: key value pairs of link to result of action.
+        urls_with_actions_dicts: list of key value pairs of link to result of action.
 
     Raises:
         InputError: if not running inside a github actions environment.
@@ -71,20 +87,17 @@ def _write_github_output(urls_with_actions_dict: dict[str, str]) -> None:
             f"{GETTING_STARTED}"
         )
 
-    github_output_path = pathlib.Path(github_output)
-    compact_json = partial(json.dumps, separators=(",", ":"))
-    urls_with_actions = compact_json(urls_with_actions_dict)
-    if urls_with_actions_dict:
-        *_, index_url = urls_with_actions_dict.keys()
-    else:
-        index_url = ""
-    github_output_path.write_text(
-        f"urls_with_actions={urls_with_actions}\nindex_url={index_url}\n",
-        encoding="utf-8",
+    output: str = "".join(
+        f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
+        for key, urls_with_actions_dict in urls_with_actions_dicts.items()
     )
 
+    logging.info("Output: %s", output)
 
-def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
+    pathlib.Path(github_output).write_text(output, encoding="utf-8")
+
+
+def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
     """Execute a function in a temporary directory.
 
     Makes a copy of the current working directory in a temporary directory, changes the working
@@ -99,8 +112,16 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
     """
 
     @functools.wraps(func)
-    def wrapper() -> None:
-        """Replacement function."""
+    def wrapper(*args: typing.Any, **kwargs: typing.Any) -> T:
+        """Wrapper to be used to running an external function on a temporary directory.
+
+        Args:
+            args: positional arguments of the external function
+            kwargs: variable named arguments of the external function
+
+        Returns:
+            output of the wrapped external function
+        """
         initial_cwd = Path.cwd()
         try:
             with tempfile.TemporaryDirectory() as tempdir_name:
@@ -108,14 +129,45 @@ def execute_in_tmpdir(func: typing.Callable[[], None]) -> typing.Callable[[], No
                 execute_cwd = tempdir / "cwd"
                 shutil.copytree(src=initial_cwd, dst=execute_cwd)
                 os.chdir(execute_cwd)
-                func()
+                output = func(execute_cwd, *args, **kwargs)
         finally:
             os.chdir(initial_cwd)
+
+        return output
 
     return wrapper
 
 
 @execute_in_tmpdir
+def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
+    """Main to migrate content from Discourse to Git repository.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
+    clients = get_clients(user_inputs, path)
+    return run_migrate(clients=clients, user_inputs=user_inputs)
+
+
+@execute_in_tmpdir
+def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
+    """Main to reconcile content from Git repository to Discourse.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
+    clients = get_clients(user_inputs, path)
+    return run_reconcile(clients=clients, user_inputs=user_inputs)
+
+
 def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
@@ -123,21 +175,14 @@ def main() -> None:
     # Read input
     user_inputs = _parse_env_vars()
 
-    # Execute action
-    discourse = create_discourse(
-        hostname=user_inputs.discourse.hostname,
-        category_id=user_inputs.discourse.category_id,
-        api_username=user_inputs.discourse.api_username,
-        api_key=user_inputs.discourse.api_key,
-    )
-    urls_with_actions_dict = run(
-        base_path=pathlib.Path(),
-        discourse=discourse,
-        user_inputs=user_inputs,
-    )
+    # Open a PR with community contributions if necessary
+    migrate_urls_with_actions = main_migrate(user_inputs=user_inputs)  # pylint: disable=E1120
+
+    # Push data to Discourse, avoiding community conflicts
+    reconcile_urls_with_actions = main_reconcile(user_inputs=user_inputs)  # pylint: disable=E1120
 
     # Write output
-    _write_github_output(urls_with_actions_dict=urls_with_actions_dict)
+    _write_github_output(migrate=migrate_urls_with_actions, reconcile=reconcile_urls_with_actions)
 
 
 if __name__ == "__main__":

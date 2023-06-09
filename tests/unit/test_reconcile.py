@@ -81,7 +81,7 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
         local_path=path, level=path_info_level, table_path=path_info_table_path
     )
     navlink = types_.Navlink(title=path_info.navlink_title, link="link 1")
-    table_row = types_.TableRow(level=table_row_level, path=table_row_path, navlink=navlink)
+    table_row = types_.TableRow(level=table_row_level, path=(table_row_path,), navlink=navlink)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
@@ -89,7 +89,6 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
 
 
@@ -102,7 +101,7 @@ def test__get_server_content_missing_link():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.return_value = "content 1"
     navlink = types_.Navlink(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
@@ -117,7 +116,7 @@ def test__get_server_content_server_error():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = types_.Navlink(title="title 1", link=(navlink_link := "link 1"))
-    table_row = types_.TableRow(level=1, path="table path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
@@ -137,15 +136,15 @@ def test__get_server_content_server_error():
         pytest.param("content 1", "content 1 ", id="local trailing whitespace"),
     ],
 )
-def test__local_and_server_file_same(
-    local_content: str, server_content: str, tmp_path: Path, mocked_clients
-):
+def test__local_and_server_file_same(local_content: str, server_content: str, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the same content as in the file
     act: when _local_and_server is called with the path info and table row
     assert: then a noop action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     (path := tmp_path / "file1.md").touch()
     path.write_text(local_content, encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
@@ -158,7 +157,6 @@ def test__local_and_server_file_same(
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -170,24 +168,24 @@ def test__local_and_server_file_same(
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
-def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file and repository that raises an error
     act: when _local_and_server is called with the path info and table row
     assert: then ReconcilliationError is raised.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     relative_path = Path("file1.md")
     (path := tmp_path / relative_path).touch()
     path.write_text("content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = "content 2"
-    mocked_clients.repository.get_file_content_from_tag.side_effect = (
-        exceptions.RepositoryClientError
-    )
+    mock_get_file.side_effect = exceptions.RepositoryClientError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -195,20 +193,20 @@ def test__local_and_server_file_content_change_repo_error(tmp_path: Path, mocked
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=user_inputs,
         )
 
     assert_substrings_in_string(
-        ("unable", "retrieve", str(relative_path), user_inputs.base_tag_name),
+        ("unable", "retrieve", str(relative_path), constants.DOCUMENTATION_TAG),
         str(exc_info.value).lower(),
     )
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
-    mocked_clients.repository.get_file_content_from_tag.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
-def test__local_and_server_file_content_change_repo_tag_not_found(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file and repository that raises a tag not found
@@ -216,17 +214,16 @@ def test__local_and_server_file_content_change_repo_tag_not_found(tmp_path: Path
     act: when _local_and_server is called with the path info and table row
     assert: then ReconcilliationError is raised.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     relative_path = Path("file1.md")
     (path := tmp_path / relative_path).touch()
     path.write_text("content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = "content 2"
-    mocked_clients.repository.get_file_content_from_tag.side_effect = (
-        exceptions.RepositoryTagNotFoundError
-    )
+    mock_get_file.side_effect = exceptions.RepositoryTagNotFoundError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -234,43 +231,41 @@ def test__local_and_server_file_content_change_repo_tag_not_found(tmp_path: Path
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=user_inputs,
         )
 
     assert_substrings_in_string(
-        ("tag", "not", "defined", user_inputs.base_tag_name), str(exc_info.value).lower()
+        ("tag", "not", "defined", constants.DOCUMENTATION_TAG), str(exc_info.value).lower()
     )
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
-    mocked_clients.repository.get_file_content_from_tag.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
-def test__local_and_server_file_content_change_file_not_in_repo(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file and repository that cannot find the file
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned with None for the base content.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     relative_path = Path("file1.md")
     (path := tmp_path / relative_path).touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
-    mocked_clients.repository.get_file_content_from_tag.side_effect = (
-        exceptions.RepositoryFileNotFoundError
-    )
+    mock_get_file.side_effect = exceptions.RepositoryFileNotFoundError
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -283,35 +278,36 @@ def test__local_and_server_file_content_change_file_not_in_repo(tmp_path: Path, 
     assert returned_action.content_change.local == local_content  # type: ignore
     assert returned_action.content_change.base is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
-    mocked_clients.repository.get_file_content_from_tag.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
-def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
         returns the different content as in the file
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     relative_path = Path("file1.md")
     (path := tmp_path / relative_path).touch()
     path.write_text(local_content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
     base_content = "content 3"
-    mocked_clients.repository.get_file_content_from_tag.return_value = base_content
+    mock_get_file.return_value = base_content
     navlink = types_.Navlink(title=path_info.navlink_title, link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -324,34 +320,35 @@ def test__local_and_server_file_content_change(tmp_path: Path, mocked_clients):
     assert returned_action.content_change.local == local_content  # type: ignore
     assert returned_action.content_change.base == base_content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
-    mocked_clients.repository.get_file_content_from_tag.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
-def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with different navlink title and discourse
         client that returns the same content as in the file
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     relative_path = Path("file1.md")
     (path := tmp_path / relative_path).touch()
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     mocked_clients.discourse.retrieve_topic.return_value = content
-    mocked_clients.repository.get_file_content_from_tag.return_value = content
+    mock_get_file.return_value = content
     navlink = types_.Navlink(title="title 2", link=(navlink_link := "link 1"))
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
-    user_inputs = factories.UserInputsFactory()
 
     (returned_action,) = reconcile._local_and_server(
         path_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=user_inputs,
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -365,17 +362,20 @@ def test__local_and_server_file_navlink_title_change(tmp_path: Path, mocked_clie
     assert returned_action.content_change.server == content  # type: ignore
     assert returned_action.content_change.local == content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
-    mocked_clients.repository.get_file_content_from_tag.assert_called_once_with(
-        path=str(relative_path), tag_name=user_inputs.base_tag_name
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
     )
 
 
-def test__local_and_server_directory_same(tmp_path: Path, mocked_clients):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_directory_same(mock_get_file, mocked_clients):
     """
     arrange: given path info with a directory and table row with no changes
     act: when _local_and_server is called with the path info and table row
     assert: then a noop action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     navlink = types_.Navlink(title=path_info.navlink_title, link=None)
@@ -386,7 +386,6 @@ def test__local_and_server_directory_same(tmp_path: Path, mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.NoopAction)
@@ -396,15 +395,17 @@ def test__local_and_server_directory_same(tmp_path: Path, mocked_clients):
     assert returned_action.navlink == navlink  # type: ignore
     assert returned_action.content is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_not_called()
-    mocked_clients.repository.get_file_content_from_tag.assert_not_called()
+    mock_get_file.assert_not_called()
 
 
-def test__local_and_server_directory_navlink_title_changed(tmp_path: Path, mocked_clients):
+def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     """
     arrange: given path info with a directory and table row with different navlink title
     act: when _local_and_server is called with the path info and table row
     assert: then an update action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     navlink = types_.Navlink(title="title 2", link=None)
@@ -415,7 +416,6 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path, mocke
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.UpdateAction)
@@ -430,12 +430,14 @@ def test__local_and_server_directory_navlink_title_changed(tmp_path: Path, mocke
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients):
+def test__local_and_server_directory_to_file(mocked_clients):
     """
     arrange: given path info with a file and table row with a group
     act: when _local_and_server is called with the path info and table row
     assert: then a create action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path)
@@ -447,7 +449,6 @@ def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, types_.CreateAction)
@@ -459,12 +460,14 @@ def test__local_and_server_directory_to_file(tmp_path: Path, mocked_clients):
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-def test__local_and_server_file_to_directory(tmp_path: Path, mocked_clients):
+def test__local_and_server_file_to_directory(mocked_clients):
     """
     arrange: given path info with a directory and table row with a file
     act: when _local_and_server is called with the path info and table row
     assert: then a delete and create action is returned.
     """
+    tmp_path = mocked_clients.repository.base_path
+
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     mocked_clients.discourse.retrieve_topic.return_value = (content := "content 1")
@@ -476,7 +479,6 @@ def test__local_and_server_file_to_directory(tmp_path: Path, mocked_clients):
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert len(returned_actions) == 2
@@ -504,7 +506,7 @@ def test__server_only_file():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.return_value = (content := "content 1")
     navlink = types_.Navlink(title="title 1", link="link 1")
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
@@ -525,7 +527,7 @@ def test__server_only_file_discourse_error():
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = types_.Navlink(title="title 1", link=(link := "link 1"))
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._server_only(table_row=table_row, discourse=mock_discourse)
@@ -541,7 +543,7 @@ def test__server_only_directory():
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     navlink = types_.Navlink(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path="path 1", navlink=navlink)
+    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
@@ -565,7 +567,6 @@ def test__calculate_action_error(tmp_path: Path, mocked_clients):
             table_row=None,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
 
 
@@ -633,7 +634,6 @@ def test__calculate_action(
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
-        user_inputs=factories.UserInputsFactory(),
     )
 
     assert isinstance(returned_action, expected_action_type)
@@ -680,7 +680,7 @@ def test__calculate_action(
         ),
         pytest.param(
             (),
-            (table_row_1 := factories.TableRowFactory(level=1, path="path 1", is_group=True),),
+            (table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),),
             (types_.DeleteAction,),
             ((table_row_1.level, table_row_1.path),),
             id="empty path infos single table row",
@@ -688,8 +688,8 @@ def test__calculate_action(
         pytest.param(
             (),
             (
-                table_row_1 := factories.TableRowFactory(level=1, path="path 1", is_group=True),
-                table_row_2 := factories.TableRowFactory(level=2, path="path 2", is_group=True),
+                table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),
+                table_row_2 := factories.TableRowFactory(level=2, path=("path 2",), is_group=True),
             ),
             (types_.DeleteAction, types_.DeleteAction),
             ((table_row_1.level, table_row_1.path), (table_row_2.level, table_row_2.path)),
@@ -712,21 +712,21 @@ def test__calculate_action(
             (path_info_1 := factories.PathInfoFactory(level=1),),
             (
                 table_row_1 := factories.TableRowFactory(
-                    level=2, path=path_info_1.table_path, is_group=True
+                    level=2, path=("group-1",) + path_info_1.table_path, is_group=True
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),
             (
                 (path_info_1.level, path_info_1.table_path),
-                (table_row_1.level, path_info_1.table_path),
+                (table_row_1.level, ("group-1",) + path_info_1.table_path),
             ),
             id="single path info single table row level mismatch",
         ),
         pytest.param(
-            (path_info_1 := factories.PathInfoFactory(table_path="path 1"),),
+            (path_info_1 := factories.PathInfoFactory(table_path=("path 1",)),),
             (
                 table_row := factories.TableRowFactory(
-                    level=path_info_1.level, path="path 2", is_group=True
+                    level=path_info_1.level, path=("path 2",), is_group=True
                 ),
             ),
             (types_.CreateAction, types_.DeleteAction),
@@ -758,7 +758,6 @@ def test_run(  # pylint: disable=too-many-arguments
             table_rows=table_rows,
             clients=mocked_clients,
             base_path=tmp_path,
-            user_inputs=factories.UserInputsFactory(),
         )
     )
 

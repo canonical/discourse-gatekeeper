@@ -20,29 +20,6 @@ from .helpers import assert_substrings_in_string
 
 
 @pytest.mark.parametrize(
-    "path, table_path, expected",
-    [
-        pytest.param(Path(), "test", "test", id="table path only"),
-        pytest.param(Path("group-1"), "group-1-test", "test", id="test in group"),
-        pytest.param(
-            Path("group-1/nested/path"),
-            "group-1-nested-path-test",
-            "test",
-            id="test in group",
-        ),
-        pytest.param(Path("not/matching/group"), "test", "test", id="non-prefix path"),
-    ],
-)
-def test__extract_name(path: Path, table_path: types_.TablePath, expected: str):
-    """
-    arrange: given a path and table path composed from groups
-    act: when _extract_name is called
-    assert: the name part is extracted from table path.
-    """
-    assert migration._extract_name(current_group_path=path, table_path=table_path) == expected
-
-
-@pytest.mark.parametrize(
     "table_rows, expected_message_contents",
     [
         pytest.param(
@@ -175,19 +152,17 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
 # Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "row, path, expected_meta",
+    "row, expected_meta",
     [
         pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="doc-1"),
-            Path(),
+            doc_row := factories.TableRowFactory(is_document=True, path=("doc-1",)),
             types_.DocumentMeta(
                 path=Path("doc-1.md"), link=cast(str, doc_row.navlink.link), table_row=doc_row
             ),
             id="single doc file",
         ),
         pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="group-1-doc-1"),
-            Path("group-1"),
+            doc_row := factories.TableRowFactory(is_document=True, path=("group-1", "doc-1")),
             types_.DocumentMeta(
                 path=Path("group-1/doc-1.md"),
                 link=cast(str, doc_row.navlink.link),
@@ -196,8 +171,13 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
             id="nested doc file",
         ),
         pytest.param(
-            doc_row := factories.TableRowFactory(is_document=True, path="group-2-doc-1"),
-            Path("group-1"),
+            doc_row := factories.TableRowFactory(
+                is_document=True,
+                path=(
+                    "group-1",
+                    "group-2-doc-1",
+                ),
+            ),
             types_.DocumentMeta(
                 path=Path("group-1/group-2-doc-1.md"),
                 link=cast(str, doc_row.navlink.link),
@@ -207,41 +187,37 @@ def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
         ),
     ],
 )
-def test__create_document_meta(
-    row: types_.TableRow, path: Path, expected_meta: types_.DocumentMeta
-):
+def test__create_document_meta(row: types_.TableRow, expected_meta: types_.DocumentMeta):
     """
     arrange: given a document table row
     act: when _create_document_meta is called
     assert: document meta with path to file is returned.
     """
-    assert migration._create_document_meta(row=row, path=path) == expected_meta
+    assert migration._create_document_meta(row=row) == expected_meta
 
 
 @pytest.mark.parametrize(
-    "row, path, expected_meta",
+    "row, expected_meta",
     [
         pytest.param(
-            group_row := factories.TableRowFactory(is_group=True, path="group-1"),
-            Path("group-1"),
+            group_row := factories.TableRowFactory(is_group=True, path=("group-1",)),
             types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row),
             id="single group row",
         ),
         pytest.param(
-            group_row := factories.TableRowFactory(is_group=True, path="group-1-group-2"),
-            Path("group-1/group-2"),
+            group_row := factories.TableRowFactory(is_group=True, path=("group-1", "group-2")),
             types_.GitkeepMeta(path=Path("group-1/group-2/.gitkeep"), table_row=group_row),
             id="nested group row with correct current path",
         ),
     ],
 )
-def test__create_gitkeep_meta(row: types_.TableRow, path: Path, expected_meta: types_.GitkeepMeta):
+def test__create_gitkeep_meta(row: types_.TableRow, expected_meta: types_.GitkeepMeta):
     """
     arrange: given a empty group table row
     act: when _create_gitkeep_meta is called
     assert: gitkeep meta denoting empty group is returned.
     """
-    assert migration._create_gitkeep_meta(row=row, path=path) == expected_meta
+    assert migration._create_gitkeep_meta(row=row) == expected_meta
 
 
 @pytest.mark.parametrize(
@@ -267,7 +243,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
     [
         pytest.param((), (), id="no table rows"),
         pytest.param(
-            (doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),),
+            (doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),),
             (
                 types_.DocumentMeta(
                     path=Path("doc-1.md"),
@@ -278,14 +254,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
             id="single initial document",
         ),
         pytest.param(
-            (group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),),
+            (group_row_1 := factories.TableRowFactory(level=1, path=("group-1",), is_group=True),),
             (types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),),
             id="single initial group",
         ),
         pytest.param(
             (
-                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
-                doc_row_2 := factories.TableRowFactory(level=1, path="doc-2", is_document=True),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+                doc_row_2 := factories.TableRowFactory(level=1, path=("doc-2",), is_document=True),
             ),
             (
                 types_.DocumentMeta(
@@ -303,8 +279,12 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                group_row_2 := factories.TableRowFactory(level=1, path="group-2", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                group_row_2 := factories.TableRowFactory(
+                    level=1, path=("group-2",), is_group=True
+                ),
             ),
             (
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
@@ -314,8 +294,10 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
             ),
             (
                 types_.DocumentMeta(
@@ -329,8 +311,10 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
             ),
             (
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
@@ -344,8 +328,17 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                doc_row_1 := factories.TableRowFactory(level=2, path="doc-1", is_document=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                doc_row_1 := factories.TableRowFactory(
+                    level=2,
+                    path=(
+                        "group-1",
+                        "doc-1",
+                    ),
+                    is_document=True,
+                ),
             ),
             (
                 types_.DocumentMeta(
@@ -358,17 +351,32 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                group_row_2 := factories.TableRowFactory(level=2, path="group-2", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                group_row_2 := factories.TableRowFactory(
+                    level=2,
+                    path=(
+                        "group-1",
+                        "group-2",
+                    ),
+                    is_group=True,
+                ),
             ),
             (types_.GitkeepMeta(path=Path("group-1/group-2/.gitkeep"), table_row=group_row_2),),
             id="nested group in group",
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                group_row_2 := factories.TableRowFactory(level=1, path="group-2", is_group=True),
-                group_row_3 := factories.TableRowFactory(level=1, path="group-3", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                group_row_2 := factories.TableRowFactory(
+                    level=1, path=("group-2",), is_group=True
+                ),
+                group_row_3 := factories.TableRowFactory(
+                    level=1, path=("group-3",), is_group=True
+                ),
             ),
             (
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
@@ -379,9 +387,13 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
-                group_row_2 := factories.TableRowFactory(level=1, path="group-2", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+                group_row_2 := factories.TableRowFactory(
+                    level=1, path=("group-2",), is_group=True
+                ),
             ),
             (
                 types_.GitkeepMeta(path=Path("group-1/.gitkeep"), table_row=group_row_1),
@@ -396,11 +408,15 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                nested_doc_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-doc-1", is_document=True
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
                 ),
-                group_row_2 := factories.TableRowFactory(level=1, path="group-2", is_group=True),
+                nested_doc_row_1 := factories.TableRowFactory(
+                    level=2, path=("group-1", "doc-1"), is_document=True
+                ),
+                group_row_2 := factories.TableRowFactory(
+                    level=1, path=("group-2",), is_group=True
+                ),
             ),
             (
                 types_.DocumentMeta(
@@ -414,12 +430,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
                 nested_doc_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-doc-1", is_document=True
+                    level=2, path=("group-1", "doc-1"), is_document=True
                 ),
                 nested_group_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-group-2", is_group=True
+                    level=2, path=("group-1", "group-2"), is_group=True
                 ),
             ),
             (
@@ -436,12 +454,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
                 nested_doc_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-doc-1", is_document=True
+                    level=2, path=("group-1", "doc-1"), is_document=True
                 ),
                 nested_doc_row_2 := factories.TableRowFactory(
-                    level=2, path="group-1-doc-2", is_document=True
+                    level=2, path=("group-1", "doc-2"), is_document=True
                 ),
             ),
             (
@@ -460,11 +480,13 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
-                nested_group_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-group-2", is_group=True
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
                 ),
-                doc_row_1 := factories.TableRowFactory(level=1, path="doc-1", is_document=True),
+                nested_group_row_1 := factories.TableRowFactory(
+                    level=2, path=("group-1", "group-2"), is_group=True
+                ),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
             ),
             (
                 types_.GitkeepMeta(
@@ -480,12 +502,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
                 nested_group_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-group-2", is_group=True
+                    level=2, path=("group-1", "group-2"), is_group=True
                 ),
                 nested_doc_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-doc-1", is_document=True
+                    level=2, path=("group-1", "doc-1"), is_document=True
                 ),
             ),
             (
@@ -502,12 +526,14 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(level=1, path="group-1", is_group=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_group=True
+                ),
                 nested_group_row_1 := factories.TableRowFactory(
-                    level=2, path="group-1-group-2", is_group=True
+                    level=2, path=("group-1", "group-2"), is_group=True
                 ),
                 nested_doc_row_1 := factories.TableRowFactory(
-                    level=3, path="group-1-group-2-doc-1", is_document=True
+                    level=3, path=("group-1", "group-2", "doc-1"), is_document=True
                 ),
             ),
             (
@@ -574,11 +600,11 @@ def test__migrate_document_fail(tmp_path: Path):
     mocked_discourse.retrieve_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     table_row = types_.TableRow(
         level=(level := 1),
-        path=(path_str := "empty-group-path"),
+        path=(path_str := ("empty-group-path",)),
         navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
     )
     document_meta = types_.DocumentMeta(
-        path=(path := Path(path_str)), table_row=table_row, link=link_str
+        path=(path := Path(*path_str)), table_row=table_row, link=link_str
     )
 
     returned_report = migration._migrate_document(
@@ -606,11 +632,11 @@ def test__migrate_document(tmp_path: Path):
     mocked_discourse.retrieve_topic.return_value = (content := "content")
     table_row = types_.TableRow(
         level=(level := 1),
-        path=(path_str := "empty-directory"),
+        path=(path_str := ("empty-directory",)),
         navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
     )
     document_meta = types_.DocumentMeta(
-        path=(path := Path(path_str)), table_row=table_row, link=link_str
+        path=(path := Path(*path_str)), table_row=table_row, link=link_str
     )
 
     returned_report = migration._migrate_document(
@@ -762,15 +788,15 @@ def test_run_error(tmp_path: Path):
     "table_rows, index_content, expected_files",
     [
         pytest.param(
-            (factories.TableRowFactory(is_document=True, path="doc-1", level=1),),
+            (factories.TableRowFactory(is_document=True, path=("doc-1",), level=1),),
             "content-1",
             (Path("doc-1.md"),),
             id="single doc",
         ),
         pytest.param(
             (
-                factories.TableRowFactory(is_group=True, path="group-1", level=1),
-                factories.TableRowFactory(is_document=True, path="doc-1", level=2),
+                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
+                factories.TableRowFactory(is_document=True, path=("group-1", "doc-1"), level=2),
             ),
             "content-1",
             (Path("group-1/doc-1.md"),),
@@ -778,8 +804,8 @@ def test_run_error(tmp_path: Path):
         ),
         pytest.param(
             (
-                factories.TableRowFactory(is_group=True, path="group-1", level=1),
-                factories.TableRowFactory(is_group=True, path="group-2", level=2),
+                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
+                factories.TableRowFactory(is_group=True, path=("group-1", "group-2"), level=2),
             ),
             "content-1",
             (Path("group-1/group-2/.gitkeep"),),

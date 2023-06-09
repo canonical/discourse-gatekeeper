@@ -10,26 +10,9 @@ from pathlib import Path
 
 from . import exceptions, types_
 from .discourse import Discourse
-from .docs_directory import calculate_table_path
 
 EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILENAME = ".gitkeep"
-
-
-def _extract_name(current_group_path: Path, table_path: types_.TablePath) -> str:
-    """Extract name given a current working directory and table path.
-
-    If there is a matching prefix in table path's prefix generated from the current group path,
-    the prefix is removed and the remaining segment is returned as the extracted name.
-
-    Args:
-        current_group_path: current path of the file relative to the group's path directory.
-        table_path: table path of the file from the index file, of format path-to-file-filename.
-
-    Returns:
-        The filename derived by removing the directory path from given table path of the file.
-    """
-    return table_path.removeprefix(f"{calculate_table_path(current_group_path)}-")
 
 
 def _validate_table_rows(
@@ -70,7 +53,7 @@ def _validate_table_rows(
         if row.level > current_group_level + 1:
             raise exceptions.InputError(
                 "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
-                f"Did you mean level {current_group_level+1}?"
+                f"Did you mean level {current_group_level + 1}?"
                 f"Row: {row.to_markdown()}"
             )
 
@@ -80,57 +63,11 @@ def _validate_table_rows(
         current_group_level = row.level if row.is_group else row.level - 1
 
 
-def _get_row_group_path(
-    group_path: Path, previous_row: types_.TableRow | None, row: types_.TableRow
-) -> Path:
-    """Get path to row's working group.
-
-    If given row is a document row, it's working group is the group one level below.
-    If given row is a group row, it's working group should be the path to row's group.
-
-    Args:
-        group_path: The path of the group in which the previous row was in, it should be the
-            equivalent to previous_row's group path.
-        previous_row: Previous row in the sequence. None if row is the first in sequence.
-        row: Target row to adjust group path to.
-
-    Returns:
-        A path to the group where the row belongs.
-    """
-    # if it's the first row or the row level has increased from group row
-    if not previous_row:
-        # document belongs in current group path
-        if not row.is_group:
-            return group_path
-        # move one level of nesting into new group path
-        return group_path / _extract_name(current_group_path=group_path, table_path=row.path)
-
-    # working group path belongs in the group 1 level above current row's level.
-    # i.e. group-1/document-1, group path is group-1
-    # group-1/group-2, group-path is group-1/group-2 but both cases require
-    # moving to group-1 first to either generate document or group afterwards.
-    destination_group_level = row.level - 1
-    current_group_level = previous_row.level if previous_row.is_group else previous_row.level - 1
-
-    while current_group_level != destination_group_level:
-        current_group_level -= 1
-        group_path = group_path.parent
-
-    # current state of group_path is 1 level above current row's level.
-    # move working group path to current group
-    # i.e. current: group-1, destination: group-1/group-2, row: group-1-group-2
-    if row.is_group:
-        group_path = group_path / _extract_name(current_group_path=group_path, table_path=row.path)
-
-    return group_path
-
-
-def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMeta:
+def _create_document_meta(row: types_.TableRow) -> types_.DocumentMeta:
     """Create document meta file for migration from table row.
 
     Args:
         row: Row containing link to document and path information.
-        path: Relative path to where the document should reside.
 
     Raises:
         MigrationError: if the table row that was passed in does not contain a link to document.
@@ -144,21 +81,21 @@ def _create_document_meta(row: types_.TableRow, path: Path) -> types_.DocumentMe
         raise exceptions.MigrationError(
             "Internal error, no implementation for creating document meta with missing link in row."
         )
-    name = _extract_name(current_group_path=path, table_path=row.path)
-    return types_.DocumentMeta(path=path / f"{name}.md", link=row.navlink.link, table_row=row)
+    return types_.DocumentMeta(
+        path=Path(*row.path[:-1]) / f"{row.path[-1]}.md", link=row.navlink.link, table_row=row
+    )
 
 
-def _create_gitkeep_meta(row: types_.TableRow, path: Path) -> types_.GitkeepMeta:
+def _create_gitkeep_meta(row: types_.TableRow) -> types_.GitkeepMeta:
     """Create a representation of an empty grouping through a .gitkeep file metadata.
 
     Args:
         row: An empty group row.
-        path: Relative path to where the document should reside.
 
     Returns:
         Information required to migrate empty group.
     """
-    return types_.GitkeepMeta(path=path / GITKEEP_FILENAME, table_row=row)
+    return types_.GitkeepMeta(path=Path(*row.path) / GITKEEP_FILENAME, table_row=row)
 
 
 def _extract_docs_from_table_rows(
@@ -180,7 +117,6 @@ def _extract_docs_from_table_rows(
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
     """
-    current_group_path = Path()
     previous_row: types_.TableRow | None = None
     previous_path: Path | None = None
 
@@ -193,21 +129,17 @@ def _extract_docs_from_table_rows(
             and previous_row.is_group
             and row.level <= previous_row.level
         ):
-            yield _create_gitkeep_meta(row=previous_row, path=previous_path)
-
-        current_group_path = _get_row_group_path(
-            group_path=current_group_path, previous_row=previous_row, row=row
-        )
+            yield _create_gitkeep_meta(row=previous_row)
 
         if not row.is_group:
-            yield _create_document_meta(row=row, path=current_group_path)
+            yield _create_document_meta(row=row)
 
         previous_row = row
-        previous_path = current_group_path
+        previous_path = Path(*row.path)
 
     # last group without documents yields gitkeep meta.
     if previous_row is not None and previous_row.is_group:
-        yield _create_gitkeep_meta(row=previous_row, path=current_group_path)
+        yield _create_gitkeep_meta(row=previous_row)
 
 
 def _index_file_from_content(content: str) -> types_.IndexDocumentMeta:
