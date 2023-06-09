@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 from git.repo import Repo
 
-from src import check, constants, types_
+from src import check, constants, repository, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
@@ -336,10 +336,9 @@ def _test_conflicts_parameters():
 def test_conflicts(
     actions: tuple[types_.AnyAction, ...],
     is_tagged: bool,
-    git_repo: Repo,
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
-    mocked_clients,
+    repository_client: repository.Client,
 ):
     """
     arrange: given actions
@@ -348,15 +347,15 @@ def test_conflicts(
     """
     caplog.set_level(logging.INFO)
     if is_tagged:
-        mocked_clients.repository.tag_commit(
-            tag_name=constants.DISCOURSE_AHEAD_TAG, commit_sha=git_repo.head.commit.hexsha
+        repository_client.tag_commit(
+            tag_name=constants.DISCOURSE_AHEAD_TAG, commit_sha=repository_client.current_commit
         )
 
-    user_inputs = factories.UserInputsFactory(commit_sha=git_repo.head.commit.hexsha)
+    user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
     returned_problems = tuple(
         check.conflicts(
             actions=actions,
-            repository=mocked_clients.repository,
+            repository=repository_client,
             user_inputs=user_inputs,
         )
     )
