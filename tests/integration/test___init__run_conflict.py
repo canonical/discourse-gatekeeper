@@ -22,7 +22,6 @@ from github.ContentFile import ContentFile
 from src import Clients, constants, exceptions, metadata, repository, run_reconcile
 from src.constants import DEFAULT_BRANCH, DISCOURSE_AHEAD_TAG, DOCUMENTATION_TAG
 from src.discourse import Discourse
-from src.repository import Client, Repo
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -37,7 +36,6 @@ async def test_run_conflict(
     caplog: pytest.LogCaptureFixture,
     repository_path: Path,
     mock_github_repo: MagicMock,
-    git_repo: repository.Repo,
     repository_client: repository.Client,
 ):
     """

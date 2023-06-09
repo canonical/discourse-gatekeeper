@@ -5,10 +5,8 @@
 
 import logging
 from typing import NamedTuple, cast
-from unittest.mock import MagicMock
 
 import pytest
-from git.repo import Repo
 
 from src import check, constants, repository, types_
 

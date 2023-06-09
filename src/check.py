@@ -42,8 +42,8 @@ class TrackPathsWithDiff:
 
     def __init__(self) -> None:
         """Construct."""
-        self._base_local_diffs = []
-        self._base_server_diffs = []
+        self._base_local_diffs: list[str] = []
+        self._base_server_diffs: list[str] = []
 
     @property
     def base_local_diffs(self) -> Iterator[str]:
@@ -145,6 +145,8 @@ def conflicts(
 
     Args:
         actions: The actions to check.
+        repository: Client for repository interactions.
+        user_inputs: Configuration from the user.
 
     Yields:
         A problem for each action with a conflict
@@ -155,10 +157,9 @@ def conflicts(
     )
 
     update_actions = filter(_is_update_action, actions)
+    tracked_update_actions = side_effect(track_paths_with_diff.process, update_actions)
 
-    update_actions = side_effect(track_paths_with_diff.process, update_actions)
-
-    yield from filter(None, (_update_action_problem(action) for action in update_actions))
+    yield from filter(None, (_update_action_problem(action) for action in tracked_update_actions))
 
     if not commit_tagged:
         base_local_diffs = tuple(track_paths_with_diff.base_local_diffs)
@@ -168,7 +169,7 @@ def conflicts(
             problem = Problem(
                 path=base_local_diffs[0],
                 description=(
-                    "detected unmerged community conttributions, these need to be resolved "
+                    "detected unmerged community contributions, these need to be resolved "
                     "before proceeding. If the differences are not conflicting, please apply the "
                     f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
                     "proceed. Paths with potentially unmerged community contributions: "
