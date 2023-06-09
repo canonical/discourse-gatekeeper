@@ -29,7 +29,7 @@ def conflicts(base: str, theirs: str, ours: str) -> str | None:
         The description of the merge conflicts or None if there are no conflicts.
     """
     # Handle cases that are guaranteed not to have conflicts
-    if theirs == base or ours == base or theirs == ours:
+    if theirs in (base, ours) or ours == base:
         return None
 
     return f"Detected differences between base, theirs and ours,\ndiff: {diff(theirs, ours)}"
