@@ -43,7 +43,7 @@ def _track_paths_with_diff_parameters():
             (
                 factories.UpdateActionFactory(
                     content_change=factories.ContentChangeFactory(
-                        base="base 1", local=(local_1 := "local 1"), server=local_1
+                        base=(base_1 := "base 1"), local="local 1", server=base_1
                     ),
                     path=(path_1 := ("path 1",)),
                 ),
@@ -63,7 +63,7 @@ def _track_paths_with_diff_parameters():
             ),
             (),
             (check.format_path(path_1),),
-            id="single local server diff",
+            id="single base server diff",
         ),
         pytest.param(
             (
@@ -101,25 +101,25 @@ def _track_paths_with_diff_parameters():
 
 
 @pytest.mark.parametrize(
-    "actions, expected_base_local_diffs, expected_local_server_diffs",
+    "actions, expected_base_local_diffs, expected_base_server_diffs",
     _track_paths_with_diff_parameters(),
 )
 def test_track_paths_with_diff(
     actions: tuple[types_.UpdateAction, ...],
     expected_base_local_diffs: tuple[str, ...],
-    expected_local_server_diffs: tuple[str, ...],
+    expected_base_server_diffs: tuple[str, ...],
 ):
     """
     arrange: given actions
     act: when the actions and passed to TrackPathsWithDiff sequentually
-    assert: then the TrackPathsWithDiff has the expected base_local_diffs and local_server_diffs.
+    assert: then the TrackPathsWithDiff has the expected base_local_diffs and base_server_diffs.
     """
     track_paths_with_diff = check.TrackPathsWithDiff()
     for action in actions:
         track_paths_with_diff.process(action)
 
     assert tuple(track_paths_with_diff.base_local_diffs) == expected_base_local_diffs
-    assert tuple(track_paths_with_diff.local_server_diffs) == expected_local_server_diffs
+    assert tuple(track_paths_with_diff.base_server_diffs) == expected_base_server_diffs
 
 
 class ExpectedProblem(NamedTuple):

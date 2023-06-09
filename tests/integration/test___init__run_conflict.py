@@ -46,11 +46,13 @@ async def test_run_conflict(
             dry run mode
         3. docs with a documentation file updated and discourse updated with conflicting content
         4. docs with a documentation file and discourse updated to resolve conflict
+        5. docs with an index and documentation and alternate documentation file
     assert: then:
         1. the documentation page is created
         2. the documentation page is not updated
         3. the documentation page is not updated
         4. the documentation page is updated
+        1. the alternate documentation page is created
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
@@ -205,3 +207,43 @@ async def test_run_conflict(
     assert doc_table_line_1 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_4
+
+    # 5. docs with an index and documentation and alternate documentation file
+    caplog.clear()
+    alt_doc_table_key = "alt-doc"
+    alt_doc_title = "alt doc title"
+    (alt_doc_file := docs_dir / f"{alt_doc_table_key}.md").write_text(
+        alt_doc_content_5 := f"# {alt_doc_title}\nalt doc content 5", encoding="utf-8"
+    )
+    doc_file.write_text(doc_content_5 := f"# {doc_title}\ncontent 5", encoding="utf-8")
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "5. docs with an index and documentation and alternate documentation file"
+    )
+    mock_content_file.content = b64encode(doc_content_4.encode(encoding="utf-8"))
+
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert len(urls_with_actions) == 3
+    (alt_doc_url, _, _) = urls_with_actions.keys()
+    assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
+    doc_table_line_5 = f"| 1 | {doc_table_key} | [{doc_title}]({urlparse(doc_url).path}) |"
+    alt_doc_table_line_5 = (
+        f"| 1 | {alt_doc_table_key} | [{alt_doc_title}]({urlparse(alt_doc_url).path}) |"
+    )
+    assert_substrings_in_string(
+        chain(urls, (doc_table_line_5, alt_doc_table_line_5, "Update", "Create", "'success'")),
+        caplog.text,
+    )
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert doc_table_line_5 in index_topic
+    assert alt_doc_table_line_5 in index_topic
+    doc_topic = discourse_api.retrieve_topic(url=doc_url)
+    assert doc_topic == doc_content_5
+    alt_doc_topic = discourse_api.retrieve_topic(url=alt_doc_url)
+    assert alt_doc_topic == alt_doc_content_5

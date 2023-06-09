@@ -5,6 +5,7 @@
 
 import logging
 from collections.abc import Iterable, Iterator
+from itertools import chain
 from typing import NamedTuple, TypeGuard
 
 from more_itertools import side_effect
@@ -36,13 +37,13 @@ class TrackPathsWithDiff:
 
     Attrs:
         base_local_diffs: The paths that have a difference between the base and local content.
-        local_server_diffs: The paths that have a difference between the local and server content.
+        base_server_diffs: The paths that have a difference between the local and server content.
     """
 
     def __init__(self) -> None:
         """Construct."""
         self._base_local_diffs = []
-        self._local_server_diffs = []
+        self._base_server_diffs = []
 
     @property
     def base_local_diffs(self) -> Iterator[str]:
@@ -50,9 +51,9 @@ class TrackPathsWithDiff:
         return iter(self._base_local_diffs)
 
     @property
-    def local_server_diffs(self) -> Iterator[str]:
+    def base_server_diffs(self) -> Iterator[str]:
         """Get the paths with local and server diffs."""
-        return iter(self._local_server_diffs)
+        return iter(self._base_server_diffs)
 
     def process(self, action: UpdateAction) -> None:
         """Record differences for a given action.
@@ -68,8 +69,8 @@ class TrackPathsWithDiff:
         if content_change.base != content_change.local:
             self._base_local_diffs.append(format_path(action.path))
 
-        if content_change.local != content_change.server:
-            self._local_server_diffs.append(format_path(action.path))
+        if content_change.base != content_change.server:
+            self._base_server_diffs.append(format_path(action.path))
 
 
 def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
@@ -161,9 +162,9 @@ def conflicts(
 
     if not commit_tagged:
         base_local_diffs = tuple(track_paths_with_diff.base_local_diffs)
-        local_server_diffs = tuple(track_paths_with_diff.local_server_diffs)
+        base_server_diffs = tuple(track_paths_with_diff.base_server_diffs)
 
-        if base_local_diffs and local_server_diffs:
+        if base_local_diffs and base_server_diffs:
             problem = Problem(
                 path=base_local_diffs[0],
                 description=(
@@ -171,7 +172,7 @@ def conflicts(
                     "before proceeding. If the differences are not conflicting, please apply the "
                     f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
                     "proceed. Paths with potentially unmerged community contributions: "
-                    f"{base_local_diffs + local_server_diffs}."
+                    f"{set(chain(base_local_diffs, base_server_diffs))}."
                 ),
             )
 
