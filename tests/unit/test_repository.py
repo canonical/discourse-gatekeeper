@@ -9,7 +9,6 @@ import base64
 # pylint: disable=protected-access,C0302
 import secrets
 from pathlib import Path
-from typing import Optional
 from unittest import mock
 
 import pytest
@@ -634,7 +633,7 @@ def test_create_repository_client(
         pytest.param(None, id="all path"),
     ],
 )
-def test_repository_summary_modified(repository_client, folder: Optional[str]):
+def test_repository_summary_modified(repository_client, folder: str | None):
     """
     arrange: given repository with a modified file with respect to the head
     act: when get_summary is called
@@ -664,7 +663,7 @@ def test_repository_summary_modified(repository_client, folder: Optional[str]):
         pytest.param(None, id="all path"),
     ],
 )
-def test_repository_summary_new(repository_client, folder: Optional[str]):
+def test_repository_summary_new(repository_client, folder: str | None):
     """
     arrange: given repository with a new file with respect to the head
     act: when get_summary is called
@@ -695,7 +694,7 @@ def test_repository_summary_new(repository_client, folder: Optional[str]):
         pytest.param(None, id="all path"),
     ],
 )
-def test_repository_summary_remove(repository_client, folder: Optional[str]):
+def test_repository_summary_remove(repository_client, folder: str | None):
     """
     arrange: given repository with a removed file with respect to the head
     act: when get_summary is called

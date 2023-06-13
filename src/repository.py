@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, NamedTuple, Optional
+from typing import Any, NamedTuple
 
 from git import GitCommandError
 from git.diff import Diff
@@ -216,7 +216,7 @@ class Client:
         finally:
             self.switch(current_branch)
 
-    def get_summary(self, folder: Optional[str] = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
+    def get_summary(self, folder: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
 
         Args:
@@ -324,7 +324,7 @@ class Client:
         commit_msg: str,
         push: bool = True,
         force: bool = False,
-        folder: Optional[str] = DOCUMENTATION_FOLDER_NAME,
+        folder: str | None = DOCUMENTATION_FOLDER_NAME,
     ) -> "Client":
         """Update branch with a new commit.
 
