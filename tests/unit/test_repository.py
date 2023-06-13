@@ -6,9 +6,10 @@
 import base64
 
 # Need access to protected functions for testing
-# pylint: disable=protected-access
+# pylint: disable=protected-access,C0302
 import secrets
 from pathlib import Path
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -238,7 +239,8 @@ def test_create_pull_request(repository_client: Client, mock_pull_request: PullR
     assert: a pull request's page link is returned.
     """
     with repository_client.create_branch("new-branch").with_branch("new-branch") as repo:
-        (repo.base_path / "placeholder.md").touch()
+        (doc_folder := repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+        (doc_folder / "placeholder.md").touch()
         returned_url = repository_client.create_pull_request(DOCUMENTATION_TAG)
 
     assert returned_url == mock_pull_request.html_url
@@ -287,7 +289,8 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
     with repository_client.with_branch(DOCUMENTATION_TAG) as repo:
         previous_hash = repo.current_commit
 
-    (repository_client.base_path / "placeholder.md").touch()
+    (doc_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (doc_folder / "placeholder.md").touch()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch("my new commit")
 
@@ -318,7 +321,8 @@ def test_tag_other_commit(repository_client: Client):
     ) as repo:
         previous_hash = repo.current_commit
 
-        (repo.base_path / "placeholder.md").touch()
+        (doc_folder := repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+        (doc_folder / "placeholder.md").touch()
 
         repo.update_branch("my new commit")
 
@@ -623,55 +627,96 @@ def test_create_repository_client(
     assert isinstance(returned_client, repository.Client)
 
 
-def test_repository_summary_modified(repository_client):
+@pytest.mark.parametrize(
+    "folder",
+    [
+        pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
+        pytest.param(None, id="all path"),
+    ],
+)
+def test_repository_summary_modified(repository_client, folder: Optional[str]):
     """
     arrange: given repository with a modified file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the modified file.
     """
-    (repository_client.base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False)
+    base_path = repository_client.base_path / folder if folder else repository_client.base_path
+    if folder:
+        base_path.mkdir()
 
-    assert len(repository_client.get_summary().modified) == 0
+    (base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
 
-    (repository_client.base_path / "file-1.txt").write_text("My second version")
+    assert len(repository_client.get_summary(folder=folder).modified) == 0
 
-    assert len(repository_client.get_summary().modified) == 1
-    assert list(repository_client.get_summary().modified)[0] == "file-1.txt"
+    (base_path / "file-1.txt").write_text("My second version")
+
+    assert len(repository_client.get_summary(folder=folder).modified) == 1
+
+    file_path = str(Path(folder) / "file-1.txt") if folder else "file-1.txt"
+    assert list(repository_client.get_summary(folder=folder).modified)[0] == file_path
 
 
-def test_repository_summary_new(repository_client):
+@pytest.mark.parametrize(
+    "folder",
+    [
+        pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
+        pytest.param(None, id="all path"),
+    ],
+)
+def test_repository_summary_new(repository_client, folder: Optional[str]):
     """
     arrange: given repository with a new file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the new file.
     """
-    (repository_client.base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False)
+    base_path = repository_client.base_path / folder if folder else repository_client.base_path
+    if folder:
+        base_path.mkdir()
 
-    assert len(repository_client.get_summary().new) == 0
+    (base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
 
-    (repository_client.base_path / "file-2.txt").write_text("My second version")
+    assert len(repository_client.get_summary(folder=folder).new) == 0
 
-    assert len(repository_client.get_summary().new) == 1
-    assert list(repository_client.get_summary().new)[0] == "file-2.txt"
+    (base_path / "file-2.txt").write_text("My second version")
+
+    assert len(repository_client.get_summary(folder=folder).new) == 1
+
+    file_path = str(Path(folder) / "file-2.txt") if folder else "file-2.txt"
+
+    assert list(repository_client.get_summary(folder=folder).new)[0] == file_path
 
 
-def test_repository_summary_remove(repository_client):
+@pytest.mark.parametrize(
+    "folder",
+    [
+        pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
+        pytest.param(None, id="all path"),
+    ],
+)
+def test_repository_summary_remove(repository_client, folder: Optional[str]):
     """
     arrange: given repository with a removed file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the remove file.
     """
-    (repository_client.base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False)
+    base_path = repository_client.base_path / folder if folder else repository_client.base_path
+    if folder:
+        base_path.mkdir()
 
-    assert len(repository_client.get_summary().removed) == 0
+    (base_path / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
 
-    (repository_client.base_path / "file-1.txt").unlink()
+    assert len(repository_client.get_summary(folder=folder).removed) == 0
 
-    assert len(repository_client.get_summary().removed) == 1
-    assert list(repository_client.get_summary().removed)[0] == "file-1.txt"
+    (base_path / "file-1.txt").unlink()
+
+    assert len(repository_client.get_summary(folder=folder).removed) == 1
+
+    file_path = str(Path(folder) / "file-1.txt") if folder else "file-1.txt"
+
+    assert list(repository_client.get_summary(folder=folder).removed)[0] == file_path
 
 
 def test_repository_summary_invalid_operation(repository_client):
@@ -681,7 +726,7 @@ def test_repository_summary_invalid_operation(repository_client):
     assert: an exception ValueError is raised.
     """
     with pytest.raises(ValueError):
-        _ = repository_client.get_summary() + 1.0
+        _ = repository_client.get_summary(folder=None) + 1.0
 
 
 def test_repository_pull_default_branch(
@@ -696,14 +741,15 @@ def test_repository_pull_default_branch(
 
     repository_client.switch(branch_name)
 
-    (repository_client.base_path / "filler-file-1").touch()
+    (docs_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_folder / "filler-file-1").touch()
 
     repository_client.update_branch("commit 1")
 
     upstream_git_repo.git.checkout(branch_name)
     first_hash = upstream_git_repo.head.ref.commit.hexsha
-    (upstream_repository_path / "filler-file-2").touch()
-    upstream_git_repo.git.add(".")
+    (upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "filler-file-2").touch()
+    upstream_git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
     upstream_git_repo.git.commit("-m", "test")
     second_hash = upstream_git_repo.head.ref.commit.hexsha
 
@@ -724,14 +770,15 @@ def test_repository_pull_other_branch(
 
     repository_client.create_branch(branch_name).switch(branch_name)
 
-    (repository_client.base_path / "filler-file-1").touch()
+    (docs_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_folder / "filler-file-1").touch()
 
     repository_client.update_branch("commit 1")
 
     upstream_git_repo.git.checkout(branch_name)
     first_hash = upstream_git_repo.head.ref.commit.hexsha
-    (upstream_repository_path / "filler-file-2").touch()
-    upstream_git_repo.git.add(".")
+    (upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "filler-file-2").touch()
+    upstream_git_repo.git.add(DOCUMENTATION_FOLDER_NAME)
     upstream_git_repo.git.commit("-m", "test")
     second_hash = upstream_git_repo.head.ref.commit.hexsha
 
