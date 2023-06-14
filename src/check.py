@@ -30,7 +30,7 @@ class Problem(NamedTuple):
 format_path = "/".join
 
 
-class TrackPathsWithDiff:
+class PathsWithDiff(NamedTuple):
     """Keeps track of paths that have any differences.
 
     Attrs:
@@ -38,28 +38,39 @@ class TrackPathsWithDiff:
         base_server_diffs: The paths that have a difference between the local and server content.
     """
 
-    def __init__(self, actions: Iterable[UpdateAction]) -> None:
-        """Construct.
+    base_local_diffs: tuple[str, ...]
+    base_server_diffs: tuple[str, ...]
 
-        Args:
-            actions: The update actions to track diffs for.
-        """
-        # Need an iterator for both properties
-        base_local_actions, base_server_actions = tee(
-            action
-            for action in actions
-            if action.content_change is not None and action.content_change.base is not None
-        )
-        self.base_local_diffs: tuple[str, ...] = tuple(
+
+def get_path_with_diffs(actions: Iterable[UpdateAction]) -> PathsWithDiff:
+    """Generate the paths that have either local or server content changes.
+
+    Args:
+        actions: The update actions to track diffs for.
+
+    Returns:
+        The paths that have differences.
+    """
+    # Need an iterator for both attributes
+    base_local_actions, base_server_actions = tee(
+        action
+        for action in actions
+        if action.content_change is not None and action.content_change.base is not None
+    )
+    # The access to optional attributes is safe because of the filter above, mypy doesn't track
+    # to this degree
+    return PathsWithDiff(
+        base_local_diffs=tuple(
             format_path(action.path)
             for action in base_local_actions
-            if action.content_change.base != action.content_change.local
-        )
-        self.base_server_diffs: tuple[str, ...] = tuple(
+            if action.content_change.base != action.content_change.local  # type: ignore
+        ),
+        base_server_diffs=tuple(
             format_path(action.path)
             for action in base_server_actions
-            if action.content_change.base != action.content_change.server
-        )
+            if action.content_change.base != action.content_change.server  # type: ignore
+        ),
+    )
 
 
 def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
@@ -140,12 +151,13 @@ def conflicts(
     Yields:
         A problem for each action with a conflict
     """
-    update_actions = filter(_is_update_action, actions)
     # Need an iterator to check page by page and logical conflicts
-    update_actions, tracked_update_actions = tee(update_actions)
+    actions_page_conflicts, actions_logical_conflicts = tee(filter(_is_update_action, actions))
 
     any_page_conflicts = False
-    for problem in filter(None, (_update_action_problem(action) for action in update_actions)):
+    for problem in filter(
+        None, (_update_action_problem(action) for action in actions_page_conflicts)
+    ):
         any_page_conflicts = True
         yield problem
 
@@ -156,10 +168,10 @@ def conflicts(
     commit_discourse_ahead_ok_tagged = repository.is_same_commit(
         tag=constants.DISCOURSE_AHEAD_TAG, commit=user_inputs.commit_sha
     )
-    track_paths_with_diff = TrackPathsWithDiff(tracked_update_actions)
+    paths_with_diff = get_path_with_diffs(actions_logical_conflicts)
     if not commit_discourse_ahead_ok_tagged:
-        base_local_diffs = tuple(track_paths_with_diff.base_local_diffs)
-        base_server_diffs = tuple(track_paths_with_diff.base_server_diffs)
+        base_local_diffs = tuple(paths_with_diff.base_local_diffs)
+        base_server_diffs = tuple(paths_with_diff.base_server_diffs)
 
         if base_local_diffs and base_server_diffs:
             problem = Problem(

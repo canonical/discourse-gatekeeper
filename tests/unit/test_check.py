@@ -126,10 +126,10 @@ def test_track_paths_with_diff(
     act: when the actions and passed to TrackPathsWithDiff sequentually
     assert: then the TrackPathsWithDiff has the expected base_local_diffs and base_server_diffs.
     """
-    track_paths_with_diff = check.TrackPathsWithDiff(actions)
+    paths_with_diff = check.get_path_with_diffs(actions)
 
-    assert tuple(track_paths_with_diff.base_local_diffs) == expected_base_local_diffs
-    assert tuple(track_paths_with_diff.base_server_diffs) == expected_base_server_diffs
+    assert tuple(paths_with_diff.base_local_diffs) == expected_base_local_diffs
+    assert tuple(paths_with_diff.base_server_diffs) == expected_base_server_diffs
 
 
 class ExpectedProblem(NamedTuple):
