@@ -80,6 +80,19 @@ def _track_paths_with_diff_parameters():
             (
                 factories.UpdateActionFactory(
                     content_change=factories.ContentChangeFactory(
+                        base=None, local="local 1", server="server 1"
+                    ),
+                    path=(path_1 := ("path 1",)),
+                ),
+            ),
+            (),
+            (),
+            id="single all diff base None",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
                         base="base 1", local="local 1", server="server 1"
                     ),
                     path=(path_1 := ("path 1",)),
@@ -112,9 +125,7 @@ def test_track_paths_with_diff(
     act: when the actions and passed to TrackPathsWithDiff sequentually
     assert: then the TrackPathsWithDiff has the expected base_local_diffs and base_server_diffs.
     """
-    track_paths_with_diff = check.TrackPathsWithDiff()
-    for action in actions:
-        track_paths_with_diff.process(action)
+    track_paths_with_diff = check.TrackPathsWithDiff(actions)
 
     assert tuple(track_paths_with_diff.base_local_diffs) == expected_base_local_diffs
     assert tuple(track_paths_with_diff.base_server_diffs) == expected_base_server_diffs
@@ -139,13 +150,13 @@ def _test_conflicts_parameters():
         The tests.
     """
     return [
-        pytest.param((), True, (), id="empty"),
-        pytest.param((factories.CreateActionFactory(),), True, (), id="single create"),
-        pytest.param((factories.NoopActionFactory(),), True, (), id="single noop"),
-        pytest.param((factories.DeleteActionFactory(),), True, (), id="single delete"),
+        pytest.param((), False, (), id="empty"),
+        pytest.param((factories.CreateActionFactory(),), False, (), id="single create"),
+        pytest.param((factories.NoopActionFactory(),), False, (), id="single noop"),
+        pytest.param((factories.DeleteActionFactory(),), False, (), id="single delete"),
         pytest.param(
             (factories.UpdateActionFactory(content_change=None),),
-            True,
+            False,
             (),
             id="single update no content",
         ),
@@ -155,7 +166,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="a")
                 ),
             ),
-            True,
+            False,
             (),
             id="single update no base content same",
         ),
@@ -165,7 +176,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="b")
                 ),
             ),
-            True,
+            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -186,7 +197,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="a", local="a")
                 ),
             ),
-            True,
+            False,
             (),
             id="single update no conflict",
         ),
@@ -196,7 +207,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
             ),
-            True,
+            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -210,7 +221,7 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (factories.NoopActionFactory(), factories.NoopActionFactory()),
-            True,
+            False,
             (),
             id="multiple actions no problems",
         ),
@@ -221,7 +232,7 @@ def _test_conflicts_parameters():
                 ),
                 factories.NoopActionFactory(),
             ),
-            True,
+            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -240,7 +251,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            True,
+            False,
             (
                 ExpectedProblem(
                     path="/".join(action_2.path),
@@ -261,7 +272,7 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            True,
+            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
