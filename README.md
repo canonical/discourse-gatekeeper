@@ -140,7 +140,13 @@ page-by-page conflicts, the action will ask that the community contributions are
 merged first and any logical conflicts are resolved between the proposed new
 documentation and the changes on discourse.
 
+For example, if there are community contributions on `docs/getting-started.md`
+that have not been merged into `main` and a PR proposes changes to
+`docs/architecture.md`, this will be considered a conflict as the change to
+`docs/architecture.md` could make changes to the documentation that mean that
+the changes to `docs/getting-started.md` are no longer accurate.
+
 If, after checking the community contributions on discourse, you determine that
-there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` can
-be applied to the latest commit in the PR which will allow the action to proceed
-assuming there are no page-by-page conflicts.
+there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` tag
+can be applied to the latest commit in the PR which will allow the action to
+proceed assuming there are no page-by-page conflicts.
