@@ -158,8 +158,6 @@ async def test_run_conflict(
     # 3. docs with a documentation file updated and discourse updated with conflicting content
     caplog.clear()
 
-    repository_client.switch(DEFAULT_BRANCH)
-
     with pytest.raises(exceptions.InputError) as exc_info:
         run_reconcile(
             clients=Clients(discourse=discourse_api, repository=repository_client),
