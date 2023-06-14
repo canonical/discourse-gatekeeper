@@ -32,7 +32,7 @@ def conflicts(base: str, theirs: str, ours: str) -> str | None:
     if theirs in (base, ours) or ours == base:
         return None
 
-    return f"Detected differences between base, theirs and ours,\ndiff: {diff(theirs, ours)}"
+    return f"diff: {diff(theirs, ours)}"
 
 
 def merge(base: str, theirs: str, ours: str) -> str:

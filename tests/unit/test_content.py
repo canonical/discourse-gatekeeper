@@ -48,9 +48,7 @@ def test_conflicts(base: str, theirs: str, ours: str, expected_conflict: bool):
         assert result is None
     else:
         assert result is not None
-        assert_substrings_in_string(
-            ("base", "theirs", "ours", "differences", content.diff(theirs, ours)), result
-        )
+        assert_substrings_in_string(("diff", content.diff(theirs, ours)), result)
 
 
 def _test_merge_parameters():
