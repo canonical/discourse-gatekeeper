@@ -18,7 +18,8 @@ def _track_paths_with_diff_parameters():
     """Generate parameters for the track_paths_with_diff test.
 
     Returns:
-        The tests.
+        The test parameters, the first item of each element is the action and the second and third
+        the expected paths with base and local and base and server diffs, respectively.
     """
     return [
         pytest.param((), (), (), id="empty"),
