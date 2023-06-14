@@ -128,8 +128,8 @@ def test_track_paths_with_diff(
     """
     paths_with_diff = check.get_path_with_diffs(actions)
 
-    assert tuple(paths_with_diff.base_local_diffs) == expected_base_local_diffs
-    assert tuple(paths_with_diff.base_server_diffs) == expected_base_server_diffs
+    assert paths_with_diff.base_local_diffs == expected_base_local_diffs
+    assert paths_with_diff.base_server_diffs == expected_base_server_diffs
 
 
 class ExpectedProblem(NamedTuple):
