@@ -124,14 +124,29 @@ Additional recommended steps:
 To ensure that contributions to the documentation on discourse are not
 overridden, the action compares the content that was last pushed to discourse
 with the current documentation on discourse and any proposed changes. If there
-are changes both on discourse and in the repository, the action will attempt to
-merge the content using essentially `git merge`. If that fails, the action will
-prompt you to resolve those conflicts by editing the documentation on discourse
-and on the repository. Be sure to explain the reasoning for the changes on
-discourse.
+are changes both on discourse and in the repository, the action will prompt you
+to resolve those conflicts by editing the documentation on discourse and on the
+repository. Be sure to explain the reasoning for any changes on discourse.
 
-Note that `git merge` will not make any changes on your branch. The content that
-was last pushed to discourse is determined by getting the content from a given
-file from a commit with the `upload-charm-docs/base-content` tag. A different
-tag can be configured using the `base_tag_name` input. If the tag does not
-exist, the action will fail and request for the tag to be created.
+The content that was last pushed to discourse is determined by getting the
+content from a given file from a commit with the
+`upload-charm-docs/base-content` tag. If the tag does not exist, the action will
+fail and request for the tag to be created.
+
+In addition to page-by-page conflict detection, the action will check whether
+there are both (1) unmerged community contributions and (2) proposed
+documentation changes in a given PR. If both are true even if there are no
+page-by-page conflicts, the action will ask that the community contributions are
+merged first and any logical conflicts are resolved between the proposed new
+documentation and the changes on discourse.
+
+For example, if there are community contributions on `docs/getting-started.md`
+that have not been merged into `main` and a PR proposes changes to
+`docs/architecture.md`, this will be considered a conflict as the change to
+`docs/architecture.md` could make changes to the documentation that mean that
+the changes to `docs/getting-started.md` are no longer accurate.
+
+If, after checking the community contributions on discourse, you determine that
+there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` tag
+can be applied to the latest commit in the PR which will allow the action to
+proceed assuming there are no page-by-page conflicts.

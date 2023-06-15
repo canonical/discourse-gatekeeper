@@ -73,7 +73,11 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     # tee creates a copy of the iterator which is needed as check_conflicts consumes the iterator
     # it is passed
     actions, check_actions = tee(actions, 2)
-    problems = tuple(check_conflicts(actions=check_actions))
+    problems = tuple(
+        check_conflicts(
+            actions=check_actions, repository=clients.repository, user_inputs=user_inputs
+        )
+    )
     if problems:
         raise InputError(
             "One or more of the required actions could not be executed, see the log for details"

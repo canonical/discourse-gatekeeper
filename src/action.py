@@ -7,9 +7,7 @@ import logging
 import typing
 from enum import Enum
 
-from . import exceptions, reconcile, types_
-from .content import diff as content_diff
-from .content import merge as content_merge
+from . import content, exceptions, reconcile, types_
 from .discourse import Discourse
 
 DRY_RUN_NAVLINK_LINK = "<not created due to dry run>"
@@ -42,7 +40,7 @@ def _log_content_change(base: str, new: str) -> None:
     old = f"{base}\n" if not base.endswith("\n") else base
     new = f"{new}\n" if not new.endswith("\n") else new
     if new != old:
-        logging.info("content change:\n%s", content_diff(old, new))
+        logging.info("content change:\n%s", content.diff(old, new))
 
 
 def _create(
@@ -200,7 +198,7 @@ def _update(
         case UpdateCase.CONTENT_CHANGE:
             try:
                 content_change = typing.cast(types_.ContentChange, action.content_change)
-                merged_content = content_merge(
+                merged_content = content.merge(
                     base=typing.cast(str, content_change.base),
                     theirs=content_change.server,
                     ours=content_change.local,
