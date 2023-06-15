@@ -143,6 +143,17 @@ def conflicts(
 ) -> Iterator[Problem]:
     """Check whether actions have any content conflicts.
 
+    There are two types of conflicts. The first is where the local content is different to what is
+    on the server and both the local content and the server content is different from the base.
+    This means that there were edits on the server which have not been merged into git and the PR
+    is making changes to the same page.
+
+    The second type of conflict is a logical conflict which arises out of that there are at least
+    some changes on the server that have not been merged into git yet and the branch is proposing
+    to make changes to the documentation as well. This means that there could be changes made on
+    the server which logically conflict with proposed changes in the PR. These conflicts can be
+    supppressed using the discourse-ahead-ok tag on the commit that the action is running on.
+
     Args:
         actions: The actions to check.
         repository: Client for repository interactions.
@@ -168,25 +179,22 @@ def conflicts(
     commit_discourse_ahead_ok_tagged = repository.is_same_commit(
         tag=constants.DISCOURSE_AHEAD_TAG, commit=user_inputs.commit_sha
     )
+    if commit_discourse_ahead_ok_tagged:
+        return
+
     paths_with_diff = get_path_with_diffs(actions_logical_conflicts)
-    if not commit_discourse_ahead_ok_tagged:
-        base_local_diffs = tuple(paths_with_diff.base_local_diffs)
-        base_server_diffs = tuple(paths_with_diff.base_server_diffs)
+    if not paths_with_diff.base_local_diffs or not paths_with_diff.base_server_diffs:
+        return
 
-        if base_local_diffs and base_server_diffs:
-            problem = Problem(
-                path=base_local_diffs[0],
-                description=(
-                    "detected unmerged community contributions, these need to be resolved "
-                    "before proceeding. If the differences are not conflicting, please apply the "
-                    f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
-                    "proceed. Paths with potentially unmerged community contributions: "
-                    f"{set(chain(base_local_diffs, base_server_diffs))}."
-                ),
-            )
-
-            logging.error(
-                "there is a problem preventing the execution of an action, problem: %s", problem
-            )
-
-            yield problem
+    problem = Problem(
+        path=paths_with_diff.base_local_diffs[0],
+        description=(
+            "detected unmerged community contributions, these need to be resolved "
+            "before proceeding. If the differences are not conflicting, please apply the "
+            f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
+            "proceed. Paths with potentially unmerged community contributions: "
+            f"{set(chain(paths_with_diff.base_local_diffs, paths_with_diff.base_server_diffs))}."
+        ),
+    )
+    logging.error("there is a problem preventing the execution of an action, problem: %s", problem)
+    yield problem
