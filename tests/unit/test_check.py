@@ -137,7 +137,6 @@ class ExpectedProblem(NamedTuple):
     Attrs:
         path: The expected path.
         description_contents: The expected contents of the description
-
     """
 
     path: str
