@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-FROM python:3.11-slim
+FROM python:3.11.4-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git-svn=1:2.39.2-1.1 && \
