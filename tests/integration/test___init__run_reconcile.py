@@ -79,7 +79,9 @@ async def test_run(
         content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
     )
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "first commit of metadata", directory=None
+    )
 
     # 1. docs with an index file in dry run mode
     caplog.clear()
