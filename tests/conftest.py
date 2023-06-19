@@ -15,8 +15,7 @@ from github.Requester import Requester
 
 import src
 from src import repository
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.constants import DOCUMENTATION_FOLDER_NAME
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would
@@ -63,9 +62,9 @@ def fixture_docs_path(repository_path: Path) -> Path:
 # upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
-        repository_path: Path,
-        upstream_git_repo,
-        default_branch: str,
+    repository_path: Path,
+    upstream_git_repo,
+    default_branch: str,
 ) -> Repo:
     """Create repository with mocked upstream."""
     repo = Repo.clone_from(url=upstream_git_repo.working_dir, to_path=repository_path)
@@ -153,8 +152,8 @@ def fixture_git_repo_with_remote(git_repo: Repo) -> Repo:
 
 @pytest.fixture(name="repository_client")
 def fixture_repository_client(
-        git_repo: Repo,
-        mock_github_repo: Repository,
+    git_repo: Repo,
+    mock_github_repo: Repository,
 ) -> repository.Client:
     """Get repository client."""
     return repository.Client(repository=git_repo, github_repository=mock_github_repo)
@@ -162,7 +161,7 @@ def fixture_repository_client(
 
 @pytest.fixture(name="patch_create_repository_client")
 def fixture_patch_create_repository_client(
-        monkeypatch: pytest.MonkeyPatch, repository_client: repository.Client
+    monkeypatch: pytest.MonkeyPatch, repository_client: repository.Client
 ) -> None:
     """Patch create_repository_client to return a mocked repository.Client."""
 
