@@ -172,6 +172,8 @@ def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
 
+    logging.info("%s", os.environ)
+
     # Read input
     user_inputs = _parse_env_vars()
 
