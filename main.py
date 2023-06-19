@@ -172,7 +172,11 @@ def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
 
-    logging.info("%s", os.environ)
+    logging.info("environment: %s", os.environ)
+    event_path = os.getenv("GITHUB_EVENT_PATH")
+    if event_path:
+        event_json = pathlib.Path(event_path).read_text(encoding="utf-8")
+        logging.info("event JSON: %s", event_json)
 
     # Read input
     user_inputs = _parse_env_vars()
