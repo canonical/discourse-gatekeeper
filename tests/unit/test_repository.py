@@ -120,6 +120,7 @@ def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client:
 def test_create_branch(
     repository_client: Client,
     upstream_git_repo: Repo,
+    docs_path: Path,
 ):
     """
     arrange: given Client and newly created files in `repo` and `repo/docs` directories
@@ -131,14 +132,11 @@ def test_create_branch(
 
     root_file = repository_path / "test.txt"
     root_file.write_text("content 1", encoding="utf-8")
-    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
-    (repository_path / docs_dir).mkdir()
-    docs_file = docs_dir / "test.txt"
-    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
-    nested_docs_dir = docs_dir / "nested"
-    (repository_path / nested_docs_dir).mkdir()
+    docs_file = docs_path / "test.txt"
+    docs_file.write_text("content 2", encoding="utf-8")
+    (nested_docs_dir := docs_path / "nested").mkdir()
     nested_docs_file = nested_docs_dir / "test.txt"
-    (repository_path / nested_docs_file).write_text("content 3", encoding="utf-8")
+    nested_docs_file.write_text("content 3", encoding="utf-8")
     branch_name = "test-create-branch"
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
@@ -156,14 +154,12 @@ def test_create_branch(
         upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only").splitlines()
     )
     assert str(root_file) not in branch_files
-    assert str(docs_file) in branch_files
-    assert str(nested_docs_file) in branch_files
+    assert str(docs_file.relative_to(repository_path)) in branch_files
+    assert str(nested_docs_file.relative_to(repository_path)) in branch_files
 
 
 def test_create_branch_checkout_clash_default(
-    repository_client: Client,
-    upstream_git_repo: Repo,
-    default_branch: str,
+    repository_client: Client, upstream_git_repo: Repo, default_branch: str, docs_path: Path
 ):
     """
     arrange: given Client and a file with the same name as the default branch and a file
@@ -176,10 +172,7 @@ def test_create_branch_checkout_clash_default(
     root_file = repository_path / default_branch
     root_file.write_text("content 1", encoding="utf-8")
     branch_name = "test-create-branch"
-    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
-    (repository_path / docs_dir).mkdir()
-    docs_file = docs_dir / "test.txt"
-    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+    (docs_path / "test.txt").write_text("content 2", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
@@ -188,7 +181,9 @@ def test_create_branch_checkout_clash_default(
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
 
-def test_create_branch_checkout_clash_created(repository_client: Client, upstream_git_repo: Repo):
+def test_create_branch_checkout_clash_created(
+    repository_client: Client, upstream_git_repo: Repo, docs_path: Path
+):
     """
     arrange: given Client and a file with the same name as the requested branch and a
         file in the docs folder
@@ -200,10 +195,7 @@ def test_create_branch_checkout_clash_created(repository_client: Client, upstrea
     branch_name = "test-create-branch"
     root_file = repository_path / branch_name
     root_file.write_text("content 1", encoding="utf-8")
-    docs_dir = Path(DOCUMENTATION_FOLDER_NAME)
-    (repository_path / docs_dir).mkdir()
-    docs_file = docs_dir / "test.txt"
-    (repository_path / docs_file).write_text("content 2", encoding="utf-8")
+    (docs_path / "test.txt").write_text("content 2", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
@@ -231,15 +223,16 @@ def test_create_pull_request_error():
     )
 
 
-def test_create_pull_request(repository_client: Client, mock_pull_request: PullRequest):
+def test_create_pull_request(
+    repository_client: Client, mock_pull_request: PullRequest, docs_path: Path
+):
     """
     arrange: given Client with a mocked github client that returns a mocked pull request
     act: when _create_pull_request is called
     assert: a pull request's page link is returned.
     """
-    with repository_client.create_branch("new-branch").with_branch("new-branch") as repo:
-        (doc_folder := repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-        (doc_folder / "placeholder.md").touch()
+    with repository_client.create_branch("new-branch").with_branch("new-branch") as _:
+        (docs_path / "placeholder.md").touch()
         returned_url = repository_client.create_pull_request(DOCUMENTATION_TAG)
 
     assert returned_url == mock_pull_request.html_url
@@ -278,7 +271,7 @@ def test_tag_commit_tag_not_exists(repository_client: Client, upstream_git_repo)
     assert any(DOCUMENTATION_TAG == tag.name for tag in upstream_git_repo.tags)
 
 
-def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
+def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo, docs_path: Path):
     """
     arrange: given tag name and commit sha and tag DOCUMENTATION_TAG exists locally or remotely
         on a different commit
@@ -288,8 +281,7 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
     with repository_client.with_branch(DOCUMENTATION_TAG) as repo:
         previous_hash = repo.current_commit
 
-    (doc_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-    (doc_folder / "placeholder.md").touch()
+    (docs_path / "placeholder.md").touch()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch("my new commit")
 
@@ -306,7 +298,7 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo):
     assert tag.commit.hexsha == new_hash
 
 
-def test_tag_other_commit(repository_client: Client):
+def test_tag_other_commit(repository_client: Client, docs_path: Path):
     """
     arrange: given tag name and commit sha, with repo not place in commit sha
     act: when tag_commit is called with the tag name and commit sha
@@ -320,8 +312,7 @@ def test_tag_other_commit(repository_client: Client):
     ) as repo:
         previous_hash = repo.current_commit
 
-        (doc_folder := repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-        (doc_folder / "placeholder.md").touch()
+        (docs_path / "placeholder.md").touch()
 
         repo.update_branch("my new commit")
 
@@ -632,28 +623,27 @@ def test_create_repository_client(
         pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
         pytest.param(None, id="all path"),
     ],
+    indirect=["folder"],
 )
-def test_repository_summary_modified(repository_client, folder: str | None):
+def test_repository_summary_modified(repository_client, folder):
     """
     arrange: given repository with a modified file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the modified file.
     """
-    base_path = repository_client.base_path / folder if folder else repository_client.base_path
-    if folder:
-        base_path.mkdir()
+    directory = folder.relative_to(repository_client.base_path)
 
-    (base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
+    (folder / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, directory=directory)
 
-    assert len(repository_client.get_summary(folder=folder).modified) == 0
+    assert len(repository_client.get_summary(directory=directory).modified) == 0
 
-    (base_path / "file-1.txt").write_text("My second version")
+    (folder / "file-1.txt").write_text("My second version")
 
-    assert len(repository_client.get_summary(folder=folder).modified) == 1
+    assert len(repository_client.get_summary(directory=directory).modified) == 1
 
-    file_path = str(Path(folder) / "file-1.txt") if folder else "file-1.txt"
-    assert list(repository_client.get_summary(folder=folder).modified)[0] == file_path
+    file_path = str(Path(directory) / "file-1.txt") if folder else "file-1.txt"
+    assert list(repository_client.get_summary(directory=directory).modified)[0] == file_path
 
 
 @pytest.mark.parametrize(
@@ -662,29 +652,28 @@ def test_repository_summary_modified(repository_client, folder: str | None):
         pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
         pytest.param(None, id="all path"),
     ],
+    indirect=["folder"],
 )
-def test_repository_summary_new(repository_client, folder: str | None):
+def test_repository_summary_new(repository_client, folder):
     """
     arrange: given repository with a new file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the new file.
     """
-    base_path = repository_client.base_path / folder if folder else repository_client.base_path
-    if folder:
-        base_path.mkdir()
+    directory = folder.relative_to(repository_client.base_path)
 
-    (base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
+    (folder / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, directory=directory)
 
-    assert len(repository_client.get_summary(folder=folder).new) == 0
+    assert len(repository_client.get_summary(directory=directory).new) == 0
 
-    (base_path / "file-2.txt").write_text("My second version")
+    (folder / "file-2.txt").write_text("My second version")
 
-    assert len(repository_client.get_summary(folder=folder).new) == 1
+    assert len(repository_client.get_summary(directory=directory).new) == 1
 
-    file_path = str(Path(folder) / "file-2.txt") if folder else "file-2.txt"
+    file_path = str(Path(directory) / "file-2.txt") if folder else "file-2.txt"
 
-    assert list(repository_client.get_summary(folder=folder).new)[0] == file_path
+    assert list(repository_client.get_summary(directory=directory).new)[0] == file_path
 
 
 @pytest.mark.parametrize(
@@ -693,29 +682,58 @@ def test_repository_summary_new(repository_client, folder: str | None):
         pytest.param(DOCUMENTATION_FOLDER_NAME, id="docs folder only"),
         pytest.param(None, id="all path"),
     ],
+    indirect=["folder"],
 )
-def test_repository_summary_remove(repository_client, folder: str | None):
+def test_repository_summary_remove(repository_client, folder):
     """
     arrange: given repository with a removed file with respect to the head
     act: when get_summary is called
     assert: The DiffSummary object represents the remove file.
     """
-    base_path = repository_client.base_path / folder if folder else repository_client.base_path
-    if folder:
-        base_path.mkdir()
+    directory = folder.relative_to(repository_client.base_path)
 
-    (base_path / "file-1.txt").write_text("My first version")
-    repository_client.update_branch("file-1 commit", force=False, push=False, folder=folder)
+    (folder / "file-1.txt").write_text("My first version")
+    repository_client.update_branch("file-1 commit", force=False, push=False, directory=directory)
 
-    assert len(repository_client.get_summary(folder=folder).removed) == 0
+    assert len(repository_client.get_summary(directory=directory).removed) == 0
 
-    (base_path / "file-1.txt").unlink()
+    (folder / "file-1.txt").unlink()
 
-    assert len(repository_client.get_summary(folder=folder).removed) == 1
+    assert len(repository_client.get_summary(directory=directory).removed) == 1
 
-    file_path = str(Path(folder) / "file-1.txt") if folder else "file-1.txt"
+    file_path = str(Path(directory) / "file-1.txt") if directory else "file-1.txt"
 
-    assert list(repository_client.get_summary(folder=folder).removed)[0] == file_path
+    assert list(repository_client.get_summary(directory=directory).removed)[0] == file_path
+
+
+def test_commit_file_outside_of_folder(repository_client, upstream_git_repo, docs_path):
+    """
+    arrange: given repository with a file added both in the docs folder and outside
+    act: when update_branch is called with the directory argument set to the docs folder
+    assert: only the file in the docs folder is committed
+    """
+    branch_name = DEFAULT_BRANCH
+
+    repository_client.switch(branch_name)
+
+    directory = str(docs_path.relative_to(repository_client.base_path))
+
+    file1 = "file-1.txt"
+    file2 = "file-2.txt"
+
+    (repository_client.base_path / file1).write_text("My first file")
+    (docs_path / file2).write_text("My second file")
+    repository_client.update_branch("file-2 commit", directory=directory)
+
+    upstream_git_repo.git.checkout(branch_name)
+
+    # Only the second file is present upstream
+    assert not (Path(upstream_git_repo.working_dir) / directory / file1).exists()
+    assert (Path(upstream_git_repo.working_dir) / directory / file2).exists()
+
+    # Locally the repository is dirty only when directory is set to None
+    assert not repository_client.get_summary().is_dirty
+    assert repository_client.get_summary(directory=None).is_dirty
 
 
 def test_repository_summary_invalid_operation(repository_client):
@@ -725,11 +743,11 @@ def test_repository_summary_invalid_operation(repository_client):
     assert: an exception ValueError is raised.
     """
     with pytest.raises(ValueError):
-        _ = repository_client.get_summary(folder=None) + 1.0
+        _ = repository_client.get_summary(directory=None) + 1.0
 
 
 def test_repository_pull_default_branch(
-    repository_client, upstream_git_repo, upstream_repository_path
+    repository_client, upstream_git_repo, upstream_repository_path, docs_path: Path
 ):
     """
     arrange: given repository with an updated upstream
@@ -740,8 +758,7 @@ def test_repository_pull_default_branch(
 
     repository_client.switch(branch_name)
 
-    (docs_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-    (docs_folder / "filler-file-1").touch()
+    (docs_path / "filler-file-1").touch()
 
     repository_client.update_branch("commit 1")
 
@@ -758,7 +775,7 @@ def test_repository_pull_default_branch(
 
 
 def test_repository_pull_other_branch(
-    repository_client, upstream_git_repo, upstream_repository_path
+    repository_client, upstream_git_repo, upstream_repository_path, docs_path: Path
 ):
     """
     arrange: given repository with an updated upstream
@@ -769,8 +786,7 @@ def test_repository_pull_other_branch(
 
     repository_client.create_branch(branch_name).switch(branch_name)
 
-    (docs_folder := repository_client.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-    (docs_folder / "filler-file-1").touch()
+    (docs_path / "filler-file-1").touch()
 
     repository_client.update_branch("commit 1")
 
@@ -985,19 +1001,16 @@ def test_create_pull_request_function(
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
+    docs_path: Path,
 ):
     """
     arrange: given RepositoryClient and a repository with changed files
     act: when create_pull_request is called
     assert: changes are pushed to default branch and pull request link is returned.
     """
-    repository_path = repository_client.base_path
-
-    docs_folder = Path(DOCUMENTATION_FOLDER_NAME)
-    (repository_path / docs_folder).mkdir()
-    filler_file = docs_folder / "filler.txt"
+    filler_file = "filler.txt"
     filler_text = "filler-text"
-    (repository_path / filler_file).write_text(filler_text)
+    (docs_path / filler_file).write_text(filler_text)
 
     repository_client.switch(DEFAULT_BRANCH)
 
@@ -1005,4 +1018,6 @@ def test_create_pull_request_function(
 
     upstream_git_repo.git.checkout(repository.DEFAULT_BRANCH_NAME)
     assert returned_pr_link == mock_pull_request.html_url
-    assert (upstream_repository_path / filler_file).read_text() == filler_text
+    assert (
+        upstream_repository_path / DOCUMENTATION_FOLDER_NAME / filler_file
+    ).read_text() == filler_text

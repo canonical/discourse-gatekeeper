@@ -216,17 +216,17 @@ class Client:
         finally:
             self.switch(current_branch)
 
-    def get_summary(self, folder: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
+    def get_summary(self, directory: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
 
         Args:
-            folder: constraint committed changes to a particular folder only. If None, all the
+            directory: constraint committed changes to a particular folder only. If None, all the
                 folders are committed. Default is the documentation folder.
 
         Returns:
             DiffSummary object representing the summary of the differences.
         """
-        self._git_repo.git.add(folder or ".")
+        self._git_repo.git.add(directory or ".")
 
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
@@ -324,7 +324,7 @@ class Client:
         commit_msg: str,
         push: bool = True,
         force: bool = False,
-        folder: str | None = DOCUMENTATION_FOLDER_NAME,
+        directory: str | None = DOCUMENTATION_FOLDER_NAME,
     ) -> "Client":
         """Update branch with a new commit.
 
@@ -332,7 +332,7 @@ class Client:
             commit_msg: commit message to be committed to the branch
             push: push new changes to remote branches
             force: when pushing to remove, use force flag
-            folder: constraint committed changes to a particular folder only. If None, all the
+            directory: constraint committed changes to a particular folder only. If None, all the
                 folders are committed. Default is the documentation folder.
 
         Raises:
@@ -342,7 +342,7 @@ class Client:
             Repository client with the updated branch
         """
         try:
-            self._git_repo.git.add("-A", folder or ".")
+            self._git_repo.git.add("-A", directory or ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
                 args = ["-u"]

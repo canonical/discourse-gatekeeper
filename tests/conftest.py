@@ -14,7 +14,7 @@ from github.Repository import Repository
 from github.Requester import Requester
 
 import src
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
 
@@ -52,6 +52,14 @@ def fixture_repository_path(tmp_path: Path) -> Path:
     return repo_path
 
 
+@pytest.fixture(name="docs_path")
+def fixture_docs_path(repository_path: Path) -> Path:
+    """Create path for testing repository."""
+    docs_path = repository_path / DOCUMENTATION_FOLDER_NAME
+    docs_path.mkdir()
+    return docs_path
+
+
 # upstream_git_repo is required although not used
 @pytest.fixture(name="git_repo")
 def fixture_git_repo(
@@ -69,6 +77,18 @@ def fixture_git_repo(
     repo.git.checkout(repo.head.commit.hexsha)
 
     return repo
+
+
+@pytest.fixture(scope="function")
+def folder(request, repository_client):
+    """Indirect fixture to create a folder in the repository"""
+    input_folder = request.param
+    base_path = (
+        repository_client.base_path / input_folder if input_folder else repository_client.base_path
+    )
+    if input_folder:
+        base_path.mkdir()
+    return base_path
 
 
 @pytest.fixture(name="upstream_git_repo")
