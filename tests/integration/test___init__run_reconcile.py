@@ -99,7 +99,7 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "1. docs with an index file in dry run mode"
+        "1. docs with an index file in dry run mode", directory=None
     )
 
     urls_with_actions = run_reconcile(

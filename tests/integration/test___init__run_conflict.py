@@ -92,7 +92,7 @@ async def test_run_conflict(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "1. docs with an index and documentation file"
+        "1. docs with an index and documentation file", directory=None
     )
 
     urls_with_actions = run_reconcile(
