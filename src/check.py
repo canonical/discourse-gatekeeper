@@ -51,14 +51,22 @@ def get_path_with_diffs(actions: Iterable[UpdateAction]) -> PathsWithDiff:
     Returns:
         The paths that have differences.
     """
-    # Need an iterator for both attributes
-    base_local_actions, base_server_actions = tee(
+    # Filter any actions without a change in content or None base
+    actions_with_changes = (
         action
         for action in actions
         if action.content_change is not None and action.content_change.base is not None
     )
+    # Remove an actions where local and server are the same
     # The access to optional attributes is safe because of the filter above, mypy doesn't track
     # to this degree
+    local_server_diff_actions = (
+        action
+        for action in actions_with_changes
+        if action.content_change.local != action.content_change.server  # type: ignore
+    )
+    # Need an iterator for both attributes
+    base_local_actions, base_server_actions = tee(local_server_diff_actions)
     return PathsWithDiff(
         base_local_diffs=tuple(
             format_path(action.path)

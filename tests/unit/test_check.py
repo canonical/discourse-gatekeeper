@@ -68,6 +68,19 @@ def _track_paths_with_diff_parameters():
             (
                 factories.UpdateActionFactory(
                     content_change=factories.ContentChangeFactory(
+                        base="base 1", local=(local_1 := "local 1"), server=local_1
+                    ),
+                    path=(path_1 := ("path 1",)),
+                ),
+            ),
+            (),
+            (),
+            id="single base diff server local same",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
                         base="base 1", local="local 1", server="server 1"
                     ),
                     path=(path_1 := ("path 1",)),
@@ -108,6 +121,23 @@ def _track_paths_with_diff_parameters():
             (check.format_path(path_1), check.format_path(path_2)),
             (check.format_path(path_1), check.format_path(path_2)),
             id="multiple all diff",
+        ),
+        pytest.param(
+            (
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 1", local=(local_1 := "local 1"), server=local_1
+                    )
+                ),
+                factories.UpdateActionFactory(
+                    content_change=factories.ContentChangeFactory(
+                        base="base 2", local=(local_2 := "local 2"), server=local_2
+                    )
+                ),
+            ),
+            (),
+            (),
+            id="multiple base diff local server same",
         ),
     ]
 
@@ -294,7 +324,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", server="b", local="b")
+                    content_change=types_.ContentChange(base="a", server="b", local="a")
                 ),
                 action_2 := factories.UpdateActionFactory(
                     content_change=types_.ContentChange(base="x", server="x", local="y")
@@ -303,7 +333,7 @@ def _test_conflicts_parameters():
             False,
             (
                 ExpectedProblem(
-                    path="/".join(action_1.path),
+                    path="/".join(action_2.path),
                     description_contents=(
                         "detected",
                         "unmerged",
@@ -322,7 +352,7 @@ def _test_conflicts_parameters():
         pytest.param(
             (
                 action_1 := factories.UpdateActionFactory(
-                    content_change=types_.ContentChange(base="a", server="b", local="b")
+                    content_change=types_.ContentChange(base="a", server="b", local="a")
                 ),
                 action_2 := factories.UpdateActionFactory(
                     content_change=types_.ContentChange(base="x", server="x", local="y")
