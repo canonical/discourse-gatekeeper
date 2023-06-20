@@ -51,7 +51,7 @@ def get_path_with_diffs(actions: Iterable[UpdateAction]) -> PathsWithDiff:
     Returns:
         The paths that have differences.
     """
-    # Filter any actions without a change in content or None base
+    # Filter any actions without a change in content or None base or same local and server content
     actions_with_changes = (
         action
         for action in actions
