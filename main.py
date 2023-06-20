@@ -38,7 +38,18 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
-    commit_sha = os.environ["GITHUB_SHA"]
+
+    event_path = os.getenv("GITHUB_EVENT_PATH")
+    if not event_path:
+        raise exceptions.InputError(
+            "Path to GitHub event information not found, is this action running on GitHub?"
+        )
+    event = json.loads(pathlib.Path(event_path).read_text(encoding="utf-8"))
+    try:
+        commit_sha = event["pull_request"]["head"]["sha"]
+    except KeyError:
+        # Use the commit SHA if not running as a pull request
+        commit_sha = os.environ["GITHUB_SHA"]
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -171,12 +182,6 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
 def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
-
-    logging.info("environment: %s", os.environ)
-    event_path = os.getenv("GITHUB_EVENT_PATH")
-    if event_path:
-        event_json = pathlib.Path(event_path).read_text(encoding="utf-8")
-        logging.info("event JSON: %s", event_json)
 
     # Read input
     user_inputs = _parse_env_vars()
