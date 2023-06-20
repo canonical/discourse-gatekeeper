@@ -28,6 +28,9 @@ T = typing.TypeVar("T")
 def _parse_env_vars() -> types_.UserInputs:
     """Instantiate user inputs from environment variables.
 
+    Raises:
+        InputError: If required information is not provided as input.
+
     Returns:
         Wrapped user input variables.
     """
