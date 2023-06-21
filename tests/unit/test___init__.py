@@ -72,7 +72,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
         (repo.base_path / "placeholder-file.md").touch()
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=None)
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
         )
@@ -195,7 +195,7 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (repo.base_path / "docs").mkdir()
         (repo.base_path / "placeholder.md").touch()
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=None)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -565,7 +565,7 @@ def test_run_no_docs_empty_dir(mocked_clients):
         (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
         create_metadata_yaml(content=f"{METADATA_NAME_KEY}: name 1", path=repository_path)
         (repository_path / "placeholder-file.md").touch()
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=None)
         user_inputs = factories.UserInputsFactory(commit_sha=repo.current_commit)
 
         # run is repeated in unit tests / integration tests
@@ -713,7 +713,9 @@ def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
     (docs_folder / "their-path-1").mkdir()
     (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
 
-    mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch("First document version")
+    mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
+        "First document version", directory=None
+    )
 
     user_inputs = factories.UserInputsFactory()
     mocked_clients.repository.tag_commit(

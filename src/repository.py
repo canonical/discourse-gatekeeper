@@ -216,13 +216,17 @@ class Client:
         finally:
             self.switch(current_branch)
 
-    def get_summary(self) -> DiffSummary:
+    def get_summary(self, directory: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
+
+        Args:
+            directory: constraint committed changes to a particular folder only. If None, all the
+                folders are committed. Default is the documentation folder.
 
         Returns:
             DiffSummary object representing the summary of the differences.
         """
-        self._git_repo.git.add(".")
+        self._git_repo.git.add(directory or ".")
 
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
@@ -315,13 +319,21 @@ class Client:
 
         return self
 
-    def update_branch(self, commit_msg: str, push: bool = True, force: bool = False) -> "Client":
+    def update_branch(
+        self,
+        commit_msg: str,
+        push: bool = True,
+        force: bool = False,
+        directory: str | None = DOCUMENTATION_FOLDER_NAME,
+    ) -> "Client":
         """Update branch with a new commit.
 
         Args:
             commit_msg: commit message to be committed to the branch
             push: push new changes to remote branches
             force: when pushing to remove, use force flag
+            directory: constraint committed changes to a particular folder only. If None, all the
+                folders are committed. Default is the documentation folder.
 
         Raises:
             RepositoryClientError: if any error are encountered in the update process
@@ -330,7 +342,7 @@ class Client:
             Repository client with the updated branch
         """
         try:
-            self._git_repo.git.add("-A", ".")
+            self._git_repo.git.add("-A", directory or ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
                 args = ["-u"]

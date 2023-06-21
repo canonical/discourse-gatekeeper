@@ -108,7 +108,9 @@ async def test_run_migrate(
         path=repository_path,
     )
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "first commit of metadata", directory=None
+    )
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
     urls_with_actions = run_migrate(

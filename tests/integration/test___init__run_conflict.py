@@ -69,7 +69,9 @@ async def test_run_conflict(
         content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
     )
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("first commit of metadata")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "first commit of metadata", directory=None
+    )
 
     # 1. docs with an index and documentation file
     caplog.clear()
@@ -90,7 +92,7 @@ async def test_run_conflict(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "1. docs with an index and documentation file"
+        "1. docs with an index and documentation file", directory=None
     )
 
     urls_with_actions = run_reconcile(
