@@ -189,11 +189,11 @@ def main() -> None:
     # Read input
     user_inputs = _parse_env_vars()
 
-    # Open a PR with community contributions if necessary
-    migrate_urls_with_actions = main_migrate(user_inputs=user_inputs)  # pylint: disable=E1120
-
     # Push data to Discourse, avoiding community conflicts
     reconcile_urls_with_actions = main_reconcile(user_inputs=user_inputs)  # pylint: disable=E1120
+
+    # Open a PR with community contributions if necessary
+    migrate_urls_with_actions = main_migrate(user_inputs=user_inputs)  # pylint: disable=E1120
 
     # Write output
     _write_github_output(migrate=migrate_urls_with_actions, reconcile=reconcile_urls_with_actions)
