@@ -18,6 +18,7 @@ from git.diff import Diff
 from git.repo import Repo
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
+from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from src.docs_directory import has_docs_directory
@@ -387,7 +388,7 @@ class Client:
                 return repo.current_commit == commit
         return False
 
-    def get_pull_request(self, branch_name: str) -> str | None:
+    def get_pull_request(self, branch_name: str) -> PullRequest | None:
         """Return open pull request matching the provided branch name.
 
         Args:
@@ -397,7 +398,7 @@ class Client:
             RepositoryClientError: if more than one PR is open with the given branch name
 
         Returns:
-            link to the PR. If no PR is found, None is returned.
+            PullRequest object. If no PR is found, None is returned.
         """
         open_pull = [
             pull
@@ -411,9 +412,9 @@ class Client:
         if not open_pull:
             return None
 
-        return open_pull[0].html_url
+        return open_pull[0]
 
-    def create_pull_request(self, base: str) -> str:
+    def create_pull_request(self, base: str) -> PullRequest:
         """Create pull request for changes in given repository path.
 
         Args:
@@ -423,7 +424,7 @@ class Client:
             InputError: when the repository is not dirty, hence resulting on an empty pull-request
 
         Returns:
-            Pull request URL string. None if no pull request was created/modified.
+            Pull request object
         """
         if not self.is_dirty(base):
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
@@ -434,10 +435,10 @@ class Client:
             msg = str(repo.get_summary())
             logging.info("Creating new branch with new commit: %s", msg)
             repo.update_branch(msg, force=True)
-            pr_link = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME)
-            logging.info("Opening new PR with community contribution: %s", pr_link)
+            pull_request = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME)
+            logging.info("Opening new PR with community contribution: %s", pull_request.html_url)
 
-        return pr_link
+        return pull_request
 
     def update_pull_request(self, branch: str) -> None:
         """Update and push changes to the given branch.
@@ -560,7 +561,7 @@ class Client:
         return base64.b64decode(content_file.content).decode("utf-8")
 
 
-def _create_github_pull_request(github_repo: Repository, branch_name: str) -> str:
+def _create_github_pull_request(github_repo: Repository, branch_name: str) -> PullRequest:
     """Create pull request using the provided branch.
 
     Args:
@@ -571,7 +572,7 @@ def _create_github_pull_request(github_repo: Repository, branch_name: str) -> st
         RepositoryClientError: if any error are encountered when creating the pull request.
 
     Returns:
-        link to the opened pull request.
+        PullRequest object representing the opened pull request.
     """
     try:
         pull_request = github_repo.create_pull(
@@ -583,7 +584,7 @@ def _create_github_pull_request(github_repo: Repository, branch_name: str) -> st
     except GithubException as exc:
         raise RepositoryClientError(f"Unexpected error creating pull request. {exc=!r}") from exc
 
-    return pull_request.html_url
+    return pull_request
 
 
 def _get_repository_name_from_git_url(remote_url: str) -> str:

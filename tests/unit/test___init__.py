@@ -435,13 +435,13 @@ def test__run_migrate(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
+@mock.patch("src.repository.Client.get_pull_request")
 def test__run_migrate_with_pull_request(
-    _,
+    mock_get_pull_request,
     mocked_clients,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
-    mock_pull_request: PullRequest,
+    mock_pull_request: PullRequest
 ):
     """
     arrange: given metadata with name and docs and docs directory with updated content
@@ -449,6 +449,8 @@ def test__run_migrate_with_pull_request(
     act: when _run_migrate is called
     assert: docs are migrated and the remote branch is updated.
     """
+    mock_get_pull_request.return_value = mock_pull_request
+
     index_content = """Content header.
 
     Content body.\n"""
@@ -494,9 +496,9 @@ def test__run_migrate_with_pull_request(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch("src.repository.Client.get_pull_request", return_value="test_url")
+@mock.patch("src.repository.Client.get_pull_request")
 def test__run_migrate_with_pull_request_no_modification(
-    _,
+    mock_get_pull_request,
     mocked_clients,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
@@ -508,7 +510,7 @@ def test__run_migrate_with_pull_request_no_modification(
     act: when _run_migrate is called
     assert: docs are migrated and the remote branch is left intact.
     """
-    # mock_get_pull.return_value = "test-url"
+    mock_get_pull_request.return_value = mock_pull_request
 
     index_content = """Content header.
 
