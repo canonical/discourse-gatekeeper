@@ -687,7 +687,8 @@ def test_run_no_docs_dir_no_tag(
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
-def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
+@mock.patch("github.PullRequest.PullRequest.edit")
+def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplog, mocked_clients):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
         and mocked discourse (with tag and main branch aligned)
@@ -733,3 +734,61 @@ def test_run_migrate_same_content_local_and_server(caplog, mocked_clients):
 
     assert not returned_migration_reports
     assert any("No community contribution found" in record.message for record in caplog.records)
+    assert not mock_edit_pull_request.called
+
+
+@mock.patch("src.repository.Client.get_pull_request")
+@mock.patch("github.PullRequest.PullRequest.edit")
+def test_run_migrate_same_content_local_and_server_open_pr(
+    mocked_get_pull_request, mock_edit_pull_request, caplog, mocked_clients, mock_pull_request
+):
+    """
+    arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
+        and mocked discourse (with tag and main branch aligned) and there is an open PR
+    act: when run_migrate is called
+    assert: then nothing is done as the two versions are the compatible and the PR is closed.
+    """
+    mocked_get_pull_request.return_value = mock_pull_request
+
+    repository_path = mocked_clients.repository.base_path
+
+    create_metadata_yaml(
+        content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: https://discourse/t/docs",
+        path=repository_path,
+    )
+    index_content = """Content header lorem.
+
+    Content body.\n"""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | their-path-1 | [empty-navlink]() |
+    | 2 | their-file-1 | [file-navlink](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "file-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
+    (docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "their-path-1").mkdir()
+    (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
+
+    mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
+        "First document version", directory=None
+    )
+
+    user_inputs = factories.UserInputsFactory()
+    mocked_clients.repository.tag_commit(
+        DOCUMENTATION_TAG, mocked_clients.repository.current_commit
+    )
+
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_migration_reports = run_migrate(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
+
+    assert not returned_migration_reports
+    assert any("No community contribution found" in record.message for record in caplog.records)
+    assert mock_edit_pull_request.called
+
+
