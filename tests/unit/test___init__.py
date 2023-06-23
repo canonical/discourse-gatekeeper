@@ -441,7 +441,7 @@ def test__run_migrate_with_pull_request(
     mocked_clients,
     upstream_git_repo: Repo,
     upstream_repository_path: Path,
-    mock_pull_request: PullRequest
+    mock_pull_request: PullRequest,
 ):
     """
     arrange: given metadata with name and docs and docs directory with updated content
@@ -790,5 +790,3 @@ def test_run_migrate_same_content_local_and_server_open_pr(
     assert not returned_migration_reports
     assert any("No community contribution found" in record.message for record in caplog.records)
     assert mock_edit_pull_request.called
-
-
