@@ -136,7 +136,9 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
 
     logging.error(
         (
-            "there is a problem preventing the execution of an action\npath: %s\nproblem: %s\n"
+            "there is a problem preventing the execution of an action\n"
+            "path: %s\n"
+            "problem: %s\n"
             "action: %s"
         ),
         problem.path,
