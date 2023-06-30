@@ -135,9 +135,15 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
         )
 
     logging.error(
-        "there is a problem preventing the execution of an action, action: %s, problem: %s",
+        (
+            "there is a problem preventing the execution of an action\n"
+            "path: %s\n"
+            "problem: %s\n"
+            "action: %s"
+        ),
+        problem.path,
+        problem.description,
         action,
-        problem,
     )
     return problem
 
@@ -200,5 +206,9 @@ def conflicts(
             f"{set(chain(paths_with_diff.base_local_diffs, paths_with_diff.base_server_diffs))}."
         ),
     )
-    logging.error("there is a problem preventing the execution of an action, problem: %s", problem)
+    logging.error(
+        "there is a problem preventing the execution of an action\npath: %s\nproblem: %s",
+        problem.path,
+        problem.description,
+    )
     yield problem

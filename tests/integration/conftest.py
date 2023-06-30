@@ -38,13 +38,10 @@ async def discourse(model: Model) -> Application:
     postgres_charm_name = "postgresql-k8s"
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
-    await asyncio.gather(
-        model.deploy(postgres_charm_name, series="focal", channel="latest/stable"),
-        model.deploy(redis_charm_name),
-    )
+    await asyncio.gather(model.deploy(postgres_charm_name), model.deploy(redis_charm_name))
     await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
 
-    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
+    discourse_app: Application = await model.deploy(discourse_charm_name)
     await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
     await model.relate(discourse_charm_name, redis_charm_name)
 
