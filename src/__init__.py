@@ -141,7 +141,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             user_inputs.commit_sha,
             DOCUMENTATION_TAG,
         )
-        # If a PR is open we should probably close the PR
+        # Given there are NO diffs compared to the base, if a PR is open, it should be closed
         if pull_request is not None:
             pull_request.edit(state="closed")
         return {}

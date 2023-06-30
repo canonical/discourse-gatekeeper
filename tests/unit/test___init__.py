@@ -687,7 +687,7 @@ def test_run_no_docs_dir_no_tag(
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
-@mock.patch("github.PullRequest.PullRequest.edit")
+@mock.patch("github.PullRequest.PullRequest")
 def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplog, mocked_clients):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
@@ -734,13 +734,17 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
 
     assert not returned_migration_reports
     assert any("No community contribution found" in record.message for record in caplog.records)
-    assert not mock_edit_pull_request.called
+    edit_call_args = [
+        kwargs for name, args, kwargs in mock_edit_pull_request.mock_calls if name.endswith("edit")
+    ]
+    assert len(edit_call_args) == 0
 
 
 @mock.patch("src.repository.Client.get_pull_request")
-@mock.patch("github.PullRequest.PullRequest.edit")
+@mock.patch("github.PullRequest.PullRequest")
 def test_run_migrate_same_content_local_and_server_open_pr(
-    mocked_get_pull_request, mock_edit_pull_request, caplog, mocked_clients, mock_pull_request
+    mocked_get_pull_request, mock_edit_pull_request,
+    caplog, mocked_clients, mock_pull_request
 ):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
@@ -789,4 +793,8 @@ def test_run_migrate_same_content_local_and_server_open_pr(
 
     assert not returned_migration_reports
     assert any("No community contribution found" in record.message for record in caplog.records)
-    assert mock_edit_pull_request.called
+    edit_call_args = [
+        kwargs for name, args, kwargs in mock_edit_pull_request.mock_calls if name.endswith("edit")
+    ]
+    assert len(edit_call_args) == 1
+    assert edit_call_args[0] == {"state": "closed"}
