@@ -410,7 +410,8 @@ def test_conflicts(
                 "problem",
                 "preventing",
                 "execution",
-                str(returned_problem),
+                returned_problem.path,
+                returned_problem.description,
             ),
             caplog.text,
         )
