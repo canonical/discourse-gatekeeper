@@ -743,8 +743,7 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
 @mock.patch("src.repository.Client.get_pull_request")
 @mock.patch("github.PullRequest.PullRequest")
 def test_run_migrate_same_content_local_and_server_open_pr(
-    mocked_get_pull_request, mock_edit_pull_request,
-    caplog, mocked_clients, mock_pull_request
+    mocked_get_pull_request, mock_edit_pull_request, caplog, mocked_clients, mock_pull_request
 ):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
