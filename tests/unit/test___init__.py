@@ -737,7 +737,7 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
     edit_call_args = [
         kwargs for name, args, kwargs in mock_edit_pull_request.mock_calls if name.endswith("edit")
     ]
-    assert len(edit_call_args) == 0
+    assert not edit_call_args
 
 
 @mock.patch("src.repository.Client.get_pull_request")
