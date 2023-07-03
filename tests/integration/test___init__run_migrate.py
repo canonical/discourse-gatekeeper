@@ -39,7 +39,7 @@ async def test_run_migrate(
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
     mock_github_repo: MagicMock,
-    monkeypatch
+    monkeypatch,
 ):
     """
     arrange: given running discourse server
@@ -196,7 +196,6 @@ async def test_run_migrate(
 
     def mock_edit(*args, **kwargs):
         assert kwargs["state"] == "closed"
-        return
 
     monkeypatch.setattr(PullRequest, "edit", mock_edit)
 
