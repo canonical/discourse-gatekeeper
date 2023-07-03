@@ -194,7 +194,12 @@ async def test_run_migrate(
 
     discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
 
-    def mock_edit(*args, **kwargs):
+    def mock_edit(**kwargs):
+        """Mock edit method for the PullRequest object.
+
+        Args:
+            kwargs: keyword arguments
+        """
         assert kwargs["state"] == "closed"
 
     monkeypatch.setattr(PullRequest, "edit", mock_edit)
