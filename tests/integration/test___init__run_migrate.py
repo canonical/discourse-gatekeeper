@@ -194,10 +194,11 @@ async def test_run_migrate(
 
     discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
 
-    def mock_edit(**kwargs):
+    def mock_edit(*args, **kwargs):  # pylint: disable=W0613
         """Mock edit method for the PullRequest object.
 
         Args:
+            args: positional arguments
             kwargs: keyword arguments
         """
         assert kwargs["state"] == "closed"
