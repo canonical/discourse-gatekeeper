@@ -21,7 +21,7 @@ from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
 from src.repository import create_repository_client, Client as RepositoryClient
 
-E2E_SETUP = "tests/e2e"
+E2E_SETUP = "origin/tests/e2e"
 E2E_BASE = "tests/base"
 
 class Action(str, Enum):
