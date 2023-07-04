@@ -39,6 +39,7 @@ async def test_run_migrate(
     upstream_repository_path: Path,
     mock_pull_request: PullRequest,
     mock_github_repo: MagicMock,
+    monkeypatch,
 ):
     """
     arrange: given running discourse server
@@ -192,6 +193,17 @@ async def test_run_migrate(
     caplog.clear()
 
     discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
+
+    def mock_edit(*args, **kwargs):  # pylint: disable=W0613
+        """Mock edit method for the PullRequest object.
+
+        Args:
+            args: positional arguments
+            kwargs: keyword arguments
+        """
+        assert kwargs["state"] == "closed"
+
+    monkeypatch.setattr(PullRequest, "edit", mock_edit)
 
     urls_with_actions = run_migrate(
         Clients(
