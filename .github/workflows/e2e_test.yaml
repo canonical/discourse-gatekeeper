@@ -25,118 +25,121 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-      - name: Prepare for action to run
+      - name: Prepare stage
         run: |
-          # Create metadata.yaml file
-          echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-          # Create documentation index file
-          mkdir docs
-          # need some values in the content that change on every commit as discourse looks for file
-          # similarity
-          echo -e "# Charm Upload Automation Reconcile Test Index Title some uuid: $(uuidgen)\n" \
-            "placeholder index content for testing, " \
-            "repository: ${{ github.repository }}, " \
-            "branch: ${{ github.head_ref }}, " \
-            "commit sha: ${{ github.sha }}, " \
-            "some uuid: $(uuidgen)" \
-            > docs/index.md
-          echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
-            "placeholder documentation content for testing, " \
-            "repository: ${{ github.repository }}, " \
-            "branch: ${{ github.head_ref }}, " \
-            "commit sha: ${{ github.sha }}, " \
-            "some uuid: $(uuidgen)" \
-            > docs/doc.md
-          echo -e "# Charm Upload Automation Reconcile Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
-            "placeholder documentation alternate content for testing, " \
-            "repository: ${{ github.repository }}, " \
-            "branch: ${{ github.head_ref }}, " \
-            "commit sha: ${{ github.sha }}, " \
-            "some uuid: $(uuidgen)" \
-            > docs/alternate_doc.md
-      - name: Draft self test
-        id: e2e-test-draft
-        uses: ./
-        with:
-          discourse_host: discourse.charmhub.io
-          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          dry_run: true
-      - name: Show pages
-        run: echo '${{ steps.e2e-test-draft.outputs.reconcile }}'
-      - name: Check draft
-        run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      - name: Create self test
-        id: e2e-test-create
-        uses: ./
-        with:
-          discourse_host: discourse.charmhub.io
-          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Show pages
-        run: echo '${{ steps.e2e-test-create.outputs.reconcile }}'
-      - name: Check create
-        run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      - name: Add docs key to metadata
-        run: |
-          echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
-          cat metadata.yaml
-      - name: Update self test
-        id: e2e-test-update
-        uses: ./
-        with:
-          discourse_host: discourse.charmhub.io
-          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Show pages
-        run: echo '${{ steps.e2e-test-update.outputs.reconcile }}'
-      - name: Check update
-        run: |
-          GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
-          REPO='${{ github.repository }}'
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs "{\"expected_url_results\": [\"success\", \"success\", \"success\"], \"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      - name: Delete the alternate doc with delete_topics disabled
-        run: rm docs/alternate_doc.md
-      - name: Delete topics disabled self test
-        id: e2e-test-delete-topics
-        uses: ./
-        with:
-          delete_topics: false
-          discourse_host: discourse.charmhub.io
-          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Show pages
-        run: echo '${{ steps.e2e-test-delete-topics.outputs.reconcile }}'
-      - name: Check delete topics disabled
-        run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.e2e-test-delete-topics.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      - name: Delete the doc with delete_topics enabled
-        run: rm docs/doc.md
-      - name: Delete topics enabled self test
-        id: e2e-test-delete
-        uses: ./
-        with:
-          discourse_host: discourse.charmhub.io
-          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Show pages
-        run: echo '${{ steps.e2e-test-delete.outputs.reconcile }}'
-      - name: Check delete topics enabled
-        run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.e2e-test-delete.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      - name: Clean up
-        if: always()
-        run: |
-          GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
-          REPO='${{ github.repository }}'
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }}
+      # - name: Prepare for action to run
+      #   run: |
+      #     # Create metadata.yaml file
+      #     echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+      #     # Create documentation index file
+      #     mkdir docs
+      #     # need some values in the content that change on every commit as discourse looks for file
+      #     # similarity
+      #     echo -e "# Charm Upload Automation Reconcile Test Index Title some uuid: $(uuidgen)\n" \
+      #       "placeholder index content for testing, " \
+      #       "repository: ${{ github.repository }}, " \
+      #       "branch: ${{ github.head_ref }}, " \
+      #       "commit sha: ${{ github.sha }}, " \
+      #       "some uuid: $(uuidgen)" \
+      #       > docs/index.md
+      #     echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
+      #       "placeholder documentation content for testing, " \
+      #       "repository: ${{ github.repository }}, " \
+      #       "branch: ${{ github.head_ref }}, " \
+      #       "commit sha: ${{ github.sha }}, " \
+      #       "some uuid: $(uuidgen)" \
+      #       > docs/doc.md
+      #     echo -e "# Charm Upload Automation Reconcile Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
+      #       "placeholder documentation alternate content for testing, " \
+      #       "repository: ${{ github.repository }}, " \
+      #       "branch: ${{ github.head_ref }}, " \
+      #       "commit sha: ${{ github.sha }}, " \
+      #       "some uuid: $(uuidgen)" \
+      #       > docs/alternate_doc.md
+      # - name: Draft self test
+      #   id: e2e-test-draft
+      #   uses: ./
+      #   with:
+      #     discourse_host: discourse.charmhub.io
+      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     dry_run: true
+      # - name: Show pages
+      #   run: echo '${{ steps.e2e-test-draft.outputs.reconcile }}'
+      # - name: Check draft
+      #   run: |
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      # - name: Create self test
+      #   id: e2e-test-create
+      #   uses: ./
+      #   with:
+      #     discourse_host: discourse.charmhub.io
+      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Show pages
+      #   run: echo '${{ steps.e2e-test-create.outputs.reconcile }}'
+      # - name: Check create
+      #   run: |
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      # - name: Add docs key to metadata
+      #   run: |
+      #     echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
+      #     cat metadata.yaml
+      # - name: Update self test
+      #   id: e2e-test-update
+      #   uses: ./
+      #   with:
+      #     discourse_host: discourse.charmhub.io
+      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Show pages
+      #   run: echo '${{ steps.e2e-test-update.outputs.reconcile }}'
+      # - name: Check update
+      #   run: |
+      #     GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
+      #     REPO='${{ github.repository }}'
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-update --action-kwargs "{\"expected_url_results\": [\"success\", \"success\", \"success\"], \"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      # - name: Delete the alternate doc with delete_topics disabled
+      #   run: rm docs/alternate_doc.md
+      # - name: Delete topics disabled self test
+      #   id: e2e-test-delete-topics
+      #   uses: ./
+      #   with:
+      #     delete_topics: false
+      #     discourse_host: discourse.charmhub.io
+      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Show pages
+      #   run: echo '${{ steps.e2e-test-delete-topics.outputs.reconcile }}'
+      # - name: Check delete topics disabled
+      #   run: |
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete-topics --action-kwargs '{"expected_url_results": ["success", "skip", "success"]}' '${{ steps.e2e-test-delete-topics.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      # - name: Delete the doc with delete_topics enabled
+      #   run: rm docs/doc.md
+      # - name: Delete topics enabled self test
+      #   id: e2e-test-delete
+      #   uses: ./
+      #   with:
+      #     discourse_host: discourse.charmhub.io
+      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Show pages
+      #   run: echo '${{ steps.e2e-test-delete.outputs.reconcile }}'
+      # - name: Check delete topics enabled
+      #   run: |
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.e2e-test-delete.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      # - name: Clean up
+      #   if: always()
+      #   run: |
+      #     GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
+      #     REPO='${{ github.repository }}'
+      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
 
   # e2e-tests-migration:
   #   permissions: write-all

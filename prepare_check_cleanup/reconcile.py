@@ -7,6 +7,8 @@ import argparse
 import contextlib
 import json
 import logging
+import os
+import pathlib
 from enum import Enum
 
 from github import Github
@@ -17,7 +19,8 @@ from prepare_check_cleanup import exit_
 from src.constants import DOCUMENTATION_TAG
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-
+from src.repository import create_repository_client, Client as RepositoryClient
+from . import E2E_BASE, E2E_SETUP
 
 class Action(str, Enum):
     """The actions the utility can take.
@@ -37,6 +40,7 @@ class Action(str, Enum):
     CHECK_DELETE_TOPICS = "check-delete-topics"
     CHECK_DELETE = "check-delete"
     CLEANUP = "cleanup"
+    PREPARE = "prepare"
 
 
 def main() -> None:
@@ -61,14 +65,18 @@ def main() -> None:
     parser.add_argument(
         "--action-kwargs", help="Arguments for the action as a JSON mapping", default="{}"
     )
+    parser.add_argument("--github-token", help="Github token to setup repository")
     args = parser.parse_args()
     urls_with_actions = json.loads(args.urls_with_actions)
     discourse_config = json.loads(args.discourse_config)
     action_kwargs = json.loads(args.action_kwargs)
 
     discourse = create_discourse(**discourse_config)
+    repository = create_repository_client(args.github_token, pathlib.Path.cwd())
 
     match args.action:
+        case Action.PREPARE.value:
+            exit_.with_result(_prepare(repository, discourse))
         case Action.CHECK_DRAFT.value:
             exit_.with_result(check_draft(urls_with_actions=urls_with_actions, **action_kwargs))
         case Action.CHECK_CREATE.value:
@@ -102,6 +110,19 @@ def main() -> None:
         case _:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
+
+def _prepare(repository:RepositoryClient, discourse: Discourse) -> bool:
+
+    repository.create_branch(E2E_BASE, E2E_SETUP).switch(E2E_BASE)
+
+    if repository.tag_exists(DOCUMENTATION_TAG):
+        logging.info("Removing tag %s", DOCUMENTATION_TAG)
+        repository._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+        repository._git_repo.git.push("--delete", "origin", DOCUMENTATION_TAG)
+
+    assert discourse
+
+    return True
 
 def _check_url_count(
     urls_with_actions: dict[str, str], expected_count: int, test_name: str

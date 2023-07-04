@@ -186,6 +186,8 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
         Boolean representing whether the checks have all been passed.
     """
     with clients.repository.with_branch(user_inputs.base_branch) as repo:
-        return repo.is_commit_in_branch(
-            repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
-        )
+        if repo.tag_exists(DOCUMENTATION_TAG):
+            return repo.is_commit_in_branch(
+                repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
+            )
+        repo.tag_commit(DOCUMENTATION_TAG, repo.current_commit)
