@@ -21,8 +21,6 @@ jobs:
               \"api_key\":\"${{ secrets.DISCOURSE_API_KEY }}\" \
             }" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
-        with:
-          ref: "tests/e2e"
       - name: Setup Python
         run: |
           sudo apt update && sudo apt install python3-pip git

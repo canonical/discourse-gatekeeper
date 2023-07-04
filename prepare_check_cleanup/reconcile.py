@@ -114,6 +114,7 @@ def main() -> None:
 
 
 def _prepare(repository:RepositoryClient, discourse: Discourse) -> bool:
+    repository._git_repo.git.fetch("--all")
 
     repository.create_branch(E2E_BASE, E2E_SETUP).switch(E2E_BASE)
 
