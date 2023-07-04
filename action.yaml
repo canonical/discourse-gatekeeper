@@ -48,11 +48,11 @@ inputs:
     required: false
     type: string
 outputs:
-  migrate:
+  index_url:
     description: |
       A JSON map with the urls and the actions that have been taken against
       them.
-  reconcile:
+  topics:
     description: |
       A JSON map with the urls and the actions that have been taken against
       them.
