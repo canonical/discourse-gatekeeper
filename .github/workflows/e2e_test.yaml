@@ -27,7 +27,7 @@ jobs:
           pip3 install -r requirements.txt
       - name: Prepare stage
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }}
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }} '{}' '${{ steps.configuration.outputs.discourse }}'
       # - name: Prepare for action to run
       #   run: |
       #     # Create metadata.yaml file
