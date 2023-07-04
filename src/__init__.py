@@ -191,3 +191,4 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
                 repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
             )
         repo.tag_commit(DOCUMENTATION_TAG, repo.current_commit)
+        return True
