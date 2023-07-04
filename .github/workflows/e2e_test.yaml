@@ -71,7 +71,7 @@ jobs:
         run: echo '${{ steps.e2e-test-draft.outputs.topics }}'
       - name: Check draft
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.topics }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.topics }}' '${{ steps.configuration.outputs.discourse }}'
       - name: Create self test
         id: e2e-test-create
         uses: ./
@@ -85,9 +85,9 @@ jobs:
         run: |
           echo '${{ steps.e2e-test-create.outputs.index_url }}'
           echo '${{ steps.e2e-test-create.outputs.topics }}'
-      # - name: Check create
-      #   run: |
-      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      - name: Check create
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
       # - name: Add docs key to metadata
       #   run: |
       #     echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
