@@ -42,6 +42,11 @@ inputs:
       the current documentation
     required: true
     type: string
+  base_branch:
+    description: |
+      The name of the base branch for the repository
+    required: false
+    type: string
 outputs:
   migrate:
     description: |

@@ -56,6 +56,8 @@ def _parse_env_vars() -> types_.UserInputs:
         # Use the commit SHA if not running as a pull request
         commit_sha = os.environ["GITHUB_SHA"]
 
+    logging.info(f"Base branch: {base_branch}")
+
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
             hostname=discourse_host,

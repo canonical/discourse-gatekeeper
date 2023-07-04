@@ -28,59 +28,61 @@ jobs:
       - name: Prepare stage
         run: |
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }} '{}' '${{ steps.configuration.outputs.discourse }}'
-      # - name: Prepare for action to run
-      #   run: |
-      #     # Create metadata.yaml file
-      #     echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
-      #     # Create documentation index file
-      #     mkdir docs
-      #     # need some values in the content that change on every commit as discourse looks for file
-      #     # similarity
-      #     echo -e "# Charm Upload Automation Reconcile Test Index Title some uuid: $(uuidgen)\n" \
-      #       "placeholder index content for testing, " \
-      #       "repository: ${{ github.repository }}, " \
-      #       "branch: ${{ github.head_ref }}, " \
-      #       "commit sha: ${{ github.sha }}, " \
-      #       "some uuid: $(uuidgen)" \
-      #       > docs/index.md
-      #     echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
-      #       "placeholder documentation content for testing, " \
-      #       "repository: ${{ github.repository }}, " \
-      #       "branch: ${{ github.head_ref }}, " \
-      #       "commit sha: ${{ github.sha }}, " \
-      #       "some uuid: $(uuidgen)" \
-      #       > docs/doc.md
-      #     echo -e "# Charm Upload Automation Reconcile Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
-      #       "placeholder documentation alternate content for testing, " \
-      #       "repository: ${{ github.repository }}, " \
-      #       "branch: ${{ github.head_ref }}, " \
-      #       "commit sha: ${{ github.sha }}, " \
-      #       "some uuid: $(uuidgen)" \
-      #       > docs/alternate_doc.md
-      # - name: Draft self test
-      #   id: e2e-test-draft
-      #   uses: ./
-      #   with:
-      #     discourse_host: discourse.charmhub.io
-      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     dry_run: true
-      # - name: Show pages
-      #   run: echo '${{ steps.e2e-test-draft.outputs.reconcile }}'
-      # - name: Check draft
-      #   run: |
-      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      # - name: Create self test
-      #   id: e2e-test-create
-      #   uses: ./
-      #   with:
-      #     discourse_host: discourse.charmhub.io
-      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Show pages
-      #   run: echo '${{ steps.e2e-test-create.outputs.reconcile }}'
+      - name: Prepare for action to run
+        run: |
+          # Create metadata.yaml file
+          echo "name: $(echo ${{ github.repository }} | sed 's:.*/::')-test" > metadata.yaml
+          # Create documentation index file
+          mkdir docs
+          # need some values in the content that change on every commit as discourse looks for file
+          # similarity
+          echo -e "# Charm Upload Automation Reconcile Test Index Title some uuid: $(uuidgen)\n" \
+            "placeholder index content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > docs/index.md
+          echo -e "# Charm Upload Automation Reconcile Test Documentation Title some uuid: $(uuidgen)\n" \
+            "placeholder documentation content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > docs/doc.md
+          echo -e "# Charm Upload Automation Reconcile Test Documentation Alternate Title some uuid: $(uuidgen)\n" \
+            "placeholder documentation alternate content for testing, " \
+            "repository: ${{ github.repository }}, " \
+            "branch: ${{ github.head_ref }}, " \
+            "commit sha: ${{ github.sha }}, " \
+            "some uuid: $(uuidgen)" \
+            > docs/alternate_doc.md
+      - name: Draft self test
+        id: e2e-test-draft
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+          base_branch: "tests/base"
+      - name: Show pages
+        run: echo '${{ steps.e2e-test-draft.outputs.topics }}'
+      - name: Check draft
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-draft --action-kwargs '{"expected_url_results": []}' '${{ steps.e2e-test-draft.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      - name: Create self test
+        id: e2e-test-create
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          base_branch: "tests/base"
+      - name: Show pages
+        run: echo '${{ steps.e2e-test-create.outputs.topics }}'
       # - name: Check create
       #   run: |
       #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
