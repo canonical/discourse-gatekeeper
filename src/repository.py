@@ -676,11 +676,12 @@ _RENAMED_PATTERN = re.compile(r"R\d+\s*(\S*)\s*(\S*)")
 _COPIED_PATTERN = re.compile(r"C\d+\s*(\S*)\s*(\S*)")
 
 
-def _parse_git_show(output: str) -> Iterator[_CommitFile]:
+def _parse_git_show(output: str, repository_path: Path) -> Iterator[_CommitFile]:
     """Parse the output of a git show with --name-status intmanageable files.
 
     Args:
         output: The output of the git show command.
+        repository_path: The path to the git repository.
 
     Yields:
         Information about each of the files that changed in the commit.
@@ -703,17 +704,17 @@ def _parse_git_show(output: str) -> Iterator[_CommitFile]:
     for line in lines:
         if (added_match := _ADDED_PATTERN.match(line)) is not None:
             path = Path(added_match.group(1))
-            yield _CommitFileAdded(path, path.read_text(encoding="utf-8"))
+            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
             continue
 
         if (copied_match := _COPIED_PATTERN.match(line)) is not None:
             path = Path(copied_match.group(2))
-            yield _CommitFileAdded(path, path.read_text(encoding="utf-8"))
+            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
             continue
 
         if (modified_match := _MODIFIED_PATTERN.match(line)) is not None:
             path = Path(modified_match.group(1))
-            yield _CommitFileModified(path, path.read_text(encoding="utf-8"))
+            yield _CommitFileModified(path, (repository_path / path).read_text(encoding="utf-8"))
             continue
 
         if (delete_match := _DELETED_PATTERN.match(line)) is not None:
@@ -725,5 +726,5 @@ def _parse_git_show(output: str) -> Iterator[_CommitFile]:
             old_path = Path(renamed_match.group(1))
             path = Path(renamed_match.group(2))
             yield _CommitFileDeleted(old_path)
-            yield _CommitFileAdded(path, path.read_text(encoding="utf-8"))
+            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
             continue
