@@ -11,7 +11,8 @@ from . import navigation_table, reconcile
 from . import sort as sort_module
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .clients import Clients
-from .constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG  # DEFAULT_BRANCH,
+from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
 from .exceptions import InputError
 from .repository import DEFAULT_BRANCH_NAME
@@ -131,7 +132,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
     logging.info("Tag exists: %s", str(clients.repository.tag_exists(DOCUMENTATION_TAG)))
 
     if not clients.repository.tag_exists(DOCUMENTATION_TAG):
-        with clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        with clients.repository.with_branch(user_inputs.base_branch) as repo:
             main_hash = repo.current_commit
         clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
 
@@ -157,6 +158,22 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         clients.repository.update_pull_request(DEFAULT_BRANCH_NAME)
     else:
         logging.info("PR not existing: creating a new one...")
-        pull_request = clients.repository.create_pull_request(DOCUMENTATION_TAG)
+        pull_request = clients.repository.create_pull_request(user_inputs.base_branch)
 
     return {pull_request.html_url: ActionResult.SUCCESS}
+
+
+def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
+    """Perform checks to make sure the repository is in a consistent state.
+
+    Args:
+        clients: The clients to interact with things like discourse and the repository.
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        Boolean representing whether the checks have all been passed.
+    """
+    with clients.repository.with_branch(user_inputs.base_branch) as repo:
+        return repo.is_commit_in_branch(
+            repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
+        )

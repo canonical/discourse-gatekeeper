@@ -212,6 +212,7 @@ class UserInputsFactory(
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
     commit_sha = factory.Sequence(lambda n: f"commit-sha-{n}")
+    base_branch = DEFAULT_BRANCH
     dry_run = False
     delete_pages = False
 

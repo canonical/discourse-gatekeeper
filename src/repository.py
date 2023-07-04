@@ -163,7 +163,7 @@ def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> Input
             raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
 
-class Client:
+class Client:  # pylint: disable=R0904
     """Wrapper for git/git-server related functionalities.
 
     Attrs:
@@ -263,6 +263,32 @@ class Client:
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
         ) + DiffSummary.from_raw_diff(self._git_repo.head.commit.diff())
+
+    def is_commit_in_branch(self, commit_sha: str, branch: str | None = None) -> bool:
+        """Check if commit exists in a given branch.
+
+        Args:
+            commit_sha: SHA of the commit to be searched for
+            branch: name of the branch against which the check is done. When None, the current
+                branch is used.
+
+        Raises:
+            RepositoryClientError: when the commit is not found in the repository
+
+        Returns:
+             boolean representing whether the commit exists in the branch
+        """
+        star_pattern = re.compile(r"^\* ")
+        try:
+            branches_with_commit = {
+                star_pattern.sub("", _branch).strip()
+                for _branch in self._git_repo.git.branch("--contains", commit_sha).split("\n")
+            }
+        except GitCommandError as exc:
+            if f"no such commit {commit_sha}" in exc.stderr:
+                raise RepositoryClientError(f"{commit_sha} not found in git repository.") from exc
+            raise RepositoryClientError(f"unknown error {exc}") from exc
+        return (branch or self.current_branch) in branches_with_commit
 
     def pull(self, branch_name: str | None = None) -> None:
         """Pull content from remote for the provided branch.
@@ -490,7 +516,7 @@ class Client:
         """Create pull request for changes in given repository path.
 
         Args:
-            base: tag against to which the PR is opened
+            base: tag or branch against to which the PR is opened
 
         Raises:
             InputError: when the repository is not dirty, hence resulting on an empty pull-request
@@ -507,7 +533,7 @@ class Client:
             msg = str(repo.get_summary())
             logging.info("Creating new branch with new commit: %s", msg)
             repo.update_branch(msg, force=True)
-            pull_request = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME)
+            pull_request = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME, base)
             logging.info("Opening new PR with community contribution: %s", pull_request.html_url)
 
         return pull_request
@@ -633,12 +659,13 @@ class Client:
         return base64.b64decode(content_file.content).decode("utf-8")
 
 
-def _create_github_pull_request(github_repo: Repository, branch_name: str) -> PullRequest:
+def _create_github_pull_request(github_repo: Repository, branch_name: str, base: str) -> PullRequest:
     """Create pull request using the provided branch.
 
     Args:
         github_repo: Github repository where to open pull request.
         branch_name: name of the branch used to open the pull request.
+        base: name of the base branch which the PR needs to be opened against
 
     Raises:
         RepositoryClientError: if any error are encountered when creating the pull request.
@@ -650,7 +677,7 @@ def _create_github_pull_request(github_repo: Repository, branch_name: str) -> Pu
         pull_request = github_repo.create_pull(
             title=ACTIONS_PULL_REQUEST_TITLE,
             body=ACTIONS_PULL_REQUEST_BODY,
-            base=github_repo.default_branch,
+            base=base,
             head=branch_name,
         )
     except GithubException as exc:

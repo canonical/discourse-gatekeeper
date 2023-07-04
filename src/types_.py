@@ -38,6 +38,7 @@ class UserInputs(typing.NamedTuple):
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
         commit_sha: The SHA of the commit the action is running on.
+        base_branch: The main branch against which the syncs act on
     """
 
     discourse: UserInputsDiscourse
@@ -45,6 +46,7 @@ class UserInputs(typing.NamedTuple):
     delete_pages: bool
     github_access_token: str | None
     commit_sha: str
+    base_branch: str
 
 
 class Metadata(typing.NamedTuple):

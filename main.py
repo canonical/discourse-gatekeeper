@@ -16,8 +16,9 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, run_migrate, run_reconcile, types_
+from src import GETTING_STARTED, exceptions, pre_flight_checks, run_migrate, run_reconcile, types_
 from src.clients import get_clients
+from src.constants import DEFAULT_BRANCH
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
@@ -41,6 +42,7 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
+    base_branch = os.getenv("INPUT_BASE_BRANCH", DEFAULT_BRANCH)
 
     event_path = os.getenv("GITHUB_EVENT_PATH")
     if not event_path:
@@ -65,6 +67,7 @@ def _parse_env_vars() -> types_.UserInputs:
         dry_run=dry_run,
         github_access_token=github_access_token,
         commit_sha=commit_sha,
+        base_branch=base_branch,
     )
 
 
@@ -182,12 +185,29 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
     return run_reconcile(clients=clients, user_inputs=user_inputs)
 
 
+@execute_in_tmpdir
+def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
+    """Checks to make sure that the repository is in a consistent state.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
+    clients = get_clients(user_inputs, path)
+    return pre_flight_checks(clients=clients, user_inputs=user_inputs)
+
+
 def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
 
     # Read input
     user_inputs = _parse_env_vars()
+
+    assert main_checks(user_inputs=user_inputs)  # pylint: disable=E1120
 
     # Push data to Discourse, avoiding community conflicts
     reconcile_urls_with_actions = main_reconcile(user_inputs=user_inputs)  # pylint: disable=E1120

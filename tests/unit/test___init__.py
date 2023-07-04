@@ -11,7 +11,6 @@ from git.repo import Repo
 from github.PullRequest import PullRequest
 
 from src import (  # GETTING_STARTED,
-    DEFAULT_BRANCH,
     DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_TAG,
     Clients,
@@ -23,6 +22,7 @@ from src import (  # GETTING_STARTED,
     types_,
 )
 from src.clients import get_clients
+from src.constants import DEFAULT_BRANCH
 from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
