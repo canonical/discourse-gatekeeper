@@ -8,7 +8,6 @@ import logging
 import re
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from enum import Enum
 from functools import cached_property
 from itertools import chain, takewhile
 from pathlib import Path
@@ -700,7 +699,7 @@ def _parse_git_show(output: str, repository_path: Path) -> Iterator[_CommitFile]
     #     D       delete-file.txt
     #     R100    renamed-file.text       is-renamed-file.text
     #     C100    to-be-copied-file.text  copied-file.text
-    lines = takewhile(lambda line: bool(line), reversed(output.splitlines()))
+    lines = takewhile(bool, reversed(output.splitlines()))
     for line in lines:
         if (added_match := _ADDED_PATTERN.match(line)) is not None:
             path = Path(added_match.group(1))

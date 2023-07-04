@@ -1023,7 +1023,7 @@ def test_create_pull_request_function(
     ).read_text() == filler_text
 
 
-def test__parse_git_show_empty(repository_client: Client):
+def test__parse_git_show_empty():
     """
     arrange: given empty show output
     act: when output is passed to _parse_git_show
@@ -1036,7 +1036,7 @@ def test__parse_git_show_empty(repository_client: Client):
     assert len(commit_files) == 0
 
 
-def test__parse_git_show_unsupported(repository_client: Client):
+def test__parse_git_show_unsupported():
     """
     arrange: given show output that includes a line that is unknown
     act: when output is passed to _parse_git_show
