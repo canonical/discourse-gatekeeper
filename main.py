@@ -86,7 +86,8 @@ def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
 
 
 def _write_github_output(
-    **urls_with_actions_dicts: dict[str, str],
+    migrate: types_.MigrateOutputs | None,
+    reconcile: types_.ReconcileOutputs | None
 ) -> None:
     """Writes results produced by the action to github_output.
 
@@ -104,9 +105,20 @@ def _write_github_output(
             f"{GETTING_STARTED}"
         )
 
+    output_dict = (
+        {
+          "index_url": reconcile.index_url,
+          "topics": reconcile.topics
+        } if reconcile else {}
+    ) | (
+        {
+            "pr_action": migrate.action,
+            "pr_link": migrate.pull_request_url
+        } if migrate else {}
+    )
+
     output: str = "".join(
-        f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
-        for key, urls_with_actions_dict in urls_with_actions_dicts.items()
+        f"{key}={_serialize_for_github(value)}" for key, value in output_dict.items()
     )
 
     logging.info("Output: %s", output)
@@ -156,7 +168,7 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
 
 
 @execute_in_tmpdir
-def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
+def main_migrate(path: Path, user_inputs: types_.UserInputs) -> types_.MigrateOutputs | None:
     """Main to migrate content from Discourse to Git repository.
 
     Args:
@@ -171,7 +183,7 @@ def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
 
 
 @execute_in_tmpdir
-def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
+def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.ReconcileOutputs | None:
     """Main to reconcile content from Git repository to Discourse.
 
     Args:

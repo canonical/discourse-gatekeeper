@@ -83,7 +83,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
-    assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
+    assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
 
 
 @mock.patch(
@@ -127,7 +127,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
             f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
-    assert returned_page_interactions == {
+    assert returned_page_interactions.topics == {
         page_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
     }
@@ -260,7 +260,7 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_not_called()
-    assert not returned_page_interactions
+    assert not returned_page_interactions.topics
 
 
 @mock.patch(
@@ -285,7 +285,7 @@ def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients, upstre
     returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_not_called()
-    assert not returned_page_interactions
+    assert not returned_page_interactions.topics
 
 
 @mock.patch(
@@ -316,7 +316,7 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
-    assert not returned_page_interactions
+    assert not returned_page_interactions.topics
 
 
 @mock.patch(
@@ -529,7 +529,8 @@ def test__run_migrate(
     )
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
+    assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
     ).is_file()
@@ -591,7 +592,8 @@ def test__run_migrate_with_pull_request(
         user_inputs=user_inputs,
     )
 
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
+    assert returned_migration_reports.action == types_.PullRequestAction.UPDATED
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
 
@@ -653,7 +655,8 @@ def test__run_migrate_with_pull_request_no_modification(
         user_inputs=user_inputs,
     )
 
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
+    assert returned_migration_reports.action == types_.PullRequestAction.UPDATED
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
 
@@ -688,7 +691,7 @@ def test_run_no_docs_empty_dir(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
-    assert returned_page_interactions == {url: types_.ActionResult.SUCCESS}
+    assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
 
 
 @pytest.mark.usefixtures("patch_create_repository_client")
@@ -728,7 +731,8 @@ def test_run_no_docs_dir(
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
+    assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
     ).is_file()
@@ -782,7 +786,8 @@ def test_run_no_docs_dir_no_tag(
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
-    assert returned_migration_reports == {mock_pull_request.html_url: types_.ActionResult.SUCCESS}
+    assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
+    assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (
         index_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "index.md"
     ).is_file()
@@ -899,7 +904,8 @@ def test_run_migrate_same_content_local_and_server_open_pr(
             clients=mocked_clients, user_inputs=user_inputs
         )  # pylint: disable=duplicate-code
 
-    assert not returned_migration_reports
+    assert returned_migration_reports
+    assert returned_migration_reports.action == types_.PullRequestAction.CLOSED
     assert any("No community contribution found" in record.message for record in caplog.records)
     edit_call_args = [
         kwargs for name, args, kwargs in mock_edit_pull_request.mock_calls if name.endswith("edit")

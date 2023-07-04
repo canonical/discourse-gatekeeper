@@ -10,6 +10,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
+Content = str
+Url = str
+
 class UserInputsDiscourse(typing.NamedTuple):
     """Configurable user input values used to run upload-charm-docs.
 
@@ -61,10 +64,6 @@ class Metadata(typing.NamedTuple):
 
     name: str
     docs: str | None
-
-
-Content = str
-Url = str
 
 
 class Page(typing.NamedTuple):
@@ -350,6 +349,23 @@ class ActionResult(str, Enum):
     FAIL = "fail"
 
 
+class PullRequestAction(str, Enum):
+    """Result of taking an action.
+
+    Attrs:
+        NOOP: No action was done on the PR.
+        OPENED: A new PR has been opened.
+        CLOSED: An existing PR has been closed.
+        UPDATED: An existing PR has been updated.
+    """
+
+    OPENED = "opened"
+    CLOSED = "closed"
+    UPDATED = "updated"
+
+
+
+
 class ActionReport(typing.NamedTuple):
     """Post execution report for an action.
 
@@ -430,3 +446,29 @@ class IndexContentsListItem(typing.NamedTuple):
     reference_value: str
     rank: int
     hidden: bool
+
+
+class ReconcileOutputs(typing.NamedTuple):
+    """Output provided by the reconcile workflow.
+
+    Attrs:
+        index_url: url with the root documentation topic on Discourse
+        topics: List of urls with actions
+    """
+
+    index_url: Url
+    topics: dict[Url, ActionResult]
+    documentation_tag: str
+
+
+class MigrateOutputs(typing.NamedTuple):
+    """Output provided by the reconcile workflow.
+
+    Attrs:
+        action: Action taken on the PR
+        url: url of the pull-request when relevant
+    """
+
+    action: PullRequestAction
+    pull_request_url: Url
+

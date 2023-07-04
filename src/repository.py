@@ -567,17 +567,20 @@ class Client:  # pylint: disable=R0904
         with self.with_branch(branch_name) as client:
             return client.is_dirty()
 
-    def tag_exists(self, tag_name: str) -> bool:
+    def tag_exists(self, tag_name: str) -> str | None:
         """Check if a given tag exists.
 
         Args:
             tag_name: name of the tag to be checked for existence
 
         Returns:
-            bool whether the given tag exists.
+            hash of the commit the tag refers to.
         """
         self._git_repo.git.fetch("--all", "--tags")
-        return any(tag_name == tag.name for tag in self._git_repo.tags)
+        tags = [tag.commit for tag in self._git_repo.tags if tag_name == tag.name]
+        if not tags:
+            return None
+        return tags[0]
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.

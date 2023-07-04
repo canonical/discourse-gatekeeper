@@ -95,12 +95,14 @@ async def test_run_conflict(
         "1. docs with an index and documentation file", directory=None
     )
 
-    urls_with_actions = run_reconcile(
+    reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 2
     (doc_url, _) = urls_with_actions.keys()
@@ -196,12 +198,14 @@ async def test_run_conflict(
         "4. docs with a documentation file and discourse updated to resolve conflict"
     )
 
-    urls_with_actions = run_reconcile(
+    reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    urls_with_actions = reconcile_output.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
@@ -226,12 +230,14 @@ async def test_run_conflict(
     )
     mock_content_file.content = b64encode(doc_content_4.encode(encoding="utf-8"))
 
-    urls_with_actions = run_reconcile(
+    reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 3
     (alt_doc_url, _, _) = urls_with_actions.keys()
@@ -269,7 +275,7 @@ async def test_run_conflict(
     )
 
     with pytest.raises(exceptions.InputError) as exc_info:
-        urls_with_actions = run_reconcile(
+        run_reconcile(
             clients=Clients(discourse=discourse_api, repository=repository_client),
             user_inputs=factories.UserInputsFactory(
                 dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
@@ -301,12 +307,14 @@ async def test_run_conflict(
     repository_client.tag_commit(DISCOURSE_AHEAD_TAG, repository_client.current_commit)
     mock_github_repo.get_contents.side_effect = [mock_alt_content_file, mock_content_file]
 
-    urls_with_actions = run_reconcile(
+    reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 3
     (alt_doc_url, _, _) = urls_with_actions.keys()

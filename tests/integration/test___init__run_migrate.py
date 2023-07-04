@@ -19,7 +19,7 @@ from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
 from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
-from src.types_ import ActionResult
+from src.types_ import ActionResult, PullRequestAction
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH
@@ -114,7 +114,7 @@ async def test_run_migrate(
     )
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    urls_with_actions = run_migrate(
+    output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
             repository=repository_client,
@@ -124,7 +124,8 @@ async def test_run_migrate(
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
-    assert tuple(urls_with_actions) == (mock_pull_request.html_url,)
+    assert output_migrate.pull_request_url == mock_pull_request.html_url
+    assert output_migrate.action == PullRequestAction.OPENED
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
     assert (group_2_path := upstream_doc_dir / "group-2").is_dir()
@@ -143,7 +144,7 @@ async def test_run_migrate(
 
     mock_github_repo.get_pulls.return_value = [mock_pull_request]
 
-    urls_with_actions = run_migrate(
+    output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
             repository=RepositoryClient(Repo(repository_path), mock_github_repo),
@@ -151,8 +152,8 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
-    assert "test_url" in urls_with_actions
-    assert urls_with_actions["test_url"] == ActionResult.SUCCESS
+    assert "test_url" in output_migrate.pull_request_url
+    assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
         ["upload-charm-documents pull request already open at test_url"], caplog.text
     )
@@ -162,7 +163,7 @@ async def test_run_migrate(
 
     discourse_api.update_topic(content_page_2_url, content_page_2.content + " updated")
 
-    urls_with_actions = run_migrate(
+    output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
             repository=RepositoryClient(Repo(repository_path), mock_github_repo),
@@ -170,8 +171,8 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
-    assert "test_url" in urls_with_actions
-    assert urls_with_actions["test_url"] == ActionResult.SUCCESS
+    assert "test_url" in output_migrate.pull_request_url
+    assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
         [
             "upload-charm-documents pull request already open at test_url",
@@ -205,7 +206,7 @@ async def test_run_migrate(
 
     monkeypatch.setattr(PullRequest, "edit", mock_edit)
 
-    urls_with_actions = run_migrate(
+    output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
             repository=RepositoryClient(Repo(repository_path), mock_github_repo),
@@ -213,7 +214,8 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
-    assert not urls_with_actions
+    assert output_migrate
+    assert output_migrate.action == PullRequestAction.CLOSED
     assert_substrings_in_string(
         [
             "No community contribution found in commit",
