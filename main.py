@@ -119,7 +119,7 @@ def _write_github_output(
         } if migrate else {}
     )
 
-    output: str = "".join(
+    output: str = "\n".join(
         f"{key}={_serialize_for_github(value)}" for key, value in output_dict.items()
     )
 

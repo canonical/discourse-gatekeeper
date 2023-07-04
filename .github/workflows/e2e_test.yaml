@@ -82,7 +82,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           base_branch: "tests/base"
       - name: Show pages
-        run: echo '${{ steps.e2e-test-create.outputs.topics }}'
+        run: |
+          echo '${{ steps.e2e-test-create.outputs.index_url }}'
+          echo '${{ steps.e2e-test-create.outputs.topics }}'
       # - name: Check create
       #   run: |
       #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
