@@ -87,7 +87,7 @@ jobs:
           echo '${{ steps.e2e-test-create.outputs.topics }}'
       - name: Check create
         run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.topics }}' '${{ steps.configuration.outputs.discourse }}'
       # - name: Add docs key to metadata
       #   run: |
       #     echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
@@ -138,12 +138,12 @@ jobs:
       # - name: Check delete topics enabled
       #   run: |
       #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-delete --action-kwargs '{"expected_url_results": ["success", "success"]}' '${{ steps.e2e-test-delete.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
-      # - name: Clean up
-      #   if: always()
-      #   run: |
-      #     GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
-      #     REPO='${{ github.repository }}'
-      #     PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.reconcile }}' '${{ steps.configuration.outputs.discourse }}'
+      - name: Clean up
+        if: always()
+        run: |
+          GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
+          REPO='${{ github.repository }}'
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action cleanup --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs "{\"github_token\": \"$GITHUB_TOKEN\", \"repo\": \"$REPO\"}" '${{ steps.e2e-test-create.outputs.topics }}' '${{ steps.configuration.outputs.discourse }}'
 
   # e2e-tests-migration:
   #   permissions: write-all
