@@ -602,6 +602,7 @@ class Client:  # pylint: disable=R0904
             self._git_repo.git.push("origin", tag_name)
 
         except GitCommandError as exc:
+            logging.error(f"Tagging commit failed because of {exc}")
             raise RepositoryClientError(f"Tagging commit failed. {exc=!r}") from exc
 
     def get_file_content_from_tag(self, path: str, tag_name: str) -> str:
