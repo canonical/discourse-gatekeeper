@@ -598,6 +598,7 @@ class Client:  # pylint: disable=R0904
                 self._git_repo.git.tag("-d", tag_name)
                 self._git_repo.git.push("--delete", "origin", tag_name)
 
+            logging.error(f"Tagging commit {commit_sha} with tag {tag_name}")
             self._git_repo.git.tag(tag_name, commit_sha)
             self._git_repo.git.push("origin", tag_name)
 
