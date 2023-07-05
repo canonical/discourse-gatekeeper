@@ -335,8 +335,9 @@ class Client:
             self._github_repo.get_branch(self.current_branch)
         except GithubException:
             # The branch probably doesn't exist, try to create it
+            tag_ref = self._github_repo.get_git_ref(f"tags/{DOCUMENTATION_TAG}")
             self._github_repo.create_git_ref(
-                ref=f"refs/heads/{DEFAULT_BRANCH_NAME}", sha=DOCUMENTATION_TAG
+                ref=f"refs/heads/{DEFAULT_BRANCH_NAME}", sha=tag_ref.object.sha
             )
 
         for commit_file in commit_files:
