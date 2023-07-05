@@ -416,6 +416,7 @@ class Client:
                     args.append("-f")
                 args.extend([ORIGIN_NAME, self.current_branch])
                 try:
+                    raise GitCommandError("testing")
                     self._git_repo.git.push(*args)
                 except GitCommandError as exc:
                     # Try with the PyGithub client, suppress any errors and report the original
