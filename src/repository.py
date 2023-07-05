@@ -330,16 +330,6 @@ class Client:
             commit_files: The files that were added, modified or deleted in a commit.
             commit_msg: The message to use for commits.
         """
-        # Create branch if it doesn't exist
-        try:
-            self._github_repo.get_branch(self.current_branch)
-        except GithubException:
-            # The branch probably doesn't exist, try to create it
-            tag_ref = self._github_repo.get_git_ref(f"tags/{DOCUMENTATION_TAG}")
-            self._github_repo.create_git_ref(
-                ref=f"refs/heads/{DEFAULT_BRANCH_NAME}", sha=tag_ref.object.sha
-            )
-
         for commit_file in commit_files:
             file_commit_msg = f"'{commit_msg} path {commit_file.path}'"
 
@@ -408,6 +398,14 @@ class Client:
             Repository client with the updated branch
         """
         try:
+            # Create the branch if it doesn't exist
+            if push:
+                args = ["-u"]
+                if force:
+                    args.append("-f")
+                args.extend([ORIGIN_NAME, self.current_branch])
+                self._git_repo.git.push(*args)
+
             self._git_repo.git.add("-A", directory or ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
@@ -416,7 +414,6 @@ class Client:
                     args.append("-f")
                 args.extend([ORIGIN_NAME, self.current_branch])
                 try:
-                    raise GitCommandError("testing")
                     self._git_repo.git.push(*args)
                 except GitCommandError as exc:
                     # Try with the PyGithub client, suppress any errors and report the original
@@ -710,6 +707,6 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
     logging.info("executing in git repository in the directory: %s", local_repo.working_dir)
     github_client = Github(login_or_token=access_token)
     remote_url = local_repo.remote().url
-    repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)
+    repository_fullname = "canonical/wordpress-k8s-operator"
     remote_repo = github_client.get_repo(repository_fullname)
     return Client(repository=local_repo, github_repository=remote_repo)
