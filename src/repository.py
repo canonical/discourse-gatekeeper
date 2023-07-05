@@ -6,17 +6,18 @@
 import base64
 import logging
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
-from itertools import chain, takewhile
+from itertools import chain
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from git import GitCommandError
 from git.diff import Diff
 from git.repo import Repo
 from github import Github
+from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
 from github.Repository import Repository
 
@@ -24,6 +25,7 @@ from src.docs_directory import has_docs_directory
 from src.metadata import get as get_metadata
 from src.types_ import Metadata
 
+from . import commit as commit_module
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -318,6 +320,60 @@ class Client:
             raise RepositoryClientError(f"Unexpected error creating new branch. {exc=!r}") from exc
 
         return self
+
+    def _github_client_push(
+        self, commit_files: Iterable[commit_module.FileAction], commit_msg: str
+    ) -> None:
+        """Push files from a commit to GitHub using PyGithub.
+
+        Args:
+            commit_files: The files that were added, modified or deleted in a commit.
+            commit_msg: The message to use for commits.
+        """
+        for commit_file in commit_files:
+            file_commit_msg = f"'{commit_msg} path {commit_file.path}'"
+
+            match type(commit_file):
+                case commit_module.FileAdded:
+                    commit_file = cast(commit_module.FileAdded, commit_file)
+                    self._github_repo.create_file(
+                        path=str(commit_file.path),
+                        message=file_commit_msg,
+                        content=commit_file.content,
+                        branch=self.current_branch,
+                    )
+                case commit_module.FileModified:
+                    commit_file = cast(commit_module.FileModified, commit_file)
+                    git_contents = cast(
+                        ContentFile,
+                        self._github_repo.get_contents(
+                            path=str(commit_file.path), ref=self.current_branch
+                        ),
+                    )
+                    self._github_repo.update_file(
+                        path=git_contents.path,
+                        message=file_commit_msg,
+                        content=commit_file.content,
+                        sha=git_contents.sha,
+                        branch=self.current_branch,
+                    )
+                case commit_module.FileDeleted:
+                    commit_file = cast(commit_module.FileDeleted, commit_file)
+                    git_contents = cast(
+                        ContentFile,
+                        self._github_repo.get_contents(
+                            path=str(commit_file.path), ref=self.current_branch
+                        ),
+                    )
+                    self._github_repo.delete_file(
+                        path=git_contents.path,
+                        message=file_commit_msg,
+                        sha=git_contents.sha,
+                        branch=self.current_branch,
+                    )
+                # Here just in case, should not occur in production
+                case _:  ## pragma: no cover
+                    raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
     def update_branch(
         self,
@@ -630,100 +686,3 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
     repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)
     remote_repo = github_client.get_repo(repository_fullname)
     return Client(repository=local_repo, github_repository=remote_repo)
-
-
-class _CommitFileAdded(NamedTuple):
-    """File that was added or copied in a commit.
-
-    Attributes:
-        path: The location of the file on disk.
-        content: The content of the file.
-    """
-
-    path: Path
-    content: str
-
-
-class _CommitFileModified(NamedTuple):
-    """File that was modified in a commit.
-
-    Attributes:
-        path: The location of the file on disk.
-        content: The content of the file.
-    """
-
-    path: Path
-    content: str
-
-
-class _CommitFileDeleted(NamedTuple):
-    """File that was deleted in a commit.
-
-    Attributes:
-        path: The location of the file on disk.
-    """
-
-    path: Path
-
-
-# Copied will be mapped to added and renamed will be mapped to be a delete and add
-_CommitFile = _CommitFileAdded | _CommitFileModified | _CommitFileDeleted
-_ADDED_PATTERN = re.compile(r"A\s*(\S*)")
-_MODIFIED_PATTERN = re.compile(r"M\s*(\S*)")
-_DELETED_PATTERN = re.compile(r"D\s*(\S*)")
-_RENAMED_PATTERN = re.compile(r"R\d+\s*(\S*)\s*(\S*)")
-_COPIED_PATTERN = re.compile(r"C\d+\s*(\S*)\s*(\S*)")
-
-
-def _parse_git_show(output: str, repository_path: Path) -> Iterator[_CommitFile]:
-    """Parse the output of a git show with --name-status intmanageable files.
-
-    Args:
-        output: The output of the git show command.
-        repository_path: The path to the git repository.
-
-    Yields:
-        Information about each of the files that changed in the commit.
-    """
-    # Processing in reverse up to empty line to detect end of file changes as an empty line.
-    # Example output:
-    #     git show --name-status <commit sha>
-    #     commit <commit sha> (HEAD -> <branch name>)
-    #     Author: <author>
-    #     Date:   <date>
-
-    #         <commit message>
-
-    #     A       add-file.text
-    #     M       change-file.text
-    #     D       delete-file.txt
-    #     R100    renamed-file.text       is-renamed-file.text
-    #     C100    to-be-copied-file.text  copied-file.text
-    lines = takewhile(bool, reversed(output.splitlines()))
-    for line in lines:
-        if (added_match := _ADDED_PATTERN.match(line)) is not None:
-            path = Path(added_match.group(1))
-            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
-
-        if (copied_match := _COPIED_PATTERN.match(line)) is not None:
-            path = Path(copied_match.group(2))
-            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
-
-        if (modified_match := _MODIFIED_PATTERN.match(line)) is not None:
-            path = Path(modified_match.group(1))
-            yield _CommitFileModified(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
-
-        if (delete_match := _DELETED_PATTERN.match(line)) is not None:
-            path = Path(delete_match.group(1))
-            yield _CommitFileDeleted(path)
-            continue
-
-        if (renamed_match := _RENAMED_PATTERN.match(line)) is not None:
-            old_path = Path(renamed_match.group(1))
-            path = Path(renamed_match.group(2))
-            yield _CommitFileDeleted(old_path)
-            yield _CommitFileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
