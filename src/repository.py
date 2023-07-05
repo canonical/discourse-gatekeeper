@@ -7,7 +7,7 @@ import base64
 import logging
 import re
 from collections.abc import Iterable, Iterator, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -26,7 +26,7 @@ from src.metadata import get as get_metadata
 from src.types_ import Metadata
 
 from . import commit as commit_module
-from .constants import DOCUMENTATION_FOLDER_NAME
+from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from .exceptions import (
     InputError,
     RepositoryClientError,
@@ -330,6 +330,15 @@ class Client:
             commit_files: The files that were added, modified or deleted in a commit.
             commit_msg: The message to use for commits.
         """
+        # Create branch if it doesn't exist
+        try:
+            self._github_repo.get_branch(self.current_branch)
+        except GithubException:
+            # The branch probably doesn't exist, try to create it
+            self._github_repo.create_git_ref(
+                ref=f"refs/heads/{DEFAULT_BRANCH_NAME}", sha=DOCUMENTATION_TAG
+            )
+
         for commit_file in commit_files:
             file_commit_msg = f"'{commit_msg} path {commit_file.path}'"
 
