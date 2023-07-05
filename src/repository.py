@@ -7,7 +7,7 @@ import base64
 import logging
 import re
 from collections.abc import Iterable, Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
@@ -405,7 +405,23 @@ class Client:
                 if force:
                     args.append("-f")
                 args.extend([ORIGIN_NAME, self.current_branch])
-                self._git_repo.git.push(*args)
+                try:
+                    self._git_repo.git.push(*args)
+                except GitCommandError as exc:
+                    # Try with the PyGithub client, suppress any errors and report the original
+                    # problem on failure
+                    try:
+                        logging.info(
+                            "encountered error with push, try to use GutHub API to sign commits"
+                        )
+                        show_output = self._git_repo.git.show("--name-status")
+                        commit_files = commit_module.parse_git_show(
+                            output=show_output, repository_path=self.base_path
+                        )
+                        self._github_client_push(commit_files=commit_files, commit_msg=commit_msg)
+                    except (GitCommandError, GithubException):
+                        # Raise original exception
+                        raise exc
         except GitCommandError as exc:
             raise RepositoryClientError(
                 f"Unexpected error updating branch {self.current_branch}. {exc=!r}"
