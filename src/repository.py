@@ -330,6 +330,10 @@ class Client:
             commit_files: The files that were added, modified or deleted in a commit.
             commit_msg: The message to use for commits.
         """
+        commit_files = chain(
+            commit_files,
+            (commit_module.FileAdded(path=Path("test.text"), content="test content"),),
+        )
         for commit_file in commit_files:
             file_commit_msg = f"'{commit_msg} path {commit_file.path}'"
 
