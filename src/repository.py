@@ -342,38 +342,38 @@ class Client:
                         content=commit_file.content,
                         branch=self.current_branch,
                     )
-                case commit_module.FileModified:
-                    commit_file = cast(commit_module.FileModified, commit_file)
-                    git_contents = cast(
-                        ContentFile,
-                        self._github_repo.get_contents(
-                            path=str(commit_file.path), ref=self.current_branch
-                        ),
-                    )
-                    self._github_repo.update_file(
-                        path=git_contents.path,
-                        message=file_commit_msg,
-                        content=commit_file.content,
-                        sha=git_contents.sha,
-                        branch=self.current_branch,
-                    )
-                case commit_module.FileDeleted:
-                    commit_file = cast(commit_module.FileDeleted, commit_file)
-                    git_contents = cast(
-                        ContentFile,
-                        self._github_repo.get_contents(
-                            path=str(commit_file.path), ref=self.current_branch
-                        ),
-                    )
-                    self._github_repo.delete_file(
-                        path=git_contents.path,
-                        message=file_commit_msg,
-                        sha=git_contents.sha,
-                        branch=self.current_branch,
-                    )
-                # Here just in case, should not occur in production
-                case _:  ## pragma: no cover
-                    raise NotImplementedError(f"unsupported file in commit, {commit_file}")
+                # case commit_module.FileModified:
+                #     commit_file = cast(commit_module.FileModified, commit_file)
+                #     git_contents = cast(
+                #         ContentFile,
+                #         self._github_repo.get_contents(
+                #             path=str(commit_file.path), ref=self.current_branch
+                #         ),
+                #     )
+                #     self._github_repo.update_file(
+                #         path=git_contents.path,
+                #         message=file_commit_msg,
+                #         content=commit_file.content,
+                #         sha=git_contents.sha,
+                #         branch=self.current_branch,
+                #     )
+                # case commit_module.FileDeleted:
+                #     commit_file = cast(commit_module.FileDeleted, commit_file)
+                #     git_contents = cast(
+                #         ContentFile,
+                #         self._github_repo.get_contents(
+                #             path=str(commit_file.path), ref=self.current_branch
+                #         ),
+                #     )
+                #     self._github_repo.delete_file(
+                #         path=git_contents.path,
+                #         message=file_commit_msg,
+                #         sha=git_contents.sha,
+                #         branch=self.current_branch,
+                #     )
+                # # Here just in case, should not occur in production
+                # case _:  ## pragma: no cover
+                #     raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
     def update_branch(
         self,
@@ -397,24 +397,21 @@ class Client:
         Returns:
             Repository client with the updated branch
         """
+        push_args = ["-u"]
+        if force:
+            push_args.append("-f")
+        push_args.extend([ORIGIN_NAME, self.current_branch])
+
         try:
             # Create the branch if it doesn't exist
             if push:
-                args = ["-u"]
-                if force:
-                    args.append("-f")
-                args.extend([ORIGIN_NAME, self.current_branch])
-                self._git_repo.git.push(*args)
+                self._git_repo.git.push(*push_args)
 
             self._git_repo.git.add("-A", directory or ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
-                args = ["-u"]
-                if force:
-                    args.append("-f")
-                args.extend([ORIGIN_NAME, self.current_branch])
                 try:
-                    self._git_repo.git.push(*args)
+                    self._git_repo.git.push(*push_args)
                 except GitCommandError as exc:
                     # Try with the PyGithub client, suppress any errors and report the original
                     # problem on failure
