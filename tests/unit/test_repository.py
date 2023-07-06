@@ -928,27 +928,16 @@ def test__github_client_push_multiple(repository_client: Client, mock_github_rep
 def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     """
     arrange: given Client with a mocked local git repository client that raises an
-        exception when pushing commits
+        exception when adding, committing and pushing commits
     act: when update branch is called
     assert: RepositoryClientError is raised from GitCommandError.
     """
     repository_client.switch(DEFAULT_BRANCH)
 
-    def side_effect(*args):
-        """Mock function.
-
-        Args:
-            args: positional arguments
-
-        Raises:
-            GitCommandError: when providing pop
-        """
-        raise GitCommandError("mocked error")
-
     mock_git_repository = mock.MagicMock(spec=Git)
     mock_git_repository.add = mock.Mock(return_value=None)
     mock_git_repository.commit = mock.Mock(return_value=None)
-    mock_git_repository.push = mock.Mock(side_effect=side_effect)
+    mock_git_repository.push = mock.Mock(side_effect=GitCommandError("mocked error"))
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
     monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
 
@@ -956,6 +945,104 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
         repository_client.update_branch("my-message")
 
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api_git_error(
+    monkeypatch, repository_client: Client, repository_path: Path, mock_github_repo
+):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits and show
+    act: when update branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
+        "content 1", encoding="utf-8"
+    )
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked push error")])
+    mock_git_repository.show = mock.Mock(side_effect=GitCommandError("mocked show error"))
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.update_branch("my-message")
+
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api_github_error(
+    monkeypatch, repository_client: Client, repository_path: Path, mock_github_repo
+):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits and getting a branch
+    act: when update branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
+        "content 1", encoding="utf-8"
+    )
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
+    mock_github_repo.get_branch.side_effect = GithubException(0, "", None)
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.update_branch("my-message")
+
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api(
+    monkeypatch,
+    repository_client: Client,
+    repository_path: Path,
+    mock_github_repo,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits
+    act: when update branch is called
+    assert: then PyGithub is used to push instead.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
+        "content 1", encoding="utf-8"
+    )
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+
+    repository_client.update_branch("my-message")
+
+    # Check that the branch.edit was called, more detailed checks are in
+    # test__github_client_push_single
+    mock_github_repo.get_git_ref.return_value.edit.assert_called_once()
+    assert_substrings_in_string(("error", "push", "github", "api"), caplog.text.lower())
 
 
 def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):

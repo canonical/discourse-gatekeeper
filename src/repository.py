@@ -425,7 +425,7 @@ class Client:
                     except (GitCommandError, GithubException) as nested_exc:
                         # Raise original exception, flake8-docstrings-complete confuses this with a
                         # specific exception rather than re-raising
-                        raise nested_exc from exc  # noqa: DCO053
+                        raise exc from nested_exc  # noqa: DCO053
         except GitCommandError as exc:
             raise RepositoryClientError(
                 f"Unexpected error updating branch {self.current_branch}. {exc=!r}"
