@@ -838,11 +838,11 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     )
 
 
-def test__github_client_push_added(repository_client: Client, mock_github_repo):
+def test__github_client_push_single(repository_client: Client, mock_github_repo):
     """
     arrange: given Client with a mocked github client
     act: when _github_client_push is called with an added file
-    assert: then create_file is called on the github client with the added file.
+    assert: then the expected GitHub client interactions were executed.
     """
     repository_client.switch(DEFAULT_BRANCH)
     path = Path("test.text")
@@ -852,61 +852,28 @@ def test__github_client_push_added(repository_client: Client, mock_github_repo):
 
     repository_client._github_client_push(commit_files=(commit_file,), commit_msg=commit_msg)
 
-    mock_github_repo.create_file.assert_called_once_with(
-        path=str(path),
-        message=f"'{commit_msg} path {path}'",
-        content=content,
-        branch=DEFAULT_BRANCH,
+    mock_github_repo.get_branch.assert_called_once_with(DEFAULT_BRANCH)
+    mock_github_repo.get_git_tree.assert_called_once_with(
+        sha=mock_github_repo.get_branch.return_value.commit.sha
     )
 
+    # The InputGitTreeElement does not expose its arguments, can only check that the correct number
+    # were passed
+    mock_github_repo.create_git_tree.assert_called_once()
+    create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
+    assert len(create_git_tree_call_args) == 2
+    assert len(create_git_tree_call_args[0]) == 1
+    assert create_git_tree_call_args[1] == mock_github_repo.get_git_tree.return_value
 
-def test__github_client_push_modified(repository_client: Client, mock_github_repo):
-    """
-    arrange: given Client with a mocked github client
-    act: when _github_client_push is called with a modified file
-    assert: then create_file is called on the github client with the modified file.
-    """
-    repository_client.switch(DEFAULT_BRANCH)
-    path = Path("test.text")
-    content = "content 1"
-    commit_file = commit.FileModified(path=path, content=content)
-    commit_msg = "commit-1"
-    mock_contents = mock.MagicMock()
-    mock_github_repo.get_contents.return_value = mock_contents
-
-    repository_client._github_client_push(commit_files=(commit_file,), commit_msg=commit_msg)
-
-    mock_github_repo.get_contents.assert_called_once_with(path=str(path), ref=DEFAULT_BRANCH)
-    mock_github_repo.update_file.assert_called_once_with(
-        path=mock_contents.path,
-        message=f"'{commit_msg} path {path}'",
-        content=content,
-        sha=mock_contents.sha,
-        branch=DEFAULT_BRANCH,
+    mock_github_repo.create_git_commit.assert_called_once_with(
+        message=commit_msg,
+        tree=mock_github_repo.create_git_tree.return_value,
+        parents=[mock_github_repo.get_branch.return_value.commit.commit],
     )
 
-
-def test__github_client_push_deleted(repository_client: Client, mock_github_repo):
-    """
-    arrange: given Client with a mocked github client
-    act: when _github_client_push is called with a deleted file
-    assert: then create_file is called on the github client with the deleted file.
-    """
-    repository_client.switch(DEFAULT_BRANCH)
-    path = Path("test.text")
-    commit_file = commit.FileDeleted(path=path)
-    commit_msg = "commit-1"
-    mock_contents = mock.MagicMock()
-    mock_github_repo.get_contents.return_value = mock_contents
-
-    repository_client._github_client_push(commit_files=(commit_file,), commit_msg=commit_msg)
-
-    mock_github_repo.get_contents.assert_called_once_with(path=str(path), ref=DEFAULT_BRANCH)
-    mock_github_repo.delete_file.assert_called_once_with(
-        path=mock_contents.path,
-        message=f"'{commit_msg} path {path}'",
-        sha=mock_contents.sha,
-        branch=DEFAULT_BRANCH,
+    mock_github_repo.get_git_ref.assert_called_once_with(f"heads/{DEFAULT_BRANCH}")
+    mock_github_repo.get_git_ref.return_value.edit.assert_called_once_with(
+        sha=mock_github_repo.create_git_commit.return_value.sha
     )
 
 
@@ -914,7 +881,7 @@ def test__github_client_push_multiple(repository_client: Client, mock_github_rep
     """
     arrange: given Client with a mocked github client
     act: when _github_client_push is called with multiple added files
-    assert: then create_file is called on the github client with the added files.
+    assert: then the expected GitHub client interactions were executed.
     """
     repository_client.switch(DEFAULT_BRANCH)
     path_1 = Path("test_1.text")
@@ -929,19 +896,11 @@ def test__github_client_push_multiple(repository_client: Client, mock_github_rep
         commit_files=(commit_file_1, commit_file_2), commit_msg=commit_msg
     )
 
-    assert mock_github_repo.create_file.call_count == 2
-    mock_github_repo.create_file.assert_any_call(
-        path=str(path_1),
-        message=f"'{commit_msg} path {path_1}'",
-        content=content_1,
-        branch=DEFAULT_BRANCH,
-    )
-    mock_github_repo.create_file.assert_any_call(
-        path=str(path_2),
-        message=f"'{commit_msg} path {path_2}'",
-        content=content_2,
-        branch=DEFAULT_BRANCH,
-    )
+    # Only check the calls that are different to test__github_client_push_single
+    mock_github_repo.create_git_tree.assert_called_once()
+    create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
+    assert len(create_git_tree_call_args) == 2
+    assert len(create_git_tree_call_args[0]) == 2
 
 
 def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
