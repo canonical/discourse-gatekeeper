@@ -18,6 +18,7 @@ from git.repo import Repo
 from github import Github
 from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
+from github.InputGitTreeElement import InputGitTreeElement
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
@@ -32,6 +33,27 @@ from src.exceptions import (
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
+
+
+@pytest.mark.parametrize(
+    "commit_file",
+    [
+        pytest.param(commit.FileAdded(path=Path("test.text"), content="content 1"), id="added"),
+        pytest.param(
+            commit.FileModified(path=Path("test.text"), content="content 1"), id="modified"
+        ),
+        pytest.param(commit.FileDeleted(path=Path("test.text")), id="deleted"),
+    ],
+)
+def test__commit_file_to_tree_element(commit_file: commit.FileAdded):
+    """
+    arrange: given commit file
+    act: when _commit_file_to_tree_element is called with the commit file
+    assert: then a InputGitTreeElement is returned.
+    """
+    tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
+
+    assert isinstance(tree_element, InputGitTreeElement)
 
 
 def test__init__(git_repo: Repo, mock_github_repo: Repository):

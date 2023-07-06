@@ -17,7 +17,6 @@ from git import GitCommandError
 from git.diff import Diff
 from git.repo import Repo
 from github import Github
-from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
 from github.InputGitTreeElement import InputGitTreeElement
 from github.Repository import Repository
