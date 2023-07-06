@@ -363,10 +363,6 @@ class Client:
         """
         branch = self._github_repo.get_branch(self.current_branch)
         current_tree = self._github_repo.get_git_tree(sha=branch.commit.sha)
-        commit_files = chain(
-            commit_files,
-            (commit_module.FileAdded(path=Path("test.text"), content="test content"),),
-        )
         tree_elements = [_commit_file_to_tree_element(commit_file) for commit_file in commit_files]
         tree = self._github_repo.create_git_tree(tree_elements, current_tree)
         commit = self._github_repo.create_git_commit(
@@ -417,7 +413,7 @@ class Client:
                     # problem on failure
                     try:
                         logging.info(
-                            "encountered error with push, try to use GutHub API to sign commits"
+                            "encountered error with push, try to use GitHub API to sign commits"
                         )
                         show_output = self._git_repo.git.show("--name-status")
                         commit_files = commit_module.parse_git_show(
