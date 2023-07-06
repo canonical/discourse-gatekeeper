@@ -28,7 +28,7 @@ def test_parse_git_show_empty():
 
 def test_parse_git_show_unsupported():
     """
-    arrange: given show output that includes a line that is unknown
+    arrange: given show output that includes a line with a file with unknown status
     act: when output is passed to parse_git_show
     assert: then no files are returned.
     """
