@@ -26,7 +26,7 @@ from src.metadata import get as get_metadata
 from src.types_ import Metadata
 
 from . import commit as commit_module
-from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
     RepositoryClientError,
@@ -142,6 +142,9 @@ def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> Input
 
     Returns:
         The git tree element.
+
+    Raises:
+        NotImplementedError: for unsupported commit file types.
     """
     match type(commit_file):
         case commit_module.FileAdded:
@@ -160,7 +163,7 @@ def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> Input
                 path=str(commit_file.path), mode="100644", type="blob", sha=None
             )
         # Here just in case, should not occur in production
-        case _:  ## pragma: no cover
+        case _:  # pragma: no cover
             raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
 
@@ -419,9 +422,10 @@ class Client:
                             output=show_output, repository_path=self.base_path
                         )
                         self._github_client_push(commit_files=commit_files, commit_msg=commit_msg)
-                    except (GitCommandError, GithubException):
-                        # Raise original exception
-                        raise exc
+                    except (GitCommandError, GithubException) as nested_exc:
+                        # Raise original exception, flake8-docstrings-complete confuses this with a
+                        # specific exception rather than re-raising
+                        raise nested_exc from exc  # noqa: DCO053
         except GitCommandError as exc:
             raise RepositoryClientError(
                 f"Unexpected error updating branch {self.current_branch}. {exc=!r}"
