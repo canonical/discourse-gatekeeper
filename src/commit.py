@@ -54,7 +54,7 @@ _COPIED_PATTERN = re.compile(r"C\d+\s*(\S*)\s*(\S*)")
 
 
 def parse_git_show(output: str, repository_path: Path) -> Iterator[FileAction]:
-    """Parse the output of a git show with --name-status intmanageable files.
+    """Parse the output of a git show with --name-status into manageable data.
 
     Args:
         output: The output of the git show command.
@@ -64,7 +64,7 @@ def parse_git_show(output: str, repository_path: Path) -> Iterator[FileAction]:
         Information about each of the files that changed in the commit.
     """
     # Processing in reverse up to empty line to detect end of file changes as an empty line.
-    # Example output:
+    # Example git show output:
     #     git show --name-status <commit sha>
     #     commit <commit sha> (HEAD -> <branch name>)
     #     Author: <author>
@@ -77,6 +77,7 @@ def parse_git_show(output: str, repository_path: Path) -> Iterator[FileAction]:
     #     D       delete-file.txt
     #     R100    renamed-file.text       is-renamed-file.text
     #     C100    to-be-copied-file.text  copied-file.text
+    # The copied example is a guess, was not able to get the copied status during testing
     lines = takewhile(bool, reversed(output.splitlines()))
     for line in lines:
         if (added_match := _ADDED_PATTERN.match(line)) is not None:
