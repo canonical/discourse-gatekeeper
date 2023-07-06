@@ -60,7 +60,7 @@ def test_parse_git_show_added(repository_client: Client):
     assert len(commit_files) == 1
     commit_file = commit_files[0]
     assert commit_file.path == file
-    assert isinstance(commit_file, commit.FileAdded)
+    assert isinstance(commit_file, commit.FileAddedOrModified)
     assert commit_file.content == contents
 
 
@@ -86,7 +86,7 @@ def test_parse_git_show_modified(repository_client: Client):
     assert len(commit_files) == 1
     commit_file = commit_files[0]
     assert commit_file.path == file
-    assert isinstance(commit_file, commit.FileModified)
+    assert isinstance(commit_file, commit.FileAddedOrModified)
     assert commit_file.content == contents
 
 
@@ -142,7 +142,7 @@ def test_parse_git_show_renamed(repository_client: Client):
     assert isinstance(commit_file_delete, commit.FileDeleted)
     commit_file_add = commit_files[1]
     assert commit_file_add.path == new_file
-    assert isinstance(commit_file_add, commit.FileAdded)
+    assert isinstance(commit_file_add, commit.FileAddedOrModified)
     assert commit_file_add.content == contents
 
 
@@ -172,7 +172,7 @@ def test_parse_git_show_copied(repository_client: Client):
     assert len(commit_files) == 1
     commit_file = commit_files[0]
     assert commit_file.path == new_file
-    assert isinstance(commit_file, commit.FileAdded)
+    assert isinstance(commit_file, commit.FileAddedOrModified)
     assert commit_file.content == contents
 
 
@@ -200,9 +200,9 @@ def test_parse_git_show_multiple(repository_client: Client):
     assert len(commit_files) == 2
     commit_file_1 = commit_files[1]
     assert commit_file_1.path == file_1
-    assert isinstance(commit_file_1, commit.FileAdded)
+    assert isinstance(commit_file_1, commit.FileAddedOrModified)
     assert commit_file_1.content == contents_1
     commit_file_2 = commit_files[0]
     assert commit_file_2.path == file_2
-    assert isinstance(commit_file_2, commit.FileAdded)
+    assert isinstance(commit_file_2, commit.FileAddedOrModified)
     assert commit_file_2.content == contents_2

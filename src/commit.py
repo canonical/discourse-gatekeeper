@@ -10,20 +10,8 @@ from pathlib import Path
 from typing import NamedTuple
 
 
-class FileAdded(NamedTuple):
-    """File that was added or copied in a commit.
-
-    Attributes:
-        path: The location of the file on disk.
-        content: The content of the file.
-    """
-
-    path: Path
-    content: str
-
-
-class FileModified(NamedTuple):
-    """File that was modified in a commit.
+class FileAddedOrModified(NamedTuple):
+    """File that was added, mofied or copied copied in a commit.
 
     Attributes:
         path: The location of the file on disk.
@@ -45,7 +33,7 @@ class FileDeleted(NamedTuple):
 
 
 # Copied will be mapped to added and renamed will be mapped to be a delete and add
-FileAction = FileAdded | FileModified | FileDeleted
+FileAction = FileAddedOrModified | FileDeleted
 _ADDED_PATTERN = re.compile(r"A\s*(\S*)")
 _MODIFIED_PATTERN = re.compile(r"M\s*(\S*)")
 _DELETED_PATTERN = re.compile(r"D\s*(\S*)")
@@ -80,19 +68,14 @@ def parse_git_show(output: str, repository_path: Path) -> Iterator[FileAction]:
     # The copied example is a guess, was not able to get the copied status during testing
     lines = takewhile(bool, reversed(output.splitlines()))
     for line in lines:
-        if (added_match := _ADDED_PATTERN.match(line)) is not None:
-            path = Path(added_match.group(1))
-            yield FileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
-
-        if (copied_match := _COPIED_PATTERN.match(line)) is not None:
-            path = Path(copied_match.group(2))
-            yield FileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
-            continue
-
         if (modified_match := _MODIFIED_PATTERN.match(line)) is not None:
             path = Path(modified_match.group(1))
-            yield FileModified(path, (repository_path / path).read_text(encoding="utf-8"))
+            yield FileAddedOrModified(path, (repository_path / path).read_text(encoding="utf-8"))
+            continue
+
+        if (added_match := _ADDED_PATTERN.match(line)) is not None:
+            path = Path(added_match.group(1))
+            yield FileAddedOrModified(path, (repository_path / path).read_text(encoding="utf-8"))
             continue
 
         if (delete_match := _DELETED_PATTERN.match(line)) is not None:
@@ -104,5 +87,10 @@ def parse_git_show(output: str, repository_path: Path) -> Iterator[FileAction]:
             old_path = Path(renamed_match.group(1))
             path = Path(renamed_match.group(2))
             yield FileDeleted(old_path)
-            yield FileAdded(path, (repository_path / path).read_text(encoding="utf-8"))
+            yield FileAddedOrModified(path, (repository_path / path).read_text(encoding="utf-8"))
+            continue
+
+        if (copied_match := _COPIED_PATTERN.match(line)) is not None:
+            path = Path(copied_match.group(2))
+            yield FileAddedOrModified(path, (repository_path / path).read_text(encoding="utf-8"))
             continue

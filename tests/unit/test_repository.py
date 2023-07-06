@@ -38,14 +38,13 @@ from .helpers import assert_substrings_in_string
 @pytest.mark.parametrize(
     "commit_file",
     [
-        pytest.param(commit.FileAdded(path=Path("test.text"), content="content 1"), id="added"),
         pytest.param(
-            commit.FileModified(path=Path("test.text"), content="content 1"), id="modified"
+            commit.FileAddedOrModified(path=Path("test.text"), content="content 1"), id="added"
         ),
         pytest.param(commit.FileDeleted(path=Path("test.text")), id="deleted"),
     ],
 )
-def test__commit_file_to_tree_element(commit_file: commit.FileAdded):
+def test__commit_file_to_tree_element(commit_file: commit.FileAction):
     """
     arrange: given commit file
     act: when _commit_file_to_tree_element is called with the commit file
@@ -851,7 +850,7 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     mock_git_repository.add = mock.Mock(return_value=None)
     mock_git_repository.stash = mock.Mock(side_effect=side_effect)
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.switch("branchname-1")
@@ -870,7 +869,7 @@ def test__github_client_push_single(repository_client: Client, mock_github_repo)
     repository_client.switch(DEFAULT_BRANCH)
     path = Path("test.text")
     content = "content 1"
-    commit_file = commit.FileAdded(path=path, content=content)
+    commit_file = commit.FileAddedOrModified(path=path, content=content)
     commit_msg = "commit-1"
 
     repository_client._github_client_push(commit_files=(commit_file,), commit_msg=commit_msg)
@@ -909,10 +908,10 @@ def test__github_client_push_multiple(repository_client: Client, mock_github_rep
     repository_client.switch(DEFAULT_BRANCH)
     path_1 = Path("test_1.text")
     content_1 = "content 1"
-    commit_file_1 = commit.FileAdded(path=path_1, content=content_1)
+    commit_file_1 = commit.FileAddedOrModified(path=path_1, content=content_1)
     path_2 = Path("test_2.text")
     content_2 = "content 2"
-    commit_file_2 = commit.FileAdded(path=path_2, content=content_2)
+    commit_file_2 = commit.FileAddedOrModified(path=path_2, content=content_2)
     commit_msg = "commit-1"
 
     repository_client._github_client_push(
@@ -940,7 +939,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     mock_git_repository.commit = mock.Mock(return_value=None)
     mock_git_repository.push = mock.Mock(side_effect=GitCommandError("mocked error"))
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
@@ -959,19 +958,13 @@ def test_update_branch_github_api_git_error(
     """
     repository_client.switch(DEFAULT_BRANCH)
 
-    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
-    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
-        "content 1", encoding="utf-8"
-    )
-
     mock_git_repository = mock.MagicMock(spec=Git)
     mock_git_repository.add = mock.Mock(return_value=None)
     mock_git_repository.commit = mock.Mock(return_value=None)
-    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
     mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked push error")])
     mock_git_repository.show = mock.Mock(side_effect=GitCommandError("mocked show error"))
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
@@ -1002,7 +995,7 @@ def test_update_branch_github_api_github_error(
     mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
     mock_github_repo.get_branch.side_effect = GithubException(0, "", None)
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
@@ -1036,7 +1029,7 @@ def test_update_branch_github_api(
     mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
     mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     repository_client.update_branch("my-message")
 

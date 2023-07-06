@@ -148,13 +148,8 @@ def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> Input
         NotImplementedError: for unsupported commit file types.
     """
     match type(commit_file):
-        case commit_module.FileAdded:
-            commit_file = cast(commit_module.FileAdded, commit_file)
-            return InputGitTreeElement(
-                path=str(commit_file.path), mode="100644", type="blob", content=commit_file.content
-            )
-        case commit_module.FileModified:
-            commit_file = cast(commit_module.FileModified, commit_file)
+        case commit_module.FileAddedOrModified:
+            commit_file = cast(commit_module.FileAddedOrModified, commit_file)
             return InputGitTreeElement(
                 path=str(commit_file.path), mode="100644", type="blob", content=commit_file.content
             )
