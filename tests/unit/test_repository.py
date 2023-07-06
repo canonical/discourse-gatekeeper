@@ -18,7 +18,6 @@ from git.repo import Repo
 from github import Github
 from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
-from github.InputGitTreeElement import InputGitTreeElement
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
@@ -35,25 +34,36 @@ from src.repository import Client
 from .helpers import assert_substrings_in_string
 
 
-@pytest.mark.parametrize(
-    "commit_file",
-    [
-        pytest.param(
-            commit.FileAddedOrModified(path=Path("test.text"), content="content 1"), id="added"
-        ),
-        pytest.param(commit.FileDeleted(path=Path("test.text")), id="deleted"),
-    ],
-)
-def test__commit_file_to_tree_element(commit_file: commit.FileAction):
+def test__commit_file_to_tree_element_added():
     """
-    arrange: given commit file
+    arrange: given an added commit file
     act: when _commit_file_to_tree_element is called with the commit file
-    assert: then a InputGitTreeElement is returned.
+    assert: then a InputGitTreeElement is returned with the expected identity.
     """
+    commit_file = commit.FileAddedOrModified(path=Path("test.text"), content="content 1")
+
     tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
 
-    # InputGitTreeElement don't expose any data, can only check that the correct type is returned
-    assert isinstance(tree_element, InputGitTreeElement)
+    assert tree_element._identity["path"] == str(commit_file.path)
+    assert tree_element._identity["content"] == commit_file.content
+    assert tree_element._identity["mode"] == "100644"
+    assert tree_element._identity["type"] == "blob"
+
+
+def test__commit_file_to_tree_element_deleted():
+    """
+    arrange: given an deleted commit file
+    act: when _commit_file_to_tree_element is called with the commit file
+    assert: then a InputGitTreeElement is returned with the expected identity.
+    """
+    commit_file = commit.FileDeleted(path=Path("test.text"))
+
+    tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
+
+    assert tree_element._identity["path"] == str(commit_file.path)
+    assert tree_element._identity["sha"] is None
+    assert tree_element._identity["mode"] == "100644"
+    assert tree_element._identity["type"] == "blob"
 
 
 def test__init__(git_repo: Repo, mock_github_repo: Repository):
@@ -879,12 +889,12 @@ def test__github_client_push_single(repository_client: Client, mock_github_repo)
         sha=mock_github_repo.get_branch.return_value.commit.sha
     )
 
-    # The InputGitTreeElement does not expose its arguments, can only check that the correct number
-    # were passed
     mock_github_repo.create_git_tree.assert_called_once()
     create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
     assert len(create_git_tree_call_args) == 2
     assert len(create_git_tree_call_args[0]) == 1
+    assert create_git_tree_call_args[0][0]._identity["path"] == str(path)
+    assert create_git_tree_call_args[0][0]._identity["content"] == content
     assert create_git_tree_call_args[1] == mock_github_repo.get_git_tree.return_value
 
     mock_github_repo.create_git_commit.assert_called_once_with(
@@ -923,6 +933,10 @@ def test__github_client_push_multiple(repository_client: Client, mock_github_rep
     create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
     assert len(create_git_tree_call_args) == 2
     assert len(create_git_tree_call_args[0]) == 2
+    assert create_git_tree_call_args[0][0]._identity["path"] == str(path_1)
+    assert create_git_tree_call_args[0][0]._identity["content"] == content_1
+    assert create_git_tree_call_args[0][1]._identity["path"] == str(path_2)
+    assert create_git_tree_call_args[0][1]._identity["content"] == content_2
 
 
 def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
@@ -947,9 +961,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
 
 
-def test_update_branch_github_api_git_error(
-    monkeypatch, repository_client: Client, repository_path: Path
-):
+def test_update_branch_github_api_git_error(monkeypatch, repository_client: Client):
     """
     arrange: given Client with a mocked local git repository client that raises an
         exception when pushing commits and show
