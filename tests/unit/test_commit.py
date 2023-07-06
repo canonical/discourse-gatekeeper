@@ -23,7 +23,7 @@ def test_parse_git_show_empty():
 
     commit_files = tuple(commit.parse_git_show(show_output, repository_path=Path()))
 
-    assert len(commit_files) == 0
+    assert not commit_files
 
 
 def test_parse_git_show_unsupported():
@@ -36,7 +36,7 @@ def test_parse_git_show_unsupported():
 
     commit_files = tuple(commit.parse_git_show(show_output, repository_path=Path()))
 
-    assert len(commit_files) == 0
+    assert not commit_files
 
 
 def test_parse_git_show_added(repository_client: Client):
