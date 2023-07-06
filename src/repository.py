@@ -19,6 +19,7 @@ from git.repo import Repo
 from github import Github
 from github.ContentFile import ContentFile
 from github.GithubException import GithubException, UnknownObjectException
+from github.InputGitTreeElement import InputGitTreeElement
 from github.Repository import Repository
 
 from src.docs_directory import has_docs_directory
@@ -132,6 +133,36 @@ class DiffSummary(NamedTuple):
         new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else ()
         removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else ()
         return " // ".join(chain(modified_str, new_str, removed_str))
+
+
+def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> InputGitTreeElement:
+    """Convert a file with an action to a tree element.
+
+    Args:
+        commit_file: The file action to convert.
+
+    Returns:
+        The git tree element.
+    """
+    match type(commit_file):
+        case commit_module.FileAdded:
+            commit_file = cast(commit_module.FileAdded, commit_file)
+            return InputGitTreeElement(
+                path=str(commit_file.path), mode="100644", type="blob", content=commit_file.content
+            )
+        case commit_module.FileModified:
+            commit_file = cast(commit_module.FileModified, commit_file)
+            return InputGitTreeElement(
+                path=str(commit_file.path), mode="100644", type="blob", content=commit_file.content
+            )
+        case commit_module.FileDeleted:
+            commit_file = cast(commit_module.FileDeleted, commit_file)
+            return InputGitTreeElement(
+                path=str(commit_file.path), mode="100644", type="blob", sha=None
+            )
+        # Here just in case, should not occur in production
+        case _:  ## pragma: no cover
+            raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
 
 class Client:
@@ -330,54 +361,17 @@ class Client:
             commit_files: The files that were added, modified or deleted in a commit.
             commit_msg: The message to use for commits.
         """
+        branch = self._github_repo.get_branch(self.current_branch)
+        current_tree = self._github_repo.get_git_tree(sha=branch.commit.sha)
         commit_files = chain(
             commit_files,
             (commit_module.FileAdded(path=Path("test.text"), content="test content"),),
         )
-        for commit_file in commit_files:
-            file_commit_msg = f"'{commit_msg} path {commit_file.path}'"
-
-            match type(commit_file):
-                case commit_module.FileAdded:
-                    commit_file = cast(commit_module.FileAdded, commit_file)
-                    self._github_repo.create_file(
-                        path=str(commit_file.path),
-                        message=file_commit_msg,
-                        content=commit_file.content,
-                        branch=self.current_branch,
-                    )
-                # case commit_module.FileModified:
-                #     commit_file = cast(commit_module.FileModified, commit_file)
-                #     git_contents = cast(
-                #         ContentFile,
-                #         self._github_repo.get_contents(
-                #             path=str(commit_file.path), ref=self.current_branch
-                #         ),
-                #     )
-                #     self._github_repo.update_file(
-                #         path=git_contents.path,
-                #         message=file_commit_msg,
-                #         content=commit_file.content,
-                #         sha=git_contents.sha,
-                #         branch=self.current_branch,
-                #     )
-                # case commit_module.FileDeleted:
-                #     commit_file = cast(commit_module.FileDeleted, commit_file)
-                #     git_contents = cast(
-                #         ContentFile,
-                #         self._github_repo.get_contents(
-                #             path=str(commit_file.path), ref=self.current_branch
-                #         ),
-                #     )
-                #     self._github_repo.delete_file(
-                #         path=git_contents.path,
-                #         message=file_commit_msg,
-                #         sha=git_contents.sha,
-                #         branch=self.current_branch,
-                #     )
-                # # Here just in case, should not occur in production
-                # case _:  ## pragma: no cover
-                #     raise NotImplementedError(f"unsupported file in commit, {commit_file}")
+        tree_elements = [_commit_file_to_tree_element(commit_file) for commit_file in commit_files]
+        tree = self._github_repo.create_git_tree(tree_elements, current_tree)
+        self._github_repo.create_git_commit(
+            message=commit_msg, tree=tree, parents=[branch.commit.commit]
+        )
 
     def update_branch(
         self,
@@ -708,6 +702,6 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
     logging.info("executing in git repository in the directory: %s", local_repo.working_dir)
     github_client = Github(login_or_token=access_token)
     remote_url = local_repo.remote().url
-    repository_fullname = "canonical/wordpress-k8s-operator"
+    repository_fullname = _get_repository_name_from_git_url(remote_url)
     remote_repo = github_client.get_repo(repository_fullname)
     return Client(repository=local_repo, github_repository=remote_repo)
