@@ -131,6 +131,8 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             main_hash = repo.current_commit
         clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
 
+    pull_request = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
+
     # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
     if not changes:
@@ -139,15 +141,18 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             user_inputs.commit_sha,
             DOCUMENTATION_TAG,
         )
+        # Given there are NO diffs compared to the base, if a PR is open, it should be closed
+        if pull_request is not None:
+            pull_request.edit(state="closed")
         return {}
 
-    pr_link = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
-
-    if pr_link is not None:
-        logging.info("upload-charm-documents pull request already open at %s", pr_link)
+    if pull_request is not None:
+        logging.info(
+            "upload-charm-documents pull request already open at %s", pull_request.html_url
+        )
         clients.repository.update_pull_request(DEFAULT_BRANCH_NAME)
     else:
         logging.info("PR not existing: creating a new one...")
-        pr_link = clients.repository.create_pull_request(DOCUMENTATION_TAG)
+        pull_request = clients.repository.create_pull_request(DOCUMENTATION_TAG)
 
-    return {pr_link: ActionResult.SUCCESS}
+    return {pull_request.html_url: ActionResult.SUCCESS}

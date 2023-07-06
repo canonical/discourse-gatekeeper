@@ -257,7 +257,7 @@ def test_create_pull_request(
         (docs_path / "placeholder.md").touch()
         returned_url = repository_client.create_pull_request(DOCUMENTATION_TAG)
 
-    assert returned_url == mock_pull_request.html_url
+    assert returned_url.html_url == mock_pull_request.html_url
 
 
 def test_tag_commit_tag_error(monkeypatch, repository_client: Client):
@@ -1059,7 +1059,7 @@ def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pu
     pull_request_link = repository_client.get_pull_request(repository.DEFAULT_BRANCH_NAME)
 
     assert pull_request_link is not None
-    assert pull_request_link == "test_url"
+    assert pull_request_link.html_url == "test_url"
 
 
 def test_get_non_existing_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
@@ -1159,7 +1159,7 @@ def test_create_pull_request_existing_branch(
     (repository_path / docs_folder).mkdir()
     (repository_path / filler_file).write_text("filler-content")
 
-    pr_link = repository_client.create_pull_request(base=DEFAULT_BRANCH)
+    pull_request = repository_client.create_pull_request(base=DEFAULT_BRANCH)
 
     repository_client.switch(branch_name).pull()
 
@@ -1167,7 +1167,7 @@ def test_create_pull_request_existing_branch(
 
     # Make sure that the upload-charm-docs/migrate branch has now be overridden
     assert hash2 != hash3
-    assert pr_link == "test_url"
+    assert pull_request.html_url == "test_url"
 
 
 def test_create_pull_request_function(
@@ -1188,10 +1188,10 @@ def test_create_pull_request_function(
 
     repository_client.switch(DEFAULT_BRANCH)
 
-    returned_pr_link = repository_client.create_pull_request(base=DEFAULT_BRANCH)
+    pull_request = repository_client.create_pull_request(base=DEFAULT_BRANCH)
 
     upstream_git_repo.git.checkout(repository.DEFAULT_BRANCH_NAME)
-    assert returned_pr_link == mock_pull_request.html_url
+    assert pull_request.html_url == mock_pull_request.html_url
     assert (
         upstream_repository_path / DOCUMENTATION_FOLDER_NAME / filler_file
     ).read_text() == filler_text
