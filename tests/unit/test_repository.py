@@ -53,6 +53,7 @@ def test__commit_file_to_tree_element(commit_file: commit.FileAdded):
     """
     tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
 
+    # InputGitTreeElement don't expose any data, can only check that the correct type is returned
     assert isinstance(tree_element, InputGitTreeElement)
 
 
@@ -948,7 +949,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
 
 
 def test_update_branch_github_api_git_error(
-    monkeypatch, repository_client: Client, repository_path: Path, mock_github_repo
+    monkeypatch, repository_client: Client, repository_path: Path
 ):
     """
     arrange: given Client with a mocked local git repository client that raises an

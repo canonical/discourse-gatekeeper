@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Unit tests for git."""
+"""Unit tests for commit module."""
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
@@ -13,10 +13,10 @@ from src.constants import DEFAULT_BRANCH
 from src.repository import Client
 
 
-def test__parse_git_show_empty():
+def test_parse_git_show_empty():
     """
     arrange: given empty show output
-    act: when output is passed to _parse_git_show
+    act: when output is passed to parse_git_show
     assert: then no files are returned.
     """
     show_output = ""
@@ -26,10 +26,10 @@ def test__parse_git_show_empty():
     assert len(commit_files) == 0
 
 
-def test__parse_git_show_unsupported():
+def test_parse_git_show_unsupported():
     """
     arrange: given show output that includes a line that is unknown
-    act: when output is passed to _parse_git_show
+    act: when output is passed to parse_git_show
     assert: then no files are returned.
     """
     show_output = "X    file.text"
@@ -39,11 +39,11 @@ def test__parse_git_show_unsupported():
     assert len(commit_files) == 0
 
 
-def test__parse_git_show_added(repository_client: Client):
+def test_parse_git_show_added(repository_client: Client):
     """
     arrange: given git repository
-    act: when a file is added and show is called and the output passed to _parse_git_show
-    assert: then _CommitFileAdded is returned.
+    act: when a file is added and show is called and the output passed to parse_git_show
+    assert: then FileAdded is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file := Path("file.text"))).write_text(
@@ -64,12 +64,12 @@ def test__parse_git_show_added(repository_client: Client):
     assert commit_file.content == contents
 
 
-def test__parse_git_show_modified(repository_client: Client):
+def test_parse_git_show_modified(repository_client: Client):
     """
     arrange: given git repository
     act: when a file is added and then modified and show is called and the output passed to
-        _parse_git_show
-    assert: then _CommitFileModified is returned.
+        parse_git_show
+    assert: then FileModified is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file := Path("file.text"))).write_text("content 1", encoding="utf-8")
@@ -90,12 +90,12 @@ def test__parse_git_show_modified(repository_client: Client):
     assert commit_file.content == contents
 
 
-def test__parse_git_show_deleted(repository_client: Client):
+def test_parse_git_show_deleted(repository_client: Client):
     """
     arrange: given git repository
     act: when a file is added and then deleted and show is called and the output passed to
-        _parse_git_show
-    assert: then _CommitFileDeleted is returned.
+        parse_git_show
+    assert: then FileDeleted is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file := Path("file.text"))).write_text("content 1", encoding="utf-8")
@@ -115,12 +115,12 @@ def test__parse_git_show_deleted(repository_client: Client):
     assert isinstance(commit_file, commit.FileDeleted)
 
 
-def test__parse_git_show_renamed(repository_client: Client):
+def test_parse_git_show_renamed(repository_client: Client):
     """
     arrange: given git repository
     act: when a file is added and then renamed and show is called and the output passed to
-        _parse_git_show
-    assert: then _CommitFileDeleted and _CommitFileAdded is returned.
+        parse_git_show
+    assert: then FileDeleted and FileAdded is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file := Path("file.text"))).write_text(
@@ -146,12 +146,12 @@ def test__parse_git_show_renamed(repository_client: Client):
     assert commit_file_add.content == contents
 
 
-def test__parse_git_show_copied(repository_client: Client):
+def test_parse_git_show_copied(repository_client: Client):
     """
     arrange: given git repository
     act: when a file is added and then renamed and show is called and the output modified to copied
-        and passed to _parse_git_show
-    assert: then _CommitFileAdded is returned.
+        and passed to parse_git_show
+    assert: then FileAdded is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file := Path("file.text"))).write_text(
@@ -176,11 +176,11 @@ def test__parse_git_show_copied(repository_client: Client):
     assert commit_file.content == contents
 
 
-def test__parse_git_show_multiple(repository_client: Client):
+def test_parse_git_show_multiple(repository_client: Client):
     """
     arrange: given git repository
-    act: when multiple files are added and show is called and the output passed to _parse_git_show
-    assert: then multiple _CommitFileAdded is returned.
+    act: when multiple files are added and show is called and the output passed to parse_git_show
+    assert: then multiple FileAdded is returned.
     """
     repository_path = repository_client.base_path
     (repository_path / (file_1 := Path("file_1.text"))).write_text(
