@@ -369,9 +369,11 @@ class Client:
         )
         tree_elements = [_commit_file_to_tree_element(commit_file) for commit_file in commit_files]
         tree = self._github_repo.create_git_tree(tree_elements, current_tree)
-        self._github_repo.create_git_commit(
+        commit = self._github_repo.create_git_commit(
             message=commit_msg, tree=tree, parents=[branch.commit.commit]
         )
+        branch_git_ref = self._github_repo.get_git_ref(f"heads/{self.current_branch}")
+        branch_git_ref.edit(sha=commit.sha)
 
     def update_branch(
         self,
