@@ -118,7 +118,7 @@ def _prepare(repository:RepositoryClient, discourse: Discourse) -> bool:
 
     with repository.create_branch(E2E_BASE, E2E_SETUP).with_branch(E2E_BASE) as repo:
 
-        repo._git_repo.git.push("origin", repository.current_branch)
+        repo._git_repo.git.push("origin", "-f", repository.current_branch)
 
         if repository.tag_exists(DOCUMENTATION_TAG):
             logging.info("Removing tag %s", DOCUMENTATION_TAG)
