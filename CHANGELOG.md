@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [v0.6.0] - 2023-07-07
+
+### Added
+
+- Raising PRs with community contributions on discourse
+- Signing commits if required by a repository
+
+### Changed
+
+- Conflict detection logic no longer uses git to merge for page conflicts.
+  Instead any differences between discourse and the feature branch on a specific
+  page lead to a failed run.
+
+### Fixed
+
+- Improved logging of conflicts
+
 ## [v0.5.0] - 2023-04-18
 
 ### Changed
