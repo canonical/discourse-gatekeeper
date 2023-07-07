@@ -153,14 +153,15 @@ def test__run_reconcile_local_contents_index(mocked_clients):
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (docs_dir := repo.base_path / "docs").mkdir()
-        (docs_dir / (page_1 := Path("page_1.md"))).write_text("page 1 content")
-        (docs_dir / (page_2 := Path("page_2.md"))).write_text("page 2 content")
+        (docs_dir / (page_1 := Path("page_1.md"))).write_text("page 1 content", encoding="utf-8")
+        (docs_dir / (page_2 := Path("page_2.md"))).write_text("page 2 content", encoding="utf-8")
         (docs_dir / "index.md").write_text(
             f"""{(index_content := 'index content')}
 # contents
 - [{(page_2_title := "Page 2")}]({page_2})
 - [{(page_1_title := "Page 2")}]({page_1})
-"""
+""",
+            encoding="utf-8",
         )
         repo.update_branch("new commit")
 

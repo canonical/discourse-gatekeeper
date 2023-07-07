@@ -47,12 +47,13 @@ async def test_run(
         6. docs with a documentation file updated
         7. docs with a nested directory added
         8. docs with a documentation file added in the nested directory
-        9. docs with the documentation file in the nested directory removed in dry run mode
-        10. docs with the documentation file in the nested directory removed with page deletion
+        9. docs with index file with a local contents index
+        10. docs with the documentation file in the nested directory removed in dry run mode
+        11. docs with the documentation file in the nested directory removed with page deletion
             disabled
-        11. with the nested directory removed
-        12. with the documentation file removed
-        13. with the index file removed
+        12. with the nested directory removed
+        13. with the documentation file removed
+        14. with the index file removed
     assert: then:
         1. an index page is not updated
         2. an index page is updated
@@ -62,11 +63,12 @@ async def test_run(
         6. the documentation page is updated
         7. the nested directory is added to the navigation table
         8. the documentation file in the nested directory is created
-        9. the documentation file in the nested directory is not removed
+        9. the navigation table is updated based on the contents index
         10. the documentation file in the nested directory is not removed
-        11. the nested directory is removed from the navigation table
-        12. the documentation page is deleted
-        13. an index page is not updated
+        11. the documentation file in the nested directory is not removed
+        12. the nested directory is removed from the navigation table
+        13. the documentation page is deleted
+        14. an index page is not updated
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
@@ -241,12 +243,12 @@ async def test_run(
     )
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
-    nested_dir_table_line = f"| 1 | {nested_dir_table_key} | [Nested Dir]() |"
+    nested_dir_table_line_1 = f"| 1 | {nested_dir_table_key} | [Nested Dir]() |"
     assert_substrings_in_string(
-        chain(urls, (nested_dir_table_line, "Create", "'success'")), caplog.text
+        chain(urls, (nested_dir_table_line_1, "Create", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert nested_dir_table_line in index_topic
+    assert nested_dir_table_line_1 in index_topic
 
     # 8. docs with a documentation file added in the nested directory
     caplog.clear()
@@ -269,24 +271,74 @@ async def test_run(
     assert len(urls_with_actions) == 3
     (_, nested_dir_doc_url, _) = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
-    nested_dir_doc_table_line = (
+    nested_dir_doc_table_line_1 = (
         f"| 2 | {nested_dir_doc_table_key} |"
         f" [{nested_dir_doc_content}]({urlparse(nested_dir_doc_url).path}) |"
     )
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "Create", "'success'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line_1, "Create", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert nested_dir_doc_table_line in index_topic
+    assert nested_dir_doc_table_line_1 in index_topic
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 9. docs with the documentation file in the nested directory removed in dry run mode
+    # 9. docs with index file with a local contents index
     caplog.clear()
+    index_file.write_text(
+        f"""{index_content}
+# contents
+- [{(doc_title := "doc title")}]({doc_file.relative_to(docs_dir)})
+- [{(nested_dir_title := "nested dir title")}]({nested_dir.relative_to(docs_dir)})
+  - [{(nested_dir_doc_title := "nested dir doc title")}]({nested_dir_doc_file.relative_to(docs_dir)})
+""",
+        encoding="utf-8",
+    )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "9. docs with index file with a local contents index"
+    )
+
+    urls_with_actions = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert len(urls_with_actions) == 3
+    assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
+    doc_table_line_3 = f"| 1 | {doc_table_key} | [{doc_title}]({urlparse(doc_url).path}) |"
+    nested_dir_table_line_2 = f"| 1 | {nested_dir_table_key} | [{nested_dir_title}]() |"
+    nested_dir_doc_table_line_2 = (
+        f"| 2 | {nested_dir_doc_table_key} |"
+        f" [{nested_dir_doc_title}]({urlparse(nested_dir_doc_url).path}) |"
+    )
+    assert_substrings_in_string(
+        chain(
+            urls,
+            (
+                doc_table_line_3,
+                nested_dir_table_line_2,
+                nested_dir_doc_table_line_2,
+                "Update",
+                "'success'",
+            ),
+        ),
+        caplog.text,
+    )
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert nested_dir_table_line_2 in index_topic
+    assert nested_dir_doc_table_line_2 in index_topic
+    assert doc_table_line_3 in index_topic
+
+    # 10. docs with the documentation file in the nested directory removed in dry run mode
+    caplog.clear()
+    index_file.write_text(index_content, encoding="utf-8")
     nested_dir_doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "9. docs with the documentation file in the nested directory removed in dry run mode"
+        "10. docs with the documentation file in the nested directory removed in dry run mode"
     )
 
     urls_with_actions = run_reconcile(
@@ -298,14 +350,14 @@ async def test_run(
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "Delete", "Update", "'skip'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line_2, "Delete", "Update", "'skip'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert nested_dir_doc_table_line in index_topic
+    assert nested_dir_doc_table_line_2 in index_topic
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 10. docs with the documentation file in the nested directory removed with page deletion
+    # 11. docs with the documentation file in the nested directory removed with page deletion
     # disabled
     caplog.clear()
 
@@ -318,18 +370,18 @@ async def test_run(
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_doc_table_line, "Delete", "Update", "'skip'")), caplog.text
+        chain(urls, (nested_dir_doc_table_line_2, "Delete", "Update", "'skip'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert nested_dir_doc_table_line not in index_topic
+    assert nested_dir_doc_table_line_2 not in index_topic
     nested_dir_doc_topic = discourse_api.retrieve_topic(url=nested_dir_doc_url)
     assert nested_dir_doc_topic == nested_dir_doc_content
 
-    # 11. with the nested directory removed
+    # 12. with the nested directory removed
     caplog.clear()
     shutil.rmtree(nested_dir)
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("11. with the nested directory removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch("12. with the nested directory removed")
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -340,17 +392,17 @@ async def test_run(
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
-        chain(urls, (nested_dir_table_line, "Delete", "Update", "'success'")), caplog.text
+        chain(urls, (nested_dir_table_line_1, "Delete", "Update", "'success'")), caplog.text
     )
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert nested_dir_table_line not in index_topic
+    assert nested_dir_table_line_1 not in index_topic
 
-    # 12. with the documentation file removed
+    # 13. with the documentation file removed
     caplog.clear()
     doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "12. with the documentation file removed"
+        "13. with the documentation file removed"
     )
 
     urls_with_actions = run_reconcile(
@@ -369,11 +421,11 @@ async def test_run(
     with pytest.raises(exceptions.DiscourseError):
         discourse_api.retrieve_topic(url=doc_url)
 
-    # 13. with the index file removed
+    # 14. with the index file removed
     caplog.clear()
     index_file.unlink()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("13. with the index file removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch("14. with the index file removed")
 
     urls_with_actions = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
