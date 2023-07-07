@@ -11,7 +11,8 @@ DOCUMENTATION_TAG = "upload-charm-docs/base-content"
 DISCOURSE_AHEAD_TAG = "upload-charm-docs/discourse-ahead-ok"
 
 DOCUMENTATION_FOLDER_NAME = "docs"
-DOCUMENTATION_INDEX_FILENAME = "index.md"
+DOC_FILE_EXTENSION = ".md"
+DOCUMENTATION_INDEX_FILENAME = f"index{DOC_FILE_EXTENSION}"
 NAVIGATION_TABLE_START = """
 
 # Navigation
