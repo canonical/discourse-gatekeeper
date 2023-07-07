@@ -673,8 +673,8 @@ def test__calculate_action(
             (),
             (types_.CreateAction, types_.CreateAction),
             (
-                (path_info_2.level, path_info_2.table_path),
                 (path_info_1.level, path_info_1.table_path),
+                (path_info_2.level, path_info_2.table_path),
             ),
             id="multiple path infos empty table rows alternate order",
         ),
@@ -754,7 +754,7 @@ def test_run(  # pylint: disable=too-many-arguments
 
     returned_actions = list(
         reconcile.run(
-            path_infos=path_infos,
+            sorted_path_infos=path_infos,
             table_rows=table_rows,
             clients=mocked_clients,
             base_path=tmp_path,
