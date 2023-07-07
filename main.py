@@ -180,7 +180,7 @@ def main_migrate(path: Path, user_inputs: types_.UserInputs) -> types_.MigrateOu
 
     Args:
         path: path of the git repository
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         dictionary representing the output of the process
@@ -195,7 +195,7 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.Reconci
 
     Args:
         path: path of the git repository
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         dictionary representing the output of the process

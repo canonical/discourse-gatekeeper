@@ -1,4 +1,4 @@
-# Upload Charm Documentation
+# Discourse Gatekeeper Documentation
 
 *This action is still in alpha, breaking changes could occur. For now, it should
 only be used on Canonical repositories after approval.*
@@ -50,7 +50,7 @@ charmhub.
         steps:
           - uses: actions/checkout@v3
           - name: Publish documentation
-            uses: canonical/upload-charm-docs@stable
+            uses: canonical/discourse-gatekeeper@stable
             id: publishDocumentation
             with:
               discourse_host: discourse.charmhub.io
@@ -94,7 +94,7 @@ charmhub.
         steps:
           - uses: actions/checkout@v3
           - name: Publish documentation
-            uses: canonical/upload-charm-docs@stable
+            uses: canonical/discourse-gatekeeper@stable
             id: publishDocumentation
             with:
               discourse_host: discourse.charmhub.io
@@ -103,8 +103,8 @@ charmhub.
               github_token: ${{ secrets.GITHUB_TOKEN }}
     ```
 
-    a branch name with `upload-charm-docs/migrate` will be created and a pull
-    request named `[upload-charm-docs] Migrate charm docs` will be created
+    a branch name with `discourse-gatekeeper/migrate` will be created and a pull
+    request named `[discourse-gatekeeper] Migrate charm docs` will be created
     targeting the default branch of the repository. In order to ensure that the
     branches can be created successfully, please make sure that there are no
     existing branches clashing with the name above. Please note that the
@@ -131,7 +131,7 @@ repository. Be sure to explain the reasoning for any changes on discourse.
 
 The content that was last pushed to discourse is determined by getting the
 content from a given file from a commit with the
-`upload-charm-docs/base-content` tag. If the tag does not exist, the action will
+`discourse-gatekeeper/base-content` tag. If the tag does not exist, the action will
 fail and request for the tag to be created.
 
 In addition to page-by-page conflict detection, the action will check whether
@@ -148,7 +148,7 @@ that have not been merged into `main` and a PR proposes changes to
 the changes to `docs/getting-started.md` are no longer accurate.
 
 If, after checking the community contributions on discourse, you determine that
-there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` tag
+there are no logical conflicts, the `discourse-gatekeeper/discourse-ahead-ok` tag
 can be applied to the latest commit in the PR which will allow the action to
 proceed assuming there are no page-by-page conflicts.
 
