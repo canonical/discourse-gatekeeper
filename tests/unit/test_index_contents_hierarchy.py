@@ -20,6 +20,7 @@ from .helpers import assert_substrings_in_string, create_dir, create_file
 
 def _test__calculate_contents_hierarchy_invalid_parameters():
     """Generate parameters for the test__calculate_contents_hierarchy_invalid test.
+
     Returns:
         The tests.
     """
@@ -229,6 +230,7 @@ def test__calculate_contents_hierarchy_invalid(
 
 def _test__calculate_contents_hierarchy_parameters():
     """Generate parameters for the test__calculate_contents_hierarchy test.
+
     Returns:
         The tests.
     """

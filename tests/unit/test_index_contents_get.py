@@ -16,6 +16,7 @@ from .helpers import create_dir, create_file
 
 def _test_get_contents_parameters():
     """Generate parameters for the test_get_contents test.
+
     Returns:
         The tests.
     """

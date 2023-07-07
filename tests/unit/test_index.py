@@ -173,7 +173,7 @@ def _test_get_content_for_server_parameters():
             content := """line 1
 line 2""",
             content,
-            id="no contents section mutliple lines",
+            id="no contents section multiple lines",
         ),
         pytest.param("# contents", "", id="only contents header"),
         pytest.param(

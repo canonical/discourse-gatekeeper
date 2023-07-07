@@ -407,6 +407,7 @@ class IndexDocumentMeta(MigrationFileMeta):
 
 class IndexContentsListItem(typing.NamedTuple):
     """Represents an item in the contents table.
+
     Attrs:
         hierarchy: The number of parent items to the root of the list
         reference_title: The name of the reference

@@ -18,6 +18,7 @@ from .helpers import assert_substrings_in_string
 
 def _test__get_contents_parsed_items_invalid_parameters():
     """Generate parameters for the test__get_contents_parsed_items_invalid test.
+
     Returns:
         The tests.
     """
@@ -102,6 +103,7 @@ def test__get_contents_parsed_items_invalid(
 
 def _test__get_contents_parsed_items_parameters():
     """Generate parameters for the test__get_contents_parsed_items test.
+
     Returns:
         The tests.
     """

@@ -20,7 +20,6 @@ from .discourse import Discourse
 from .exceptions import DiscourseError, InputError, ServerError
 from .types_ import Index, IndexContentsListItem, IndexFile, Metadata, Page
 
-DOCUMENTATION_INDEX_FILENAME = f"index{DOC_FILE_EXTENSION}"
 CONTENTS_HEADER = "# contents"
 CONTENTS_END_LINE_PREFIX = "#"
 
@@ -158,12 +157,12 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
 
 
 def _remove_contents(lines: typing.Iterable[str]) -> typing.Iterator[str]:
-    """Removes the contents section lines from the index contents.
+    """Remove the contents section lines from the index contents.
 
     Args:
         lines: The lines of the index file.
 
-    Returns:
+    Yields:
         All lines except the lines of the contents section.
     """
     contents_encountered = False
@@ -266,7 +265,7 @@ def _check_contents_item(
         )
 
     # Check that if the item is a file, it has the correct extension
-    if (item_path := (docs_path / Path(item.reference_value))).is_file():
+    if (item_path := docs_path / Path(item.reference_value)).is_file():
         if item_path.suffix.lower() != DOC_FILE_EXTENSION:
             raise InputError(
                 "An item in the contents list is not of the expected file type. "
