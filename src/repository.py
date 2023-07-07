@@ -6,18 +6,19 @@
 import base64
 import logging
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from itertools import chain
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from git import GitCommandError
 from git.diff import Diff
 from git.repo import Repo
 from github import Github
 from github.GithubException import GithubException, UnknownObjectException
+from github.InputGitTreeElement import InputGitTreeElement
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
@@ -25,6 +26,7 @@ from src.docs_directory import has_docs_directory
 from src.metadata import get as get_metadata
 from src.types_ import Metadata
 
+from . import commit as commit_module
 from .constants import DOCUMENTATION_FOLDER_NAME
 from .exceptions import (
     InputError,
@@ -131,6 +133,34 @@ class DiffSummary(NamedTuple):
         new_str = (f"new: {','.join(self.new)}",) if len(self.new) > 0 else ()
         removed_str = (f"removed: {','.join(self.removed)}",) if len(self.removed) > 0 else ()
         return " // ".join(chain(modified_str, new_str, removed_str))
+
+
+def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> InputGitTreeElement:
+    """Convert a file with an action to a tree element.
+
+    Args:
+        commit_file: The file action to convert.
+
+    Returns:
+        The git tree element.
+
+    Raises:
+        NotImplementedError: for unsupported commit file types.
+    """
+    match type(commit_file):
+        case commit_module.FileAddedOrModified:
+            commit_file = cast(commit_module.FileAddedOrModified, commit_file)
+            return InputGitTreeElement(
+                path=str(commit_file.path), mode="100644", type="blob", content=commit_file.content
+            )
+        case commit_module.FileDeleted:
+            commit_file = cast(commit_module.FileDeleted, commit_file)
+            return InputGitTreeElement(
+                path=str(commit_file.path), mode="100644", type="blob", sha=None
+            )
+        # Here just in case, should not occur in production
+        case _:  # pragma: no cover
+            raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
 
 class Client:
@@ -320,6 +350,25 @@ class Client:
 
         return self
 
+    def _github_client_push(
+        self, commit_files: Iterable[commit_module.FileAction], commit_msg: str
+    ) -> None:
+        """Push files from a commit to GitHub using PyGithub.
+
+        Args:
+            commit_files: The files that were added, modified or deleted in a commit.
+            commit_msg: The message to use for commits.
+        """
+        branch = self._github_repo.get_branch(self.current_branch)
+        current_tree = self._github_repo.get_git_tree(sha=branch.commit.sha)
+        tree_elements = [_commit_file_to_tree_element(commit_file) for commit_file in commit_files]
+        tree = self._github_repo.create_git_tree(tree_elements, current_tree)
+        commit = self._github_repo.create_git_commit(
+            message=commit_msg, tree=tree, parents=[branch.commit.commit]
+        )
+        branch_git_ref = self._github_repo.get_git_ref(f"heads/{self.current_branch}")
+        branch_git_ref.edit(sha=commit.sha)
+
     def update_branch(
         self,
         commit_msg: str,
@@ -342,15 +391,37 @@ class Client:
         Returns:
             Repository client with the updated branch
         """
+        push_args = ["-u"]
+        if force:
+            push_args.append("-f")
+        push_args.extend([ORIGIN_NAME, self.current_branch])
+
         try:
+            # Create the branch if it doesn't exist
+            if push:
+                self._git_repo.git.push(*push_args)
+
             self._git_repo.git.add("-A", directory or ".")
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
-                args = ["-u"]
-                if force:
-                    args.append("-f")
-                args.extend([ORIGIN_NAME, self.current_branch])
-                self._git_repo.git.push(*args)
+                try:
+                    self._git_repo.git.push(*push_args)
+                except GitCommandError as exc:
+                    # Try with the PyGithub client, suppress any errors and report the original
+                    # problem on failure
+                    try:
+                        logging.info(
+                            "encountered error with push, try to use GitHub API to sign commits"
+                        )
+                        show_output = self._git_repo.git.show("--name-status")
+                        commit_files = commit_module.parse_git_show(
+                            output=show_output, repository_path=self.base_path
+                        )
+                        self._github_client_push(commit_files=commit_files, commit_msg=commit_msg)
+                    except (GitCommandError, GithubException) as nested_exc:
+                        # Raise original exception, flake8-docstrings-complete confuses this with a
+                        # specific exception rather than re-raising
+                        raise exc from nested_exc  # noqa: DCO053
         except GitCommandError as exc:
             raise RepositoryClientError(
                 f"Unexpected error updating branch {self.current_branch}. {exc=!r}"

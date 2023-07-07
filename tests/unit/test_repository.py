@@ -21,7 +21,7 @@ from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from src import repository
+from src import commit, repository
 from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from src.exceptions import (
     InputError,
@@ -32,6 +32,38 @@ from src.exceptions import (
 from src.repository import Client
 
 from .helpers import assert_substrings_in_string
+
+
+def test__commit_file_to_tree_element_added():
+    """
+    arrange: given an added commit file
+    act: when _commit_file_to_tree_element is called with the commit file
+    assert: then a InputGitTreeElement is returned with the expected identity.
+    """
+    commit_file = commit.FileAddedOrModified(path=Path("test.text"), content="content 1")
+
+    tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
+
+    assert tree_element._identity["path"] == str(commit_file.path)
+    assert tree_element._identity["content"] == commit_file.content
+    assert tree_element._identity["mode"] == "100644"
+    assert tree_element._identity["type"] == "blob"
+
+
+def test__commit_file_to_tree_element_deleted():
+    """
+    arrange: given an deleted commit file
+    act: when _commit_file_to_tree_element is called with the commit file
+    assert: then a InputGitTreeElement is returned with the expected identity.
+    """
+    commit_file = commit.FileDeleted(path=Path("test.text"))
+
+    tree_element = repository._commit_file_to_tree_element(commit_file=commit_file)
+
+    assert tree_element._identity["path"] == str(commit_file.path)
+    assert tree_element._identity["sha"] is None
+    assert tree_element._identity["mode"] == "100644"
+    assert tree_element._identity["type"] == "blob"
 
 
 def test__init__(git_repo: Repo, mock_github_repo: Repository):
@@ -828,7 +860,7 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     mock_git_repository.add = mock.Mock(return_value=None)
     mock_git_repository.stash = mock.Mock(side_effect=side_effect)
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.switch("branchname-1")
@@ -838,37 +870,185 @@ def test_switch_branch_pop_error(monkeypatch, repository_client: Client):
     )
 
 
+def test__github_client_push_single(repository_client: Client, mock_github_repo):
+    """
+    arrange: given Client with a mocked github client
+    act: when _github_client_push is called with an added file
+    assert: then the expected GitHub client interactions were executed.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+    path = Path("test.text")
+    content = "content 1"
+    commit_file = commit.FileAddedOrModified(path=path, content=content)
+    commit_msg = "commit-1"
+
+    repository_client._github_client_push(commit_files=(commit_file,), commit_msg=commit_msg)
+
+    mock_github_repo.get_branch.assert_called_once_with(DEFAULT_BRANCH)
+    mock_github_repo.get_git_tree.assert_called_once_with(
+        sha=mock_github_repo.get_branch.return_value.commit.sha
+    )
+
+    mock_github_repo.create_git_tree.assert_called_once()
+    create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
+    assert len(create_git_tree_call_args) == 2
+    assert len(create_git_tree_call_args[0]) == 1
+    assert create_git_tree_call_args[0][0]._identity["path"] == str(path)
+    assert create_git_tree_call_args[0][0]._identity["content"] == content
+    assert create_git_tree_call_args[1] == mock_github_repo.get_git_tree.return_value
+
+    mock_github_repo.create_git_commit.assert_called_once_with(
+        message=commit_msg,
+        tree=mock_github_repo.create_git_tree.return_value,
+        parents=[mock_github_repo.get_branch.return_value.commit.commit],
+    )
+
+    mock_github_repo.get_git_ref.assert_called_once_with(f"heads/{DEFAULT_BRANCH}")
+    mock_github_repo.get_git_ref.return_value.edit.assert_called_once_with(
+        sha=mock_github_repo.create_git_commit.return_value.sha
+    )
+
+
+def test__github_client_push_multiple(repository_client: Client, mock_github_repo):
+    """
+    arrange: given Client with a mocked github client
+    act: when _github_client_push is called with multiple added files
+    assert: then the expected GitHub client interactions were executed.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+    path_1 = Path("test_1.text")
+    content_1 = "content 1"
+    commit_file_1 = commit.FileAddedOrModified(path=path_1, content=content_1)
+    path_2 = Path("test_2.text")
+    content_2 = "content 2"
+    commit_file_2 = commit.FileAddedOrModified(path=path_2, content=content_2)
+    commit_msg = "commit-1"
+
+    repository_client._github_client_push(
+        commit_files=(commit_file_1, commit_file_2), commit_msg=commit_msg
+    )
+
+    # Only check the calls that are different to test__github_client_push_single
+    mock_github_repo.create_git_tree.assert_called_once()
+    create_git_tree_call_args = mock_github_repo.create_git_tree.call_args_list[0][0]
+    assert len(create_git_tree_call_args) == 2
+    assert len(create_git_tree_call_args[0]) == 2
+    assert create_git_tree_call_args[0][0]._identity["path"] == str(path_1)
+    assert create_git_tree_call_args[0][0]._identity["content"] == content_1
+    assert create_git_tree_call_args[0][1]._identity["path"] == str(path_2)
+    assert create_git_tree_call_args[0][1]._identity["content"] == content_2
+
+
 def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     """
     arrange: given Client with a mocked local git repository client that raises an
-        exception when pushing commits
+        exception when adding, committing and pushing commits
     act: when update branch is called
     assert: RepositoryClientError is raised from GitCommandError.
     """
     repository_client.switch(DEFAULT_BRANCH)
 
-    def side_effect(*args):
-        """Mock function.
-
-        Args:
-            args: positional arguments
-
-        Raises:
-            GitCommandError: when providing pop
-        """
-        raise GitCommandError("mocked error")
-
     mock_git_repository = mock.MagicMock(spec=Git)
     mock_git_repository.add = mock.Mock(return_value=None)
     mock_git_repository.commit = mock.Mock(return_value=None)
-    mock_git_repository.push = mock.Mock(side_effect=side_effect)
+    mock_git_repository.push = mock.Mock(side_effect=GitCommandError("mocked error"))
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
-    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *args, **kwargs: True)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
         repository_client.update_branch("my-message")
 
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api_git_error(monkeypatch, repository_client: Client):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits and show
+    act: when update branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked push error")])
+    mock_git_repository.show = mock.Mock(side_effect=GitCommandError("mocked show error"))
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.update_branch("my-message")
+
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api_github_error(
+    monkeypatch, repository_client: Client, repository_path: Path, mock_github_repo
+):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits and getting a branch
+    act: when update branch is called
+    assert: RepositoryClientError is raised from GitCommandError.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
+        "content 1", encoding="utf-8"
+    )
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
+    mock_github_repo.get_branch.side_effect = GithubException(0, "", None)
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.update_branch("my-message")
+
+    assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
+
+
+def test_update_branch_github_api(
+    monkeypatch,
+    repository_client: Client,
+    repository_path: Path,
+    mock_github_repo,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given Client with a mocked local git repository client that raises an
+        exception when pushing commits
+    act: when update branch is called
+    assert: then PyGithub is used to push instead.
+    """
+    repository_client.switch(DEFAULT_BRANCH)
+
+    (repository_path / DOCUMENTATION_FOLDER_NAME).mkdir()
+    (repository_path / (file_path := Path(f"{DOCUMENTATION_FOLDER_NAME}/test.text"))).write_text(
+        "content 1", encoding="utf-8"
+    )
+
+    mock_git_repository = mock.MagicMock(spec=Git)
+    mock_git_repository.add = mock.Mock(return_value=None)
+    mock_git_repository.commit = mock.Mock(return_value=None)
+    mock_git_repository.show = mock.Mock(return_value=f"A {file_path}")
+    mock_git_repository.push = mock.Mock(side_effect=[None, GitCommandError("mocked error")])
+    monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
+    monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
+
+    repository_client.update_branch("my-message")
+
+    # Check that the branch.edit was called, more detailed checks are in
+    # test__github_client_push_single
+    mock_github_repo.get_git_ref.return_value.edit.assert_called_once()
+    assert_substrings_in_string(("error", "push", "github", "api"), caplog.text.lower())
 
 
 def test_get_single_pull_request(monkeypatch, repository_client: Client, mock_pull_request):
