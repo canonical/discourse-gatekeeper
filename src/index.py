@@ -214,12 +214,9 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
     contents_lines = itertools.takewhile(
         lambda line: not line.startswith(CONTENTS_END_LINE_PREFIX), lines_from_contents
     )
-    # Remove empty lines
-    non_empty_contents_lines = filter(None, contents_lines)
-
-    yield from map(
-        lambda line_rank: _parse_item_from_line(*line_rank),
-        zip(non_empty_contents_lines, itertools.count()),
+    yield from (
+        _parse_item_from_line(line=line, rank=rank)
+        for line, rank in zip(filter(None, contents_lines), itertools.count())
     )
 
 
