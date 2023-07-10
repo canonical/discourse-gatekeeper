@@ -285,12 +285,13 @@ async def test_run(
 
     # 9. docs with index file with a local contents index
     caplog.clear()
+    nested_dir_doc_file_rel_path = nested_dir_doc_file.relative_to(docs_dir)
     index_file.write_text(
         f"""{index_content}
 # contents
 - [{(doc_title := "doc title")}]({doc_file.relative_to(docs_dir)})
 - [{(nested_dir_title := "nested dir title")}]({nested_dir.relative_to(docs_dir)})
-  - [{(nested_dir_doc_title := "nested dir doc title")}]({nested_dir_doc_file.relative_to(docs_dir)})
+  - [{(nested_dir_doc_title := "nested dir doc title")}]({nested_dir_doc_file_rel_path})
 """,
         encoding="utf-8",
     )

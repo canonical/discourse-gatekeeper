@@ -52,13 +52,12 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         )
         return {}
 
-    metadata = clients.repository.metadata
-    base_path = clients.repository.base_path
-
     index = index_module.get(
-        metadata=metadata, base_path=base_path, server_client=clients.discourse
+        metadata=clients.repository.metadata,
+        base_path=clients.repository.base_path,
+        server_client=clients.discourse,
     )
-    docs_path = base_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
     path_infos = docs_directory.read(docs_path=docs_path)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
@@ -72,7 +71,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         sorted_path_infos=sorted_path_infos,
         table_rows=table_rows,
         clients=clients,
-        base_path=base_path,
+        base_path=clients.repository.base_path,
     )
 
     # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
