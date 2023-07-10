@@ -146,9 +146,9 @@ def test__run_reconcile_local_contents_index(mocked_clients):
         page with a reference to the documentation pages based on the order in the contents index.
     """
     mocked_clients.discourse.create_topic.side_effect = [
+        (page_2_url := "url 2"),
         (page_1_url := "url 1"),
-        (page_2_url := "url 1"),
-        (index_url := "url 2"),
+        (index_url := "url 3"),
     ]
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
@@ -159,7 +159,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
             f"""{(index_content := 'index content')}
 # contents
 - [{(page_2_title := "Page 2")}]({page_2})
-- [{(page_1_title := "Page 2")}]({page_1})
+- [{(page_1_title := "Page 1")}]({page_1})
 """,
             encoding="utf-8",
         )
