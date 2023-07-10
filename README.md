@@ -201,9 +201,9 @@ The following are example valid permutations of the contents section in
 The links can be one of the following:
 
 * A local link to a directory (e.g., [Tutorials](tutorials) which links to the
-  tutorials directory)
+  `tutorials` directory)
 * A local link to a file (e.g., [Getting Started](tutorials/getting-started.md)
-  which links to the tutorials/getting-started.md file)
+  which links to the `tutorials/getting-started.md` file)
 
 `*.md` files and directories in `docs` not listed in the contents index will be
 added in alphabetical order after any items that are listed. This is to ensure
