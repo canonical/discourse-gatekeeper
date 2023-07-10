@@ -150,3 +150,71 @@ If, after checking the community contributions on discourse, you determine that
 there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` tag
 can be applied to the latest commit in the PR which will allow the action to
 proceed assuming there are no page-by-page conflicts.
+
+## Contents Index
+
+The `docs/index.md` file may contain a `# contents` section which is used to
+customize the generation of the navigation table on discourse. For example the
+following section in `docs/index.md`:
+
+```markdown
+# Contents
+
+1. [Reference](reference)
+  1. [Integrations](reference/integrations.md)
+```
+
+Would result in the following navigation table on discourse:
+
+```markdown
+# Navigation
+
+| level | path | navlink |
+| --- | --- | --- |
+| 1 | reference | [Reference]() |
+| 2 | reference-integrations | [Integrations](/t/nginx-ingress-integrator-docs-reference-integrations/7756) |
+```
+
+The following are example valid permutations of the contents section in
+`index.md`:
+
+```markdown
+1. [Reference](reference)
+  a. [Integrations](reference/integrations.md)
+
+# Contents
+
+* [Reference](reference)
+  * [Integrations](reference/integrations.md)
+
+# Contents
+
+- [Reference](reference)
+  - [Integrations](reference/integrations.md)
+
+# Contents
+
+- [Reference](reference)
+  1. [Integrations](reference/integrations.md)
+```
+
+The links can be one of the following:
+
+* A local link to a directory (e.g., [Tutorials](tutorials) which links to the
+  tutorials directory)
+* A local link to a file (e.g., [Getting Started](tutorials/getting-started.md)
+  which links to the tutorials/getting-started.md file)
+
+`*.md` files and directories in `docs` not listed in the contents index will be
+added in alphabetical order after any items that are listed. This is to ensure
+backwards compatibility. References are checked for validity. A link to a file
+or directory that does not exist will result in an error.
+
+### Discourse Translation
+
+* The list hierarchy indicates the level on the navigation table, this is
+  checked against the file structure and results in an error/ warning to the
+  user if it is not a match
+* Files and directories don’t have to be listed, if they are not listed they are
+  injected in the appropriate location after any listed items (for backwards
+  compatibility and ease of use) in alphabetical order
