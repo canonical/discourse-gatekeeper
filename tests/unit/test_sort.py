@@ -27,7 +27,7 @@ def change_path_info_attrs(path_info: types_.PathInfo, **kwargs: typing.Any) -> 
     Returns:
         The changed PathInfo.
     """
-    return types_.PathInfo(**{**path_info._asdict(), **kwargs})
+    return types_.PathInfo(**(path_info._asdict() | kwargs))
 
 
 def _test_using_contents_index_parameters():
