@@ -324,7 +324,6 @@ def _calculate_contents_hierarchy(
         item = next_item
         next(parsed_items, None)
         item_path = Path(item.reference_value)
-        next_item = parsed_items.peek(default=None)
 
         if (docs_path / item_path).is_file() or (docs_path / item_path).is_dir():
             yield IndexContentsListItem(
@@ -336,7 +335,7 @@ def _calculate_contents_hierarchy(
             # Process directory contents
             if (
                 (docs_path / item_path).is_dir()
-                and next_item is not None
+                and (next_item := parsed_items.peek(default=None)) is not None
                 and next_item.whitespace_count > whitespace_expectation
             ):
                 yield from _calculate_contents_hierarchy(
