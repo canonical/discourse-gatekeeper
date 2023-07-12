@@ -30,6 +30,8 @@ _REFERENCE_VALUE = r"\((.*)\)"
 _REFERENCE = rf"({_REFERENCE_TITLE}{_REFERENCE_VALUE})"
 _ITEM = rf"^{_WHITESPACE}{_LEADER}\s*{_REFERENCE}\s*$"
 _ITEM_PATTERN = re.compile(_ITEM)
+_HIDDEN_ITEM = _ITEM.replace(r"^", r"^<!-- ").replace(r"$", r" -->$")
+_HIDDEN_ITEM_PATTERN = re.compile(_HIDDEN_ITEM)
 
 
 def _read_docs_index(base_path: Path) -> str | None:
@@ -106,12 +108,14 @@ class _ParsedListItem(typing.NamedTuple):
         reference_title: The name of the reference
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list
+        hidden: Whether the item should be displayed on the navigation table
     """
 
     whitespace_count: int
     reference_title: str
     reference_value: str
     rank: int
+    hidden: bool
 
 
 def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
@@ -130,6 +134,10 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             - When the first item has leading whitespace.
     """
     match = _ITEM_PATTERN.match(line)
+    hidden = False
+    if not (match := _ITEM_PATTERN.match(line)):
+        match = _HIDDEN_ITEM_PATTERN.match(line)
+        hidden = True
 
     if match is None:
         raise InputError(
@@ -153,6 +161,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
         reference_title=reference_title,
         reference_value=reference_value,
         rank=rank,
+        hidden=hidden,
     )
 
 

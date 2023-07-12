@@ -130,6 +130,20 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
+<!-- - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')}) -->""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title=title_1,
+                    reference_value=value_1,
+                    rank=0,
+                    hidden=True,
+                ),
+            ),
+            id="single item hidden",
+        ),
+        pytest.param(
+            f"""# Contents
 -  [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
             (
                 factories.IndexParsedListItemFactory(
@@ -266,6 +280,25 @@ def _test__get_contents_parsed_items_parameters():
                 ),
             ),
             id="multiple items nested",
+        ),
+        pytest.param(
+            f"""# Contents
+- [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
+<!--   - [{(title_2 := 'title 2')}]({(value_2 := 'value 2')}) -->
+""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=2,
+                    reference_title=title_2,
+                    reference_value=value_2,
+                    rank=1,
+                    hidden=True,
+                ),
+            ),
+            id="multiple items nested hidden",
         ),
         pytest.param(
             f"""# Contents

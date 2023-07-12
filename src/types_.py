@@ -413,9 +413,11 @@ class IndexContentsListItem(typing.NamedTuple):
         reference_title: The name of the reference
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list at any hierarchy
+        hidden: Whether the item should be displayed on the navigation table
     """
 
     hierarchy: int
     reference_title: str
     reference_value: str
     rank: int
+    hidden: bool = False

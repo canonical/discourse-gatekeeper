@@ -302,6 +302,7 @@ class IndexParsedListItemFactory(factory.Factory):
     reference_title = factory.Sequence(lambda n: f"reference title {n}")
     reference_value = factory.Sequence(lambda n: f"reference value {n}")
     rank = factory.Sequence(lambda n: n)
+    hidden = False
 
 
 # The attributes of these classes are generators for the attributes of the meta class
@@ -320,3 +321,4 @@ class IndexContentsListItemFactory(factory.Factory):
     reference_title = factory.Sequence(lambda n: f"reference title {n}")
     reference_value = factory.Sequence(lambda n: f"reference value {n}")
     rank = factory.Sequence(lambda n: n)
+    hidden = False
