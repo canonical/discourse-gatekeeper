@@ -71,6 +71,20 @@ def _test_get_contents_parameters():
             ),
             id="multiple directories",
         ),
+        pytest.param(
+            (title_1 := "title 1", title_2 := "title 2"),
+            (value_1 := "file_1.md", value_2 := "dir_2"),
+            ("file", "dir"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1, reference_title=title_2, reference_value=value_2, rank=1
+                ),
+            ),
+            id="file and directory",
+        ),
     ]
 
 
