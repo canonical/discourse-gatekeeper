@@ -240,8 +240,8 @@ def _check_contents_item(
 
     Args:
         item: The parsed item to check.
-        aggregate_dir: The relative directory that all items must be within.
         whitespace_expectation: The expected number of whitespace characters for items.
+        aggregate_dir: The relative directory that all items must be within.
         docs_path: The base directory of all items.
 
     Raises:
