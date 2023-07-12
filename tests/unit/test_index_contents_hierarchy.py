@@ -10,7 +10,6 @@ import typing
 from pathlib import Path
 
 import pytest
-from more_itertools import peekable
 
 from src import constants, exceptions, index, types_
 
@@ -89,6 +88,37 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
             ("dir",),
             ("more", "whitespace", "0", repr(item)),
             id="directory wrong whitespace",
+        ),
+        pytest.param(
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title="title 1",
+                    reference_value=(dir_1 := "dir_1"),
+                    rank=1,
+                ),
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=1,
+                    reference_title="title 2",
+                    reference_value=f"{dir_1}/file_2.md",
+                    rank=2,
+                ),
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title="title 3",
+                    reference_value=(dir_3 := "dir_3"),
+                    rank=1,
+                ),
+                item := factories.IndexParsedListItemFactory(
+                    whitespace_count=2,
+                    reference_title="title 4",
+                    reference_value=f"{dir_3}/file_4.md",
+                    rank=2,
+                ),
+            ),
+            ("dir", "file", "dir", "file"),
+            ("more", "whitespace", "1", repr(item)),
+            id="hierarchy wrong whitespace",
         ),
         pytest.param(
             (
@@ -236,11 +266,7 @@ def test__calculate_contents_hierarchy_invalid(
                 (tmp_path / parsed_item.reference_value).mkdir(parents=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:
-        tuple(
-            index._calculate_contents_hierarchy(
-                parsed_items=peekable(parsed_items), docs_path=tmp_path
-            )
-        )
+        tuple(index._calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=tmp_path))
 
     assert_substrings_in_string(expected_contents, str(exc_info.value))
 
@@ -769,9 +795,7 @@ def test__calculate_contents_hierarchy(
                 (tmp_path / parsed_item.reference_value).mkdir(parents=True)
 
     returned_items = tuple(
-        index._calculate_contents_hierarchy(
-            parsed_items=peekable(parsed_items), docs_path=tmp_path
-        )
+        index._calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=tmp_path)
     )
 
     assert returned_items == expected_items

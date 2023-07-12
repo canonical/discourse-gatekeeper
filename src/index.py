@@ -6,10 +6,9 @@
 import itertools
 import re
 import typing
+from collections.abc import Iterable
 from enum import Enum, auto
 from pathlib import Path
-
-from more_itertools import peekable
 
 from .constants import (
     DOC_FILE_EXTENSION,
@@ -284,11 +283,10 @@ def _check_contents_item(
 
 
 def _calculate_contents_hierarchy(
-    parsed_items: "peekable[_ParsedListItem]",
+    parsed_items: Iterable[_ParsedListItem],
     docs_path: Path,
     aggregate_dir: Path = Path(),
     hierarchy: int = 0,
-    whitespace_expectation: int = 0,
 ) -> typing.Iterator[IndexContentsListItem]:
     """Calculate the hierarchy of the contents list items.
 
@@ -297,7 +295,6 @@ def _calculate_contents_hierarchy(
         docs_path: The base directory of all items.
         aggregate_dir: The relative directory that all items must be within.
         hierarchy: The hierarchy of the current directory.
-        whitespace_expectation: The expected number of whitespace characters for items.
 
     Yields:
         The contents list items with the hierarchy.
@@ -308,22 +305,27 @@ def _calculate_contents_hierarchy(
             - A nested item is not immediately within the path of its parent.
             - An item isn't a file nor directory.
     """
-    while next_item := parsed_items.peek(default=None):
+    parents: list[_ParsedListItem] = []
+    whitespace_expectation_per_level = {0: 0}
+    parsed_items = iter(parsed_items)
+    item = next(parsed_items, None)
+    while item:
         # All items in the current directory have been processed
-        if next_item.whitespace_count < whitespace_expectation:
-            return
+        if item.whitespace_count < whitespace_expectation_per_level[hierarchy]:
+            hierarchy = hierarchy - 1
+            parent = parents.pop()
+            aggregate_dir = Path(parent.reference_value).parent
 
         _check_contents_item(
-            item=next_item,
-            whitespace_expectation=whitespace_expectation,
+            item=item,
+            whitespace_expectation=whitespace_expectation_per_level[hierarchy],
             aggregate_dir=aggregate_dir,
             docs_path=docs_path,
         )
 
         # Advance the iterator
-        item = next_item
-        next(parsed_items, None)
         item_path = Path(item.reference_value)
+        next_item = next(parsed_items, None)
 
         if (docs_path / item_path).is_file() or (docs_path / item_path).is_dir():
             yield IndexContentsListItem(
@@ -335,18 +337,17 @@ def _calculate_contents_hierarchy(
             # Process directory contents
             if (
                 (docs_path / item_path).is_dir()
-                and (next_item := parsed_items.peek(default=None)) is not None
-                and next_item.whitespace_count > whitespace_expectation
+                and next_item is not None
+                and next_item.whitespace_count > whitespace_expectation_per_level[hierarchy]
             ):
-                yield from _calculate_contents_hierarchy(
-                    parsed_items=parsed_items,
-                    docs_path=docs_path,
-                    aggregate_dir=item_path,
-                    hierarchy=hierarchy + 1,
-                    whitespace_expectation=next_item.whitespace_count,
-                )
+                hierarchy = hierarchy + 1
+                aggregate_dir = item_path
+                if hierarchy not in whitespace_expectation_per_level:
+                    whitespace_expectation_per_level[hierarchy] = next_item.whitespace_count
+                parents.append(item)
         else:
             raise InputError(f"An item is not a file or directory. {item=!r}")
+        item = next_item
 
 
 def get_contents(index_file: IndexFile, docs_path: Path) -> typing.Iterator[IndexContentsListItem]:
@@ -360,4 +361,4 @@ def get_contents(index_file: IndexFile, docs_path: Path) -> typing.Iterator[Inde
         Iterator with all items from the contents list.
     """
     parsed_items = _get_contents_parsed_items(index_file=index_file)
-    return _calculate_contents_hierarchy(parsed_items=peekable(parsed_items), docs_path=docs_path)
+    return _calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=docs_path)
