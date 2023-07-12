@@ -76,23 +76,3 @@ def mock_discourse_raw_topic_api(content: str) -> str:
     return (
         f"<username> | <timestamp> | <post number>\n\n{content}\n\n-------------------------\n\n"
     )
-
-
-def create_file(path: str, base: Path) -> None:
-    """Create a file within a base directory.
-
-    Args:
-        path: The relative path to the file to be created.
-        base: The base path to which the relative file path is appended.
-    """
-    (base / path).touch()
-
-
-def create_dir(path: str, base: Path) -> None:
-    """Create a directory within a base directory.
-
-    Args:
-        path: The relative path to the directory to be created.
-        base: The base path to which the relative directory path is appended.
-    """
-    (base / path).mkdir(parents=True)

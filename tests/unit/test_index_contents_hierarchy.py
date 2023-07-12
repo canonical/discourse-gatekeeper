@@ -15,7 +15,7 @@ from more_itertools import peekable
 from src import constants, exceptions, index, types_
 
 from .. import factories
-from .helpers import assert_substrings_in_string, create_dir, create_file
+from .helpers import assert_substrings_in_string
 
 
 def _test__calculate_contents_hierarchy_invalid_parameters():
@@ -47,7 +47,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=1,
                 ),
             ),
-            (create_file,),
+            ("file",),
             ("not", "expected", "file type", constants.DOC_FILE_EXTENSION, repr(item)),
             id="file wrong extension",
         ),
@@ -60,7 +60,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=1,
                 ),
             ),
-            (create_file,),
+            ("file",),
             ("more", "whitespace", "0", repr(item)),
             id="file wrong whitespace",
         ),
@@ -73,7 +73,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=1,
                 ),
             ),
-            (create_dir,),
+            ("dir",),
             ("more", "whitespace", "0", repr(item)),
             id="directory wrong whitespace",
         ),
@@ -92,7 +92,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=2,
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             ("more", "whitespace", "0", repr(item)),
             id="file wrong nesting",
         ),
@@ -111,7 +111,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=2,
                 ),
             ),
-            (create_dir, create_file),
+            ("dir", "file"),
             ("not within", "directory", expected_dir, repr(item)),
             id="file wrong directory",
         ),
@@ -130,7 +130,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=2,
                 ),
             ),
-            (create_dir, create_dir),
+            ("dir", "dir"),
             ("not within", "directory", expected_dir, repr(item)),
             id="directory wrong directory",
         ),
@@ -161,7 +161,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=4,
                 ),
             ),
-            (create_dir, create_dir, create_file, create_file),
+            ("dir", "dir", "file", "file"),
             ("not immediately within", "directory", value_1, repr(item)),
             id="file in wrong directory",
         ),
@@ -192,7 +192,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                     rank=4,
                 ),
             ),
-            (create_dir, create_dir, create_file, create_dir),
+            ("dir", "dir", "file", "dir"),
             ("not immediately within", "directory", value_1, repr(item)),
             id="directory in wrong directory",
         ),
@@ -200,12 +200,12 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
 
 
 @pytest.mark.parametrize(
-    "parsed_items, create_path_funcs, expected_contents",
+    "parsed_items, create_paths, expected_contents",
     _test__calculate_contents_hierarchy_invalid_parameters(),
 )
 def test__calculate_contents_hierarchy_invalid(
     parsed_items: tuple[index._ParsedListItem, ...],
-    create_path_funcs: tuple[typing.Callable[[str, Path], None], ...],
+    create_paths: tuple[typing.Literal["file", "dir"], ...],
     expected_contents: tuple[str, ...],
     tmp_path: Path,
 ):
@@ -215,8 +215,12 @@ def test__calculate_contents_hierarchy_invalid(
     assert: then the expected contents list items are returned.
     """
     # Create the paths
-    for parsed_item, create_path_func in zip(parsed_items, create_path_funcs):
-        create_path_func(parsed_item.reference_value, tmp_path)
+    for parsed_item, create_path in zip(parsed_items, create_paths):
+        match create_path:
+            case "file":
+                (tmp_path / parsed_item.reference_value).touch()
+            case "dir":
+                (tmp_path / parsed_item.reference_value).mkdir(parents=True)
 
     with pytest.raises(exceptions.InputError) as exc_info:
         tuple(
@@ -242,7 +246,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value := "file_1.md")
                 ),
             ),
-            (create_file,),
+            ("file",),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -259,7 +263,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value := "file_1.MD")
                 ),
             ),
-            (create_file,),
+            ("file",),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -276,7 +280,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value := "dir_1")
                 ),
             ),
-            (create_dir,),
+            ("dir",),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -296,7 +300,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_2 := "file_2.md")
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -322,7 +326,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_2 := "dir_2")
                 ),
             ),
-            (create_dir, create_dir),
+            ("dir", "dir"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -350,7 +354,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     reference_value=(value_2 := "dir_2"),
                 ),
             ),
-            (create_file, create_dir),
+            ("file", "dir"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -376,7 +380,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_2 := "file_2.md")
                 ),
             ),
-            (create_dir, create_file),
+            ("dir", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -402,7 +406,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=1, reference_value=(value_2 := f"{value_1}/file_2.md")
                 ),
             ),
-            (create_dir, create_file),
+            ("dir", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -428,7 +432,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=2, reference_value=(value_2 := f"{value_1}/file_2.md")
                 ),
             ),
-            (create_dir, create_file),
+            ("dir", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -454,7 +458,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=1, reference_value=(value_2 := f"{value_1}/dir_2")
                 ),
             ),
-            (create_dir, create_dir),
+            ("dir", "dir"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -483,7 +487,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_3 := "file_3.md")
                 ),
             ),
-            (create_file, create_file, create_file),
+            ("file", "file", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -518,7 +522,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_3 := "dir_3")
                 ),
             ),
-            (create_dir, create_dir, create_dir),
+            ("dir", "dir", "dir"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -553,7 +557,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_3 := "file_3.md")
                 ),
             ),
-            (create_dir, create_file, create_file),
+            ("dir", "file", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -588,7 +592,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=1, reference_value=(value_3 := f"{value_1}/file_3.md")
                 ),
             ),
-            (create_dir, create_file, create_file),
+            ("dir", "file", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -623,7 +627,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=2, reference_value=(value_3 := f"{value_2}/file_3.md")
                 ),
             ),
-            (create_dir, create_dir, create_file),
+            ("dir", "dir", "file"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -658,7 +662,7 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=2, reference_value=(value_3 := f"{value_2}/dir_3")
                 ),
             ),
-            (create_dir, create_dir, create_dir),
+            ("dir", "dir", "dir"),
             (
                 factories.IndexContentsListItemFactory(
                     hierarchy=1,
@@ -685,12 +689,12 @@ def _test__calculate_contents_hierarchy_parameters():
 
 
 @pytest.mark.parametrize(
-    "parsed_items, create_path_funcs, expected_items",
+    "parsed_items, create_paths, expected_items",
     _test__calculate_contents_hierarchy_parameters(),
 )
 def test__calculate_contents_hierarchy(
     parsed_items: tuple[index._ParsedListItem, ...],
-    create_path_funcs: tuple[typing.Callable[[str, Path], None], ...],
+    create_paths: tuple[typing.Literal["file", "dir"], ...],
     expected_items: tuple[types_.IndexContentsListItem, ...],
     tmp_path: Path,
 ):
@@ -700,8 +704,12 @@ def test__calculate_contents_hierarchy(
     assert: then the expected contents list items are returned.
     """
     # Create the paths
-    for parsed_item, create_path_func in zip(parsed_items, create_path_funcs):
-        create_path_func(parsed_item.reference_value, tmp_path)
+    for parsed_item, create_path in zip(parsed_items, create_paths):
+        match create_path:
+            case "file":
+                (tmp_path / parsed_item.reference_value).touch()
+            case "dir":
+                (tmp_path / parsed_item.reference_value).mkdir(parents=True)
 
     returned_items = tuple(
         index._calculate_contents_hierarchy(

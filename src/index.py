@@ -175,6 +175,7 @@ def _iter_index_lines(lines: typing.Iterable[str], section: _IndexSection) -> ty
 
     Args:
         lines: The lines of the index file.
+        section: The part of the index file to return lines for.
 
     Yields:
         All lines except the lines of the contents section.
