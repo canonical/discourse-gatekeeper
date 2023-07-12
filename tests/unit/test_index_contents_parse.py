@@ -108,7 +108,7 @@ malformed 2""",
         pytest.param(
             f"""# Contents
 - [title 1](value 1)
-{(line := 'maformed [title 1](value 1)')}""",
+{(line := 'malformed [title 1](value 1)')}""",
             (line,),
             id="multiple lines second missing leader alternate",
         ),
