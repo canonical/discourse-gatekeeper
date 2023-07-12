@@ -191,6 +191,36 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
+10. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item numbered multiple digits",
+        ),
+        pytest.param(
+            f"""# Contents
+a. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item alphabetical",
+        ),
+        pytest.param(
+            f"""# Contents
+ab. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item alphabetical multiple letters",
+        ),
+        pytest.param(
+            f"""# Contents
 * [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
             (
                 factories.IndexParsedListItemFactory(

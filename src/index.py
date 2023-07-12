@@ -24,7 +24,7 @@ CONTENTS_HEADER = "# contents"
 CONTENTS_END_LINE_PREFIX = "#"
 
 _WHITESPACE = "( *)"
-_LEADER = r"((\d\.)|(\*)|(-))"
+_LEADER = r"((\d+\.)|([a-zA-Z]+\.)|(\*)|(-))"
 _REFERENCE_TITLE = r"\[(.*)\]"
 _REFERENCE_VALUE = r"\((.*)\)"
 _REFERENCE = rf"({_REFERENCE_TITLE}{_REFERENCE_VALUE})"
@@ -145,8 +145,8 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             f"invalid, {line=!r}, expecting the first line not to have any leading whitespace"
         )
 
-    reference_title = match.group(7)
-    reference_value = match.group(8)
+    reference_title = match.group(8)
+    reference_value = match.group(9)
 
     return _ParsedListItem(
         whitespace_count=whitespace_count,
