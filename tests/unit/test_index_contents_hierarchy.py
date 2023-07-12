@@ -253,9 +253,9 @@ def test__calculate_contents_hierarchy_invalid(
     tmp_path: Path,
 ):
     """
-    arrange: given the index file contents
+    arrange: given the index file contents that are not valid
     act: when get_contents_list_items is called with the index file
-    assert: then the expected contents list items are returned.
+    assert: then InputError is raised.
     """
     # Create the paths
     for parsed_item, create_path in zip(parsed_items, create_paths):
@@ -269,6 +269,32 @@ def test__calculate_contents_hierarchy_invalid(
         tuple(index._calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=tmp_path))
 
     assert_substrings_in_string(expected_contents, str(exc_info.value))
+
+
+def test__calculate_contents_hierarchy_invalid_dir_not_in_contents(tmp_path: Path):
+    """
+    arrange: given the index file contents with a file in a directory that is not in the contents
+    act: when get_contents_list_items is called with the index file
+    assert: then InputError is raised.
+    """
+    (tmp_path / (value_1 := "dir_1")).mkdir()
+    (tmp_path / value_1 / (value_2 := "file_2.md")).touch()
+    parsed_items = (
+        factories.IndexParsedListItemFactory(
+            whitespace_count=0,
+            reference_title="title 2",
+            reference_value=f"{value_1}/{value_2}",
+            rank=1,
+        ),
+    )
+
+    with pytest.raises(exceptions.InputError) as exc_info:
+        tuple(index._calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=tmp_path))
+
+    assert_substrings_in_string(
+        ("nested item", "not", "immediately", "directory", repr(parsed_items[0])),
+        str(exc_info.value),
+    )
 
 
 def _test__calculate_contents_hierarchy_parameters():
