@@ -3,9 +3,11 @@
 
 """Execute the uploading of documentation."""
 
+
 import itertools
 import re
 import typing
+from enum import Enum, auto
 from pathlib import Path
 
 from more_itertools import peekable
@@ -156,7 +158,19 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
     )
 
 
-def _remove_contents(lines: typing.Iterable[str]) -> typing.Iterator[str]:
+class _IndexSection(Enum):
+    """The sections of the index file.
+
+    Attrs:
+        CONTENTS: The contents section.
+        EX_CONTENTS: Everything except the contents section.
+    """
+
+    CONTENTS = auto()
+    EX_CONTENTS = auto()
+
+
+def _iter_index_lines(lines: typing.Iterable[str], section: _IndexSection) -> typing.Iterator[str]:
     """Remove the contents section lines from the index contents.
 
     Args:
@@ -166,13 +180,13 @@ def _remove_contents(lines: typing.Iterable[str]) -> typing.Iterator[str]:
         All lines except the lines of the contents section.
     """
     contents_encountered = False
-    drop_lines = False
+    drop_lines = section == _IndexSection.CONTENTS
     for line in lines:
         if not contents_encountered and line.lower() == CONTENTS_HEADER:
             contents_encountered = True
-            drop_lines = True
+            drop_lines = section == _IndexSection.EX_CONTENTS
         elif line.startswith(CONTENTS_END_LINE_PREFIX):
-            drop_lines = False
+            drop_lines = section == _IndexSection.CONTENTS
 
         if not drop_lines:
             yield line
@@ -190,7 +204,9 @@ def get_content_for_server(index_file: IndexFile) -> str:
     if index_file.content is None:
         return ""
 
-    return "\n".join(_remove_contents(index_file.content.splitlines()))
+    return "\n".join(
+        _iter_index_lines(index_file.content.splitlines(), section=_IndexSection.EX_CONTENTS)
+    )
 
 
 def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_ParsedListItem]:
@@ -206,14 +222,11 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
         return
 
     # Get the lines of the contents section
-    lines = index_file.content.splitlines()
-    # Advance past the contents heading
-    lines_from_contents = itertools.dropwhile(lambda line: line.lower() != CONTENTS_HEADER, lines)
-    next(lines_from_contents, None)
-    # Stop taking on the next heading
-    contents_lines = itertools.takewhile(
-        lambda line: not line.startswith(CONTENTS_END_LINE_PREFIX), lines_from_contents
+    contents_lines = _iter_index_lines(
+        index_file.content.splitlines(), section=_IndexSection.CONTENTS
     )
+    # Skip header
+    next(contents_lines, None)
     yield from (
         _parse_item_from_line(line=line, rank=rank)
         for line, rank in zip(filter(None, contents_lines), itertools.count())
