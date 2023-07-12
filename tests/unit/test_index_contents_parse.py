@@ -360,6 +360,7 @@ ab. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
         pytest.param(
             f"""# Contents
 - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
+
 - [{(title_2 := 'title 2')}]({(value_2 := 'value 2')})
 """,
             (
