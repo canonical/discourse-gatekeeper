@@ -326,23 +326,19 @@ def _calculate_contents_hierarchy(
         item_path = Path(item.reference_value)
         next_item = parsed_items.peek(default=None)
 
-        # Process file
-        if (docs_path / item_path).is_file():
+        if (docs_path / item_path).is_file() or (docs_path / item_path).is_dir():
             yield IndexContentsListItem(
                 hierarchy=hierarchy + 1,
                 reference_title=item.reference_title,
                 reference_value=item.reference_value,
                 rank=item.rank,
             )
-        # Process directory
-        elif (docs_path / item_path).is_dir():
-            yield IndexContentsListItem(
-                hierarchy=hierarchy + 1,
-                reference_title=item.reference_title,
-                reference_value=item.reference_value,
-                rank=item.rank,
-            )
-            if next_item is not None and next_item.whitespace_count > whitespace_expectation:
+            # Process directory contents
+            if (
+                (docs_path / item_path).is_dir()
+                and next_item is not None
+                and next_item.whitespace_count > whitespace_expectation
+            ):
                 yield from _calculate_contents_hierarchy(
                     parsed_items=parsed_items,
                     docs_path=docs_path,
