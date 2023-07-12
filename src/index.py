@@ -3,7 +3,6 @@
 
 """Execute the uploading of documentation."""
 
-
 import itertools
 import re
 import typing
