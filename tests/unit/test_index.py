@@ -215,6 +215,14 @@ line 2"""
             other_content,
             id="contents followed by header with multiple lines",
         ),
+        pytest.param(
+            f"""# contents
+contents line 1
+contents line 2
+{(other_content := '#')}""",
+            other_content,
+            id="contents multiple lines line followed by header",
+        ),
         # Can't use f-string due to needing new line
         pytest.param(
             "# contents\n"
