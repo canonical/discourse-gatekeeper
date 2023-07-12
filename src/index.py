@@ -236,7 +236,7 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
 def _check_contents_item(
     item: _ParsedListItem, whitespace_expectation: int, aggregate_dir: Path, docs_path: Path
 ) -> None:
-    """Check item is valid.
+    """Check item is valid. All the items should be exactly within a directory.
 
     Args:
         item: The parsed item to check.
