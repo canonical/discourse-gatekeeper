@@ -154,8 +154,11 @@ proceed assuming there are no page-by-page conflicts.
 ## Contents Index
 
 The `docs/index.md` file may contain a `# contents` section which is used to
-customize the generation of the navigation table on discourse. For example the
-following section in `docs/index.md`:
+customize the generation of the navigation table on discourse. Everything from
+this section up to the next header (identified by a line starting with `#`) or
+the end of the file will be removed from the index page and be replaced with the
+navigation table on discourse. For example the following section in
+`docs/index.md`:
 
 ```markdown
 # Contents
