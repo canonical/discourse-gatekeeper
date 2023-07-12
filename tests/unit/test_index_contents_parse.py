@@ -25,6 +25,36 @@ def _test__get_contents_parsed_items_invalid_parameters():
     return [
         pytest.param(
             f"""# Contents
+{(line := '-')}""",
+            (line,),
+            id="first item only leader",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1]')}""",
+            (line,),
+            id="first item leader and reference title",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1(value 1)')}""",
+            (line,),
+            id="first item malformed reference title",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1](value 1')}""",
+            (line,),
+            id="first item malformed reference value",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1] (value 1)')}""",
+            (line,),
+            id="first item space between reference title and value",
+        ),
+        pytest.param(
+            f"""# Contents
 {(line := ' - [title 1](value 1)')}""",
             (line,),
             id="first item has single leading space",
@@ -67,6 +97,20 @@ def _test__get_contents_parsed_items_invalid_parameters():
 malformed 2""",
             (line,),
             id="multiple malformed lines",
+        ),
+        pytest.param(
+            f"""# Contents
+- [title 1](value 1)
+{(line := '1 [title 1](value 1)')}""",
+            (line,),
+            id="multiple lines second missing leader",
+        ),
+        pytest.param(
+            f"""# Contents
+- [title 1](value 1)
+{(line := 'maformed [title 1](value 1)')}""",
+            (line,),
+            id="multiple lines second missing leader alternate",
         ),
     ]
 
