@@ -179,6 +179,8 @@ The following are example valid permutations of the contents section in
 `index.md`:
 
 ```markdown
+# Contents
+
 1. [Reference](reference)
   a. [Integrations](reference/integrations.md)
 
