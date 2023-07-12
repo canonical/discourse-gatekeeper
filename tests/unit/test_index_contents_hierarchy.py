@@ -67,6 +67,19 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
         pytest.param(
             (
                 item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title="title 1",
+                    reference_value="dir_1",
+                    rank=1,
+                ),
+            ),
+            ("skip",),
+            ("item", "not", "file", "directory", repr(item)),
+            id="directory not exist",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
                     whitespace_count=1,
                     reference_title="title 1",
                     reference_value="dir_1",
@@ -205,7 +218,7 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
 )
 def test__calculate_contents_hierarchy_invalid(
     parsed_items: tuple[index._ParsedListItem, ...],
-    create_paths: tuple[typing.Literal["file", "dir"], ...],
+    create_paths: tuple[typing.Literal["file", "dir", "skip"], ...],
     expected_contents: tuple[str, ...],
     tmp_path: Path,
 ):
@@ -684,6 +697,50 @@ def _test__calculate_contents_hierarchy_parameters():
                 ),
             ),
             id="single directory single nested directory single directory in nested directory",
+        ),
+        pytest.param(
+            (
+                item_1 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_1 := "dir_1")
+                ),
+                item_2 := factories.IndexParsedListItemFactory(
+                    whitespace_count=1, reference_value=(value_2 := f"{value_1}/file_2.md")
+                ),
+                item_3 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_3 := "dir_3")
+                ),
+                item_4 := factories.IndexParsedListItemFactory(
+                    whitespace_count=1, reference_value=(value_4 := f"{value_3}/file_4.md")
+                ),
+            ),
+            ("dir", "file", "dir", "file"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_1.reference_title,
+                    reference_value=value_1,
+                    rank=item_1.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=2,
+                    reference_title=item_2.reference_title,
+                    reference_value=value_2,
+                    rank=item_2.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_3.reference_title,
+                    reference_value=value_3,
+                    rank=item_3.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=2,
+                    reference_title=item_4.reference_title,
+                    reference_value=value_4,
+                    rank=item_4.rank,
+                ),
+            ),
+            id="multiple files in multiple directories",
         ),
     ]
 
