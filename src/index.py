@@ -233,13 +233,13 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
 
 
 def _check_contents_item(
-    item: _ParsedListItem, whitespace_expectation: int, aggregate_dir: Path, docs_path: Path
+    item: _ParsedListItem, max_whitespace: int, aggregate_dir: Path, docs_path: Path
 ) -> None:
     """Check item is valid. All the items should be exactly within a directory.
 
     Args:
         item: The parsed item to check.
-        whitespace_expectation: The expected number of whitespace characters for items.
+        max_whitespace: The expected number of whitespace characters for items.
         aggregate_dir: The relative directory that all items must be within.
         docs_path: The base directory of all items.
 
@@ -250,10 +250,10 @@ def _check_contents_item(
             - An item isn't a file nor directory.
     """
     # Check that the whitespace count matches the expectation
-    if item.whitespace_count > whitespace_expectation:
+    if item.whitespace_count > max_whitespace:
         raise InputError(
             "An item has more whitespace and is not following a reference to a directory. "
-            f"{item=!r}, expected whitespace count: {whitespace_expectation!r}"
+            f"{item=!r}, expected whitespace count: {max_whitespace!r}"
         )
 
     # Check that the next item is within the directory
@@ -318,7 +318,7 @@ def _calculate_contents_hierarchy(
 
         _check_contents_item(
             item=item,
-            whitespace_expectation=whitespace_expectation_per_level[hierarchy],
+            max_whitespace=whitespace_expectation_per_level[hierarchy],
             aggregate_dir=aggregate_dir,
             docs_path=docs_path,
         )
