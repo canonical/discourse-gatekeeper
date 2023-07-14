@@ -11,7 +11,7 @@ from typing import Generic, TypeVar
 
 import factory
 
-from src import types_
+from src import index, types_
 
 from . import types
 
@@ -283,3 +283,40 @@ class TableRowFactory(
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path-{n}",))
     navlink = factory.SubFactory(NavlinkFactory)
+
+
+# The attributes of these classes are generators for the attributes of the meta class
+class IndexParsedListItemFactory(factory.Factory):
+    # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
+    # can be skipped.
+    """Generate index._ParsedListItems."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        # Need access to be able to generate instances
+        model = index._ParsedListItem  # pylint: disable=protected-access
+        abstract = False
+
+    whitespace_count = factory.Sequence(lambda n: n)
+    reference_title = factory.Sequence(lambda n: f"reference title {n}")
+    reference_value = factory.Sequence(lambda n: f"reference value {n}")
+    rank = factory.Sequence(lambda n: n)
+
+
+# The attributes of these classes are generators for the attributes of the meta class
+class IndexContentsListItemFactory(factory.Factory):
+    # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
+    # can be skipped.
+    """Generate types.IndexContentsListItems."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.IndexContentsListItem
+        abstract = False
+
+    hierarchy = factory.Sequence(lambda n: n)
+    reference_title = factory.Sequence(lambda n: f"reference title {n}")
+    reference_value = factory.Sequence(lambda n: f"reference value {n}")
+    rank = factory.Sequence(lambda n: n)

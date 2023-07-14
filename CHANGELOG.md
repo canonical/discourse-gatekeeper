@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support for defining a contents index in the `index.md` file.
+
 ## [v0.6.0] - 2023-07-07
 
 ### Added

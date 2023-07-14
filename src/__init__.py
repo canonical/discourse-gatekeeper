@@ -5,17 +5,15 @@
 import logging
 from itertools import tee
 
+from . import action, check, docs_directory
+from . import index as index_module
+from . import navigation_table, reconcile
+from . import sort as sort_module
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
-from .action import run_all as run_all_actions
-from .check import conflicts as check_conflicts
 from .clients import Clients
 from .constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
 from .exceptions import InputError
-from .index import get as get_index
-from .navigation_table import from_page as navigation_table_from_page
-from .reconcile import run as get_reconcile_actions
 from .repository import DEFAULT_BRANCH_NAME
 from .types_ import ActionResult, UserInputs
 
@@ -54,27 +52,33 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
         )
         return {}
 
-    metadata = clients.repository.metadata
-    base_path = clients.repository.base_path
-
-    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
-    path_infos = read_docs_directory(docs_path=base_path / DOCUMENTATION_FOLDER_NAME)
+    index = index_module.get(
+        metadata=clients.repository.metadata,
+        base_path=clients.repository.base_path,
+        server_client=clients.discourse,
+    )
+    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    path_infos = docs_directory.read(docs_path=docs_path)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    table_rows = navigation_table_from_page(page=server_content, discourse=clients.discourse)
-    actions = get_reconcile_actions(
-        path_infos=path_infos,
+    index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)
+    sorted_path_infos = sort_module.using_contents_index(
+        path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
+    )
+    table_rows = navigation_table.from_page(page=server_content, discourse=clients.discourse)
+    actions = reconcile.run(
+        sorted_path_infos=sorted_path_infos,
         table_rows=table_rows,
         clients=clients,
-        base_path=base_path,
+        base_path=clients.repository.base_path,
     )
 
-    # tee creates a copy of the iterator which is needed as check_conflicts consumes the iterator
+    # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
     # it is passed
     actions, check_actions = tee(actions, 2)
     problems = tuple(
-        check_conflicts(
+        check.conflicts(
             actions=check_actions, repository=clients.repository, user_inputs=user_inputs
         )
     )
@@ -83,7 +87,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> dict[str, str]:
             "One or more of the required actions could not be executed, see the log for details"
         )
 
-    reports = run_all_actions(
+    reports = action.run_all(
         actions=actions,
         index=index,
         discourse=clients.discourse,

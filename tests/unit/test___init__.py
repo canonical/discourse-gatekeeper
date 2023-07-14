@@ -137,6 +137,63 @@ def test__run_reconcile_local_empty_server(mocked_clients):
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
+def test__run_reconcile_local_contents_index(mocked_clients):
+    """
+    arrange: given metadata with name but not docs and docs folder with multiple files, contents
+        index with the files and mocked discourse
+    act: when _run_reconcile is called
+    assert: then a documentation page is created and an index page is created with a navigation
+        page with a reference to the documentation pages based on the order in the contents index.
+    """
+    mocked_clients.discourse.create_topic.side_effect = [
+        (page_2_url := "url 2"),
+        (page_1_url := "url 1"),
+        (index_url := "url 3"),
+    ]
+
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (docs_dir := repo.base_path / "docs").mkdir()
+        (docs_dir / (page_1 := Path("page_1.md"))).write_text("page 1 content", encoding="utf-8")
+        (docs_dir / (page_2 := Path("page_2.md"))).write_text("page 2 content", encoding="utf-8")
+        (docs_dir / "index.md").write_text(
+            f"""{(index_content := 'index content')}
+# contents
+- [{(page_2_title := "Page 2")}]({page_2})
+- [{(page_1_title := "Page 1")}]({page_1})
+""",
+            encoding="utf-8",
+        )
+        repo.update_branch("new commit")
+
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
+
+        returned_page_interactions = run_reconcile(
+            clients=mocked_clients,
+            user_inputs=user_inputs,
+        )
+
+    assert mocked_clients.discourse.create_topic.call_count == 3
+    mocked_clients.discourse.create_topic.assert_any_call(
+        title="Name 1 Documentation Overview",
+        content=(
+            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"| 1 | page-2 | [{page_2_title}]({page_2_url}) |\n"
+            f"| 1 | page-1 | [{page_1_title}]({page_1_url}) |"
+        ),
+    )
+    assert returned_page_interactions == {
+        page_2_url: types_.ActionResult.SUCCESS,
+        page_1_url: types_.ActionResult.SUCCESS,
+        index_url: types_.ActionResult.SUCCESS,
+    }
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
 def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with a file and mocked discourse

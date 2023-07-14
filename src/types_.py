@@ -403,3 +403,19 @@ class IndexDocumentMeta(MigrationFileMeta):
     """
 
     content: str
+
+
+class IndexContentsListItem(typing.NamedTuple):
+    """Represents an item in the contents table.
+
+    Attrs:
+        hierarchy: The number of parent items to the root of the list
+        reference_title: The name of the reference
+        reference_value: The link to the referenced item
+        rank: The number of preceding elements in the list at any hierarchy
+    """
+
+    hierarchy: int
+    reference_title: str
+    reference_value: str
+    rank: int
