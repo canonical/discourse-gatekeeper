@@ -259,6 +259,7 @@ def _check_contents_item(
             - An item has more whitespace than a previous item and it is not following a directory.
             - A nested item is not immediately within the path of its parent.
             - An item isn't a file nor directory.
+            - If an item is hidden and is a directory.
     """
     # Check that the whitespace count matches the expectation
     if item.whitespace_count > max_whitespace:
@@ -267,10 +268,15 @@ def _check_contents_item(
             f"{item=!r}, expected whitespace count: {max_whitespace!r}"
         )
 
+    # Check whether item is hidden and a directory
+    item_path = docs_path / Path(item.reference_value)
+    if item.hidden and item_path.is_dir():
+        raise InputError(f"A hidden item is a directory. {item=!r}")
+
     # Check that the next item is within the directory
-    item_path = Path(item.reference_value)
+    item_relative_path = Path(item.reference_value)
     try:
-        item_to_aggregate_path = item_path.relative_to(aggregate_dir)
+        item_to_aggregate_path = item_relative_path.relative_to(aggregate_dir)
     except ValueError as exc:
         raise InputError(
             "A nested item is a reference to a path that is not within the directory of its "
@@ -285,7 +291,7 @@ def _check_contents_item(
         )
 
     # Check that if the item is a file, it has the correct extension
-    if (item_path := docs_path / Path(item.reference_value)).is_file():
+    if item_path.is_file():
         if item_path.suffix.lower() != DOC_FILE_EXTENSION:
             raise InputError(
                 "An item in the contents list is not of the expected file type. "

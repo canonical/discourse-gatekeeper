@@ -91,6 +91,20 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
         ),
         pytest.param(
             (
+                item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title="title 1",
+                    reference_value="dir_1",
+                    rank=1,
+                    hidden=True,
+                ),
+            ),
+            ("dir",),
+            ("directory", "hidden", repr(item)),
+            id="hidden directory",
+        ),
+        pytest.param(
+            (
                 factories.IndexParsedListItemFactory(
                     whitespace_count=0,
                     reference_title="title 1",
