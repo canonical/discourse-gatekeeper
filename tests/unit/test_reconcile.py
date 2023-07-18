@@ -597,7 +597,7 @@ def path_info_mkdir(path_info: types_.PathInfo, base_dir: Path) -> types_.PathIn
         ),
         pytest.param(
             factories.PathInfoFactory(
-                table_path=(path := "path 1"), navlink_title=(title := "title 1")
+                level=1, table_path=(path := "path 1"), navlink_title=(title := "title 1")
             ),
             factories.TableRowFactory(
                 level=1, path=path, navlink=types_.Navlink(title=title, link=None)

@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from src import docs_directory
+from src import docs_directory, types_
+
+from .. import factories
 
 
 def create_directories_files(
@@ -315,67 +317,164 @@ def test__get_path_info(tmp_path: Path):
         path=path, alphabetical_rank=alphabetical_rank, docs_path=tmp_path
     )
 
-    assert returned_path_info == (path, 1, (rel_path,), "Dir1", alphabetical_rank)
+    assert returned_path_info == factories.PathInfoFactory(
+        local_path=path,
+        level=1,
+        table_path=(rel_path,),
+        navlink_title="Dir1",
+        alphabetical_rank=alphabetical_rank,
+    )
 
 
-# Pylint diesn't understand how the walrus operator works
-# pylint: disable=undefined-variable,unused-variable
-@pytest.mark.parametrize(
-    "directories, files, expected_path_infos",
-    [
+def _test_read_parameters():
+    """Generate parameters for the test_read test.
+
+    Returns:
+        The tests.
+    """
+    return [
         pytest.param((), (), [], id="empty"),
         pytest.param(
             ((dir_1 := "dir1",),),
             (),
-            [((dir_1,), 1, (dir_1,), dir_1.title(), 0)],
+            (
+                factories.PathInfoFactory(
+                    local_path=dir_1,
+                    level=1,
+                    table_path=(dir_1,),
+                    navlink_title=dir_1.title(),
+                    alphabetical_rank=0,
+                ),
+            ),
             id="single directory",
         ),
         pytest.param(
             ((dir_1 := "dir1",), (dir_2 := "dir2",)),
             (),
-            [((dir_1,), 1, (dir_1,), dir_1.title(), 0), ((dir_2,), 1, (dir_2,), dir_2.title(), 1)],
+            (
+                factories.PathInfoFactory(
+                    local_path=dir_1,
+                    level=1,
+                    table_path=(dir_1,),
+                    navlink_title=dir_1.title(),
+                    alphabetical_rank=0,
+                ),
+                factories.PathInfoFactory(
+                    local_path=dir_2,
+                    level=1,
+                    table_path=(dir_2,),
+                    navlink_title=dir_2.title(),
+                    alphabetical_rank=1,
+                ),
+            ),
             id="multiple directories",
         ),
         pytest.param(
             ((dir_2 := "dir2",), (dir_1 := "dir1",)),
             (),
-            [((dir_1,), 1, (dir_1,), dir_1.title(), 0), ((dir_2,), 1, (dir_2,), dir_2.title(), 1)],
+            (
+                factories.PathInfoFactory(
+                    local_path=dir_1,
+                    level=1,
+                    table_path=(dir_1,),
+                    navlink_title=dir_1.title(),
+                    alphabetical_rank=0,
+                ),
+                factories.PathInfoFactory(
+                    local_path=dir_2,
+                    level=1,
+                    table_path=(dir_2,),
+                    navlink_title=dir_2.title(),
+                    alphabetical_rank=1,
+                ),
+            ),
             id="multiple directories alternate order",
         ),
         pytest.param(
             (),
             ((file_1 := "file1.md",),),
-            [((file_1,), 1, ("file1",), "File1", 0)],
+            (
+                factories.PathInfoFactory(
+                    local_path=file_1,
+                    level=1,
+                    table_path=("file1",),
+                    navlink_title="File1",
+                    alphabetical_rank=0,
+                ),
+            ),
             id="single file",
         ),
         pytest.param(
             ((dir_1 := "dir1",),),
             ((dir_1, file_1 := "file1.md"),),
-            [
-                ((dir_1,), 1, (dir_1,), dir_1.title(), 0),
-                ((dir_1, file_1), 2, ("dir1", "file1"), "File1", 1),
-            ],
+            (
+                factories.PathInfoFactory(
+                    local_path=dir_1,
+                    level=1,
+                    table_path=(dir_1,),
+                    navlink_title=dir_1.title(),
+                    alphabetical_rank=0,
+                ),
+                factories.PathInfoFactory(
+                    local_path=f"{dir_1}/{file_1}",
+                    level=2,
+                    table_path=("dir1", "file1"),
+                    navlink_title="File1",
+                    alphabetical_rank=1,
+                ),
+            ),
             id="single file in directory",
         ),
         pytest.param(
             (),
             ((file_1 := "file1.md",), (file_2 := "file2.md",)),
-            [((file_1,), 1, ("file1",), "File1", 0), ((file_2,), 1, ("file2",), "File2", 1)],
+            (
+                factories.PathInfoFactory(
+                    local_path=file_1,
+                    level=1,
+                    table_path=("file1",),
+                    navlink_title="File1",
+                    alphabetical_rank=0,
+                ),
+                factories.PathInfoFactory(
+                    local_path=file_2,
+                    level=1,
+                    table_path=("file2",),
+                    navlink_title="File2",
+                    alphabetical_rank=1,
+                ),
+            ),
             id="multiple files",
         ),
         pytest.param(
             (),
             ((file_2 := "file2.md",), (file_1 := "file1.md",)),
-            [((file_1,), 1, ("file1",), "File1", 0), ((file_2,), 1, ("file2",), "File2", 1)],
+            (
+                factories.PathInfoFactory(
+                    local_path=file_1,
+                    level=1,
+                    table_path=("file1",),
+                    navlink_title="File1",
+                    alphabetical_rank=0,
+                ),
+                factories.PathInfoFactory(
+                    local_path=file_2,
+                    level=1,
+                    table_path=("file2",),
+                    navlink_title="File2",
+                    alphabetical_rank=1,
+                ),
+            ),
             id="multiple files alternate order",
         ),
-    ],
-)
-# pylint: enable=undefined-variable,unused-variable
+    ]
+
+
+@pytest.mark.parametrize("directories, files, expected_path_infos", _test_read_parameters())
 def test_read(
     directories: tuple[tuple[str, ...], ...],
     files: tuple[tuple[str, ...], ...],
-    expected_path_infos: list[tuple[tuple[str, ...], int, str, str]],
+    expected_path_infos: tuple[types_.PathInfo, ...],
     tmp_path: Path,
 ):
     """
@@ -387,13 +486,13 @@ def test_read(
 
     returned_path_infos = docs_directory.read(docs_path=tmp_path)
 
-    assert list(returned_path_infos) == [
-        (tmp_path / Path(*expected_path_info[0]), *expected_path_info[1:])
+    assert tuple(returned_path_infos) == tuple(
+        types_.PathInfo(tmp_path / expected_path_info.local_path, *expected_path_info[1:])
         for expected_path_info in expected_path_infos
-    ]
+    )
 
 
-def test_read_indoco(tmp_path: Path):
+def test_read_indico(tmp_path: Path):
     """
     arrange: given docs directory structured based on the indico docs
     act: when read is called with the docs directory
@@ -428,27 +527,75 @@ def test_read_indoco(tmp_path: Path):
 
     returned_path_infos = docs_directory.read(docs_path=tmp_path)
 
-    assert list(returned_path_infos) == [
-        (explanation, 1, ("explanation",), "Explanation", 0),
-        (charm_architecture, 2, ("explanation", "charm-architecture"), "Charm Architecture", 1),
-        (how_to_guides, 1, ("how-to-guides",), "How To Guides", 2),
-        (contributing, 2, ("how-to-guides", "contributing"), "Contributing", 3),
-        (
-            cross_model_db_relations,
-            2,
-            ("how-to-guides", "cross-model-db-relations"),
-            "Cross-model DB Relations",
-            4,
+    assert tuple(returned_path_infos) == (
+        factories.PathInfoFactory(
+            local_path=explanation,
+            level=1,
+            table_path=("explanation",),
+            navlink_title="Explanation",
+            alphabetical_rank=0,
         ),
-        (
-            refresh_external_resources,
-            2,
-            ("how-to-guides", "refresh-external-resources"),
-            "Refreshing external resources",
-            5,
+        factories.PathInfoFactory(
+            local_path=charm_architecture,
+            level=2,
+            table_path=("explanation", "charm-architecture"),
+            navlink_title="Charm Architecture",
+            alphabetical_rank=1,
         ),
-        (reference, 1, ("reference",), "Reference", 6),
-        (plugins, 2, ("reference", "plugins"), "Plugins", 7),
-        (theme_customisation, 2, ("reference", "theme-customisation"), "Theme Customisation", 8),
-        (tutorials, 1, ("tutorials",), "Tutorials", 9),
-    ]
+        factories.PathInfoFactory(
+            local_path=how_to_guides,
+            level=1,
+            table_path=("how-to-guides",),
+            navlink_title="How To Guides",
+            alphabetical_rank=2,
+        ),
+        factories.PathInfoFactory(
+            local_path=contributing,
+            level=2,
+            table_path=("how-to-guides", "contributing"),
+            navlink_title="Contributing",
+            alphabetical_rank=3,
+        ),
+        factories.PathInfoFactory(
+            local_path=cross_model_db_relations,
+            level=2,
+            table_path=("how-to-guides", "cross-model-db-relations"),
+            navlink_title="Cross-model DB Relations",
+            alphabetical_rank=4,
+        ),
+        factories.PathInfoFactory(
+            local_path=refresh_external_resources,
+            level=2,
+            table_path=("how-to-guides", "refresh-external-resources"),
+            navlink_title="Refreshing external resources",
+            alphabetical_rank=5,
+        ),
+        factories.PathInfoFactory(
+            local_path=reference,
+            level=1,
+            table_path=("reference",),
+            navlink_title="Reference",
+            alphabetical_rank=6,
+        ),
+        factories.PathInfoFactory(
+            local_path=plugins,
+            level=2,
+            table_path=("reference", "plugins"),
+            navlink_title="Plugins",
+            alphabetical_rank=7,
+        ),
+        factories.PathInfoFactory(
+            local_path=theme_customisation,
+            level=2,
+            table_path=("reference", "theme-customisation"),
+            navlink_title="Theme Customisation",
+            alphabetical_rank=8,
+        ),
+        factories.PathInfoFactory(
+            local_path=tutorials,
+            level=1,
+            table_path=("tutorials",),
+            navlink_title="Tutorials",
+            alphabetical_rank=9,
+        ),
+    )

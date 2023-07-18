@@ -120,6 +120,7 @@ class PathInfo(typing.NamedTuple):
         navlink_title: The title of the navlink.
         alphabetical_rank: The rank of the path info based on alphabetically sorting all relevant
             path infos.
+        hidden: Whether the item should be displayed on the navigation table
     """
 
     local_path: Path
@@ -127,6 +128,7 @@ class PathInfo(typing.NamedTuple):
     table_path: TablePath
     navlink_title: NavlinkTitle
     alphabetical_rank: int
+    hidden: bool = False
 
 
 PathInfoLookup = dict[TablePath, PathInfo]
