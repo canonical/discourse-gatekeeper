@@ -283,6 +283,7 @@ class TableRowFactory(
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path-{n}",))
     navlink = factory.SubFactory(NavlinkFactory)
+    hidden = False
 
 
 # The attributes of these classes are generators for the attributes of the meta class
