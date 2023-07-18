@@ -171,8 +171,9 @@ class TableRow(typing.NamedTuple):
         Returns:
             The line in the navigation table.
         """
+        level = f" {self.level} " if not self.hidden else " "
         return (
-            f"| {self.level} | {'-'.join(self.path)} | "
+            f"|{level}| {'-'.join(self.path)} | "
             f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 
