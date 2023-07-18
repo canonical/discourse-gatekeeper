@@ -14,7 +14,6 @@ import pytest
 from src import sort, types_
 
 from .. import factories
-from .helpers import create_dir, create_file
 
 
 def change_path_info_attrs(path_info: types_.PathInfo, **kwargs: typing.Any) -> types_.PathInfo:
@@ -43,28 +42,28 @@ def _test_using_contents_index_parameters():
         pytest.param(
             (path_info := factories.PathInfoFactory(local_path="file_1.md"),),
             (),
-            (create_file,),
+            ("file",),
             (path_info,),
             id="single path info file no contents index",
         ),
         pytest.param(
             (path_info := factories.PathInfoFactory(local_path="dir_1"),),
             (),
-            (create_dir,),
+            ("dir",),
             (path_info,),
             id="single path info directory no contents index",
         ),
         pytest.param(
             (path_info := factories.PathInfoFactory(local_path=(path_1 := "file_1.md")),),
             (item := factories.IndexContentsListItemFactory(reference_value=path_1, hierarchy=1),),
-            (create_file,),
+            ("file",),
             (change_path_info_attrs(path_info=path_info, navlink_title=item.reference_title),),
             id="single path info file matching contents index",
         ),
         pytest.param(
             (path_info := factories.PathInfoFactory(local_path=(path_1 := "dir_1")),),
             (item := factories.IndexContentsListItemFactory(reference_value=path_1, hierarchy=1),),
-            (create_dir,),
+            ("dir",),
             (change_path_info_attrs(path_info=path_info, navlink_title=item.reference_title),),
             id="single path info directory matching contents index",
         ),
@@ -78,7 +77,7 @@ def _test_using_contents_index_parameters():
                 ),
             ),
             (),
-            (create_file, create_file),
+            ("file", "file"),
             (path_info_2, path_info_1),
             id="multiple path info wrong order no contents index",
         ),
@@ -95,7 +94,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=1, rank=0
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_2, navlink_title=item_2.reference_title
@@ -116,7 +115,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_1, hierarchy=1
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -135,7 +134,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=1
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_2, navlink_title=item_2.reference_title
@@ -157,7 +156,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=1
                 ),
             ),
-            (create_file, create_file),
+            ("file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -181,7 +180,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=1
                 ),
             ),
-            (create_dir, create_dir),
+            ("dir", "dir"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -205,7 +204,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=1
                 ),
             ),
-            (create_file, create_dir),
+            ("file", "dir"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -231,7 +230,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=2
                 ),
             ),
-            (create_dir, create_file),
+            ("dir", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -255,7 +254,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=2
                 ),
             ),
-            (create_dir, create_dir),
+            ("dir", "dir"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -282,7 +281,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=2
                 ),
             ),
-            (create_dir, create_file, create_file),
+            ("dir", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -310,7 +309,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_3, hierarchy=2
                 ),
             ),
-            (create_dir, create_file, create_file),
+            ("dir", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -336,7 +335,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_2, hierarchy=2
                 ),
             ),
-            (create_dir, create_dir, create_file),
+            ("dir", "dir", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -367,7 +366,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_3, hierarchy=3
                 ),
             ),
-            (create_dir, create_dir, create_file),
+            ("dir", "dir", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -407,7 +406,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_5, hierarchy=2
                 ),
             ),
-            (create_dir, create_dir, create_file, create_file, create_file),
+            ("dir", "dir", "file", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -453,7 +452,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_6, hierarchy=2
                 ),
             ),
-            (create_dir, create_dir, create_file, create_file, create_file),
+            ("dir", "dir", "file", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -500,7 +499,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_5, hierarchy=2
                 ),
             ),
-            (create_dir, create_dir, create_file, create_file, create_file),
+            ("dir", "dir", "file", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -524,13 +523,13 @@ def _test_using_contents_index_parameters():
 
 
 @pytest.mark.parametrize(
-    "path_infos, index_contents, create_path_funcs, expected_path_infos",
+    "path_infos, index_contents, create_paths, expected_path_infos",
     _test_using_contents_index_parameters(),
 )
 def test_using_contents_index(
     path_infos: tuple[types_.PathInfo, ...],
     index_contents: tuple[types_.IndexContentsListItem, ...],
-    create_path_funcs: tuple[typing.Callable[[str, Path], None], ...],
+    create_paths: tuple[typing.Literal["file", "dir"], ...],
     expected_path_infos: tuple[types_.PathInfo, ...],
     tmp_path: Path,
 ):
@@ -540,8 +539,12 @@ def test_using_contents_index(
     assert: then the expected path infos are returned.
     """
     # Create the paths
-    for path_info, create_path_func in zip(path_infos, create_path_funcs):
-        create_path_func(str(path_info.local_path), tmp_path)
+    for path_info, create_path in zip(path_infos, create_paths):
+        match create_path:
+            case "file":
+                (tmp_path / path_info.local_path).touch()
+            case "dir":
+                (tmp_path / path_info.local_path).mkdir(parents=True)
     # Change path infos and expected path infos to have absolute paths which is the expectation
     path_infos = tuple(
         change_path_info_attrs(path_info=path_info, local_path=tmp_path / path_info.local_path)

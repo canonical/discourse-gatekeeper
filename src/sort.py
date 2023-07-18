@@ -86,11 +86,7 @@ def _contents_index_iter(
     Yields:
         PathInfo in sorted order first by the contents index items and then by alphabetical rank.
     """
-    while (next_item := sort_data.items.peek(None)) is not None:
-        # Advance iterator
-        item = next_item
-        # Pass default of None to guarantee StopIteration is not raised
-        next(sort_data.items, None)
+    for item in sort_data.items:
         next_item = sort_data.items.peek(None)
 
         # Get the path info

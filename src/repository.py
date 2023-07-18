@@ -167,6 +167,7 @@ class Client:
     """Wrapper for git/git-server related functionalities.
 
     Attrs:
+        base_path: The root directory of the repository.
         metadata: Metadata object of the charm
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository

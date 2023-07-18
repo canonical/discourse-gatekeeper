@@ -25,6 +25,36 @@ def _test__get_contents_parsed_items_invalid_parameters():
     return [
         pytest.param(
             f"""# Contents
+{(line := '-')}""",
+            (line,),
+            id="first item only leader",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1]')}""",
+            (line,),
+            id="first item leader and reference title",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1(value 1)')}""",
+            (line,),
+            id="first item malformed reference title",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1](value 1')}""",
+            (line,),
+            id="first item malformed reference value",
+        ),
+        pytest.param(
+            f"""# Contents
+{(line := '- [title 1] (value 1)')}""",
+            (line,),
+            id="first item space between reference title and value",
+        ),
+        pytest.param(
+            f"""# Contents
 {(line := ' - [title 1](value 1)')}""",
             (line,),
             id="first item has single leading space",
@@ -67,6 +97,20 @@ def _test__get_contents_parsed_items_invalid_parameters():
 malformed 2""",
             (line,),
             id="multiple malformed lines",
+        ),
+        pytest.param(
+            f"""# Contents
+- [title 1](value 1)
+{(line := '1 [title 1](value 1)')}""",
+            (line,),
+            id="multiple lines second missing leader",
+        ),
+        pytest.param(
+            f"""# Contents
+- [title 1](value 1)
+{(line := 'malformed [title 1](value 1)')}""",
+            (line,),
+            id="multiple lines second missing leader alternate",
         ),
     ]
 
@@ -144,6 +188,17 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
+
+- [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item new line between header and start",
+        ),
+        pytest.param(
+            f"""# Contents
 -  [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
             (
                 factories.IndexParsedListItemFactory(
@@ -174,16 +229,6 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
-- [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
-            (
-                factories.IndexParsedListItemFactory(
-                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
-                ),
-            ),
-            id="single item empty line before",
-        ),
-        pytest.param(
-            f"""# Contents
 - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
 """,
             (
@@ -202,6 +247,36 @@ def _test__get_contents_parsed_items_parameters():
                 ),
             ),
             id="single item numbered",
+        ),
+        pytest.param(
+            f"""# Contents
+10. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item numbered multiple digits",
+        ),
+        pytest.param(
+            f"""# Contents
+a. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item alphabetical",
+        ),
+        pytest.param(
+            f"""# Contents
+ab. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+            ),
+            id="single item alphabetical multiple letters",
         ),
         pytest.param(
             f"""# Contents
@@ -280,25 +355,6 @@ def _test__get_contents_parsed_items_parameters():
                 ),
             ),
             id="multiple items nested",
-        ),
-        pytest.param(
-            f"""# Contents
-- [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
-<!--   - [{(title_2 := 'title 2')}]({(value_2 := 'value 2')}) -->
-""",
-            (
-                factories.IndexParsedListItemFactory(
-                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
-                ),
-                factories.IndexParsedListItemFactory(
-                    whitespace_count=2,
-                    reference_title=title_2,
-                    reference_value=value_2,
-                    rank=1,
-                    hidden=True,
-                ),
-            ),
-            id="multiple items nested hidden",
         ),
         pytest.param(
             f"""# Contents
@@ -439,6 +495,25 @@ def _test__get_contents_parsed_items_parameters():
                 ),
             ),
             id="many items deeply nested",
+        ),
+        pytest.param(
+            f"""# Contents
+- [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
+  1. [{(title_2 := 'title 2')}]({(value_2 := 'value 2')})
+    a. [{(title_3 := 'title 3')}]({(value_3 := 'value 3')})
+""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_title=title_1, reference_value=value_1, rank=0
+                ),
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=2, reference_title=title_2, reference_value=value_2, rank=1
+                ),
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=4, reference_title=title_3, reference_value=value_3, rank=2
+                ),
+            ),
+            id="many items deeply nested different leaders",
         ),
     ]
 

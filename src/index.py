@@ -6,6 +6,8 @@
 import itertools
 import re
 import typing
+from collections.abc import Iterable
+from enum import Enum, auto
 from pathlib import Path
 
 from more_itertools import peekable
@@ -24,7 +26,7 @@ CONTENTS_HEADER = "# contents"
 CONTENTS_END_LINE_PREFIX = "#"
 
 _WHITESPACE = "( *)"
-_LEADER = r"((\d\.)|(\*)|(-))"
+_LEADER = r"((\d+\.)|([a-zA-Z]+\.)|(\*)|(-))"
 _REFERENCE_TITLE = r"\[(.*)\]"
 _REFERENCE_VALUE = r"\((.*)\)"
 _REFERENCE = rf"({_REFERENCE_TITLE}{_REFERENCE_VALUE})"
@@ -153,8 +155,8 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             f"invalid, {line=!r}, expecting the first line not to have any leading whitespace"
         )
 
-    reference_title = match.group(7)
-    reference_value = match.group(8)
+    reference_title = match.group(8)
+    reference_value = match.group(9)
 
     return _ParsedListItem(
         whitespace_count=whitespace_count,
@@ -165,23 +167,36 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
     )
 
 
-def _remove_contents(lines: typing.Iterable[str]) -> typing.Iterator[str]:
+class _IndexSection(Enum):
+    """The sections of the index file.
+
+    Attrs:
+        CONTENTS: The contents section.
+        EX_CONTENTS: Everything except the contents section.
+    """
+
+    CONTENTS = auto()
+    EX_CONTENTS = auto()
+
+
+def _iter_index_lines(lines: typing.Iterable[str], section: _IndexSection) -> typing.Iterator[str]:
     """Remove the contents section lines from the index contents.
 
     Args:
         lines: The lines of the index file.
+        section: The part of the index file to return lines for.
 
     Yields:
         All lines except the lines of the contents section.
     """
     contents_encountered = False
-    drop_lines = False
+    drop_lines = section == _IndexSection.CONTENTS
     for line in lines:
         if not contents_encountered and line.lower() == CONTENTS_HEADER:
             contents_encountered = True
-            drop_lines = True
+            drop_lines = section == _IndexSection.EX_CONTENTS
         elif line.startswith(CONTENTS_END_LINE_PREFIX):
-            drop_lines = False
+            drop_lines = section == _IndexSection.CONTENTS
 
         if not drop_lines:
             yield line
@@ -199,7 +214,9 @@ def get_content_for_server(index_file: IndexFile) -> str:
     if index_file.content is None:
         return ""
 
-    return "\n".join(_remove_contents(index_file.content.splitlines()))
+    return "\n".join(
+        _iter_index_lines(index_file.content.splitlines(), section=_IndexSection.EX_CONTENTS)
+    )
 
 
 def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_ParsedListItem]:
@@ -215,14 +232,11 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
         return
 
     # Get the lines of the contents section
-    lines = index_file.content.splitlines()
-    # Advance past the contents heading
-    lines_from_contents = itertools.dropwhile(lambda line: line.lower() != CONTENTS_HEADER, lines)
-    next(lines_from_contents, None)
-    # Stop taking on the next heading
-    contents_lines = itertools.takewhile(
-        lambda line: not line.startswith(CONTENTS_END_LINE_PREFIX), lines_from_contents
+    contents_lines = _iter_index_lines(
+        index_file.content.splitlines(), section=_IndexSection.CONTENTS
     )
+    # Skip header
+    next(contents_lines, None)
     yield from (
         _parse_item_from_line(line=line, rank=rank)
         for line, rank in zip(filter(None, contents_lines), itertools.count())
@@ -230,14 +244,14 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
 
 
 def _check_contents_item(
-    item: _ParsedListItem, whitespace_expectation: int, aggregate_dir: Path, docs_path: Path
+    item: _ParsedListItem, max_whitespace: int, aggregate_dir: Path, docs_path: Path
 ) -> None:
-    """Check item is valid.
+    """Check item is valid. All the items should be exactly within a directory.
 
     Args:
         item: The parsed item to check.
+        max_whitespace: The expected number of whitespace characters for items.
         aggregate_dir: The relative directory that all items must be within.
-        whitespace_expectation: The expected number of whitespace characters for items.
         docs_path: The base directory of all items.
 
     Raises:
@@ -247,10 +261,10 @@ def _check_contents_item(
             - An item isn't a file nor directory.
     """
     # Check that the whitespace count matches the expectation
-    if item.whitespace_count > whitespace_expectation:
+    if item.whitespace_count > max_whitespace:
         raise InputError(
             "An item has more whitespace and is not following a reference to a directory. "
-            f"{item=!r}, expected whitespace count: {whitespace_expectation!r}"
+            f"{item=!r}, expected whitespace count: {max_whitespace!r}"
         )
 
     # Check that the next item is within the directory
@@ -280,11 +294,10 @@ def _check_contents_item(
 
 
 def _calculate_contents_hierarchy(
-    parsed_items: "peekable[_ParsedListItem]",
+    parsed_items: Iterable[_ParsedListItem],
     docs_path: Path,
     aggregate_dir: Path = Path(),
     hierarchy: int = 0,
-    whitespace_expectation: int = 0,
 ) -> typing.Iterator[IndexContentsListItem]:
     """Calculate the hierarchy of the contents list items.
 
@@ -293,7 +306,6 @@ def _calculate_contents_hierarchy(
         docs_path: The base directory of all items.
         aggregate_dir: The relative directory that all items must be within.
         hierarchy: The hierarchy of the current directory.
-        whitespace_expectation: The expected number of whitespace characters for items.
 
     Yields:
         The contents list items with the hierarchy.
@@ -304,50 +316,49 @@ def _calculate_contents_hierarchy(
             - A nested item is not immediately within the path of its parent.
             - An item isn't a file nor directory.
     """
-    while next_item := parsed_items.peek(default=None):
+    parents: list[_ParsedListItem] = []
+    whitespace_expectation_per_level = {0: 0}
+    parsed_items = iter(parsed_items)
+    item = next(parsed_items, None)
+    while item:
         # All items in the current directory have been processed
-        if next_item.whitespace_count < whitespace_expectation:
-            return
+        if item.whitespace_count < whitespace_expectation_per_level[hierarchy]:
+            hierarchy = hierarchy - 1
+            parent = parents.pop()
+            aggregate_dir = Path(parent.reference_value).parent
 
         _check_contents_item(
-            item=next_item,
-            whitespace_expectation=whitespace_expectation,
+            item=item,
+            max_whitespace=whitespace_expectation_per_level[hierarchy],
             aggregate_dir=aggregate_dir,
             docs_path=docs_path,
         )
 
         # Advance the iterator
-        item = next_item
-        next(parsed_items, None)
         item_path = Path(item.reference_value)
-        next_item = parsed_items.peek(default=None)
+        next_item = next(parsed_items, None)
 
-        # Process file
-        if (docs_path / item_path).is_file():
+        if (docs_path / item_path).is_file() or (docs_path / item_path).is_dir():
             yield IndexContentsListItem(
                 hierarchy=hierarchy + 1,
                 reference_title=item.reference_title,
                 reference_value=item.reference_value,
                 rank=item.rank,
             )
-        # Process directory
-        elif (docs_path / item_path).is_dir():
-            yield IndexContentsListItem(
-                hierarchy=hierarchy + 1,
-                reference_title=item.reference_title,
-                reference_value=item.reference_value,
-                rank=item.rank,
-            )
-            if next_item is not None and next_item.whitespace_count > whitespace_expectation:
-                yield from _calculate_contents_hierarchy(
-                    parsed_items=parsed_items,
-                    docs_path=docs_path,
-                    aggregate_dir=item_path,
-                    hierarchy=hierarchy + 1,
-                    whitespace_expectation=next_item.whitespace_count,
-                )
+            # Process directory contents
+            if (
+                (docs_path / item_path).is_dir()
+                and next_item is not None
+                and next_item.whitespace_count > whitespace_expectation_per_level[hierarchy]
+            ):
+                hierarchy = hierarchy + 1
+                aggregate_dir = item_path
+                if hierarchy not in whitespace_expectation_per_level:
+                    whitespace_expectation_per_level[hierarchy] = next_item.whitespace_count
+                parents.append(item)
         else:
             raise InputError(f"An item is not a file or directory. {item=!r}")
+        item = next_item
 
 
 def get_contents(index_file: IndexFile, docs_path: Path) -> typing.Iterator[IndexContentsListItem]:
@@ -361,4 +372,4 @@ def get_contents(index_file: IndexFile, docs_path: Path) -> typing.Iterator[Inde
         Iterator with all items from the contents list.
     """
     parsed_items = _get_contents_parsed_items(index_file=index_file)
-    return _calculate_contents_hierarchy(parsed_items=peekable(parsed_items), docs_path=docs_path)
+    return _calculate_contents_hierarchy(parsed_items=parsed_items, docs_path=docs_path)
