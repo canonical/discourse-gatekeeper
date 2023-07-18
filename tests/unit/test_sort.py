@@ -61,6 +61,28 @@ def _test_using_contents_index_parameters():
             id="single path info file matching contents index",
         ),
         pytest.param(
+            (
+                path_info := factories.PathInfoFactory(
+                    local_path=(path_1 := "file_1.md"), hidden=False
+                ),
+            ),
+            (
+                item := factories.IndexContentsListItemFactory(
+                    reference_value=path_1, hierarchy=1, hidden=True
+                ),
+            ),
+            ("file",),
+            (
+                change_path_info_attrs(
+                    path_info=factories.PathInfoFactory(
+                        **(path_info._asdict() | {"hidden": True})
+                    ),
+                    navlink_title=item.reference_title,
+                ),
+            ),
+            id="single path info file matching hidden contents index",
+        ),
+        pytest.param(
             (path_info := factories.PathInfoFactory(local_path=(path_1 := "dir_1")),),
             (item := factories.IndexContentsListItemFactory(reference_value=path_1, hierarchy=1),),
             ("dir",),
