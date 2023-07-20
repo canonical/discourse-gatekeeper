@@ -52,7 +52,6 @@ from .helpers import assert_substrings_in_string
         pytest.param("|-|-| -|", True, id="matches filler space before third column"),
         pytest.param("|-|-|- |", True, id="matches filler space after third column"),
         pytest.param("|-|-|-| ", True, id="matches filler trailing space"),
-        pytest.param("||a|[a]()|", True, id="first column empty"),
         pytest.param("|a|a|[a]()|", True, id="first column character"),
         pytest.param("|1||[a]()|", True, id="second column empty"),
         pytest.param("|1|/|[a]()|", True, id="second column forward slash"),
@@ -64,6 +63,7 @@ from .helpers import assert_substrings_in_string
         pytest.param(r"|1|a|[a](\)|", True, id="third column link includes backslash"),
         pytest.param("|1|a|[a](|", True, id="third column closing link bracket missing"),
         pytest.param("|1|a|[a]()|", False, id="matches row"),
+        pytest.param("||a|[a]()|", False, id="matches hidden row"),
     ],
 )
 def test__filter_line(line, expected_result):
@@ -86,13 +86,25 @@ def _test__line_to_row_parameters():
     return [
         pytest.param(
             "|1|a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
             id="simple",
         ),
         pytest.param(
+            "||a|[b](c)|",
+            default_level := 1,
+            factories.TableRowFactory(
+                level=default_level,
+                path=("a",),
+                navlink=factories.NavlinkFactory(title="b", link="c", hidden=True),
+            ),
+            id="hidden",
+        ),
+        pytest.param(
             " |1|a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -100,6 +112,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "| 1|a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -107,6 +120,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1 |a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -114,6 +128,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1| a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -121,6 +136,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a |[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -128,6 +144,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a| [b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -135,6 +152,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b]() |",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -142,6 +160,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b]()| ",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -149,6 +168,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|12|a|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=12, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -156,6 +176,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|az|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("az",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -163,6 +184,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|A|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("A",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -170,6 +192,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|2|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("2",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -177,6 +200,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|_|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("_",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -184,6 +208,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|-|[b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("-",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -191,6 +216,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[bz]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="bz", link=None)
             ),
@@ -198,6 +224,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[B]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="B", link=None)
             ),
@@ -205,6 +232,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[2]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="2", link=None)
             ),
@@ -212,6 +240,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[_]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="_", link=None)
             ),
@@ -219,6 +248,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[-]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="-", link=None)
             ),
@@ -226,6 +256,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[:]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title=":", link=None)
             ),
@@ -233,6 +264,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[!]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="!", link=None)
             ),
@@ -240,6 +272,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[+]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="+", link=None)
             ),
@@ -247,6 +280,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[?]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="?", link=None)
             ),
@@ -254,6 +288,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[c d]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="c d", link=None)
             ),
@@ -261,6 +296,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[ b]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -268,6 +304,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b ]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
             ),
@@ -275,6 +312,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b c]()|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b c", link=None)
             ),
@@ -282,6 +320,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](c)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
             ),
@@ -289,6 +328,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b] (c)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
             ),
@@ -296,6 +336,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b]( c)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
             ),
@@ -303,6 +344,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](c )|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
             ),
@@ -310,6 +352,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](cd)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="cd")
             ),
@@ -317,6 +360,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](C)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="C")
             ),
@@ -324,6 +368,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](2)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="2")
             ),
@@ -331,6 +376,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](/)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="/")
             ),
@@ -338,6 +384,7 @@ def _test__line_to_row_parameters():
         ),
         pytest.param(
             "|1|a|[b](-)|",
+            0,
             factories.TableRowFactory(
                 level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="-")
             ),
@@ -346,14 +393,14 @@ def _test__line_to_row_parameters():
     ]
 
 
-@pytest.mark.parametrize("line, expected_result", _test__line_to_row_parameters())
-def test__line_to_row(line: str, expected_result: types_.TableRow):
+@pytest.mark.parametrize("line, default_level, expected_result", _test__line_to_row_parameters())
+def test__line_to_row(line: str, default_level: int, expected_result: types_.TableRow):
     """
     arrange: given line and expected return value
     act: when _line_to_row is called with the line
     assert: then the expected return value is returned.
     """
-    returned_result = navigation_table._line_to_row(line)
+    returned_result = navigation_table._line_to_row(line, default_level=default_level)
 
     assert returned_result == expected_result
 
@@ -365,7 +412,7 @@ def test__line_to_row_no_match():
     assert: then NavigationTableParseError is raised.
     """
     with pytest.raises(NavigationTableParseError):
-        navigation_table._line_to_row("")
+        navigation_table._line_to_row("", default_level=0)
 
 
 def test__check_table_row_write_permission_group():
@@ -491,6 +538,17 @@ def _test_from_page_parameters():
             id="header, filler and single row",
         ),
         pytest.param(
+            "|level|path|navlink|\n|-|-|-|\n||a|[b](c)|",
+            (
+                factories.TableRowFactory(
+                    level=0,
+                    path=("a",),
+                    navlink=factories.NavlinkFactory(title="b", link="c", hidden=True),
+                ),
+            ),
+            id="header, filler and single hidden row",
+        ),
+        pytest.param(
             "|level|path|navlink|\n|1|a|[b]()|",
             (
                 factories.TableRowFactory(
@@ -516,14 +574,44 @@ def _test_from_page_parameters():
                 ),
                 factories.TableRowFactory(
                     level=2,
-                    path=(
-                        "a",
-                        "c",
-                    ),
+                    path=("a", "c"),
                     navlink=factories.NavlinkFactory(title="d", link=None),
                 ),
             ),
             id="header, multiple rows",
+        ),
+        pytest.param(
+            "|level|path|navlink|\n|1|a|[b]()|\n||c|[d](e)|",
+            (
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
+                factories.TableRowFactory(
+                    level=2,
+                    path=("a", "c"),
+                    navlink=factories.NavlinkFactory(title="d", link="e", hidden=True),
+                ),
+            ),
+            id="header, multiple rows second hidden",
+        ),
+        pytest.param(
+            "|level|path|navlink|\n|1|a|[b]()|\n|2|c|[d](e)|\n||f|[g](h)|",
+            (
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
+                factories.TableRowFactory(
+                    level=2,
+                    path=("a", "c"),
+                    navlink=factories.NavlinkFactory(title="d", link="e", hidden=False),
+                ),
+                factories.TableRowFactory(
+                    level=2,
+                    path=("a", "f"),
+                    navlink=factories.NavlinkFactory(title="g", link="h", hidden=True),
+                ),
+            ),
+            id="header, many rows last hidden",
         ),
     ]
 
