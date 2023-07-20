@@ -140,10 +140,12 @@ class Navlink(typing.NamedTuple):
     Attrs:
         title: The title of the documentation page.
         link: The relative URL to the documentation page or None if there is no link.
+        hidden: Whether the item should be displayed on the navigation table.
     """
 
     title: NavlinkTitle
     link: str | None
+    hidden: bool = False
 
 
 class TableRow(typing.NamedTuple):
@@ -191,6 +193,7 @@ class CreateAction:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_title: The title of the navlink.
+        navlink_hidden: Whether the item should be displayed on the navigation table.
         content: The documentation content, is None for directories.
     """
 
@@ -198,6 +201,7 @@ class CreateAction:
     path: TablePath
     navlink_title: NavlinkTitle
     content: Content | None
+    navlink_hidden: bool = False
 
 
 @dataclasses.dataclass

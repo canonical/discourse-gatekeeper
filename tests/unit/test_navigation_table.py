@@ -86,187 +86,261 @@ def _test__line_to_row_parameters():
     return [
         pytest.param(
             "|1|a|[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple",
         ),
         pytest.param(
             " |1|a|[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple leading space",
         ),
         pytest.param(
             "| 1|a|[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space before first column",
         ),
         pytest.param(
             "|1 |a|[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space after first column",
         ),
         pytest.param(
             "|1| a|[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space before second column",
         ),
         pytest.param(
             "|1|a |[b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space after second column",
         ),
         pytest.param(
             "|1|a| [b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space before third column",
         ),
         pytest.param(
             "|1|a|[b]() |",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple space after third column",
         ),
         pytest.param(
             "|1|a|[b]()| ",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="simple trailing space",
         ),
         pytest.param(
             "|12|a|[b]()|",
-            factories.TableRowFactory(level=12, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=12, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="first column multiple digits",
         ),
         pytest.param(
             "|1|az|[b]()|",
-            factories.TableRowFactory(level=1, path=("az",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("az",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="second column multiple characters",
         ),
         pytest.param(
             "|1|A|[b]()|",
-            factories.TableRowFactory(level=1, path=("A",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("A",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="second column upper case",
         ),
         pytest.param(
             "|1|2|[b]()|",
-            factories.TableRowFactory(level=1, path=("2",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("2",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="second column digit",
         ),
         pytest.param(
             "|1|_|[b]()|",
-            factories.TableRowFactory(level=1, path=("_",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("_",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="second column underscore",
         ),
         pytest.param(
             "|1|-|[b]()|",
-            factories.TableRowFactory(level=1, path=("-",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("-",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="second column dash",
         ),
         pytest.param(
             "|1|a|[bz]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("bz", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="bz", link=None)
+            ),
             id="third column title multiple characters",
         ),
         pytest.param(
             "|1|a|[B]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("B", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="B", link=None)
+            ),
             id="third column title capital character",
         ),
         pytest.param(
             "|1|a|[2]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("2", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="2", link=None)
+            ),
             id="third column title digit",
         ),
         pytest.param(
             "|1|a|[_]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("_", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="_", link=None)
+            ),
             id="third column title underscore",
         ),
         pytest.param(
             "|1|a|[-]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("-", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="-", link=None)
+            ),
             id="third column title dash",
         ),
         pytest.param(
             "|1|a|[:]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=(":", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title=":", link=None)
+            ),
             id="third column title punctuation colon",
         ),
         pytest.param(
             "|1|a|[!]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("!", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="!", link=None)
+            ),
             id="third column title punctuation exclamation",
         ),
         pytest.param(
             "|1|a|[+]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("+", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="+", link=None)
+            ),
             id="third column title punctuation plus",
         ),
         pytest.param(
             "|1|a|[?]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("?", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="?", link=None)
+            ),
             id="third column title punctuation question",
         ),
         pytest.param(
             "|1|a|[c d]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("c d", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="c d", link=None)
+            ),
             id="third column title space",
         ),
         pytest.param(
             "|1|a|[ b]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="third column title space before",
         ),
         pytest.param(
             "|1|a|[b ]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+            ),
             id="third column title space after",
         ),
         pytest.param(
             "|1|a|[b c]()|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b c", None)),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b c", link=None)
+            ),
             id="third column title embedded space",
         ),
         pytest.param(
             "|1|a|[b](c)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "c")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
+            ),
             id="third column link defined",
         ),
         pytest.param(
             "|1|a|[b] (c)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "c")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
+            ),
             id="third column white spave between title and link",
         ),
         pytest.param(
             "|1|a|[b]( c)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "c")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
+            ),
             id="third column link whitespace before",
         ),
         pytest.param(
             "|1|a|[b](c )|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "c")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="c")
+            ),
             id="third column link whitespace after",
         ),
         pytest.param(
             "|1|a|[b](cd)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "cd")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="cd")
+            ),
             id="third column link multiple characters",
         ),
         pytest.param(
             "|1|a|[b](C)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "C")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="C")
+            ),
             id="third column link upper case",
         ),
         pytest.param(
             "|1|a|[b](2)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "2")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="2")
+            ),
             id="third column link digit",
         ),
         pytest.param(
             "|1|a|[b](/)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "/")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="/")
+            ),
             id="third column link forward slash",
         ),
         pytest.param(
             "|1|a|[b](-)|",
-            factories.TableRowFactory(level=1, path=("a",), navlink=("b", "-")),
+            factories.TableRowFactory(
+                level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link="-")
+            ),
             id="third column link dash",
         ),
     ]
@@ -409,30 +483,44 @@ def _test_from_page_parameters():
         pytest.param("|level|path|navlink|\n|-|-|-|", (), id="header, filler"),
         pytest.param(
             "|level|path|navlink|\n|-|-|-|\n|1|a|[b]()|",
-            (factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),),
+            (
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
+            ),
             id="header, filler and single row",
         ),
         pytest.param(
             "|level|path|navlink|\n|1|a|[b]()|",
-            (factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),),
+            (
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
+            ),
             id="header, single row",
         ),
         pytest.param(
             "text 1\n|level|path|navlink|\n|1|a|[b]()|",
-            (factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),),
+            (
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
+            ),
             id="text, header, single row",
         ),
         pytest.param(
             "|level|path|navlink|\n|1|a|[b]()|\n|2|c|[d]()|",
             (
-                factories.TableRowFactory(level=1, path=("a",), navlink=("b", None)),
+                factories.TableRowFactory(
+                    level=1, path=("a",), navlink=factories.NavlinkFactory(title="b", link=None)
+                ),
                 factories.TableRowFactory(
                     level=2,
                     path=(
                         "a",
                         "c",
                     ),
-                    navlink=("d", None),
+                    navlink=factories.NavlinkFactory(title="d", link=None),
                 ),
             ),
             id="header, multiple rows",
@@ -486,50 +574,70 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 
     returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)
 
-    assert list(returned_table) == [
-        factories.TableRowFactory(level=1, path=("tutorials",), navlink=("Tutorials", None)),
+    assert tuple(returned_table) == (
         factories.TableRowFactory(
-            level=1, path=("how-to-guides",), navlink=("How-to guides", None)
+            level=1,
+            path=("tutorials",),
+            navlink=factories.NavlinkFactory(title="Tutorials", link=None),
+        ),
+        factories.TableRowFactory(
+            level=1,
+            path=("how-to-guides",),
+            navlink=factories.NavlinkFactory(title="How-to guides", link=None),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "contributing"),
-            navlink=("Contributing", "/t/indico-docs-contributing/6574"),
+            navlink=factories.NavlinkFactory(
+                title="Contributing", link="/t/indico-docs-contributing/6574"
+            ),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "cross-model-db-relations"),
-            navlink=(
-                "Cross-model DB relations",
-                "/t/indico-docs-cross-model-relations-for-pg/7009",
+            navlink=factories.NavlinkFactory(
+                title="Cross-model DB relations",
+                link="/t/indico-docs-cross-model-relations-for-pg/7009",
             ),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "refresh-external-resources"),
-            navlink=(
-                "Refreshing external resources",
-                "/t/indico-docs-refreshing-external-resources/7008",
+            navlink=factories.NavlinkFactory(
+                title="Refreshing external resources",
+                link="/t/indico-docs-refreshing-external-resources/7008",
             ),
         ),
-        factories.TableRowFactory(level=1, path=("reference",), navlink=("Reference", None)),
+        factories.TableRowFactory(
+            level=1,
+            path=("reference",),
+            navlink=factories.NavlinkFactory(title="Reference", link=None),
+        ),
         factories.TableRowFactory(
             level=2,
             path=("reference", "plugins"),
-            navlink=("Plugins", "/t/indico-docs-plugins/6553"),
+            navlink=factories.NavlinkFactory(title="Plugins", link="/t/indico-docs-plugins/6553"),
         ),
         factories.TableRowFactory(
             level=2,
             path=("reference", "theme-customisation"),
-            navlink=("Theme Customisation", "/t/indico-docs-themes/6554"),
+            navlink=factories.NavlinkFactory(
+                title="Theme Customisation", link="/t/indico-docs-themes/6554"
+            ),
         ),
-        factories.TableRowFactory(level=1, path=("explanation",), navlink=("Explanation", None)),
+        factories.TableRowFactory(
+            level=1,
+            path=("explanation",),
+            navlink=factories.NavlinkFactory(title="Explanation", link=None),
+        ),
         factories.TableRowFactory(
             level=2,
             path=("explanation", "charm-architecture"),
-            navlink=("Charm Architecture", "/t/indico-docs-charm-architecture/7010"),
+            navlink=factories.NavlinkFactory(
+                title="Charm Architecture", link="/t/indico-docs-charm-architecture/7010"
+            ),
         ),
-    ]
+    )
 
 
 def test_from_page_indico_path():
@@ -563,47 +671,67 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 
     returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)
 
-    assert list(returned_table) == [
-        factories.TableRowFactory(level=1, path=("tutorials",), navlink=("Tutorials", None)),
+    assert tuple(returned_table) == (
         factories.TableRowFactory(
-            level=1, path=("how-to-guides",), navlink=("How-to guides", None)
+            level=1,
+            path=("tutorials",),
+            navlink=factories.NavlinkFactory(title="Tutorials", link=None),
+        ),
+        factories.TableRowFactory(
+            level=1,
+            path=("how-to-guides",),
+            navlink=factories.NavlinkFactory(title="How-to guides", link=None),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "contributing"),
-            navlink=("Contributing", "/t/indico-docs-contributing/6574"),
+            navlink=factories.NavlinkFactory(
+                title="Contributing", link="/t/indico-docs-contributing/6574"
+            ),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "cross-model-db-relations"),
-            navlink=(
-                "Cross-model DB relations",
-                "/t/indico-docs-cross-model-relations-for-pg/7009",
+            navlink=factories.NavlinkFactory(
+                title="Cross-model DB relations",
+                link="/t/indico-docs-cross-model-relations-for-pg/7009",
             ),
         ),
         factories.TableRowFactory(
             level=2,
             path=("how-to-guides", "refresh-external-resources"),
-            navlink=(
-                "Refreshing external resources",
-                "/t/indico-docs-refreshing-external-resources/7008",
+            navlink=factories.NavlinkFactory(
+                title="Refreshing external resources",
+                link="/t/indico-docs-refreshing-external-resources/7008",
             ),
         ),
-        factories.TableRowFactory(level=1, path=("reference",), navlink=("Reference", None)),
+        factories.TableRowFactory(
+            level=1,
+            path=("reference",),
+            navlink=factories.NavlinkFactory(title="Reference", link=None),
+        ),
         factories.TableRowFactory(
             level=2,
             path=("reference", "plugins"),
-            navlink=("Plugins", "/t/indico-docs-plugins/6553"),
+            navlink=factories.NavlinkFactory(title="Plugins", link="/t/indico-docs-plugins/6553"),
         ),
         factories.TableRowFactory(
             level=2,
             path=("reference", "theme-customisation"),
-            navlink=("Theme Customisation", "/t/indico-docs-themes/6554"),
+            navlink=factories.NavlinkFactory(
+                title="Theme Customisation", link="/t/indico-docs-themes/6554"
+            ),
         ),
-        factories.TableRowFactory(level=1, path=("explanation",), navlink=("Explanation", None)),
+        factories.TableRowFactory(
+            level=1,
+            path=("explanation",),
+            navlink=factories.NavlinkFactory(title="Explanation", link=None),
+        ),
         factories.TableRowFactory(
             level=2,
             path=("explanation", "charm-architecture"),
-            navlink=("Charm Architecture", "/t/indico-docs-charm-architecture/7010"),
+            navlink=factories.NavlinkFactory(
+                title="Charm Architecture", link="/t/indico-docs-charm-architecture/7010"
+            ),
         ),
-    ]
+    )

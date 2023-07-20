@@ -104,6 +104,7 @@ class CreateActionFactory(
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     content = factory.Sequence(lambda n: f"content {n}")
+    navlink_hidden = False
 
 
 class NavlinkFactory(
@@ -119,6 +120,7 @@ class NavlinkFactory(
 
     title = factory.Sequence(lambda n: f"navlink-title-{n}")
     link = factory.Sequence(lambda n: f"navlink-{n}")
+    hidden = False
 
 
 class NoopActionFactory(
