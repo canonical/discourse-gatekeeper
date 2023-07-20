@@ -112,7 +112,9 @@ def _local_and_server_dir_local_group_server(
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
                 old=table_row.navlink,
-                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+                new=types_.Navlink(
+                    title=path_info.navlink_title, link=table_row.navlink.link, hidden=False
+                ),
             ),
             content_change=None,
         ),
@@ -157,6 +159,7 @@ def _local_and_server_dir_local_page_server(
             path=path_info.table_path,
             navlink_title=path_info.navlink_title,
             content=None,
+            navlink_hidden=False,
         ),
     )
 

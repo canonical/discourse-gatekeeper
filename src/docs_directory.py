@@ -121,6 +121,7 @@ def _get_path_info(path: Path, alphabetical_rank: int, docs_path: Path) -> types
         table_path=calculate_table_path(path_relative_to_docs=path_relative_to_docs),
         navlink_title=_calculate_navlink_title(path=path),
         alphabetical_rank=alphabetical_rank,
+        navlink_hidden=False,
     )
 
 

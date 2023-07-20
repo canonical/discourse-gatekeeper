@@ -275,18 +275,19 @@ class TableRowFactory(
         """
 
         is_group = factory.Trait(
-            navlink=factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=None))
+            navlink=factory.Sequence(
+                lambda n: types_.Navlink(f"navlink-title-{n}", link=None, hidden=False)
+            )
         )
         is_document = factory.Trait(
             navlink=factory.Sequence(
-                lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}")
+                lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}", hidden=False)
             )
         )
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path-{n}",))
     navlink = factory.SubFactory(NavlinkFactory)
-    hidden = False
 
 
 # The attributes of these classes are generators for the attributes of the meta class

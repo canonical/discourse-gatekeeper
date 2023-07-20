@@ -128,7 +128,7 @@ class PathInfo(typing.NamedTuple):
     table_path: TablePath
     navlink_title: NavlinkTitle
     alphabetical_rank: int
-    navlink_hidden: bool = False
+    navlink_hidden: bool
 
 
 PathInfoLookup = dict[TablePath, PathInfo]
@@ -145,7 +145,7 @@ class Navlink(typing.NamedTuple):
 
     title: NavlinkTitle
     link: str | None
-    hidden: bool = False
+    hidden: bool
 
 
 class TableRow(typing.NamedTuple):
@@ -162,7 +162,6 @@ class TableRow(typing.NamedTuple):
     level: Level
     path: TablePath
     navlink: Navlink
-    hidden: bool = False
 
     @property
     def is_group(self) -> bool:
@@ -175,7 +174,7 @@ class TableRow(typing.NamedTuple):
         Returns:
             The line in the navigation table.
         """
-        level = f" {self.level} " if not self.hidden else " "
+        level = f" {self.level} " if not self.navlink.hidden else " "
         return (
             f"|{level}| {'-'.join(self.path)} | "
             f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
@@ -201,7 +200,7 @@ class CreateAction:
     path: TablePath
     navlink_title: NavlinkTitle
     content: Content | None
-    navlink_hidden: bool = False
+    navlink_hidden: bool
 
 
 @dataclasses.dataclass
@@ -429,4 +428,4 @@ class IndexContentsListItem(typing.NamedTuple):
     reference_title: str
     reference_value: str
     rank: int
-    hidden: bool = False
+    hidden: bool

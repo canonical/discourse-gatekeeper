@@ -15,14 +15,18 @@ from .. import factories
     [
         pytest.param(
             types_.TableRow(
-                level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link="link 1")
+                level=1,
+                path=("path 1",),
+                navlink=factories.NavlinkFactory(title="title 1", link="link 1"),
             ),
             False,
             id="not group",
         ),
         pytest.param(
             types_.TableRow(
-                level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link=None)
+                level=1,
+                path=("path 1",),
+                navlink=factories.NavlinkFactory(title="title 1", link=None),
             ),
             True,
             id="is group",
@@ -47,7 +51,9 @@ def _test_table_row_to_markdown_parameters():
     return [
         pytest.param(
             factories.TableRowFactory(
-                level=1, path=("path-1",), navlink=types_.Navlink(title="title 1", link="/link-1")
+                level=1,
+                path=("path-1",),
+                navlink=factories.NavlinkFactory(title="title 1", link="/link-1"),
             ),
             "| 1 | path-1 | [title 1](/link-1) |",
             id="not group",
@@ -56,8 +62,7 @@ def _test_table_row_to_markdown_parameters():
             factories.TableRowFactory(
                 level=1,
                 path=("path-1",),
-                navlink=types_.Navlink(title="title 1", link="/link-1"),
-                hidden=True,
+                navlink=factories.NavlinkFactory(title="title 1", link="/link-1", hidden=True),
             ),
             "| | path-1 | [title 1](/link-1) |",
             id="not group hidden",
@@ -66,14 +71,16 @@ def _test_table_row_to_markdown_parameters():
             factories.TableRowFactory(
                 level=1,
                 path=("path-1",),
-                navlink=types_.Navlink(title="title 1", link="http://host/link-1"),
+                navlink=factories.NavlinkFactory(title="title 1", link="http://host/link-1"),
             ),
             "| 1 | path-1 | [title 1](/link-1) |",
             id="url with protocol and host",
         ),
         pytest.param(
             factories.TableRowFactory(
-                level=2, path=("path-2",), navlink=types_.Navlink(title="title 2", link=None)
+                level=2,
+                path=("path-2",),
+                navlink=factories.NavlinkFactory(title="title 2", link=None),
             ),
             "| 2 | path-2 | [title 2]() |",
             id="is group",
@@ -82,8 +89,7 @@ def _test_table_row_to_markdown_parameters():
             factories.TableRowFactory(
                 level=2,
                 path=("path-2",),
-                navlink=types_.Navlink(title="title 2", link=None),
-                hidden=True,
+                navlink=factories.NavlinkFactory(title="title 2", link=None, hidden=True),
             ),
             "| | path-2 | [title 2]() |",
             id="is group hidden",
@@ -95,7 +101,7 @@ def _test_table_row_to_markdown_parameters():
                     "path-1",
                     "path-2",
                 ),
-                navlink=types_.Navlink(title="title 2", link=None),
+                navlink=factories.NavlinkFactory(title="title 2", link=None),
             ),
             "| 2 | path-1-path-2 | [title 2]() |",
             id="is group",

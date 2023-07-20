@@ -37,9 +37,9 @@ def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=None),
-            new=src_types.Navlink(title="title 2", link=None),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=None),
+            new=factories.NavlinkFactory(title="title 2", link=None),
         ),
         content_change=None,
     )
@@ -77,9 +77,9 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
             server=(server_content := "content 1\n"),
@@ -128,9 +128,54 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
+        ),
+        content_change=src_types.ContentChange(
+            server=(content := "content 1"), local=content, base=None
+        ),
+    )
+    dry_run = False
+
+    returned_report = action._update(
+        action=update_action, discourse=mocked_discourse, dry_run=dry_run
+    )
+
+    assert_substrings_in_string(
+        (f"action: {update_action}", f"dry run: {dry_run}", content),
+        caplog.text,
+    )
+    mocked_discourse.update_topic.assert_not_called()
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink == update_action.navlink_change.new
+    assert returned_report.location == url
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
+
+
+def test__update_file_navlink_hidden_change(caplog: pytest.LogCaptureFixture):
+    """
+    arrange: given update action for a file where only the navlink hidden has changed and mocked
+        discourse and the content missing from the default branch
+    act: when action is passed to _update with dry_run False
+    assert: then no topic is updated, the action is logged and the expected table row is returned.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
+    content: str
+    update_action = src_types.UpdateAction(
+        level=(level := 1),
+        path=(path := ("path 1",)),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(
+                title=(title := "title 1"), link=(link := "link 1"), hidden=False
+            ),
+            new=factories.NavlinkFactory(title=title, link=link, hidden=True),
         ),
         content_change=src_types.ContentChange(
             server=(content := "content 1"), local=content, base=None
@@ -172,9 +217,9 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
             server=(server_content := "content 1"),
@@ -246,9 +291,9 @@ def test__update_file_navlink_content_change_conflict(
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=content_change,
     )
@@ -296,9 +341,9 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     update_action = src_types.UpdateAction(
         level=(level := 1),
         path=(path := ("path 1",)),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
             server=(server_content := "line 1a\nline 2\nline 3\n"),
@@ -346,9 +391,9 @@ def test__update_file_navlink_content_change_error():
     update_action = src_types.UpdateAction(
         level=1,
         path=("path 1",),
-        navlink_change=src_types.NavlinkChange(
-            old=src_types.Navlink(title="title 1", link=(link := "link 1")),
-            new=src_types.Navlink(title="title 2", link=link),
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=None,
     )

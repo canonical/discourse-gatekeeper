@@ -85,7 +85,7 @@ def _create(
     table_row = types_.TableRow(
         level=action.level,
         path=action.path,
-        navlink=types_.Navlink(title=action.navlink_title, link=url),
+        navlink=types_.Navlink(title=action.navlink_title, link=url, hidden=action.navlink_hidden),
     )
     return types_.ActionReport(table_row=table_row, location=url, result=result, reason=reason)
 

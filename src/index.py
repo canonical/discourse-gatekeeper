@@ -135,7 +135,6 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             - When an item is malformed.
             - When the first item has leading whitespace.
     """
-    match = _ITEM_PATTERN.match(line)
     hidden = False
     if not (match := _ITEM_PATTERN.match(line)):
         match = _HIDDEN_ITEM_PATTERN.match(line)
@@ -350,6 +349,7 @@ def _calculate_contents_hierarchy(
                 reference_title=item.reference_title,
                 reference_value=item.reference_value,
                 rank=item.rank,
+                hidden=item.hidden,
             )
             # Process directory contents
             if (

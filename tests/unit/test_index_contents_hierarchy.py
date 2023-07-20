@@ -339,6 +339,24 @@ def _test__calculate_contents_hierarchy_parameters():
         pytest.param(
             (
                 item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value := "file_1.md"), hidden=True
+                ),
+            ),
+            ("file",),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item.reference_title,
+                    reference_value=value,
+                    rank=item.rank,
+                    hidden=True,
+                ),
+            ),
+            id="single file hidden",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
                     whitespace_count=0, reference_value=(value := "file_1.MD")
                 ),
             ),

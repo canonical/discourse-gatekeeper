@@ -376,7 +376,7 @@ def test__check_table_row_write_permission_group():
     """
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     table_row = types_.TableRow(
-        level=1, path=("path 1",), navlink=types_.Navlink(title="title 1", link=None)
+        level=1, path=("path 1",), navlink=factories.NavlinkFactory(title="title 1", link=None)
     )
 
     returned_table_row = navigation_table._check_table_row_write_permission(
@@ -401,7 +401,7 @@ def test__check_table_row_write_permission_page_error():
             table_row=types_.TableRow(
                 level=1,
                 path=("path 1",),
-                navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
+                navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
             ),
             discourse=mocked_discourse,
         )
@@ -424,7 +424,7 @@ def test__check_table_row_write_permission_page_false():
             table_row=types_.TableRow(
                 level=1,
                 path=("path 1",),
-                navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
+                navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
             ),
             discourse=mocked_discourse,
         )
@@ -443,7 +443,7 @@ def test__check_table_row_write_permission_page_true():
     table_row = types_.TableRow(
         level=1,
         path=("path 1",),
-        navlink=types_.Navlink(title="title 1", link=(link := "link 1")),
+        navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
     )
 
     returned_table_row = navigation_table._check_table_row_write_permission(
