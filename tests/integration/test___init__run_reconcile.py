@@ -653,7 +653,7 @@ async def test_run_hidden(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
-    assert (urls := tuple(urls_with_actions)) == (doc_url, alt_doc_url, index_url)
+    assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
     assert_substrings_in_string(chain(urls, ("Delete", "Update", "'success'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content in index_topic

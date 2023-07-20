@@ -153,7 +153,7 @@ def generate_table_row(lines: typing.Sequence[str]) -> typing.Iterator[types_.Ta
         parsed TableRow object, representing the row of the table
     """
     level = 0
-    default_level = 0
+    default_level = 1
     path_components: tuple[str, ...] = ()
 
     for line in lines:

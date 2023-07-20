@@ -541,7 +541,7 @@ def _test_from_page_parameters():
             "|level|path|navlink|\n|-|-|-|\n||a|[b](c)|",
             (
                 factories.TableRowFactory(
-                    level=0,
+                    level=1,
                     path=("a",),
                     navlink=factories.NavlinkFactory(title="b", link="c", hidden=True),
                 ),
