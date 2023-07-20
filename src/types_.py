@@ -120,7 +120,7 @@ class PathInfo(typing.NamedTuple):
         navlink_title: The title of the navlink.
         alphabetical_rank: The rank of the path info based on alphabetically sorting all relevant
             path infos.
-        hidden: Whether the item should be displayed on the navigation table
+        navlink_hidden: Whether the item should be displayed on the navigation table
     """
 
     local_path: Path
@@ -156,7 +156,6 @@ class TableRow(typing.NamedTuple):
         path: The a unique string identifying the row.
         navlink: The title and relative URL to the documentation page.
         is_group: Whether the row is the parent of zero or more other rows.
-        hidden: Whether the item should be displayed on the navigation table.
     """
 
     level: Level

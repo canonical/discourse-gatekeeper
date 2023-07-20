@@ -10,8 +10,6 @@ from collections.abc import Iterable
 from enum import Enum, auto
 from pathlib import Path
 
-from more_itertools import peekable
-
 from .constants import (
     DOC_FILE_EXTENSION,
     DOCUMENTATION_FOLDER_NAME,
