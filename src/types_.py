@@ -128,7 +128,7 @@ class PathInfo(typing.NamedTuple):
     table_path: TablePath
     navlink_title: NavlinkTitle
     alphabetical_rank: int
-    hidden: bool = False
+    navlink_hidden: bool = False
 
 
 PathInfoLookup = dict[TablePath, PathInfo]

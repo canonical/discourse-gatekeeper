@@ -95,7 +95,7 @@ def _contents_index_iter(
         # Update the navlink title based on the contents index
         item_path_info_dict = item_path_info._asdict()
         item_path_info_dict["navlink_title"] = item.reference_title
-        item_path_info_dict["hidden"] = item.hidden
+        item_path_info_dict["navlink_hidden"] = item.hidden
         yield types_.PathInfo(**item_path_info_dict)
         sort_data.local_path_yielded[item_local_path] = True
 

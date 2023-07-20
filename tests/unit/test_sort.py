@@ -63,7 +63,7 @@ def _test_using_contents_index_parameters():
         pytest.param(
             (
                 path_info := factories.PathInfoFactory(
-                    local_path=(path_1 := "file_1.md"), hidden=False
+                    local_path=(path_1 := "file_1.md"), navlink_hidden=False
                 ),
             ),
             (
@@ -75,7 +75,7 @@ def _test_using_contents_index_parameters():
             (
                 change_path_info_attrs(
                     path_info=factories.PathInfoFactory(
-                        **(path_info._asdict() | {"hidden": True})
+                        **(path_info._asdict() | {"navlink_hidden": True})
                     ),
                     navlink_title=item.reference_title,
                 ),

@@ -47,7 +47,7 @@ class PathInfoFactory(
     table_path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     alphabetical_rank = factory.Sequence(lambda n: n)
-    hidden = False
+    navlink_hidden = False
 
 
 class ActionReportFactory(
