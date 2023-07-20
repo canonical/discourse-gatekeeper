@@ -17,7 +17,10 @@ from .. import factories
 from .helpers import assert_substrings_in_string
 
 
-def test__local_only_file(tmp_path: Path):
+@pytest.mark.parametrize(
+    "hidden", [pytest.param(False, id="not hidden"), pytest.param(True, id="hidden")]
+)
+def test__local_only_file(tmp_path: Path, hidden: bool):
     """
     arrange: given path info with a file
     act: when _local_only is called with the path info
@@ -25,7 +28,7 @@ def test__local_only_file(tmp_path: Path):
     """
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
-    path_info = factories.PathInfoFactory(local_path=path)
+    path_info = factories.PathInfoFactory(local_path=path, navlink_hidden=hidden)
 
     returned_action = reconcile._local_only(path_info=path_info)
 
@@ -34,6 +37,7 @@ def test__local_only_file(tmp_path: Path):
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
     assert returned_action.content == content
+    assert returned_action.navlink_hidden == hidden
 
 
 def test__local_only_directory(tmp_path: Path):
@@ -52,6 +56,7 @@ def test__local_only_directory(tmp_path: Path):
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
     assert returned_action.content is None
+    assert returned_action.navlink_hidden is False
 
 
 @pytest.mark.parametrize(
@@ -368,6 +373,52 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
 
 
 @mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clients):
+    """
+    arrange: given path info with a file and table row with different navlink hidden and discourse
+        client that returns the same content as in the file
+    act: when _local_and_server is called with the path info and table row
+    assert: then an update action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
+    path.write_text(content := "content 1", encoding="utf-8")
+    path_info = factories.PathInfoFactory(
+        local_path=path, navlink_title=(title := "title 1"), navlink_hidden=True
+    )
+    mocked_clients.discourse.retrieve_topic.return_value = content
+    mock_get_file.return_value = content
+    navlink = types_.Navlink(title=title, link=(navlink_link := "link 1"))
+    table_row = types_.TableRow(
+        level=path_info.level, path=path_info.table_path, navlink=navlink, hidden=False
+    )
+
+    (returned_action,) = reconcile._local_and_server(
+        path_info=path_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert isinstance(returned_action, types_.UpdateAction)
+    assert returned_action.level == path_info.level
+    assert returned_action.path == path_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_action.navlink_change.old == navlink  # type: ignore
+    assert returned_action.navlink_change.new == types_.Navlink(  # type: ignore
+        title=path_info.navlink_title, link=navlink_link, hidden=True
+    )
+    assert returned_action.content_change.server == content  # type: ignore
+    assert returned_action.content_change.local == content  # type: ignore
+    mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
+    )
+
+
+@mock.patch("src.repository.Client.get_file_content_from_tag")
 def test__local_and_server_directory_same(mock_get_file, mocked_clients):
     """
     arrange: given path info with a directory and table row with no changes
@@ -430,7 +481,10 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-def test__local_and_server_directory_to_file(mocked_clients):
+@pytest.mark.parametrize(
+    "hidden", [pytest.param(False, id="not hidden"), pytest.param(True, id="hidden")]
+)
+def test__local_and_server_directory_to_file(mocked_clients, hidden: bool):
     """
     arrange: given path info with a file and table row with a group
     act: when _local_and_server is called with the path info and table row
@@ -440,8 +494,8 @@ def test__local_and_server_directory_to_file(mocked_clients):
 
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
-    path_info = factories.PathInfoFactory(local_path=path)
-    navlink = types_.Navlink(title=path_info.navlink_title, link=None)
+    path_info = factories.PathInfoFactory(local_path=path, navlink_hidden=hidden)
+    navlink = types_.Navlink(title=path_info.navlink_title, link=None, hidden=False)
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
@@ -456,6 +510,7 @@ def test__local_and_server_directory_to_file(mocked_clients):
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink_title == path_info.navlink_title  # type: ignore
+    assert returned_action.navlink_hidden == path_info.navlink_hidden  # type: ignore
     assert returned_action.content == content  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
