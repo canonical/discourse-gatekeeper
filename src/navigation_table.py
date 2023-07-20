@@ -163,9 +163,9 @@ def generate_table_row(lines: typing.Sequence[str]) -> typing.Iterator[types_.Ta
             prefix = path_components[: len(path_components) - (level - row.level) - 1]
             path_components = prefix + (row.path[0].removeprefix("-".join(prefix) + "-"),)
             level = row.level
-            # Change the default level to be the last found item level unless it is a directory in
+            # Change the default level to be the last found item level unless it is a group in
             # which case assume the next item should be nested. Used for hidden items which do not
             # have a level of their own.
-            default_level = row.level if row.navlink.link is not None else row.level + 1
+            default_level = row.level if not row.is_group else row.level + 1
 
             yield types_.TableRow(row.level, path_components, row.navlink)
