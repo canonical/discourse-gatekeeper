@@ -1,11 +1,11 @@
 name: Integration Tests
 
 on:
-  pull_request:
+  push:
 
 jobs:
   integration-tests:
-    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
+    uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@do-no-tail-if-charm-artifact-not-present
     secrets: inherit
     with:
       modules: '["discourse", "reconcile", "conflict", "migrate"]'
