@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Integration tests for running the reconcile portion of the action."""
+"""Integration tests for running the reconcile action."""
 
 # This test is fairly complex as it simulates sequential action runs
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
