@@ -463,7 +463,7 @@ async def test_run_hidden(
         4. alternate documentation page created
         5. documentation and alternate documentation page removed
     """
-    document_name = "name 1"
+    document_name = "hidden name 1"
     caplog.set_level(logging.INFO)
 
     repository_client = Client(Repo(repository_path), mock_github_repo)
