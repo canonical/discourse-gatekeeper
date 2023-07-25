@@ -496,7 +496,7 @@ async def test_run_hidden(
     (index_file := docs_dir / "index.md").write_text(
         f"""{(index_content := "index content 1")}
 # contents
-- [{(doc_title := "doc title")}]({doc_file.relative_to(docs_dir)})
+- [{(doc_title := "hidden doc title")}]({doc_file.relative_to(docs_dir)})
 """,
         encoding="utf-8",
     )
@@ -599,7 +599,7 @@ async def test_run_hidden(
         f"""{(index_content)}
 # contents
 <!-- - [{doc_title}]({doc_file.relative_to(docs_dir)}) -->
-<!-- - [{(alt_doc_title := "alt doc title")}]({alt_doc_file.relative_to(docs_dir)}) -->
+<!-- - [{(alt_doc_title := "hidden alt doc title")}]({alt_doc_file.relative_to(docs_dir)}) -->
 """,
         encoding="utf-8",
     )

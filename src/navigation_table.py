@@ -75,6 +75,7 @@ def _line_to_row(line: str, default_level: int) -> types_.TableRow:
     navlink_title = match.group(3)
     navlink_link = match.group(4)
 
+    # Row is marked as hidden if it doesn't have a level
     return types_.TableRow(
         level=level,
         path=path,
