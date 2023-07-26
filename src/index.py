@@ -14,6 +14,7 @@ from .constants import (
     DOC_FILE_EXTENSION,
     DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
+    NAVIGATION_HEADING,
     NAVIGATION_TABLE_START,
 )
 from .discourse import Discourse
@@ -94,8 +95,11 @@ def contents_from_page(page: str) -> str:
     Returns:
         Index file contents.
     """
-    contents = page.split(NAVIGATION_TABLE_START)
-    return contents[0]
+    return "\n".join(
+        itertools.takewhile(
+            lambda line: line.lower() != f"# {NAVIGATION_HEADING.lower()}", page.splitlines()
+        )
+    ).strip()
 
 
 class _ParsedListItem(typing.NamedTuple):
