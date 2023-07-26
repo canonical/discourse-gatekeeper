@@ -148,12 +148,18 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
             id="page with content and navigation header",
         ),
         pytest.param(
-            f"{(content := 'Page content')}\n# {constants.NAVIGATION_HEADING.lower()}\nnavigation content",
+            (
+                f"{(content := 'Page content')}\n# {constants.NAVIGATION_HEADING.lower()}\n"
+                "navigation content"
+            ),
             content,
             id="page with content and navigation header lower case",
         ),
         pytest.param(
-            f"{(content := 'Page content')}\n# {constants.NAVIGATION_HEADING.upper()}\nnavigation content",
+            (
+                f"{(content := 'Page content')}\n# {constants.NAVIGATION_HEADING.upper()}\n"
+                "navigation content"
+            ),
             content,
             id="page with content and navigation header upper case",
         ),

@@ -760,7 +760,7 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
     )
     index_content = """Content header lorem.
 
-    Content body.\n"""
+    Content body."""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
     | 1 | their-path-1 | [empty-navlink]() |
     | 2 | their-file-1 | [file-navlink](/file-navlink) |"""

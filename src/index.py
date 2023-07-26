@@ -15,7 +15,6 @@ from .constants import (
     DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
     NAVIGATION_HEADING,
-    NAVIGATION_TABLE_START,
 )
 from .discourse import Discourse
 from .exceptions import DiscourseError, InputError, ServerError
@@ -99,7 +98,7 @@ def contents_from_page(page: str) -> str:
         itertools.takewhile(
             lambda line: line.lower() != f"# {NAVIGATION_HEADING.lower()}", page.splitlines()
         )
-    ).strip()
+    )
 
 
 class _ParsedListItem(typing.NamedTuple):
