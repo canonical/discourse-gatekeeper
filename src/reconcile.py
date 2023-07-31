@@ -29,6 +29,7 @@ def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
         path=path_info.table_path,
         navlink_title=path_info.navlink_title,
         content=path_info.local_path.read_text() if path_info.local_path.is_file() else None,
+        navlink_hidden=path_info.navlink_hidden,
     )
 
 
@@ -111,14 +112,16 @@ def _local_and_server_dir_local_group_server(
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
                 old=table_row.navlink,
-                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+                new=types_.Navlink(
+                    title=path_info.navlink_title, link=table_row.navlink.link, hidden=False
+                ),
             ),
             content_change=None,
         ),
     )
 
 
-def _local_and_server_file_local_group_server(
+def _local_and_server_dir_local_page_server(
     path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
 ) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
     """Handle the case where the item is a file locally and a grouping on the server.
@@ -156,6 +159,7 @@ def _local_and_server_file_local_group_server(
             path=path_info.table_path,
             navlink_title=path_info.navlink_title,
             content=None,
+            navlink_hidden=False,
         ),
     )
 
@@ -187,7 +191,11 @@ def _local_and_server_file_local_page_server(
     local_content = path_info.local_path.read_text(encoding="utf-8").strip()
     server_content = _get_server_content(table_row=table_row, discourse=clients.discourse)
 
-    if server_content == local_content and table_row.navlink.title == path_info.navlink_title:
+    if (
+        server_content == local_content
+        and table_row.navlink.title == path_info.navlink_title
+        and table_row.navlink.hidden == path_info.navlink_hidden
+    ):
         return (
             types_.NoopAction(
                 level=path_info.level,
@@ -221,7 +229,11 @@ def _local_and_server_file_local_page_server(
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
                 old=table_row.navlink,
-                new=types_.Navlink(title=path_info.navlink_title, link=table_row.navlink.link),
+                new=types_.Navlink(
+                    title=path_info.navlink_title,
+                    link=table_row.navlink.link,
+                    hidden=path_info.navlink_hidden,
+                ),
             ),
             content_change=types_.ContentChange(
                 base=base_content, server=server_content, local=local_content
@@ -270,7 +282,7 @@ def _local_and_server(
 
     # Is a directory locally and a page on the server
     if path_info.local_path.is_dir():
-        return _local_and_server_file_local_group_server(
+        return _local_and_server_dir_local_page_server(
             path_info=path_info, table_row=table_row, clients=clients
         )
 
@@ -284,6 +296,7 @@ def _local_and_server(
                 path=path_info.table_path,
                 navlink_title=path_info.navlink_title,
                 content=path_info.local_path.read_text(),
+                navlink_hidden=path_info.navlink_hidden,
             ),
         )
 

@@ -120,6 +120,7 @@ class PathInfo(typing.NamedTuple):
         navlink_title: The title of the navlink.
         alphabetical_rank: The rank of the path info based on alphabetically sorting all relevant
             path infos.
+        navlink_hidden: Whether the item should be displayed on the navigation table
     """
 
     local_path: Path
@@ -127,6 +128,7 @@ class PathInfo(typing.NamedTuple):
     table_path: TablePath
     navlink_title: NavlinkTitle
     alphabetical_rank: int
+    navlink_hidden: bool
 
 
 PathInfoLookup = dict[TablePath, PathInfo]
@@ -138,10 +140,12 @@ class Navlink(typing.NamedTuple):
     Attrs:
         title: The title of the documentation page.
         link: The relative URL to the documentation page or None if there is no link.
+        hidden: Whether the item should be displayed on the navigation table.
     """
 
     title: NavlinkTitle
     link: str | None
+    hidden: bool
 
 
 class TableRow(typing.NamedTuple):
@@ -169,8 +173,9 @@ class TableRow(typing.NamedTuple):
         Returns:
             The line in the navigation table.
         """
+        level = f" {self.level} " if not self.navlink.hidden else " "
         return (
-            f"| {self.level} | {'-'.join(self.path)} | "
+            f"|{level}| {'-'.join(self.path)} | "
             f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
         )
 
@@ -186,6 +191,7 @@ class CreateAction:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_title: The title of the navlink.
+        navlink_hidden: Whether the item should be displayed on the navigation table.
         content: The documentation content, is None for directories.
     """
 
@@ -193,6 +199,7 @@ class CreateAction:
     path: TablePath
     navlink_title: NavlinkTitle
     content: Content | None
+    navlink_hidden: bool
 
 
 @dataclasses.dataclass
@@ -413,9 +420,11 @@ class IndexContentsListItem(typing.NamedTuple):
         reference_title: The name of the reference
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list at any hierarchy
+        hidden: Whether the item should be displayed on the navigation table
     """
 
     hierarchy: int
     reference_title: str
     reference_value: str
     rank: int
+    hidden: bool

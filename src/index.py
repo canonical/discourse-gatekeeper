@@ -30,6 +30,8 @@ _REFERENCE_VALUE = r"\((.*)\)"
 _REFERENCE = rf"({_REFERENCE_TITLE}{_REFERENCE_VALUE})"
 _ITEM = rf"^{_WHITESPACE}{_LEADER}\s*{_REFERENCE}\s*$"
 _ITEM_PATTERN = re.compile(_ITEM)
+_HIDDEN_ITEM = _ITEM.replace(r"^", r"^<!-- ").replace(r"$", r" -->$")
+_HIDDEN_ITEM_PATTERN = re.compile(_HIDDEN_ITEM)
 
 
 def _read_docs_index(base_path: Path) -> str | None:
@@ -109,12 +111,14 @@ class _ParsedListItem(typing.NamedTuple):
         reference_title: The name of the reference
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list
+        hidden: Whether the item should be displayed on the navigation table
     """
 
     whitespace_count: int
     reference_title: str
     reference_value: str
     rank: int
+    hidden: bool
 
 
 def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
@@ -132,7 +136,10 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             - When an item is malformed.
             - When the first item has leading whitespace.
     """
-    match = _ITEM_PATTERN.match(line)
+    hidden = False
+    if not (match := _ITEM_PATTERN.match(line)):
+        match = _HIDDEN_ITEM_PATTERN.match(line)
+        hidden = True
 
     if match is None:
         raise InputError(
@@ -156,6 +163,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
         reference_title=reference_title,
         reference_value=reference_value,
         rank=rank,
+        hidden=hidden,
     )
 
 
@@ -251,6 +259,7 @@ def _check_contents_item(
             - An item has more whitespace than a previous item and it is not following a directory.
             - A nested item is not immediately within the path of its parent.
             - An item isn't a file nor directory.
+            - If an item is hidden and is a directory.
     """
     # Check that the whitespace count matches the expectation
     if item.whitespace_count > max_whitespace:
@@ -259,10 +268,15 @@ def _check_contents_item(
             f"{item=!r}, expected whitespace count: {max_whitespace!r}"
         )
 
+    # Check whether item is hidden and a directory
+    item_path = docs_path / Path(item.reference_value)
+    if item.hidden and item_path.is_dir():
+        raise InputError(f"A hidden item is a directory. {item=!r}")
+
     # Check that the next item is within the directory
-    item_path = Path(item.reference_value)
+    item_relative_path = Path(item.reference_value)
     try:
-        item_to_aggregate_path = item_path.relative_to(aggregate_dir)
+        item_to_aggregate_path = item_relative_path.relative_to(aggregate_dir)
     except ValueError as exc:
         raise InputError(
             "A nested item is a reference to a path that is not within the directory of its "
@@ -277,7 +291,7 @@ def _check_contents_item(
         )
 
     # Check that if the item is a file, it has the correct extension
-    if (item_path := docs_path / Path(item.reference_value)).is_file():
+    if item_path.is_file():
         if item_path.suffix.lower() != DOC_FILE_EXTENSION:
             raise InputError(
                 "An item in the contents list is not of the expected file type. "
@@ -336,6 +350,7 @@ def _calculate_contents_hierarchy(
                 reference_title=item.reference_title,
                 reference_value=item.reference_value,
                 rank=item.rank,
+                hidden=item.hidden,
             )
             # Process directory contents
             if (

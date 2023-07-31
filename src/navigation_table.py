@@ -22,7 +22,7 @@ _TABLE_HEADER_PATTERN = re.compile(_TABLE_HEADER_REGEX, re.IGNORECASE)
 _TABLE_PATTERN = re.compile(rf"[\s\S]*{_TABLE_HEADER_REGEX}[\s\S]*\|?", re.IGNORECASE)
 _FILLER_ROW_REGEX_COLUMN = rf"{_WHITESPACE}-+{_WHITESPACE}\|"
 _FILLER_ROW_PATTERN = re.compile(rf"{_WHITESPACE}\|{_FILLER_ROW_REGEX_COLUMN * 3}{_WHITESPACE}")
-_LEVEL_REGEX = rf"{_WHITESPACE}(\d+){_WHITESPACE}"
+_LEVEL_REGEX = rf"{_WHITESPACE}(\d+)?{_WHITESPACE}"
 _PATH_REGEX = rf"{_WHITESPACE}([\w-]+){_WHITESPACE}"
 _PUNCTUATION = string.punctuation.replace("/", "\\/")
 _NAVLINK_TITLE_REGEX = rf"[\w\- {_PUNCTUATION}]+?"
@@ -52,11 +52,12 @@ def _filter_line(line: str) -> bool:
     return True
 
 
-def _line_to_row(line: str) -> types_.TableRow:
+def _line_to_row(line: str, default_level: int) -> types_.TableRow:
     """Parse a markdown table line.
 
     Args:
         line: The line to process.
+        default_level: The level to use if the row doesn't have one.
 
     Returns:
         The parsed row.
@@ -69,15 +70,18 @@ def _line_to_row(line: str) -> types_.TableRow:
     if match is None:
         raise NavigationTableParseError(f"Invalid table row, {line=!r}")
 
-    level = int(match.group(1))
+    level = int(match.group(1)) if match.group(1) is not None else default_level
     path: types_.TablePath = (match.group(2),)
     navlink_title = match.group(3)
     navlink_link = match.group(4)
 
+    # Row is marked as hidden if it doesn't have a level
     return types_.TableRow(
         level=level,
         path=path,
-        navlink=types_.Navlink(title=navlink_title, link=navlink_link or None),
+        navlink=types_.Navlink(
+            title=navlink_title, link=navlink_link or None, hidden=match.group(1) is None
+        ),
     )
 
 
@@ -150,14 +154,19 @@ def generate_table_row(lines: typing.Sequence[str]) -> typing.Iterator[types_.Ta
         parsed TableRow object, representing the row of the table
     """
     level = 0
+    default_level = 1
     path_components: tuple[str, ...] = ()
 
     for line in lines:
         if not _filter_line(line):
-            row = _line_to_row(line)
+            row = _line_to_row(line, default_level=default_level)
 
             prefix = path_components[: len(path_components) - (level - row.level) - 1]
             path_components = prefix + (row.path[0].removeprefix("-".join(prefix) + "-"),)
             level = row.level
+            # Change the default level to be the last found item level unless it is a group in
+            # which case assume the next item should be nested. Used for hidden items which do not
+            # have a level of their own.
+            default_level = row.level if not row.is_group else row.level + 1
 
             yield types_.TableRow(row.level, path_components, row.navlink)

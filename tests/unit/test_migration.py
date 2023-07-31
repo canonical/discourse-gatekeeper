@@ -601,7 +601,9 @@ def test__migrate_document_fail(tmp_path: Path):
     table_row = types_.TableRow(
         level=(level := 1),
         path=(path_str := ("empty-group-path",)),
-        navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
+        navlink=factories.NavlinkFactory(
+            title=(navlink_title := "title 1"), link=(link_str := "link 1")
+        ),
     )
     document_meta = types_.DocumentMeta(
         path=(path := Path(*path_str)), table_row=table_row, link=link_str
@@ -633,7 +635,9 @@ def test__migrate_document(tmp_path: Path):
     table_row = types_.TableRow(
         level=(level := 1),
         path=(path_str := ("empty-directory",)),
-        navlink=types_.Navlink(title=(navlink_title := "title 1"), link=(link_str := "link 1")),
+        navlink=factories.NavlinkFactory(
+            title=(navlink_title := "title 1"), link=(link_str := "link 1")
+        ),
     )
     document_meta = types_.DocumentMeta(
         path=(path := Path(*path_str)), table_row=table_row, link=link_str

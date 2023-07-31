@@ -215,6 +215,12 @@ added in alphabetical order after any items that are listed. This is to ensure
 backwards compatibility. References are checked for validity. A link to a file
 or directory that does not exist will result in an error.
 
+### Hidden Items
+
+Items on the contents index can be commented out which will mean the item on the
+navigation table won't have a level. This will mean that the item is not shown
+on the navigation but can still be used in links.
+
 ### Discourse Translation
 
 * The list hierarchy indicates the level on the navigation table, this is

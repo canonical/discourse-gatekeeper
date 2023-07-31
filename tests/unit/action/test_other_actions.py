@@ -15,6 +15,7 @@ import pytest
 from src import action, discourse, exceptions
 from src import types_ as src_types
 
+from ... import factories
 from ..helpers import assert_substrings_in_string
 
 
@@ -33,7 +34,7 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = src_types.CreateAction(
+    create_action = factories.CreateActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -68,7 +69,7 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = src_types.CreateAction(
+    create_action = factories.CreateActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -100,7 +101,7 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
-    create_action = src_types.CreateAction(
+    create_action = factories.CreateActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -125,7 +126,10 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     assert returned_report.reason == str(error)
 
 
-def test__create_file(caplog: pytest.LogCaptureFixture):
+@pytest.mark.parametrize(
+    "hidden", [pytest.param(False, id="not hidden"), pytest.param(True, id="hidden")]
+)
+def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
     """
     arrange: given create action for a file and mocked discourse
     act: when action is passed to _create with dry_run False
@@ -134,11 +138,12 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
-    create_action = src_types.CreateAction(
+    create_action = factories.CreateActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
         content=(content := "content 1"),
+        navlink_hidden=hidden,
     )
 
     returned_report = action._create(
@@ -154,6 +159,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
     assert returned_report.table_row.path == path
     assert returned_report.table_row.navlink.title == navlink_title
     assert returned_report.table_row.navlink.link == url
+    assert returned_report.table_row.navlink.hidden == hidden
     assert returned_report.location == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
@@ -168,7 +174,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
             src_types.NoopAction(
                 level=(level := 1),
                 path=(path := ("path 1",)),
-                navlink=(navlink := src_types.Navlink(title="title 1", link=None)),
+                navlink=(navlink := factories.NavlinkFactory(title="title 1", link=None)),
                 content=None,
             ),
             src_types.TableRow(level=level, path=path, navlink=navlink),
@@ -178,7 +184,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture):
             src_types.NoopAction(
                 level=(level := 1),
                 path=(path := ("path 1",)),
-                navlink=(navlink := src_types.Navlink(title="title 1", link="link 1")),
+                navlink=(navlink := factories.NavlinkFactory(title="title 1", link="link 1")),
                 content="content 1",
             ),
             src_types.TableRow(level=level, path=path, navlink=navlink),
@@ -257,7 +263,7 @@ def test__delete_not_delete(
     delete_action = src_types.DeleteAction(
         level=1,
         path=("path 1",),
-        navlink=src_types.Navlink(title="title 1", link=navlink_link),
+        navlink=factories.NavlinkFactory(title="title 1", link=navlink_link),
         content="content 1",
     )
 
@@ -293,7 +299,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     delete_action = src_types.DeleteAction(
         level=1,
         path=("path 1",),
-        navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
+        navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
 
@@ -327,7 +333,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     delete_action = src_types.DeleteAction(
         level=1,
         path=("path 1",),
-        navlink=src_types.Navlink(title="title 1", link=(link := "link 1")),
+        navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
         content="content 1",
     )
 
@@ -352,7 +358,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     "test_action, expected_return_type",
     [
         pytest.param(
-            src_types.CreateAction(
+            factories.CreateActionFactory(
                 level=1,
                 path=("path 1",),
                 navlink_title="title 1",
@@ -365,7 +371,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             src_types.NoopAction(
                 level=1,
                 path=("path 1",),
-                navlink=src_types.Navlink(title="title 1", link=None),
+                navlink=factories.NavlinkFactory(title="title 1", link=None),
                 content=None,
             ),
             src_types.TableRow,
@@ -375,9 +381,9 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             src_types.UpdateAction(
                 level=1,
                 path=("path 1",),
-                navlink_change=src_types.NavlinkChange(
-                    old=src_types.Navlink(title="title 1", link=None),
-                    new=src_types.Navlink(title="title 1", link=None),
+                navlink_change=factories.NavlinkChangeFactory(
+                    old=factories.NavlinkFactory(title="title 1", link=None),
+                    new=factories.NavlinkFactory(title="title 1", link=None),
                 ),
                 content_change=None,
             ),
@@ -388,7 +394,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             src_types.DeleteAction(
                 level=1,
                 path=("path 1",),
-                navlink=src_types.Navlink(title="title 1", link=None),
+                navlink=factories.NavlinkFactory(title="title 1", link=None),
                 content=None,
             ),
             types.NoneType,
@@ -639,7 +645,9 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                     level=(level := 1),
                     path=(path := ("path 1",)),
                     navlink=(
-                        navlink := src_types.Navlink(title="title 1", link=(link := "link 1"))
+                        navlink := factories.NavlinkFactory(
+                            title="title 1", link=(link := "link 1")
+                        )
                     ),
                     content="content 1",
                 ),
@@ -660,7 +668,9 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                     level=(level_1 := 1),
                     path=(path_1 := ("path 1",)),
                     navlink=(
-                        navlink_1 := src_types.Navlink(title="title 1", link=(link_1 := "link 1"))
+                        navlink_1 := factories.NavlinkFactory(
+                            title="title 1", link=(link_1 := "link 1")
+                        )
                     ),
                     content="content 1",
                 ),
@@ -668,7 +678,9 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                     level=(level_2 := 2),
                     path=(path_2 := ("path 2",)),
                     navlink=(
-                        navlink_2 := src_types.Navlink(title="title 2", link=(link_2 := "link 2"))
+                        navlink_2 := factories.NavlinkFactory(
+                            title="title 2", link=(link_2 := "link 2")
+                        )
                     ),
                     content="content 2",
                 ),

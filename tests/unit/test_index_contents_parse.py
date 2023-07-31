@@ -174,6 +174,20 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
+<!-- - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')}) -->""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title=title_1,
+                    reference_value=value_1,
+                    rank=0,
+                    hidden=True,
+                ),
+            ),
+            id="single item hidden",
+        ),
+        pytest.param(
+            f"""# Contents
 
 - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
             (
@@ -360,7 +374,6 @@ ab. [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
         pytest.param(
             f"""# Contents
 - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})
-
 - [{(title_2 := 'title 2')}]({(value_2 := 'value 2')})
 """,
             (

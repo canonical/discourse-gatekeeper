@@ -47,45 +47,7 @@ class PathInfoFactory(
     table_path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     alphabetical_rank = factory.Sequence(lambda n: n)
-
-
-class ActionReportFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.ActionReport]  # type: ignore[misc]
-):
-    """Generate Action reports."""  # noqa: DCO060
-
-    class Meta:
-        """Configuration for factory."""  # noqa: DCO060
-
-        model = types_.ActionReport
-        abstract = False
-
-    class Params:
-        """Variable factory params for generating different status report.
-
-        Attrs:
-            is_success: flag to instantiate successful action result.
-            is_skipped: flag to instantiate skipped action result.
-            is_failed: flag to instantiate failed action result.
-            is_migrate: flag to instantiate migration action result. Generates reconcile action
-                reports by default.
-        """
-
-        is_success = factory.Trait(result=types_.ActionResult.SUCCESS, reason=None)
-        is_skipped = factory.Trait(result=types_.ActionResult.SKIP, reason="skipped")
-        is_failed = factory.Trait(result=types_.ActionResult.FAIL, reason="failed")
-        is_migrate = factory.Trait(location=factory.Sequence(lambda n: Path(f"path-{n}")))
-
-    table_row = factory.Sequence(
-        lambda n: types_.TableRow(
-            level=n,
-            path=(f"path {n}",),
-            navlink=types_.Navlink(title=f"title {n}", link=f"link {n}"),
-        )
-    )
-    location = factory.Sequence(lambda n: types_.Url(f"link-{n}"))
-    result = None
-    reason = None
+    navlink_hidden = False
 
 
 class CreateActionFactory(
@@ -103,6 +65,7 @@ class CreateActionFactory(
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_title = factory.Sequence(lambda n: f"title {n}")
     content = factory.Sequence(lambda n: f"content {n}")
+    navlink_hidden = False
 
 
 class NavlinkFactory(
@@ -118,6 +81,7 @@ class NavlinkFactory(
 
     title = factory.Sequence(lambda n: f"navlink-title-{n}")
     link = factory.Sequence(lambda n: f"navlink-{n}")
+    hidden = False
 
 
 class NoopActionFactory(
@@ -272,17 +236,52 @@ class TableRowFactory(
         """
 
         is_group = factory.Trait(
-            navlink=factory.Sequence(lambda n: types_.Navlink(f"navlink-title-{n}", link=None))
+            navlink=factory.Sequence(
+                lambda n: types_.Navlink(f"navlink-title-{n}", link=None, hidden=False)
+            )
         )
         is_document = factory.Trait(
             navlink=factory.Sequence(
-                lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}")
+                lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}", hidden=False)
             )
         )
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path-{n}",))
     navlink = factory.SubFactory(NavlinkFactory)
+
+
+class ActionReportFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.ActionReport]  # type: ignore[misc]
+):
+    """Generate Action reports."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.ActionReport
+        abstract = False
+
+    class Params:
+        """Variable factory params for generating different status report.
+
+        Attrs:
+            is_success: flag to instantiate successful action result.
+            is_skipped: flag to instantiate skipped action result.
+            is_failed: flag to instantiate failed action result.
+            is_migrate: flag to instantiate migration action result. Generates reconcile action
+                reports by default.
+        """
+
+        is_success = factory.Trait(result=types_.ActionResult.SUCCESS, reason=None)
+        is_skipped = factory.Trait(result=types_.ActionResult.SKIP, reason="skipped")
+        is_failed = factory.Trait(result=types_.ActionResult.FAIL, reason="failed")
+        is_migrate = factory.Trait(location=factory.Sequence(lambda n: Path(f"path-{n}")))
+
+    table_row = factory.SubFactory(TableRowFactory)
+    location = factory.Sequence(lambda n: types_.Url(f"link-{n}"))
+    result = None
+    reason = None
 
 
 # The attributes of these classes are generators for the attributes of the meta class
@@ -302,6 +301,7 @@ class IndexParsedListItemFactory(factory.Factory):
     reference_title = factory.Sequence(lambda n: f"reference title {n}")
     reference_value = factory.Sequence(lambda n: f"reference value {n}")
     rank = factory.Sequence(lambda n: n)
+    hidden = False
 
 
 # The attributes of these classes are generators for the attributes of the meta class
@@ -320,3 +320,4 @@ class IndexContentsListItemFactory(factory.Factory):
     reference_title = factory.Sequence(lambda n: f"reference title {n}")
     reference_value = factory.Sequence(lambda n: f"reference value {n}")
     rank = factory.Sequence(lambda n: n)
+    hidden = False
