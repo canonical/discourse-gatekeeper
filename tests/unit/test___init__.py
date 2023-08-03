@@ -17,6 +17,7 @@ from src import (  # GETTING_STARTED,
     constants,
     discourse,
     exceptions,
+    pre_flight_checks,
     run_migrate,
     run_reconcile,
     types_,
@@ -925,3 +926,52 @@ def test_run_migrate_same_content_local_and_server_open_pr(
     ]
     assert len(edit_call_args) == 1
     assert edit_call_args[0] == {"state": "closed"}
+
+
+def test_pre_flight_checks_ok(mocked_clients):
+    """
+    arrange: given a repository in a consistent state, meaning that the documentation tag is
+        part of the base_branch
+    act: when pre_flight_checks is called
+    assert: then the function returns True.
+    """
+    user_inputs = factories.UserInputsFactory()
+
+    assert pre_flight_checks(mocked_clients, user_inputs)
+
+
+def test_pre_flight_checks_ok_tag_not_exists(mocked_clients, upstream_git_repo):
+    """
+    arrange: given a repository in a consistent state with no documentation tag
+    act: when pre_flight_checks is called
+    assert: then the function returns True and a documentation tag is created.
+    """
+    mocked_clients.repository._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+    upstream_git_repo.git.tag("-d", DOCUMENTATION_TAG)
+
+    user_inputs = factories.UserInputsFactory()
+
+    assert pre_flight_checks(mocked_clients, user_inputs)
+    assert mocked_clients.repository.tag_exists(DOCUMENTATION_TAG)
+
+
+def test_pre_flight_checks_fail(mocked_clients):
+    """
+    arrange: given a repository in an inconsistent state, meaning that the documentation tag is
+        not part of the base_branch
+    act: when pre_flight_checks is called
+    assert: then the function returns False.
+    """
+    user_inputs = factories.UserInputsFactory()
+
+    repository_path = mocked_clients.repository.base_path
+
+    with mocked_clients.repository.create_branch("fake-branch").with_branch("fake-branch") as repo:
+        (repository_path / "placeholder.md").touch()
+        repo.update_branch("New commit in fake-branch", directory=None)
+        repo.tag_commit(DOCUMENTATION_TAG, repo.current_commit)
+
+    (repository_path / "placeholder-2.md").touch()
+    mocked_clients.repository.update_branch("New commit in main", directory=None)
+
+    assert not pre_flight_checks(mocked_clients, user_inputs)
