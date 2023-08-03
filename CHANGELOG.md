@@ -5,6 +5,12 @@
 ### Added
 
 - Support for defining a contents index in the `index.md` file.
+- Support for hidden items on the contentx index.
+
+### Fixed
+
+- Navigation table not getting removed if the contents was hidden using the
+  `[details=...]...[/details]` tag.
 
 ## [v0.6.0] - 2023-07-07
 
