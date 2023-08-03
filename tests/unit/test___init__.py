@@ -185,6 +185,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
             f"| 1 | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
     )
+    assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {
         page_2_url: types_.ActionResult.SUCCESS,
         page_1_url: types_.ActionResult.SUCCESS,
@@ -238,6 +239,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
             f"| | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
     )
+    assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {
         page_1_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,

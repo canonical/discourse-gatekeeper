@@ -169,6 +169,25 @@ def test_commit_in_branch_non_existing_hash(repository_client):
     assert_substrings_in_string(("not found", non_existing_hash), str(exc.value).lower())
 
 
+def test_commit_in_branch_unknown_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked local git repository that raises an exception
+    act: when is_commit_in_branch is called
+    assert: RepositoryClientError is raised.
+    """
+    err_str = "mocked error"
+    mock_git_repository = mock.MagicMock(spec=Repo)
+    mock_git_repository.git.branch.side_effect = [GitCommandError(err_str)]
+    monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.is_commit_in_branch("placeholder")
+
+    assert_substrings_in_string(("unknown error", err_str), str(exc.value).lower())
+
+
 def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
     arrange: given Client with a mocked local git repository that raises an exception
