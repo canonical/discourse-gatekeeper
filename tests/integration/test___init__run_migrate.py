@@ -19,7 +19,7 @@ from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
 from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
-from src.types_ import ActionResult, PullRequestAction
+from src.types_ import PullRequestAction
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH
@@ -124,6 +124,7 @@ async def test_run_migrate(
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
     upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
+    assert output_migrate is not None
     assert output_migrate.pull_request_url == mock_pull_request.html_url
     assert output_migrate.action == PullRequestAction.OPENED
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
@@ -152,6 +153,7 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
+    assert output_migrate is not None
     assert "test_url" in output_migrate.pull_request_url
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
@@ -171,6 +173,7 @@ async def test_run_migrate(
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
 
+    assert output_migrate is not None
     assert "test_url" in output_migrate.pull_request_url
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(

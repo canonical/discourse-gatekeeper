@@ -19,6 +19,7 @@ from pathlib import Path
 from src import GETTING_STARTED, exceptions, pre_flight_checks, run_migrate, run_reconcile, types_
 from src.clients import get_clients
 from src.constants import DEFAULT_BRANCH
+from src.types_ import ActionResult, PullRequestAction
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
@@ -56,7 +57,7 @@ def _parse_env_vars() -> types_.UserInputs:
         # Use the commit SHA if not running as a pull request
         commit_sha = os.environ["GITHUB_SHA"]
 
-    logging.info(f"Base branch: {base_branch}")
+    logging.info("Base branch: %s", base_branch)
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -73,7 +74,9 @@ def _parse_env_vars() -> types_.UserInputs:
     )
 
 
-def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
+def _serialize_for_github(
+    urls_with_actions_dict: str | dict[str, ActionResult] | PullRequestAction | typing.Any
+) -> str:
     """Serialize dictionary output into a string to be outputted to GitHub.
 
     Args:
@@ -88,13 +91,13 @@ def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
 
 
 def _write_github_output(
-    migrate: types_.MigrateOutputs | None,
-    reconcile: types_.ReconcileOutputs | None
+    migrate: types_.MigrateOutputs | None, reconcile: types_.ReconcileOutputs | None
 ) -> None:
     """Writes results produced by the action to github_output.
 
     Args:
-        urls_with_actions_dicts: list of key value pairs of link to result of action.
+        migrate: outputs of the migrate process
+        reconcile: outputs of the reconcile process
 
     Raises:
         InputError: if not running inside a github actions environment.
@@ -108,16 +111,8 @@ def _write_github_output(
         )
 
     output_dict = (
-        {
-          "index_url": reconcile.index_url,
-          "topics": reconcile.topics
-        } if reconcile else {}
-    ) | (
-        {
-            "pr_action": migrate.action,
-            "pr_link": migrate.pull_request_url
-        } if migrate else {}
-    )
+        {"index_url": reconcile.index_url, "topics": reconcile.topics} if reconcile else {}
+    ) | ({"pr_action": migrate.action, "pr_link": migrate.pull_request_url} if migrate else {})
 
     output: str = "\n".join(
         f"{key}={_serialize_for_github(value)}" for key, value in output_dict.items()

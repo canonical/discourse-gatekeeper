@@ -83,6 +83,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
+    assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
 
 
@@ -127,6 +128,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
             f"| 1 | page | [{page_content}]({page_url}) |"
         ),
     )
+    assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {
         page_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
@@ -183,7 +185,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
             f"| 1 | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
     )
-    assert returned_page_interactions == {
+    assert returned_page_interactions.topics == {
         page_2_url: types_.ActionResult.SUCCESS,
         page_1_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
@@ -236,7 +238,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
             f"| | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
     )
-    assert returned_page_interactions == {
+    assert returned_page_interactions.topics == {
         page_1_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
     }
@@ -260,6 +262,7 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_not_called()
+    assert returned_page_interactions is not None
     assert not returned_page_interactions.topics
 
 
@@ -285,6 +288,7 @@ def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients, upstre
     returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     mocked_clients.discourse.create_topic.assert_not_called()
+    assert returned_page_interactions is not None
     assert not returned_page_interactions.topics
 
 
@@ -316,6 +320,7 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
+    assert returned_page_interactions is not None
     assert not returned_page_interactions.topics
 
 
@@ -529,6 +534,7 @@ def test__run_migrate(
     )
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports is not None
     assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
     assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (
@@ -592,6 +598,7 @@ def test__run_migrate_with_pull_request(
         user_inputs=user_inputs,
     )
 
+    assert returned_migration_reports is not None
     assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
     assert returned_migration_reports.action == types_.PullRequestAction.UPDATED
 
@@ -655,6 +662,7 @@ def test__run_migrate_with_pull_request_no_modification(
         user_inputs=user_inputs,
     )
 
+    assert returned_migration_reports is not None
     assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
     assert returned_migration_reports.action == types_.PullRequestAction.UPDATED
 
@@ -691,6 +699,7 @@ def test_run_no_docs_empty_dir(mocked_clients):
         title="Name 1 Documentation Overview",
         content=f"{constants.NAVIGATION_TABLE_START.strip()}",
     )
+    assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
 
 
@@ -731,6 +740,7 @@ def test_run_no_docs_dir(
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports is not None
     assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
     assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (
@@ -786,6 +796,7 @@ def test_run_no_docs_dir_no_tag(
     )  # pylint: disable=duplicate-code
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
+    assert returned_migration_reports is not None
     assert returned_migration_reports.pull_request_url == mock_pull_request.html_url
     assert returned_migration_reports.action == types_.PullRequestAction.OPENED
     assert (

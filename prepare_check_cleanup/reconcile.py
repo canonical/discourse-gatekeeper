@@ -7,7 +7,6 @@ import argparse
 import contextlib
 import json
 import logging
-import os
 import pathlib
 from enum import Enum
 
@@ -19,10 +18,12 @@ from prepare_check_cleanup import exit_
 from src.constants import DOCUMENTATION_TAG
 from src.discourse import Discourse, create_discourse
 from src.exceptions import DiscourseError
-from src.repository import create_repository_client, Client as RepositoryClient
+from src.repository import Client as RepositoryClient
+from src.repository import create_repository_client
 
 E2E_SETUP = "origin/tests/e2e"
 E2E_BASE = "tests/base"
+
 
 class Action(str, Enum):
     """The actions the utility can take.
@@ -34,6 +35,7 @@ class Action(str, Enum):
         CHECK_DELETE_TOPICS: Check that the delete_topics e2e test succeeded.
         CHECK_DELETE: Check that the delete e2e test succeeded.
         CLEANUP: Discourse cleanup after the testing.
+        PREPARE: Preparation steps for setting the stage for the integration tests
     """
 
     CHECK_DRAFT = "check-draft"
@@ -113,21 +115,32 @@ def main() -> None:
             raise NotImplementedError(f"{args.action} has not been implemented")
 
 
-def _prepare(repository:RepositoryClient, discourse: Discourse) -> bool:
-    repository._git_repo.git.fetch("--all")
+def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
+    """Prepare the stage for the tests.
+
+    Args:
+        repository: Client repository to used
+        discourse: Dicourse client class
+
+    Returns:
+        boolean representing whether the preparation was successful.
+    """
+    repository._git_repo.git.fetch("--all")  # pylint: disable=W0212
 
     with repository.create_branch(E2E_BASE, E2E_SETUP).with_branch(E2E_BASE) as repo:
-
-        repo._git_repo.git.push("origin", "-f", repository.current_branch)
+        repo._git_repo.git.push("origin", "-f", repository.current_branch)  # pylint: disable=W0212
 
         if repository.tag_exists(DOCUMENTATION_TAG):
             logging.info("Removing tag %s", DOCUMENTATION_TAG)
-            repo._git_repo.git.tag("-d", DOCUMENTATION_TAG)
-            repo._git_repo.git.push("--delete", "origin", DOCUMENTATION_TAG)
+            repo._git_repo.git.tag("-d", DOCUMENTATION_TAG)  # pylint: disable=W0212
+            repo._git_repo.git.push(  # pylint: disable=W0212
+                "--delete", "origin", DOCUMENTATION_TAG
+            )
 
     assert discourse
 
     return True
+
 
 def _check_url_count(
     urls_with_actions: dict[str, str], expected_count: int, test_name: str

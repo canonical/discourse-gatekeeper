@@ -102,6 +102,7 @@ async def test_run_conflict(
         ),
     )
 
+    assert reconcile_output is not None
     urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 2
@@ -205,6 +206,7 @@ async def test_run_conflict(
         ),
     )
 
+    assert reconcile_output is not None
     urls_with_actions = reconcile_output.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
@@ -237,6 +239,7 @@ async def test_run_conflict(
         ),
     )
 
+    assert reconcile_output is not None
     urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 3
@@ -314,6 +317,7 @@ async def test_run_conflict(
         ),
     )
 
+    assert reconcile_output is not None
     urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 3

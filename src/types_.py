@@ -9,9 +9,9 @@ from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 Content = str
 Url = str
+
 
 class UserInputsDiscourse(typing.NamedTuple):
     """Configurable user input values used to run upload-charm-docs.
@@ -353,7 +353,6 @@ class PullRequestAction(str, Enum):
     """Result of taking an action.
 
     Attrs:
-        NOOP: No action was done on the PR.
         OPENED: A new PR has been opened.
         CLOSED: An existing PR has been closed.
         UPDATED: An existing PR has been updated.
@@ -362,8 +361,6 @@ class PullRequestAction(str, Enum):
     OPENED = "opened"
     CLOSED = "closed"
     UPDATED = "updated"
-
-
 
 
 class ActionReport(typing.NamedTuple):
@@ -454,11 +451,12 @@ class ReconcileOutputs(typing.NamedTuple):
     Attrs:
         index_url: url with the root documentation topic on Discourse
         topics: List of urls with actions
+        documentation_tag: commit sha to which the tag was created
     """
 
     index_url: Url
     topics: dict[Url, ActionResult]
-    documentation_tag: str
+    documentation_tag: str | None
 
 
 class MigrateOutputs(typing.NamedTuple):
@@ -466,9 +464,8 @@ class MigrateOutputs(typing.NamedTuple):
 
     Attrs:
         action: Action taken on the PR
-        url: url of the pull-request when relevant
+        pull_request_url: url of the pull-request when relevant
     """
 
     action: PullRequestAction
     pull_request_url: Url
-

@@ -719,7 +719,7 @@ def test_run_all(
     mocked_discourse.create_topic.return_value = (url := "url 1")
     mocked_discourse.absolute_url.side_effect = lambda url: url
 
-    index_url, returned_reports = action.run_all(
+    _, returned_reports = action.run_all(
         actions=actions,
         index=index,
         discourse=mocked_discourse,

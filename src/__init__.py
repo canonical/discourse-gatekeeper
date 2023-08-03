@@ -12,12 +12,16 @@ from . import sort as sort_module
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .clients import Clients
 from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG  # DEFAULT_BRANCH,
-from .docs_directory import read as read_docs_directory
 from .download import recreate_docs
 from .exceptions import InputError
 from .repository import DEFAULT_BRANCH_NAME
 from .types_ import (
-    ActionResult, UserInputs, PullRequestAction, ReconcileOutputs, MigrateOutputs, Url
+    ActionResult,
+    MigrateOutputs,
+    PullRequestAction,
+    ReconcileOutputs,
+    Url,
+    UserInputs,
 )
 
 GETTING_STARTED = (
@@ -101,8 +105,8 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         str(report.location): report.result
         for report in reports
         if report.location is not None
-           and report.location != DRY_RUN_NAVLINK_LINK
-           and report.location != FAIL_NAVLINK_LINK
+        and report.location != DRY_RUN_NAVLINK_LINK
+        and report.location != FAIL_NAVLINK_LINK
     }
 
     if not user_inputs.dry_run:
@@ -113,7 +117,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     return ReconcileOutputs(
         index_url=index_url,
         topics=urls_with_actions,
-        documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG)
+        documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG),
     )
 
 
@@ -156,8 +160,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
         if pull_request is not None:
             pull_request.edit(state="closed")
             return MigrateOutputs(
-                action=PullRequestAction.CLOSED,
-                pull_request_url=pull_request.html_url
+                action=PullRequestAction.CLOSED, pull_request_url=pull_request.html_url
             )
         return None
 
@@ -165,8 +168,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
         logging.info("PR not existing: creating a new one...")
         pull_request = clients.repository.create_pull_request(user_inputs.base_branch)
         return MigrateOutputs(
-            action=PullRequestAction.OPENED,
-            pull_request_url=pull_request.html_url
+            action=PullRequestAction.OPENED, pull_request_url=pull_request.html_url
         )
 
     logging.info("upload-charm-documents pull request already open at %s", pull_request.html_url)

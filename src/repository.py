@@ -533,7 +533,9 @@ class Client:  # pylint: disable=R0904
             msg = str(repo.get_summary())
             logging.info("Creating new branch with new commit: %s", msg)
             repo.update_branch(msg, force=True)
-            pull_request = _create_github_pull_request(self._github_repo, DEFAULT_BRANCH_NAME, base)
+            pull_request = _create_github_pull_request(
+                self._github_repo, DEFAULT_BRANCH_NAME, base
+            )
             logging.info("Opening new PR with community contribution: %s", pull_request.html_url)
 
         return pull_request
@@ -598,12 +600,12 @@ class Client:  # pylint: disable=R0904
                 self._git_repo.git.tag("-d", tag_name)
                 self._git_repo.git.push("--delete", "origin", tag_name)
 
-            logging.error(f"Tagging commit {commit_sha} with tag {tag_name}")
+            logging.error("Tagging commit %s with tag %s", commit_sha, tag_name)
             self._git_repo.git.tag(tag_name, commit_sha)
             self._git_repo.git.push("origin", tag_name)
 
         except GitCommandError as exc:
-            logging.error(f"Tagging commit failed because of {exc}")
+            logging.error("Tagging commit failed because of %s", exc)
             raise RepositoryClientError(f"Tagging commit failed. {exc=!r}") from exc
 
     def get_file_content_from_tag(self, path: str, tag_name: str) -> str:
@@ -664,7 +666,9 @@ class Client:  # pylint: disable=R0904
         return base64.b64decode(content_file.content).decode("utf-8")
 
 
-def _create_github_pull_request(github_repo: Repository, branch_name: str, base: str) -> PullRequest:
+def _create_github_pull_request(
+    github_repo: Repository, branch_name: str, base: str
+) -> PullRequest:
     """Create pull request using the provided branch.
 
     Args:
