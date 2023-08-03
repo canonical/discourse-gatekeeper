@@ -203,8 +203,8 @@ def test__run_reconcile_hidden_item(mocked_clients):
         page without a level for the commented out item.
     """
     mocked_clients.discourse.create_topic.side_effect = [
-        (page_1_url := "url 1"),
-        (index_url := "url 3"),
+        (page_1_url := "page 1 url"),
+        (index_url := "index url"),
     ]
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
@@ -223,12 +223,54 @@ def test__run_reconcile_hidden_item(mocked_clients):
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
         )
 
-        returned_page_interactions = run_reconcile(
-            clients=mocked_clients,
-            user_inputs=user_inputs,
-        )
+        returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
     assert mocked_clients.discourse.create_topic.call_count == 2
+    mocked_clients.discourse.create_topic.assert_any_call(
+        title="Name 1 Documentation Overview",
+        content=(
+            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"| | page-1 | [{page_1_title}]({page_1_url}) |"
+        ),
+    )
+    assert returned_page_interactions == {
+        page_1_url: types_.ActionResult.SUCCESS,
+        index_url: types_.ActionResult.SUCCESS,
+    }
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
+def test__run_reconcile_external_item(mocked_clients):
+    """
+    arrange: given metadata with name but not docs and docs folder with an external item on the
+        index
+    act: when _run_reconcile is called
+    assert: then a documentation page is created and an index page is created with a navigation
+        page with the external item.
+    """
+    mocked_clients.discourse.create_topic.side_effect = [(index_url := "url 1")]
+
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (docs_dir := repo.base_path / "docs").mkdir()
+        (docs_dir / "index.md").write_text(
+            f"""{(index_content := 'index content')}
+# contents
+- [{(page_1_title := "Page 1")}]({(page_1_url := 'https://canonical.com')})
+""",
+            encoding="utf-8",
+        )
+        repo.update_branch("new commit")
+
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
+
+        returned_page_interactions = run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+
+    assert mocked_clients.discourse.create_topic.call_count == 1
     mocked_clients.discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
