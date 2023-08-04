@@ -428,3 +428,19 @@ class IndexContentsListItem(typing.NamedTuple):
     reference_value: str
     rank: int
     hidden: bool
+
+    @property
+    def table_path(self) -> str:
+        """The table path for the item.
+
+        Returns:
+            The table path for the item.
+        """
+        if self.reference_value.lower().startswith("http"):
+            return (
+                self.reference_value.replace("//", "-")
+                .replace(":", "")
+                .replace("/", "-")
+                .replace(".", "-")
+            )
+        return self.reference_value.replace("/", "-").rsplit(".", 1)[0]

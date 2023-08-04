@@ -387,7 +387,7 @@ def _calculate_action(
 
 
 def run(
-    sorted_path_infos: typing.Iterable[types_.PathInfo],
+    sorted_path_infos: typing.Iterable[types_.PathInfo | types_.IndexContentsListItem],
     table_rows: typing.Iterable[types_.TableRow],
     clients: Clients,
     base_path: Path,
