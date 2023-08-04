@@ -474,7 +474,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_6, hierarchy=2
                 ),
             ),
-            ("dir", "dir", "file", "file", "file"),
+            ("dir", "dir", "file", "file", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title
@@ -521,7 +521,7 @@ def _test_using_contents_index_parameters():
                     reference_value=path_5, hierarchy=2
                 ),
             ),
-            ("dir", "dir", "file", "file", "file"),
+            ("dir", "dir", "file", "file", "file", "file"),
             (
                 change_path_info_attrs(
                     path_info=path_info_1, navlink_title=item_1.reference_title

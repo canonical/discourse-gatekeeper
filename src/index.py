@@ -243,7 +243,7 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
     )
 
 
-class _ItemReferenceType(Enum):
+class ItemReferenceType(Enum):
     """Classification for the path of an item.
 
     Attrs:
@@ -259,7 +259,7 @@ class _ItemReferenceType(Enum):
     UNKNOWN = auto()
 
 
-def _classify_item_reference(reference: str, docs_path: Path) -> _ItemReferenceType:
+def classify_item_reference(reference: str, docs_path: Path) -> ItemReferenceType:
     """Classify the type of a reference.
 
     Args:
@@ -269,12 +269,12 @@ def _classify_item_reference(reference: str, docs_path: Path) -> _ItemReferenceT
         The type of the reference.
     """
     if reference.lower().startswith("http"):
-        return _ItemReferenceType.EXTERNAL
+        return ItemReferenceType.EXTERNAL
     if (reference_path := docs_path / Path(reference)).is_dir():
-        return _ItemReferenceType.DIR
+        return ItemReferenceType.DIR
     if reference_path.is_file():
-        return _ItemReferenceType.FILE
-    return _ItemReferenceType.UNKNOWN
+        return ItemReferenceType.FILE
+    return ItemReferenceType.UNKNOWN
 
 
 def _check_contents_item(
@@ -303,14 +303,14 @@ def _check_contents_item(
         )
 
     # Check whether item is hidden and a directory
-    item_reference_type = _classify_item_reference(
+    item_reference_type = classify_item_reference(
         reference=item.reference_value, docs_path=docs_path
     )
     item_path = docs_path / Path(item.reference_value)
-    if item.hidden and item_reference_type == _ItemReferenceType.DIR:
+    if item.hidden and item_reference_type == ItemReferenceType.DIR:
         raise InputError(f"A hidden item is a directory. {item=!r}")
 
-    if item_reference_type in {_ItemReferenceType.DIR, _ItemReferenceType.FILE}:
+    if item_reference_type in {ItemReferenceType.DIR, ItemReferenceType.FILE}:
         # Check that the next item is within the directory
         item_relative_path = Path(item.reference_value)
         try:
@@ -379,12 +379,12 @@ def _calculate_contents_hierarchy(
         )
 
         # Advance the iterator
-        item_reference_type = _classify_item_reference(
+        item_reference_type = classify_item_reference(
             reference=item.reference_value, docs_path=docs_path
         )
         next_item = next(parsed_items, None)
 
-        if item_reference_type == _ItemReferenceType.UNKNOWN:
+        if item_reference_type == ItemReferenceType.UNKNOWN:
             raise InputError(
                 f"An item is not a file, directory or external HTTP resource. {item=!r}"
             )
@@ -398,7 +398,7 @@ def _calculate_contents_hierarchy(
         )
         # Process directory contents
         if (
-            item_reference_type == _ItemReferenceType.DIR
+            item_reference_type == ItemReferenceType.DIR
             and next_item is not None
             and next_item.whitespace_count > whitespace_expectation_per_level[hierarchy]
         ):

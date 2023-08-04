@@ -9,7 +9,7 @@ from pathlib import Path
 
 from more_itertools import peekable, side_effect
 
-from . import types_
+from . import index, types_
 
 
 class _SortData(typing.NamedTuple):
@@ -75,7 +75,7 @@ def _contents_index_iter(
     sort_data: _SortData,
     current_dir: Path,
     current_hierarchy: int = 0,
-) -> typing.Iterator[types_.PathInfo]:
+) -> typing.Iterator[types_.PathInfo | types_.IndexContentsListItem]:
     """Recursively iterates through items by their hierarchy.
 
     Args:
@@ -89,23 +89,31 @@ def _contents_index_iter(
     for item in sort_data.items:
         next_item = sort_data.items.peek(None)
 
-        # Get the path info
-        item_local_path = sort_data.docs_path / item.reference_value
-        item_path_info = sort_data.local_path_path_info[item_local_path]
-        # Update the navlink title based on the contents index
-        item_path_info_dict = item_path_info._asdict()
-        item_path_info_dict["navlink_title"] = item.reference_title
-        item_path_info_dict["navlink_hidden"] = item.hidden
-        yield types_.PathInfo(**item_path_info_dict)
-        sort_data.local_path_yielded[item_local_path] = True
+        reference_type = index.classify_item_reference(
+            reference=item.reference_value, docs_path=sort_data.docs_path
+        )
 
-        # Check for directory
-        if item_path_info.local_path.is_dir():
-            yield from _contents_index_iter(
-                sort_data=sort_data,
-                current_dir=item_path_info.local_path,
-                current_hierarchy=current_hierarchy + 1,
-            )
+        if reference_type == index.ItemReferenceType.EXTERNAL:
+            yield item
+
+        if reference_type in {index.ItemReferenceType.DIR, index.ItemReferenceType.FILE}:
+            # Get the path info
+            item_local_path = sort_data.docs_path / item.reference_value
+            item_path_info = sort_data.local_path_path_info[item_local_path]
+            # Update the navlink title based on the contents index
+            item_path_info_dict = item_path_info._asdict()
+            item_path_info_dict["navlink_title"] = item.reference_title
+            item_path_info_dict["navlink_hidden"] = item.hidden
+            yield types_.PathInfo(**item_path_info_dict)
+            sort_data.local_path_yielded[item_local_path] = True
+
+            # Check for directory
+            if reference_type == index.ItemReferenceType.DIR:
+                yield from _contents_index_iter(
+                    sort_data=sort_data,
+                    current_dir=item_path_info.local_path,
+                    current_hierarchy=current_hierarchy + 1,
+                )
 
         # Check for last item in the directory
         if next_item is None or next_item.hierarchy <= current_hierarchy:
@@ -131,7 +139,7 @@ def using_contents_index(
     path_infos: typing.Iterable[types_.PathInfo],
     index_contents: typing.Iterable[types_.IndexContentsListItem],
     docs_path: Path,
-) -> typing.Iterator[types_.PathInfo]:
+) -> typing.Iterator[types_.PathInfo | types_.IndexContentsListItem]:
     """Sort PathInfos based on the contents index and alphabetical rank.
 
     Also updates the navlink title for any items matched to the contents index.
