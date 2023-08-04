@@ -15,21 +15,21 @@ from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
 from .discourse import Discourse
 
 
-def _local_only(path_info: types_.PathInfo) -> types_.CreateAction:
+def _local_only(item_info: types_.PathInfo | types_.IndexContentsListItem) -> types_.CreateAction:
     """Return a create action based on information about a local documentation file.
 
     Args:
-        path_info: Information about the local documentation file.
+        item_info: Information about the local documentation file.
 
     Returns:
         A page create action.
     """
     return types_.CreateAction(
-        level=path_info.level,
-        path=path_info.table_path,
-        navlink_title=path_info.navlink_title,
-        content=path_info.local_path.read_text() if path_info.local_path.is_file() else None,
-        navlink_hidden=path_info.navlink_hidden,
+        level=item_info.level,
+        path=item_info.table_path,
+        navlink_title=item_info.navlink_title,
+        content=item_info.local_path.read_text() if item_info.local_path.is_file() else None,
+        navlink_hidden=item_info.navlink_hidden,
     )
 
 
@@ -243,7 +243,7 @@ def _local_and_server_file_local_page_server(
 
 
 def _local_and_server(
-    path_info: types_.PathInfo,
+    item_info: types_.PathInfo | types_.IndexContentsListItem,
     table_row: types_.TableRow,
     clients: Clients,
     base_path: Path,
@@ -265,7 +265,7 @@ def _local_and_server(
             4.2. the content and/ or the navlink have changed: update action.
 
     Args:
-        path_info: Information about the local documentation file.
+        item_info: Information about the local documentation file.
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
@@ -274,16 +274,16 @@ def _local_and_server(
         The action to execute against the server.
 
     """
-    _local_and_server_validation(path_info=path_info, table_row=table_row)
+    _local_and_server_validation(path_info=item_info, table_row=table_row)
 
     # Is a directory locally and a grouping on the server
-    if path_info.local_path.is_dir() and table_row.is_group:
-        return _local_and_server_dir_local_group_server(path_info=path_info, table_row=table_row)
+    if item_info.local_path.is_dir() and table_row.is_group:
+        return _local_and_server_dir_local_group_server(path_info=item_info, table_row=table_row)
 
     # Is a directory locally and a page on the server
-    if path_info.local_path.is_dir():
+    if item_info.local_path.is_dir():
         return _local_and_server_dir_local_page_server(
-            path_info=path_info, table_row=table_row, clients=clients
+            path_info=item_info, table_row=table_row, clients=clients
         )
 
     # Is a file locally and a grouping on the server, only need to create the page since the
@@ -292,17 +292,17 @@ def _local_and_server(
     if table_row.is_group:
         return (
             types_.CreateAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink_title=path_info.navlink_title,
-                content=path_info.local_path.read_text(),
-                navlink_hidden=path_info.navlink_hidden,
+                level=item_info.level,
+                path=item_info.table_path,
+                navlink_title=item_info.navlink_title,
+                content=item_info.local_path.read_text(),
+                navlink_hidden=item_info.navlink_hidden,
             ),
         )
 
     # Is a file locally and page on the server
     return _local_and_server_file_local_page_server(
-        path_info=path_info,
+        path_info=item_info,
         table_row=table_row,
         clients=clients,
         base_path=base_path,
@@ -350,7 +350,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
 
 
 def _calculate_action(
-    path_info: types_.PathInfo | None,
+    item_info: types_.PathInfo | types_.IndexContentsListItem | None,
     table_row: types_.TableRow | None,
     clients: Clients,
     base_path: Path,
@@ -358,7 +358,7 @@ def _calculate_action(
     """Calculate the required action for a page.
 
     Args:
-        path_info: Information about the local documentation file.
+        item_info: Information about the local documentation file.
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
         base_path: The base path of the repository.
@@ -367,19 +367,19 @@ def _calculate_action(
         The action to take for the page.
 
     Raises:
-        ReconcilliationError: if both path_info and table_row are None.
+        ReconcilliationError: if both item_info and table_row are None.
     """
-    if path_info is table_row is None:
+    if item_info is table_row is None:
         raise exceptions.ReconcilliationError(
             "internal error, both path info and table row are None"
         )
-    if path_info is not None and table_row is None:
-        return (_local_only(path_info=path_info),)
-    if path_info is None and table_row is not None:
+    if item_info is not None and table_row is None:
+        return (_local_only(item_info=item_info),)
+    if item_info is None and table_row is not None:
         return (_server_only(table_row=table_row, discourse=clients.discourse),)
-    if path_info is not None and table_row is not None:
+    if item_info is not None and table_row is not None:
         return _local_and_server(
-            path_info=path_info, table_row=table_row, clients=clients, base_path=base_path
+            item_info=item_info, table_row=table_row, clients=clients, base_path=base_path
         )
 
     # Something weird has happened since all cases should already be covered
