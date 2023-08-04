@@ -131,9 +131,6 @@ class PathInfo(typing.NamedTuple):
     navlink_hidden: bool
 
 
-PathInfoLookup = dict[TablePath, PathInfo]
-
-
 class Navlink(typing.NamedTuple):
     """Represents navlink of a table row of the navigation table.
 
@@ -430,17 +427,19 @@ class IndexContentsListItem(typing.NamedTuple):
     hidden: bool
 
     @property
-    def table_path(self) -> str:
+    def table_path(self) -> TablePath:
         """The table path for the item.
 
         Returns:
             The table path for the item.
         """
         if self.reference_value.lower().startswith("http"):
-            return (
-                self.reference_value.replace("//", "-")
-                .replace(":", "")
-                .replace("/", "-")
-                .replace(".", "-")
+            return tuple(
+                (self.reference_value.replace("//", "/").replace(":", "").replace(".", "/")).split(
+                    "/"
+                )
             )
-        return self.reference_value.replace("/", "-").rsplit(".", 1)[0]
+        return tuple(self.reference_value.rsplit(".", 1)[0].split("/"))
+
+
+ItemInfoLookup = dict[TablePath, PathInfo | IndexContentsListItem]

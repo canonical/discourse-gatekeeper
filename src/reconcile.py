@@ -417,7 +417,7 @@ def run(
         The actions required to reconcile differences between the documentation server and local
         files.
     """
-    path_info_lookup: types_.PathInfoLookup = {
+    path_info_lookup: types_.ItemInfoLookup = {
         path_info.table_path: path_info for path_info in sorted_path_infos
     }
     table_row_lookup: types_.TableRowLookup = {

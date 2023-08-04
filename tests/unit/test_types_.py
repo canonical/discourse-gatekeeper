@@ -124,46 +124,46 @@ def test_table_row_to_markdown(table_row: types_.TableRow, expected_line: bool):
     [
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="dir"),
-            "dir",
+            ("dir",),
             id="top level dir",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="file.md"),
-            "file",
+            ("file",),
             id="top level file",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="dir/nested-dir"),
-            "dir-nested-dir",
+            ("dir", "nested-dir"),
             id="dir in dir",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="dir/file.md"),
-            "dir-file",
+            ("dir", "file"),
             id="file in dir",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(
                 reference_value="dir/nested-dir/deeply-nested-dir"
             ),
-            "dir-nested-dir-deeply-nested-dir",
+            ("dir", "nested-dir", "deeply-nested-dir"),
             id="dir in dir in dir",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="https://canonical.com"),
-            "https-canonical-com",
+            ("https", "canonical", "com"),
             id="external",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(reference_value="https://canonical.com/page"),
-            "https-canonical-com-page",
+            ("https", "canonical", "com", "page"),
             id="external with path",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(
                 reference_value="https://canonical.com/page/nested-page"
             ),
-            "https-canonical-com-page-nested-page",
+            ("https", "canonical", "com", "page", "nested-page"),
             id="external with deep path",
         ),
     ],
