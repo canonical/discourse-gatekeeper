@@ -83,6 +83,17 @@ def _test_using_contents_index_parameters():
             id="single path info file matching hidden contents index",
         ),
         pytest.param(
+            (),
+            (
+                item := factories.IndexContentsListItemFactory(
+                    reference_value="https://canonical.com", hierarchy=1
+                ),
+            ),
+            (),
+            (item,),
+            id="single external contents index item",
+        ),
+        pytest.param(
             (path_info := factories.PathInfoFactory(local_path=(path_1 := "dir_1")),),
             (item := factories.IndexContentsListItemFactory(reference_value=path_1, hierarchy=1),),
             ("dir",),
@@ -239,9 +250,9 @@ def _test_using_contents_index_parameters():
         ),
         pytest.param(
             (
-                path_info_2 := factories.PathInfoFactory(local_path=(path_2 := "dir_1")),
-                path_info_1 := factories.PathInfoFactory(
-                    local_path=(path_1 := f"{path_2}/file_2.md")
+                path_info_1 := factories.PathInfoFactory(local_path=(path_1 := "dir_1")),
+                path_info_2 := factories.PathInfoFactory(
+                    local_path=(path_2 := f"{path_1}/file_2.md")
                 ),
             ),
             (
@@ -262,6 +273,25 @@ def _test_using_contents_index_parameters():
                 ),
             ),
             id="multiple path info file in directory contents index",
+        ),
+        pytest.param(
+            (path_info_1 := factories.PathInfoFactory(local_path=(path_1 := "dir_1")),),
+            (
+                item_1 := factories.IndexContentsListItemFactory(
+                    reference_value=path_1, hierarchy=1
+                ),
+                item_2 := factories.IndexContentsListItemFactory(
+                    reference_value="https://canonical.com", hierarchy=2
+                ),
+            ),
+            ("dir",),
+            (
+                change_path_info_attrs(
+                    path_info=path_info_1, navlink_title=item_1.reference_title
+                ),
+                item_2,
+            ),
+            id="single path info external item in directory contents index",
         ),
         pytest.param(
             (
@@ -545,20 +575,20 @@ def _test_using_contents_index_parameters():
 
 
 @pytest.mark.parametrize(
-    "path_infos, index_contents, create_paths, expected_path_infos",
+    "path_infos, index_contents, create_paths, expected_items",
     _test_using_contents_index_parameters(),
 )
 def test_using_contents_index(
     path_infos: tuple[types_.PathInfo, ...],
     index_contents: tuple[types_.IndexContentsListItem, ...],
     create_paths: tuple[typing.Literal["file", "dir"], ...],
-    expected_path_infos: tuple[types_.PathInfo, ...],
+    expected_items: tuple[types_.PathInfo, ...],
     tmp_path: Path,
 ):
     """
     arrange: given path infos and index file contents
     act: when using_contents_index is called with the path infos and index contents
-    assert: then the expected path infos are returned.
+    assert: then the expected items are returned.
     """
     # Create the paths
     for path_info, create_path in zip(path_infos, create_paths):
@@ -572,15 +602,17 @@ def test_using_contents_index(
         change_path_info_attrs(path_info=path_info, local_path=tmp_path / path_info.local_path)
         for path_info in path_infos
     )
-    expected_path_infos = tuple(
+    expected_items = tuple(
         change_path_info_attrs(path_info=path_info, local_path=tmp_path / path_info.local_path)
-        for path_info in expected_path_infos
+        if isinstance(path_info, types_.PathInfo)
+        else path_info
+        for path_info in expected_items
     )
 
-    returned_path_infos = tuple(
+    returned_items = tuple(
         sort.using_contents_index(
             path_infos=path_infos, index_contents=index_contents, docs_path=tmp_path
         )
     )
 
-    assert returned_path_infos == expected_path_infos
+    assert returned_items == expected_items
