@@ -134,10 +134,12 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
     print(repository.branches)
 
     for branch in [E2E_BRANCH, E2E_BASE]:
-        if branch in repository.branches:
+        try:
             print(f"Removing {branch}")
             repository._git_repo.git.branch("-D", branch)
             repository._git_repo.git.push("origin", "-d", branch)
+        except:
+            pass
 
     with repository.create_branch(E2E_BASE).with_branch(E2E_BASE) as repo:
         repo._git_repo.git.push("origin", "-f", repo.current_branch)  # pylint: disable=W0212
