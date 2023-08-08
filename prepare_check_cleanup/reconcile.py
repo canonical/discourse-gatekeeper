@@ -135,11 +135,21 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
 
     for branch in [E2E_BRANCH, E2E_BASE]:
         try:
-            print(f"Removing {branch}")
+            print(f"Removing local {branch}")
             repository._git_repo.git.branch("-D", branch)
-            repository._git_repo.git.push("origin", "-d", branch)
-        except:
+        except as e:
+            print(f"Error when removing local branch with exception {e}")
             pass
+
+        try:
+            print(f"Removing remote {branch}")
+            repository._git_repo.git.push("origin", "-d", branch)
+        except as e:
+            print(f"Error when removing remote branch with exception {e}")
+            pass
+
+
+
 
     with repository.create_branch(E2E_BASE).with_branch(E2E_BASE) as repo:
         repo._git_repo.git.push("origin", "-f", repo.current_branch)  # pylint: disable=W0212
