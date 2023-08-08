@@ -137,14 +137,14 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
         try:
             print(f"Removing local {branch}")
             repository._git_repo.git.branch("-D", branch)
-        except as e:
+        except Exception as e:
             print(f"Error when removing local branch with exception {e}")
             pass
 
         try:
             print(f"Removing remote {branch}")
             repository._git_repo.git.push("origin", "-d", branch)
-        except as e:
+        except Exception as e:
             print(f"Error when removing remote branch with exception {e}")
             pass
 
