@@ -132,7 +132,7 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
     repository._git_repo.git.fetch("--all")  # pylint: disable=W0212
 
     with repository.create_branch(E2E_BASE).with_branch(E2E_BASE) as repo:
-        repo._git_repo.git.push("origin", "-f", repository.current_branch)  # pylint: disable=W0212
+        repo._git_repo.git.push("origin", "-f", repo.current_branch)  # pylint: disable=W0212
 
         if repository.tag_exists(DOCUMENTATION_TAG):
             logging.info("Removing tag %s", DOCUMENTATION_TAG)
@@ -142,7 +142,7 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
             )
 
     repository.create_branch(E2E_BRANCH, E2E_BASE).switch(E2E_BRANCH)
-    repository.update_branch("First commit of documentation")
+    repository.update_branch("First commit of documentation", force=True)
     print(repository.current_commit)
 
     assert discourse
