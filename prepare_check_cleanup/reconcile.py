@@ -147,7 +147,7 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
             )
 
     repository.create_branch(E2E_BRANCH, E2E_BASE).switch(E2E_BRANCH)
-    repository.update_branch("First commit of documentation", force=True)
+    repository.update_branch("First commit of documentation")
     print(repository.current_commit)
 
     assert discourse
