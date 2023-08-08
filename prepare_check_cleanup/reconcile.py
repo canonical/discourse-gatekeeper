@@ -131,6 +131,8 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
     """
     repository._git_repo.git.fetch("--all")  # pylint: disable=W0212
 
+    print(repository.branches)
+
     for branch in [E2E_BRANCH, E2E_BASE]:
         if branch in repository.branches:
             print(f"Removing {branch}")
