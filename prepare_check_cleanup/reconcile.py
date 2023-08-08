@@ -131,7 +131,7 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
     """
     repository._git_repo.git.fetch("--all")  # pylint: disable=W0212
 
-    with repository.create_branch(E2E_BASE, E2E_SETUP).with_branch(E2E_BASE) as repo:
+    with repository.create_branch(E2E_BASE).with_branch(E2E_BASE) as repo:
         repo._git_repo.git.push("origin", "-f", repository.current_branch)  # pylint: disable=W0212
 
         if repository.tag_exists(DOCUMENTATION_TAG):
