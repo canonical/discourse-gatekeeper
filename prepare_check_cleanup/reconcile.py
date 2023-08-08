@@ -23,6 +23,7 @@ from src.repository import create_repository_client
 
 E2E_SETUP = "origin/tests/e2e"
 E2E_BASE = "tests/base"
+E2E_BRANCH = "tests/feature"
 
 
 class Action(str, Enum):
@@ -86,7 +87,10 @@ def main() -> None:
         case Action.CHECK_CREATE.value:
             exit_.with_result(
                 check_create(
-                    urls_with_actions=urls_with_actions, discourse=discourse, **action_kwargs
+                    repository=repository,
+                    discourse=discourse,
+                    urls_with_actions=urls_with_actions,
+                    **action_kwargs,
                 )
             )
         case Action.CHECK_UPDATE.value:
@@ -136,6 +140,10 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
             repo._git_repo.git.push(  # pylint: disable=W0212
                 "--delete", "origin", DOCUMENTATION_TAG
             )
+
+    repository.create_branch(E2E_BRANCH, E2E_BASE).switch(E2E_BRANCH)
+    repository.update_branch("First commit of documentation")
+    print(repository.current_commit)
 
     assert discourse
 
@@ -268,7 +276,10 @@ def check_draft(urls_with_actions: dict[str, str], expected_url_results: list[st
 
 
 def check_create(
-    urls_with_actions: dict[str, str], discourse: Discourse, expected_url_results: list[str]
+    repository: RepositoryClient,
+    discourse: Discourse,
+    urls_with_actions: dict[str, str],
+    expected_url_results: list[str],
 ) -> bool:
     """Check that the create test succeeded.
 
@@ -276,8 +287,9 @@ def check_create(
     that retrieving the URLs succeeds.
 
     Args:
-        urls_with_actions: The URLs that had any actions against them.
+        repository: Github Repository client
         discourse: Client to the documentation server.
+        urls_with_actions: The URLs that had any actions against them.
         expected_url_results: The expected url results.
 
     Returns:
@@ -304,6 +316,12 @@ def check_create(
         return False
 
     logging.info("%s check succeeded", test_name)
+
+    # If create was successful, it means that the feature branch should be aligned with base branch
+    # We simulate a branch merge by creating the base branch from the feature branch
+    with repository.create_branch(E2E_BASE, E2E_BRANCH).with_branch(E2E_BASE) as repo:
+        repo._git_repo.git.push("-u", "origin")  # pylint: disable=W0212
+
     return True
 
 

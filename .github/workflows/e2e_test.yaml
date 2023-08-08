@@ -25,9 +25,6 @@ jobs:
         run: |
           sudo apt update && sudo apt install python3-pip git
           pip3 install -r requirements.txt
-      - name: Prepare stage
-        run: |
-          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }} '{}' '${{ steps.configuration.outputs.discourse }}'
       - name: Prepare for action to run
         run: |
           # Create metadata.yaml file
@@ -57,6 +54,9 @@ jobs:
             "commit sha: ${{ github.sha }}, " \
             "some uuid: $(uuidgen)" \
             > docs/alternate_doc.md
+      - name: Prepare stage
+        run: |
+          PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action prepare --github-token  ${{ secrets.GITHUB_TOKEN }} '{}' '${{ steps.configuration.outputs.discourse }}'
       - name: Draft self test
         id: e2e-test-draft
         uses: ./
@@ -88,20 +88,21 @@ jobs:
       - name: Check create
         run: |
           PYTHONPATH=$(pwd) python3 prepare_check_cleanup/reconcile.py --action check-create --github-token  ${{ secrets.GITHUB_TOKEN }} --action-kwargs '{"expected_url_results": ["success", "success", "success"]}' '${{ steps.e2e-test-create.outputs.topics }}' '${{ steps.configuration.outputs.discourse }}'
-      # - name: Add docs key to metadata
-      #   run: |
-      #     echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
-      #     cat metadata.yaml
-      # - name: Update self test
-      #   id: e2e-test-update
-      #   uses: ./
-      #   with:
-      #     discourse_host: discourse.charmhub.io
-      #     discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
-      #     discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Show pages
-      #   run: echo '${{ steps.e2e-test-update.outputs.reconcile }}'
+      - name: Add docs key to metadata
+        run: |
+          echo "docs: ${{ steps.e2e-test-create.outputs.index_url }}" >> metadata.yaml
+          cat metadata.yaml
+      - name: Update self test
+        id: e2e-test-update
+        uses: ./
+        with:
+          discourse_host: discourse.charmhub.io
+          discourse_api_username: ${{ secrets.DISCOURSE_API_USERNAME }}
+          discourse_api_key: ${{ secrets.DISCOURSE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          base_branch: "tests/base"
+      - name: Show pages
+        run: echo '${{ steps.e2e-test-update.outputs.reconcile }}'
       # - name: Check update
       #   run: |
       #     GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
