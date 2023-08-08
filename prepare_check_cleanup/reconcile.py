@@ -133,6 +133,7 @@ def _prepare(repository: RepositoryClient, discourse: Discourse) -> bool:
 
     for branch in [E2E_BRANCH, E2E_BASE]:
         if branch in repository.branches:
+            print(f"Removing {branch}")
             repository._git_repo.git.branch("-D", branch)
             repository._git_repo.git.push("origin", "-d", branch)
 
