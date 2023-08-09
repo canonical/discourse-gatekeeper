@@ -24,11 +24,26 @@ def _local_only(item_info: types_.PathInfo | types_.IndexContentsListItem) -> ty
     Returns:
         A page create action.
     """
-    return types_.CreateAction(
+    if isinstance(item_info, types_.IndexContentsListItem):
+        return types_.CreateExternalRefAction(
+            level=item_info.hierarchy,
+            path=item_info.table_path,
+            navlink_title=item_info.reference_title,
+            navlink_value=item_info.reference_value,
+            navlink_hidden=item_info.hidden,
+        )
+    if item_info.local_path.is_file():
+        return types_.CreatePageAction(
+            level=item_info.level,
+            path=item_info.table_path,
+            navlink_title=item_info.navlink_title,
+            content=item_info.local_path.read_text(),
+            navlink_hidden=item_info.navlink_hidden,
+        )
+    return types_.CreateGroupAction(
         level=item_info.level,
         path=item_info.table_path,
         navlink_title=item_info.navlink_title,
-        content=item_info.local_path.read_text() if item_info.local_path.is_file() else None,
         navlink_hidden=item_info.navlink_hidden,
     )
 
@@ -154,11 +169,10 @@ def _local_and_server_dir_local_page_server(
             navlink=table_row.navlink,
             content=clients.discourse.retrieve_topic(url=table_row.navlink.link),
         ),
-        types_.CreateAction(
+        types_.CreateGroupAction(
             level=path_info.level,
             path=path_info.table_path,
             navlink_title=path_info.navlink_title,
-            content=None,
             navlink_hidden=False,
         ),
     )
@@ -291,7 +305,7 @@ def _local_and_server(
     # removed locally
     if table_row.is_group:
         return (
-            types_.CreateAction(
+            types_.CreatePageAction(
                 level=item_info.level,
                 path=item_info.table_path,
                 navlink_title=item_info.navlink_title,

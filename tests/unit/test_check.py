@@ -181,7 +181,7 @@ def _test_conflicts_parameters():
     """
     return [
         pytest.param((), False, (), id="empty"),
-        pytest.param((factories.CreateActionFactory(),), False, (), id="single create"),
+        pytest.param((factories.CreatePageActionFactory(),), False, (), id="single create"),
         pytest.param((factories.NoopActionFactory(),), False, (), id="single noop"),
         pytest.param((factories.DeleteActionFactory(),), False, (), id="single delete"),
         pytest.param(

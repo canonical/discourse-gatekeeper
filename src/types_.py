@@ -78,6 +78,7 @@ class Page(typing.NamedTuple):
 
 
 NavlinkTitle = str
+NavlinkValue = str
 
 
 class IndexFile(typing.NamedTuple):
@@ -141,7 +142,7 @@ class Navlink(typing.NamedTuple):
     """
 
     title: NavlinkTitle
-    link: str | None
+    link: NavlinkValue | None
     hidden: bool
 
 
@@ -181,22 +182,50 @@ TableRowLookup = dict[TablePath, TableRow]
 
 
 @dataclasses.dataclass
-class CreateAction:
-    """Represents a page to be created.
+class _CreateActionBase:
+    """Base class for create actions
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_title: The title of the navlink.
         navlink_hidden: Whether the item should be displayed on the navigation table.
-        content: The documentation content, is None for directories.
     """
 
     level: Level
     path: TablePath
     navlink_title: NavlinkTitle
-    content: Content | None
     navlink_hidden: bool
+
+
+@dataclasses.dataclass
+class CreateExternalRefAction(_CreateActionBase):
+    """Represents a external reference to be created.
+
+    Attrs:
+        navlink_value: The external reference.
+    """
+
+    navlink_value: NavlinkValue
+
+
+@dataclasses.dataclass
+class CreateGroupAction(_CreateActionBase):
+    """Represents a group to be created."""
+
+
+@dataclasses.dataclass
+class CreatePageAction(_CreateActionBase):
+    """Represents a page to be created.
+
+    Attrs:
+        content: The documentation content.
+    """
+
+    content: Content
+
+
+CreateAction = CreatePageAction | CreateGroupAction | CreateExternalRefAction
 
 
 @dataclasses.dataclass

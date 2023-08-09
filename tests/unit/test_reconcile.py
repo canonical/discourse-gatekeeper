@@ -30,9 +30,9 @@ def test__local_only_file(tmp_path: Path, hidden: bool):
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_hidden=hidden)
 
-    returned_action = reconcile._local_only(path_info=path_info)
+    returned_action = reconcile._local_only(item_info=path_info)
 
-    assert isinstance(returned_action, types_.CreateAction)
+    assert isinstance(returned_action, types_.CreatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
@@ -49,14 +49,34 @@ def test__local_only_directory(tmp_path: Path):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
 
-    returned_action = reconcile._local_only(path_info=path_info)
+    returned_action = reconcile._local_only(item_info=path_info)
 
-    assert isinstance(returned_action, types_.CreateAction)
+    assert isinstance(returned_action, types_.CreateGroupAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     assert returned_action.navlink_title == path_info.navlink_title
-    assert returned_action.content is None
     assert returned_action.navlink_hidden is False
+
+
+@pytest.mark.parametrize(
+    "hidden", [pytest.param(False, id="not hidden"), pytest.param(True, id="hidden")]
+)
+def test__local_only_external_ref(hidden: bool):
+    """
+    arrange: given an index contents list item
+    act: when _local_only is called with the item
+    assert: then a create action for the external ref is returned.
+    """
+    index_contents_list_item = factories.IndexContentsListItemFactory(hidden=hidden)
+
+    returned_action = reconcile._local_only(item_info=index_contents_list_item)
+
+    assert isinstance(returned_action, types_.CreateExternalRefAction)
+    assert returned_action.level == index_contents_list_item.hierarchy
+    assert returned_action.path == index_contents_list_item.table_path
+    assert returned_action.navlink_title == index_contents_list_item.reference_title
+    assert returned_action.navlink_value == index_contents_list_item.reference_value
+    assert returned_action.navlink_hidden == hidden
 
 
 @pytest.mark.parametrize(
@@ -90,7 +110,7 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
-            path_info=path_info,
+            item_info=path_info,
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
@@ -160,7 +180,7 @@ def test__local_and_server_file_same(local_content: str, server_content: str, mo
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -198,7 +218,7 @@ def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
-            path_info=path_info,
+            item_info=path_info,
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
@@ -238,7 +258,7 @@ def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file,
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
-            path_info=path_info,
+            item_info=path_info,
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
@@ -275,7 +295,7 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -319,7 +339,7 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -360,7 +380,7 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -404,7 +424,7 @@ def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clie
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -441,7 +461,7 @@ def test__local_and_server_directory_same(mock_get_file, mocked_clients):
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -471,7 +491,7 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -507,7 +527,7 @@ def test__local_and_server_directory_to_file(mocked_clients, hidden: bool):
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -540,7 +560,7 @@ def test__local_and_server_file_to_directory(mocked_clients):
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     returned_actions = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -558,7 +578,6 @@ def test__local_and_server_file_to_directory(mocked_clients):
     assert returned_actions[1].path == path_info.table_path
     # mypy has difficulty with determining which action is returned
     assert returned_actions[1].navlink_title == path_info.navlink_title  # type: ignore
-    assert returned_actions[1].content is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
@@ -628,7 +647,7 @@ def test__calculate_action_error(tmp_path: Path, mocked_clients):
     """
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._calculate_action(
-            path_info=None,
+            item_info=None,
             table_row=None,
             clients=mocked_clients,
             base_path=tmp_path,
@@ -697,7 +716,7 @@ def test__calculate_action(
         path_info = path_info_mkdir(path_info=path_info, base_dir=tmp_path)
 
     (returned_action,) = reconcile._calculate_action(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,
@@ -715,7 +734,7 @@ def test__calculate_action(
         pytest.param(
             (path_info_1 := factories.PathInfoFactory(),),
             (),
-            (types_.CreateAction,),
+            (types_.CreateGroupAction,),
             ((path_info_1.level, path_info_1.table_path),),
             id="single path info empty table rows",
         ),
@@ -725,7 +744,7 @@ def test__calculate_action(
                 path_info_2 := factories.PathInfoFactory(alphabetical_rank=2),
             ),
             (),
-            (types_.CreateAction, types_.CreateAction),
+            (types_.CreateGroupAction, types_.CreateGroupAction),
             (
                 (path_info_1.level, path_info_1.table_path),
                 (path_info_2.level, path_info_2.table_path),
@@ -738,7 +757,7 @@ def test__calculate_action(
                 path_info_2 := factories.PathInfoFactory(alphabetical_rank=1),
             ),
             (),
-            (types_.CreateAction, types_.CreateAction),
+            (types_.CreateGroupAction, types_.CreateGroupAction),
             (
                 (path_info_1.level, path_info_1.table_path),
                 (path_info_2.level, path_info_2.table_path),
@@ -782,7 +801,7 @@ def test__calculate_action(
                     level=2, path=("group-1",) + path_info_1.table_path, is_group=True
                 ),
             ),
-            (types_.CreateAction, types_.DeleteAction),
+            (types_.CreateGroupAction, types_.DeleteAction),
             (
                 (path_info_1.level, path_info_1.table_path),
                 (table_row_1.level, ("group-1",) + path_info_1.table_path),
@@ -796,7 +815,7 @@ def test__calculate_action(
                     level=path_info_1.level, path=("path 2",), is_group=True
                 ),
             ),
-            (types_.CreateAction, types_.DeleteAction),
+            (types_.CreateGroupAction, types_.DeleteAction),
             ((path_info_1.level, path_info_1.table_path), (path_info_1.level, table_row.path)),
             id="single path info single table row path mismatch",
         ),

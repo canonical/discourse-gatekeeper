@@ -30,15 +30,12 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a directory, dry run mode and mocked discourse
     act: when action is passed to _create with dry_run
-    assert: then no topic is created, the action is logged and a skip report is returned.
+    assert: then no topic is created, the action is logged and the expected report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = factories.CreateActionFactory(
-        level=(level := 1),
-        path=(path := ("path 1",)),
-        navlink_title=(navlink_title := "title 1"),
-        content=None,
+    create_action = factories.CreateGroupActionFactory(
+        level=(level := 1), path=(path := ("path 1",)), navlink_title=(navlink_title := "title 1")
     )
 
     returned_report = action._create(
@@ -61,6 +58,48 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
 
 
+@pytest.mark.parametrize(
+    "dry_run",
+    [
+        pytest.param(True, id="dry run mode enabled"),
+        pytest.param(False, id="dry run mode disabled"),
+    ],
+)
+def test__create_external_ref(dry_run: bool, caplog: pytest.LogCaptureFixture):
+    """
+    arrange: given create action for an external reference, dry run mode and mocked discourse
+    act: when action is passed to _create with dry_run
+    assert: then no topic is created, the action is logged and the expected report is returned.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    create_action = factories.CreateExternalRefActionFactory(
+        level=(level := 1),
+        path=(path := ("path 1",)),
+        navlink_title=(navlink_title := "title 1"),
+        navlink_value=(navlink_value := "value 1"),
+    )
+
+    returned_report = action._create(
+        action=create_action, discourse=mocked_discourse, dry_run=dry_run, name="name 1"
+    )
+
+    assert_substrings_in_string((f"action: {create_action}", f"dry run: {dry_run}"), caplog.text)
+    mocked_discourse.create_topic.assert_not_called()
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == navlink_value
+    assert returned_report.location == navlink_value
+    assert (
+        returned_report.result == src_types.ActionResult.SKIP
+        if dry_run
+        else src_types.ActionResult.SUCCESS
+    )
+    assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
+
+
 def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a file and mocked discourse
@@ -69,7 +108,7 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -101,7 +140,7 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -138,7 +177,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -358,12 +397,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     "test_action, expected_return_type",
     [
         pytest.param(
-            factories.CreateActionFactory(
-                level=1,
-                path=("path 1",),
-                navlink_title="title 1",
-                content=None,
-            ),
+            factories.CreatePageActionFactory(level=1, path=("path 1",), navlink_title="title 1"),
             src_types.TableRow,
             id="create",
         ),

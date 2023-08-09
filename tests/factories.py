@@ -50,15 +50,50 @@ class PathInfoFactory(
     navlink_hidden = False
 
 
-class CreateActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.CreateAction]  # type: ignore[misc]
+class CreateExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreateExternalRefAction]  # type: ignore[misc]
 ):
-    """Generate CreateActions."""  # noqa: DCO060
+    """Generate CreateExternalRefAction."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.CreateAction
+        model = types_.CreateExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    navlink_value = factory.Sequence(lambda n: f"value {n}")
+    navlink_hidden = False
+
+
+class CreateGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreateGroupAction]  # type: ignore[misc]
+):
+    """Generate CreateGroupAction."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreateGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    navlink_hidden = False
+
+
+class CreatePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreatePageAction]  # type: ignore[misc]
+):
+    """Generate CreatePageAction."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreatePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
@@ -305,7 +340,9 @@ class IndexParsedListItemFactory(factory.Factory):
 
 
 # The attributes of these classes are generators for the attributes of the meta class
-class IndexContentsListItemFactory(factory.Factory):
+class IndexContentsListItemFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.IndexContentsListItem]  # type: ignore[misc]
+):
     # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
     # can be skipped.
     """Generate types.IndexContentsListItems."""  # noqa: DCO060

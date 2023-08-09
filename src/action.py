@@ -60,8 +60,12 @@ def _create(
     logging.info("dry run: %s, action: %s", dry_run, action)
 
     # Handle the directory/ group case, no server interactions are required
-    if action.content is None:
+    if isinstance(action, types_.CreateGroupAction):
         url = None
+        result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
+        reason = DRY_RUN_REASON if dry_run else None
+    elif isinstance(action, types_.CreateExternalRefAction):
+        url = action.navlink_value
         result = types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS
         reason = DRY_RUN_REASON if dry_run else None
     # Handle the file/ page case when dry run is enabled, no server interactions are required
@@ -70,7 +74,7 @@ def _create(
         result = types_.ActionResult.SKIP
         reason = DRY_RUN_REASON
     # Handle the file/ page case where a new page needs to be created on the server
-    else:
+    elif isinstance(action, types_.CreatePageAction):
         try:
             url = discourse.create_topic(
                 title=f"{name} docs: {action.navlink_title}", content=action.content
@@ -81,6 +85,8 @@ def _create(
             url = FAIL_NAVLINK_LINK
             result = types_.ActionResult.FAIL
             reason = str(exc)
+    else:
+        raise NotImplementedError(f"internal error: {action} has not been implemented")
 
     table_row = types_.TableRow(
         level=action.level,
@@ -299,7 +305,7 @@ def _run_one(
         ActionError: if an action that is not handled is passed to the function.
     """
     match type(action):
-        case types_.CreateAction:
+        case types_.CreatePageAction | types_.CreateGroupAction | types_.CreateExternalRefAction:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
             report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
