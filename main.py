@@ -206,6 +206,11 @@ def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
         dictionary representing the output of the process
     """
     clients = get_clients(user_inputs, path)
+    logging.info(
+        "Repository at %s (%s)",
+        clients.repository.current_branch,
+        clients.repository.current_commit
+    )
     return pre_flight_checks(clients=clients, user_inputs=user_inputs)
 
 
