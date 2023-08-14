@@ -13,7 +13,7 @@ from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .clients import Clients
 from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG  # DEFAULT_BRANCH,
 from .download import recreate_docs
-from .exceptions import InputError
+from .exceptions import InputError, TaggingNotAllowedError
 from .repository import DEFAULT_BRANCH_NAME
 from .types_ import (
     ActionResult,
@@ -110,6 +110,14 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     }
 
     if not user_inputs.dry_run:
+        # Make sure that tags are applied only to base_branches
+        if not clients.repository.is_commit_in_branch(
+                user_inputs.commit_sha, user_inputs.base_branch
+        ):
+            raise TaggingNotAllowedError(
+                f"{user_inputs.commit_sha} outside of {user_inputs.base_branch}"
+            )
+
         clients.repository.tag_commit(
             tag_name=DOCUMENTATION_TAG, commit_sha=user_inputs.commit_sha
         )
