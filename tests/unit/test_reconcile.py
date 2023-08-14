@@ -80,7 +80,7 @@ def test__local_only_external_ref(hidden: bool):
 
 
 @pytest.mark.parametrize(
-    "path_info_level, table_row_level, path_info_table_path, table_row_path",
+    "item_info_level, table_row_level, item_info_table_path, table_row_path",
     [
         pytest.param(1, 2, "table path 1", "table path 1", id="level mismatch"),
         pytest.param(1, 1, "table path 1", "table path 2", id="table path mismatch"),
@@ -89,9 +89,9 @@ def test__local_only_external_ref(hidden: bool):
 )
 # The arguments are needed due to parametrisation and use of fixtures
 def test__local_and_server_error(  # pylint: disable=too-many-arguments
-    path_info_level: int,
+    item_info_level: int,
     table_row_level: int,
-    path_info_table_path: str,
+    item_info_table_path: str,
     table_row_path: str,
     tmp_path: Path,
     mocked_clients,
@@ -103,7 +103,7 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
     """
     (path := tmp_path / "file1.md").touch()
     path_info = factories.PathInfoFactory(
-        local_path=path, level=path_info_level, table_path=path_info_table_path
+        local_path=path, level=item_info_level, table_path=item_info_table_path
     )
     navlink = factories.NavlinkFactory(title=path_info.navlink_title, link="link 1")
     table_row = types_.TableRow(level=table_row_level, path=(table_row_path,), navlink=navlink)
@@ -111,6 +111,18 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
             item_info=path_info,
+            table_row=table_row,
+            clients=mocked_clients,
+            base_path=tmp_path,
+        )
+
+    index_list_item = factories.IndexContentsListItemFactory(
+        hierarchy=item_info_level, reference_value=item_info_table_path
+    )
+
+    with pytest.raises(exceptions.ReconcilliationError):
+        reconcile._local_and_server(
+            item_info=index_list_item,
             table_row=table_row,
             clients=mocked_clients,
             base_path=tmp_path,
