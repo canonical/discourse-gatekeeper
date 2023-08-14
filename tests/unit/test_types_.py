@@ -14,20 +14,12 @@ from .. import factories
     "table_row, expected_is_group",
     [
         pytest.param(
-            types_.TableRow(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link="link 1"),
-            ),
+            factories.TableRowFactory(navlink=factories.NavlinkFactory(link="link 1")),
             False,
             id="not group",
         ),
         pytest.param(
-            types_.TableRow(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=None),
-            ),
+            factories.TableRowFactory(navlink=factories.NavlinkFactory(link=None)),
             True,
             id="is group",
         ),
@@ -40,6 +32,51 @@ def test_table_row_is_group(table_row: types_.TableRow, expected_is_group: bool)
     assert: then expected result is returned.
     """
     assert table_row.is_group == expected_is_group
+
+
+@pytest.mark.parametrize(
+    "table_row, expected_is_external",
+    [
+        pytest.param(
+            factories.TableRowFactory(navlink=factories.NavlinkFactory(link=None)),
+            False,
+            id="group",
+        ),
+        pytest.param(
+            factories.TableRowFactory(navlink=factories.NavlinkFactory(link="doc.md")),
+            False,
+            id="local link",
+        ),
+        pytest.param(
+            factories.TableRowFactory(
+                navlink=factories.NavlinkFactory(link="https://canonical.com")
+            ),
+            True,
+            id="external link",
+        ),
+        pytest.param(
+            factories.TableRowFactory(
+                navlink=factories.NavlinkFactory(link="HTTPS://canonical.com")
+            ),
+            True,
+            id="external link upper case",
+        ),
+        pytest.param(
+            factories.TableRowFactory(
+                navlink=factories.NavlinkFactory(link="http://canonical.com")
+            ),
+            True,
+            id="external link http",
+        ),
+    ],
+)
+def test_table_row_is_external(table_row: types_.TableRow, expected_is_external: bool):
+    """
+    arrange: given TableRow
+    act: when is_external is called
+    assert: then expected result is returned.
+    """
+    assert table_row.is_external == expected_is_external
 
 
 def _test_table_row_to_markdown_parameters():

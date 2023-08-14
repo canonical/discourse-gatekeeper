@@ -165,6 +165,11 @@ class TableRow(typing.NamedTuple):
         """Whether the row is a group of pages."""
         return self.navlink.link is None
 
+    @property
+    def is_external(self) -> bool:
+        """Whether the row is an external reference."""
+        return self.navlink.link is not None and self.navlink.link.lower().startswith("http")
+
     def to_markdown(self) -> str:
         """Convert to a line in the navigation table.
 
