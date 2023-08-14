@@ -44,6 +44,7 @@ def _parse_env_vars() -> types_.UserInputs:
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
     base_branch = os.getenv("INPUT_BASE_BRANCH", DEFAULT_BRANCH)
+    commit_sha = os.getenv("INPUT_COMMIT_SHA")
 
     event_path = os.getenv("GITHUB_EVENT_PATH")
     if not event_path:
@@ -51,11 +52,12 @@ def _parse_env_vars() -> types_.UserInputs:
             "Path to GitHub event information not found, is this action running on GitHub?"
         )
     event = json.loads(pathlib.Path(event_path).read_text(encoding="utf-8"))
-    try:
-        commit_sha = event["pull_request"]["head"]["sha"]
-    except KeyError:
-        # Use the commit SHA if not running as a pull request
-        commit_sha = os.environ["GITHUB_SHA"]
+    if commit_sha is None:
+        try:
+            commit_sha = event["pull_request"]["head"]["sha"]
+        except KeyError:
+            # Use the commit SHA if not running as a pull request
+            commit_sha = os.environ["GITHUB_SHA"]
 
     logging.info("Base branch: %s", base_branch)
 
@@ -112,7 +114,9 @@ def _write_github_output(
 
     output_dict = (
         {"index_url": reconcile.index_url, "topics": reconcile.topics} if reconcile else {}
-    ) | ({"pr_action": migrate.action, "pr_link": migrate.pull_request_url} if migrate else {})
+    ) | (
+        {"pr_action": migrate.action.value, "pr_link": migrate.pull_request_url} if migrate else {}
+    )
 
     output: str = "\n".join(
         f"{key}={_serialize_for_github(value)}" for key, value in output_dict.items()

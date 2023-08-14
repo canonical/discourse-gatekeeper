@@ -47,6 +47,11 @@ inputs:
       The name of the base branch for the repository
     required: false
     type: string
+  commit_sha:
+    description: |
+      The SHA of the commit to be used when running the action
+    required: false
+    type: string
 outputs:
   index_url:
     description: |
@@ -56,6 +61,12 @@ outputs:
     description: |
       A JSON map with the urls and the actions that have been taken against
       them.
+  pr_link:
+    description: |
+      A link of the community contribution PR
+  pr_action:
+    description: |
+      A description of which actions for the PR has been taken among created, closed and updated.
 runs:
   using: docker
   image: Dockerfile
