@@ -578,7 +578,7 @@ class Client:  # pylint: disable=R0904
         Returns:
             hash of the commit the tag refers to.
         """
-        self._git_repo.git.fetch("--all", "--tags")
+        self._git_repo.git.fetch("--all", "--tags", "--force")
         tags = [tag.commit for tag in self._git_repo.tags if tag_name == tag.name]
         if not tags:
             return None
