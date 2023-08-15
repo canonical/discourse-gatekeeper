@@ -300,36 +300,58 @@ def _local_and_server(
     """
     _local_and_server_validation(item_info=item_info, table_row=table_row)
 
-    # Is a directory locally and a grouping on the server
-    if item_info.local_path.is_dir() and table_row.is_group:
-        return _local_and_server_dir_local_group_server(path_info=item_info, table_row=table_row)
+    # Is a directory locally
+    if isinstance(item_info, types_.PathInfo) and item_info.local_path.is_dir():
+        # Group on the server
+        if table_row.is_group:
+            return _local_and_server_dir_local_group_server(
+                path_info=item_info, table_row=table_row
+            )
 
-    # Is a directory locally and a page on the server
-    if item_info.local_path.is_dir():
+        # External link on the server
+        if table_row.is_external:
+            raise exceptions.ReconcilliationError(
+                f"internal error, handling for item has not been implemented, {item_info=!r}, {table_row=!r}"
+            )
+
+        # Page on the server
         return _local_and_server_dir_local_page_server(
             path_info=item_info, table_row=table_row, clients=clients
         )
 
-    # Is a file locally and a grouping on the server, only need to create the page since the
-    # grouping is automatically removed from the navigation table since the directory has been
-    # removed locally
-    if table_row.is_group:
-        return (
-            types_.CreatePageAction(
-                level=item_info.level,
-                path=item_info.table_path,
-                navlink_title=item_info.navlink_title,
-                content=item_info.local_path.read_text(),
-                navlink_hidden=item_info.navlink_hidden,
-            ),
+    # Is a page locally
+    if isinstance(item_info, types_.PathInfo) and item_info.local_path.is_file():
+        # Is a file locally and a grouping on the server, only need to create the page since the
+        # grouping is automatically removed from the navigation table since the directory has been
+        # removed locally
+        if table_row.is_group:
+            return (
+                types_.CreatePageAction(
+                    level=item_info.level,
+                    path=item_info.table_path,
+                    navlink_title=item_info.navlink_title,
+                    content=item_info.local_path.read_text(),
+                    navlink_hidden=item_info.navlink_hidden,
+                ),
+            )
+
+        # Is a file locally and page on the server
+        return _local_and_server_file_local_page_server(
+            path_info=item_info,
+            table_row=table_row,
+            clients=clients,
+            base_path=base_path,
         )
 
-    # Is a file locally and page on the server
-    return _local_and_server_file_local_page_server(
-        path_info=item_info,
-        table_row=table_row,
-        clients=clients,
-        base_path=base_path,
+    # Is an external link locally
+    if isinstance(item_info, types_.IndexContentsListItem):
+        raise exceptions.ReconcilliationError(
+            f"internal error, handling for item has not been implemented, {item_info=!r}, {table_row=!r}"
+        )
+
+    # This should never be reached since items can only be a directory, file or external link
+    raise exceptions.ReconcilliationError(  # pragma: no cover
+        f"internal error, handling for item has not been implemented, {item_info=!r}, {table_row=!r}"
     )
 
 
@@ -349,6 +371,14 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
     """
     # Group case
     if table_row.is_group:
+        return types_.DeleteAction(
+            level=table_row.level,
+            path=table_row.path,
+            navlink=table_row.navlink,
+            content=None,
+        )
+    # External link case
+    if table_row.is_external:
         return types_.DeleteAction(
             level=table_row.level,
             path=table_row.path,
