@@ -601,12 +601,12 @@ def test__server_only_file():
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.return_value = (content := "content 1")
-    navlink = factories.NavlinkFactory(title="title 1", link="link 1")
-    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
+    navlink = factories.NavlinkFactory(link="link 1")
+    table_row = factories.TableRowFactory(navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
-    assert isinstance(returned_action, types_.DeleteAction)
+    assert isinstance(returned_action, types_.DeletePageAction)
     assert returned_action.level == table_row.level
     assert returned_action.path == table_row.path
     assert returned_action.navlink == table_row.navlink
@@ -622,8 +622,8 @@ def test__server_only_file_discourse_error():
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
-    navlink = factories.NavlinkFactory(title="title 1", link=(link := "link 1"))
-    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
+    navlink = factories.NavlinkFactory(link=(link := "link 1"))
+    table_row = factories.TableRowFactory(navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._server_only(table_row=table_row, discourse=mock_discourse)
@@ -638,16 +638,34 @@ def test__server_only_directory():
     assert: then a delete action for the directory is returned.
     """
     mock_discourse = mock.MagicMock(spec=discourse.Discourse)
-    navlink = factories.NavlinkFactory(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path=("path 1",), navlink=navlink)
+    navlink = factories.NavlinkFactory(link=None)
+    table_row = factories.TableRowFactory(navlink=navlink)
 
     returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
 
-    assert isinstance(returned_action, types_.DeleteAction)
+    assert isinstance(returned_action, types_.DeleteGroupAction)
     assert returned_action.level == table_row.level
     assert returned_action.path == table_row.path
     assert returned_action.navlink == table_row.navlink
-    assert returned_action.content is None
+    mock_discourse.retrieve_topic.assert_not_called()
+
+
+def test__server_only_external_ref():
+    """
+    arrange: given table row with an external reference
+    act: when _server_only is called with the table row
+    assert: then a delete action for the external reference is returned.
+    """
+    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    navlink = factories.NavlinkFactory(link="https://canonical.com")
+    table_row = factories.TableRowFactory(navlink=navlink)
+
+    returned_action = reconcile._server_only(table_row=table_row, discourse=mock_discourse)
+
+    assert isinstance(returned_action, types_.DeleteExternalRefAction)
+    assert returned_action.level == table_row.level
+    assert returned_action.path == table_row.path
+    assert returned_action.navlink == table_row.navlink
     mock_discourse.retrieve_topic.assert_not_called()
 
 
@@ -779,7 +797,7 @@ def test__calculate_action(
         pytest.param(
             (),
             (table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),),
-            (types_.DeleteAction,),
+            (types_.DeleteGroupAction,),
             ((table_row_1.level, table_row_1.path),),
             id="empty path infos single table row",
         ),
@@ -789,7 +807,7 @@ def test__calculate_action(
                 table_row_1 := factories.TableRowFactory(level=1, path=("path 1",), is_group=True),
                 table_row_2 := factories.TableRowFactory(level=2, path=("path 2",), is_group=True),
             ),
-            (types_.DeleteAction, types_.DeleteAction),
+            (types_.DeleteGroupAction, types_.DeleteGroupAction),
             ((table_row_1.level, table_row_1.path), (table_row_2.level, table_row_2.path)),
             id="empty path infos multiple table rows",
         ),
@@ -813,7 +831,7 @@ def test__calculate_action(
                     level=2, path=("group-1",) + path_info_1.table_path, is_group=True
                 ),
             ),
-            (types_.CreateGroupAction, types_.DeleteAction),
+            (types_.CreateGroupAction, types_.DeleteGroupAction),
             (
                 (path_info_1.level, path_info_1.table_path),
                 (table_row_1.level, ("group-1",) + path_info_1.table_path),
@@ -827,7 +845,7 @@ def test__calculate_action(
                     level=path_info_1.level, path=("path 2",), is_group=True
                 ),
             ),
-            (types_.CreateGroupAction, types_.DeleteAction),
+            (types_.CreateGroupAction, types_.DeleteGroupAction),
             ((path_info_1.level, path_info_1.table_path), (path_info_1.level, table_row.path)),
             id="single path info single table row path mismatch",
         ),

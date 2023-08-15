@@ -259,12 +259,11 @@ def test__noop(
 
 
 @pytest.mark.parametrize(
-    "dry_run, delete_pages, navlink_link, expected_result, expected_reason",
+    "dry_run, delete_pages, expected_result, expected_reason",
     [
         pytest.param(
             True,
             True,
-            "link 1",
             src_types.ActionResult.SKIP,
             action.DRY_RUN_REASON,
             id="dry run mode enabled",
@@ -272,20 +271,15 @@ def test__noop(
         pytest.param(
             False,
             False,
-            "link 1",
             src_types.ActionResult.SKIP,
             action.NOT_DELETE_REASON,
             id="delete pages false enabled",
         ),
-        pytest.param(False, True, None, src_types.ActionResult.SUCCESS, None, id="directory"),
     ],
 )
-# Simplifying the test would mean needing to write many more tests instead of parametrize
-# pylint: disable=too-many-arguments
-def test__delete_not_delete(
+def test__delete_not_delete_page(
     dry_run: bool,
     delete_pages: bool,
-    navlink_link: str | None,
     expected_result: src_types.ActionResult,
     expected_reason: str | None,
     caplog: pytest.LogCaptureFixture,
@@ -299,12 +293,7 @@ def test__delete_not_delete(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    delete_action = src_types.DeleteAction(
-        level=1,
-        path=("path 1",),
-        navlink=factories.NavlinkFactory(title="title 1", link=navlink_link),
-        content="content 1",
-    )
+    delete_action = factories.DeletePageActionFactory()
 
     returned_report = action._delete(
         action=delete_action,
@@ -319,7 +308,74 @@ def test__delete_not_delete(
     )
     mocked_discourse.delete_topic.assert_not_called()
     assert returned_report.table_row is None
-    assert returned_report.location == (url if navlink_link else None)
+    assert returned_report.location == url
+    assert returned_report.result == expected_result
+    assert returned_report.reason == expected_reason
+
+
+@pytest.mark.parametrize(
+    "dry_run, delete_action, expected_result, expected_reason",
+    [
+        pytest.param(
+            True,
+            factories.DeleteGroupActionFactory(),
+            src_types.ActionResult.SKIP,
+            action.DRY_RUN_REASON,
+            id="group dry run enabled",
+        ),
+        pytest.param(
+            False,
+            factories.DeleteGroupActionFactory(),
+            src_types.ActionResult.SUCCESS,
+            None,
+            id="group dry run disabled",
+        ),
+        pytest.param(
+            True,
+            factories.DeleteExternalRefActionFactory(),
+            src_types.ActionResult.SKIP,
+            action.DRY_RUN_REASON,
+            id="external ref dry run enabled",
+        ),
+        pytest.param(
+            False,
+            factories.DeleteExternalRefActionFactory(),
+            src_types.ActionResult.SUCCESS,
+            None,
+            id="external ref dry run disabled",
+        ),
+    ],
+)
+def test__delete_not_delete_group_external_ref(
+    dry_run: bool,
+    delete_action: src_types.DeleteAction,
+    expected_result: src_types.ActionResult,
+    expected_reason: str | None,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given delete action for a group or external ref and whether dry run is enabled
+    act: when action is passed to _delete with delete pages enabled
+    assert: then no topic is deleted, the action is logged and the expected report is returned.
+    """
+    delete_pages = True
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    returned_report = action._delete(
+        action=delete_action,
+        discourse=mocked_discourse,
+        dry_run=dry_run,
+        delete_pages=delete_pages,
+    )
+
+    assert_substrings_in_string(
+        (f"action: {delete_action}", f"dry run: {dry_run}", f"delete pages: {delete_pages}"),
+        caplog.text,
+    )
+    mocked_discourse.delete_topic.assert_not_called()
+    assert returned_report.table_row is None
+    assert returned_report.location is None
     assert returned_report.result == expected_result
     assert returned_report.reason == expected_reason
 
@@ -335,7 +391,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
-    delete_action = src_types.DeleteAction(
+    delete_action = src_types.DeletePageAction(
         level=1,
         path=("path 1",),
         navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -369,7 +425,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    delete_action = src_types.DeleteAction(
+    delete_action = src_types.DeletePageAction(
         level=1,
         path=("path 1",),
         navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -425,11 +481,10 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             id="update",
         ),
         pytest.param(
-            src_types.DeleteAction(
+            src_types.DeleteGroupAction(
                 level=1,
                 path=("path 1",),
                 navlink=factories.NavlinkFactory(title="title 1", link=None),
-                content=None,
             ),
             types.NoneType,
             id="delete",

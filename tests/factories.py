@@ -184,21 +184,53 @@ class UpdateActionFactory(
     content_change = factory.SubFactory(ContentChangeFactory)
 
 
-class DeleteActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteAction]  # type: ignore[misc]
+class DeletePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeletePageAction]  # type: ignore[misc]
 ):
-    """Generate DeleteActions."""  # noqa: DCO060
+    """Generate DeletePageActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.DeleteAction
+        model = types_.DeletePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
+
+
+class DeleteGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteGroupAction]  # type: ignore[misc]
+):
+    """Generate DeleteGroupActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=None)
+
+
+class DeleteExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteExternalRefAction]  # type: ignore[misc]
+):
+    """Generate DeleteExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=factory.Sequence(lambda n: (f"http://{n}",)))
 
 
 class ContentPageFactory(

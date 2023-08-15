@@ -173,7 +173,7 @@ def _local_and_server_dir_local_page_server(
             f"internal error, expecting link on table row, {path_info=!r}, {table_row=!r}"
         )
     return (
-        types_.DeleteAction(
+        types_.DeletePageAction(
             level=path_info.level,
             path=path_info.table_path,
             navlink=table_row.navlink,
@@ -371,19 +371,13 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
     """
     # Group case
     if table_row.is_group:
-        return types_.DeleteAction(
-            level=table_row.level,
-            path=table_row.path,
-            navlink=table_row.navlink,
-            content=None,
+        return types_.DeleteGroupAction(
+            level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
     # External link case
     if table_row.is_external:
-        return types_.DeleteAction(
-            level=table_row.level,
-            path=table_row.path,
-            navlink=table_row.navlink,
-            content=None,
+        return types_.DeleteExternalRefAction(
+            level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
 
     # This is an edge case that can't actually occur because table_row.is_group is based on
@@ -398,7 +392,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
         raise exceptions.ServerError(
             f"failed to retrieve contents of page, url={table_row.navlink.link}"
         ) from exc
-    return types_.DeleteAction(
+    return types_.DeletePageAction(
         level=table_row.level, path=table_row.path, navlink=table_row.navlink, content=content
     )
 

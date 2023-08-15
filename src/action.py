@@ -250,19 +250,23 @@ def _delete(
     """
     logging.info("dry run: %s, delete pages: %s, action: %s", dry_run, delete_pages, action)
 
+    # Handle group and external references
+    if isinstance(action, (types_.DeleteGroupAction, types_.DeleteExternalRefAction)):
+        return types_.ActionReport(
+            table_row=None,
+            location=None,
+            result=types_.ActionResult.SKIP if dry_run else types_.ActionResult.SUCCESS,
+            reason=DRY_RUN_REASON if dry_run else None,
+        )
+
     url = _absolute_url(action.navlink.link, discourse=discourse)
-    is_group = action.navlink.link is None
     if dry_run:
         return types_.ActionReport(
             table_row=None, location=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
         )
-    if not delete_pages and not is_group:
+    if not delete_pages and isinstance(action, types_.DeletePageAction):
         return types_.ActionReport(
             table_row=None, location=url, result=types_.ActionResult.SKIP, reason=NOT_DELETE_REASON
-        )
-    if is_group:
-        return types_.ActionReport(
-            table_row=None, location=url, result=types_.ActionResult.SUCCESS, reason=None
         )
 
     try:
@@ -315,7 +319,7 @@ def _run_one(
         case types_.UpdateAction:
             assert isinstance(action, types_.UpdateAction)  # nosec
             report = _update(action=action, discourse=discourse, dry_run=dry_run)
-        case types_.DeleteAction:
+        case types_.DeletePageAction | types_.DeleteGroupAction | types_.DeleteExternalRefAction:
             assert isinstance(action, types_.DeleteAction)  # nosec
             report = _delete(
                 action=action,

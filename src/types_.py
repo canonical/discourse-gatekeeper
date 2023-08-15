@@ -345,20 +345,42 @@ class UpdateIndexAction:
 
 
 @dataclasses.dataclass
-class DeleteAction:
-    """Represents a page to be deleted.
+class _DeleteActionBase:
+    """Represents an item to be deleted.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink: The link to the page
-        content: The documentation content.
     """
 
     level: Level
     path: TablePath
     navlink: Navlink
-    content: Content | None
+
+
+@dataclasses.dataclass
+class DeleteGroupAction(_DeleteActionBase):
+    """Represents a group to be deleted."""
+
+
+@dataclasses.dataclass
+class DeleteExternalRefAction(_DeleteActionBase):
+    """Represents an external reference to be deleted."""
+
+
+@dataclasses.dataclass
+class DeletePageAction(_DeleteActionBase):
+    """Represents a page to be deleted.
+
+    Attrs:
+        content: The documentation content.
+    """
+
+    content: Content
+
+
+DeleteAction = DeletePageAction | DeleteGroupAction | DeleteExternalRefAction
 
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction
