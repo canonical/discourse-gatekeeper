@@ -453,9 +453,19 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     "test_action, expected_return_type",
     [
         pytest.param(
-            factories.CreatePageActionFactory(level=1, path=("path 1",), navlink_title="title 1"),
+            factories.CreatePageActionFactory(),
             src_types.TableRow,
-            id="create",
+            id="create page",
+        ),
+        pytest.param(
+            factories.CreateGroupActionFactory(),
+            src_types.TableRow,
+            id="create group",
+        ),
+        pytest.param(
+            factories.CreateExternalRefActionFactory(),
+            src_types.TableRow,
+            id="create external ref",
         ),
         pytest.param(
             src_types.NoopAction(
@@ -481,13 +491,19 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             id="update",
         ),
         pytest.param(
-            src_types.DeleteGroupAction(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=None),
-            ),
+            factories.DeletePageActionFactory(),
             types.NoneType,
-            id="delete",
+            id="delete page",
+        ),
+        pytest.param(
+            factories.DeleteGroupActionFactory(),
+            types.NoneType,
+            id="delete group",
+        ),
+        pytest.param(
+            factories.DeleteExternalRefActionFactory(),
+            types.NoneType,
+            id="delete external ref",
         ),
     ],
 )
