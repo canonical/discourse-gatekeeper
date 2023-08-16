@@ -12,8 +12,8 @@ from typing import Generic, TypeVar
 import factory
 
 from src import index, types_
-
 from src.constants import DEFAULT_BRANCH
+
 from . import types
 
 T = TypeVar("T")

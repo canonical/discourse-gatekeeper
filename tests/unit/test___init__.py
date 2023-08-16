@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-
+# pylint: disable=C0302
 """Unit tests for execution."""
 import logging
 from pathlib import Path
@@ -95,14 +95,17 @@ def test__run_reconcile_empty_local_server(mocked_clients):
 def test__run_reconcile_empty_local_server_from_non_base_branch(mocked_clients):
     """
     arrange: given metadata with name but not docs and empty docs folder and mocked discourse
-    act: when _run_reconcile is called in non dry-run mode and from a branch other than the base branch
+    act: when _run_reconcile is called in non dry-run mode and from a branch other than the
+            base branch
     assert: then an error is thrown when tagging the branch
     """
-    mocked_clients.discourse.create_topic.return_value = (url := "url 1")
+    mocked_clients.discourse.create_topic.return_value = "url 1"
 
     branch = "fake-branch"
 
-    with mocked_clients.repository.create_branch(branch, DEFAULT_BRANCH).with_branch(branch) as repo:
+    with mocked_clients.repository.create_branch(branch, DEFAULT_BRANCH).with_branch(
+        branch
+    ) as repo:
         (repo.base_path / DOCUMENTATION_FOLDER_NAME).mkdir()
         (repo.base_path / "placeholder-file.md").touch()
         repo.update_branch("new commit", directory=None)
@@ -111,12 +114,10 @@ def test__run_reconcile_empty_local_server_from_non_base_branch(mocked_clients):
         )
 
         with pytest.raises(exceptions.TaggingNotAllowedError) as exc_info:
-            run_reconcile(clients=mocked_clients,
-                                                       user_inputs=user_inputs)
+            run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
 
         assert_substrings_in_string(
-            (repo.current_commit, f"outside of {DEFAULT_BRANCH}"),
-            str(exc_info.value)
+            (repo.current_commit, f"outside of {DEFAULT_BRANCH}"), str(exc_info.value)
         )
 
 
@@ -299,6 +300,7 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
     mocked_clients.discourse.create_topic.assert_not_called()
     assert returned_page_interactions is not None
     assert not returned_page_interactions.topics
+
 
 @mock.patch(
     "src.repository.Client.metadata",
