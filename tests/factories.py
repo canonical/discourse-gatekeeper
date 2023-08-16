@@ -13,6 +13,7 @@ import factory
 
 from src import index, types_
 
+from src.constants import DEFAULT_BRANCH
 from . import types
 
 T = TypeVar("T")
@@ -212,7 +213,7 @@ class UserInputsFactory(
     discourse = factory.SubFactory(UserInputDiscourseFactory)
     github_access_token = factory.Sequence(lambda n: f"test-token-{n}")
     commit_sha = factory.Sequence(lambda n: f"commit-sha-{n}")
-    base_branch = "main"
+    base_branch = DEFAULT_BRANCH
     dry_run = False
     delete_pages = False
 
