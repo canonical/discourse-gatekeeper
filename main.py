@@ -213,7 +213,7 @@ def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
     logging.info(
         "Repository at %s (%s)",
         clients.repository.current_branch,
-        clients.repository.current_commit
+        clients.repository.current_commit,
     )
     return pre_flight_checks(clients=clients, user_inputs=user_inputs)
 

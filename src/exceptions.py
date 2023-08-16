@@ -55,5 +55,6 @@ class RepositoryTagNotFoundError(BaseError):
 class TaggingNotAllowedError(BaseError):
     """The commit cannot be tagged as it is outside of the main."""
 
+
 class ContentError(BaseError):
     """A problem with the content occurred."""

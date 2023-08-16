@@ -42,7 +42,8 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     Raises:
         InputError: if there are any problems with executing any of the actions.
-
+        TaggingNotAllowedError: if the reconcile tries to tag a branch which is not the main base
+            branch
     """
     if not clients.repository.has_docs_directory:
         logging.warning(
@@ -112,7 +113,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     if not user_inputs.dry_run:
         # Make sure that tags are applied only to base_branches
         if not clients.repository.is_commit_in_branch(
-                user_inputs.commit_sha, user_inputs.base_branch
+            user_inputs.commit_sha, user_inputs.base_branch
         ):
             raise TaggingNotAllowedError(
                 f"{user_inputs.commit_sha} outside of {user_inputs.base_branch}"
