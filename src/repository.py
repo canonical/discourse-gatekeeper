@@ -582,7 +582,7 @@ class Client:  # pylint: disable=R0904
         tags = [tag.commit for tag in self._git_repo.tags if tag_name == tag.name]
         if not tags:
             return None
-        return tags[0]
+        return tags[0].hexsha
 
     def tag_commit(self, tag_name: str, commit_sha: str) -> None:
         """Tag a commit, if the tag already exists, it is deleted first.
@@ -600,7 +600,7 @@ class Client:  # pylint: disable=R0904
                 self._git_repo.git.tag("-d", tag_name)
                 self._git_repo.git.push("--delete", "origin", tag_name)
 
-            logging.error("Tagging commit %s with tag %s", commit_sha, tag_name)
+            logging.info("Tagging commit %s with tag %s", commit_sha, tag_name)
             self._git_repo.git.tag(tag_name, commit_sha)
             self._git_repo.git.push("origin", tag_name)
 
