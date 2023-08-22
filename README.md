@@ -239,8 +239,8 @@ This action uses the notion of risks, similarly to what used in SNAP (see
 We currently only provide support on one single track (say latest), with the following 
 branching naming convention:
 
-* [main]() corresponds to the edge risk
-* [stable]() corresponds to the stable version of the action
+* [main](https://github.com/canonical/upload-charm-docs/tree/main) corresponds to the edge risk
+* [stable](https://github.com/canonical/upload-charm-docs/tree/stable) corresponds to the stable version of the action
 
 We therefore generally advise you to pick the risk channel that best fits to your need. 
 
