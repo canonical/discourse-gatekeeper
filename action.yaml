@@ -39,17 +39,20 @@ inputs:
   github_token:
     description: |
       The github access token (secrets.GITHUB_TOKEN) to create pull request on Github and retrieve
-      the current documentation
+      the current documentation.
     required: true
     type: string
   base_branch:
     description: |
-      The name of the base branch for the repository
+      The name of the base branch for the repository.
+    default: main
     required: false
     type: string
   commit_sha:
     description: |
-      The SHA of the commit to be used when running the action
+      The SHA of the commit to be used when running the action. If not provided, it falls back to 
+      the pull request head SHA or (if outside of a PR) to the value of the environment 
+      variable GITHUB_SHA.
     required: false
     type: string
 outputs:

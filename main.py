@@ -59,7 +59,7 @@ def _parse_env_vars() -> types_.UserInputs:
             # Use the commit SHA if not running as a pull request
             commit_sha = os.environ["GITHUB_SHA"]
 
-    logging.info("Base branch: %s", base_branch)
+    logging.info("Base branch: %s (commit %s)", base_branch, commit_sha)
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -225,13 +225,17 @@ def main() -> None:
     # Read input
     user_inputs = _parse_env_vars()
 
-    assert main_checks(user_inputs=user_inputs)  # pylint: disable=E1120
+    assert main_checks(user_inputs=user_inputs)  # pylint: disable=no-value-for-parameter
 
     # Push data to Discourse, avoiding community conflicts
-    reconcile_urls_with_actions = main_reconcile(user_inputs=user_inputs)  # pylint: disable=E1120
+    reconcile_urls_with_actions = main_reconcile(  # pylint: disable=no-value-for-parameter
+        user_inputs=user_inputs
+    )
 
     # Open a PR with community contributions if necessary
-    migrate_urls_with_actions = main_migrate(user_inputs=user_inputs)  # pylint: disable=E1120
+    migrate_urls_with_actions = main_migrate(  # pylint: disable=no-value-for-parameter
+        user_inputs=user_inputs
+    )
 
     # Write output
     _write_github_output(migrate=migrate_urls_with_actions, reconcile=reconcile_urls_with_actions)

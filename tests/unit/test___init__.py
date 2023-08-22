@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-# pylint: disable=C0302
+# pylint: disable=too-many-lines
 """Unit tests for execution."""
 import logging
 from pathlib import Path

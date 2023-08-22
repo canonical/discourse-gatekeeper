@@ -163,7 +163,7 @@ def _commit_file_to_tree_element(commit_file: commit_module.FileAction) -> Input
             raise NotImplementedError(f"unsupported file in commit, {commit_file}")
 
 
-class Client:  # pylint: disable=R0904
+class Client:  # pylint: disable=too-many-public-methods
     """Wrapper for git/git-server related functionalities.
 
     Attrs:

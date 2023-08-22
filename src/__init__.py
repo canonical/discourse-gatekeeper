@@ -11,7 +11,7 @@ from . import navigation_table, reconcile
 from . import sort as sort_module
 from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from .clients import Clients
-from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG  # DEFAULT_BRANCH,
+from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 from .download import recreate_docs
 from .exceptions import InputError, TaggingNotAllowedError
 from .repository import DEFAULT_BRANCH_NAME
