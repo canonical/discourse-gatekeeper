@@ -188,7 +188,7 @@ TableRowLookup = dict[TablePath, TableRow]
 
 @dataclasses.dataclass
 class _CreateActionBase:
-    """Base class for create actions
+    """Represents an item to be updated.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
@@ -248,7 +248,7 @@ class CreateIndexAction:
 
 @dataclasses.dataclass
 class _NoopActionBase:
-    """Represents a page with no required changes.
+    """Represents an item with no required changes.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
@@ -337,20 +337,42 @@ class IndexContentChange(typing.NamedTuple):
 
 
 @dataclasses.dataclass
-class UpdateAction:
-    """Represents a page to be updated.
+class _UpdateActionBase:
+    """Base for all the update actions.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_change: The changeto the navlink.
-        content_change: The change to the documentation content.
     """
 
     level: Level
     path: TablePath
     navlink_change: NavlinkChange
-    content_change: ContentChange | None
+
+
+@dataclasses.dataclass
+class UpdateGroupAction(_UpdateActionBase):
+    """Represents a group to be updated."""
+
+
+@dataclasses.dataclass
+class UpdatePageAction(_UpdateActionBase):
+    """Represents a page to be updated.
+
+    Attrs:
+        content_change: The change to the documentation content.
+    """
+
+    content_change: ContentChange
+
+
+@dataclasses.dataclass
+class UpdateExternalRefAction(_UpdateActionBase):
+    """Represents an external reference to be updated."""
+
+
+UpdateAction = UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction
 
 
 @dataclasses.dataclass

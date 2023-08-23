@@ -199,21 +199,65 @@ class ContentChangeFactory(
     local = factory.Sequence(lambda n: f"local {n}")
 
 
-class UpdateActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateAction]  # type: ignore[misc]
+class UpdatePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdatePageAction]  # type: ignore[misc]
 ):
-    """Generate UpdateActions."""  # noqa: DCO060
+    """Generate UpdatePageActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.UpdateAction
+        model = types_.UpdatePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink_change = factory.SubFactory(NavlinkChangeFactory)
     content_change = factory.SubFactory(ContentChangeFactory)
+
+
+class UpdateGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateGroupAction]  # type: ignore[misc]
+):
+    """Generate UpdateGroupActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UpdateGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_change = factory.SubFactory(
+        NavlinkChangeFactory,
+        old=factory.SubFactory(NavlinkFactory, link=None),
+        new=factory.SubFactory(NavlinkFactory, link=None),
+    )
+
+
+class UpdateExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateExternalRefAction]  # type: ignore[misc]
+):
+    """Generate UpdateExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UpdateExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_change = factory.SubFactory(
+        NavlinkChangeFactory,
+        old=factory.SubFactory(
+            NavlinkFactory, link=factory.Sequence(lambda n: (f"http://old-{n}",))
+        ),
+        new=factory.SubFactory(
+            NavlinkFactory, link=factory.Sequence(lambda n: (f"http://new-{n}",))
+        ),
+    )
 
 
 class DeletePageActionFactory(

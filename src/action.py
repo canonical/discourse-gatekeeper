@@ -17,7 +17,9 @@ FAIL_NAVLINK_LINK = "<not created due to error>"
 NOT_DELETE_REASON = "delete_topics is false"
 
 
-def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | None:
+def _absolute_url(
+    action: types_.AnyAction, url: types_.Url | None, discourse: Discourse
+) -> types_.Url | None:
     """Get the absolute URL.
 
     Args:
@@ -27,7 +29,20 @@ def _absolute_url(url: types_.Url | None, discourse: Discourse) -> types_.Url | 
     Returns:
         The converted url or None if the url is None.
     """
-    return discourse.absolute_url(url=url) if url is not None else None
+    if (
+        isinstance(
+            action,
+            (
+                types_.CreatePageAction,
+                types_.UpdatePageAction,
+                types_.NoopPageAction,
+                types_.DeletePageAction,
+            ),
+        )
+        and url is not None
+    ):
+        return discourse.absolute_url(url=url)
+    return url
 
 
 def _log_content_change(base: str, new: str) -> None:
@@ -111,7 +126,7 @@ def _noop(action: types_.NoopAction, discourse: Discourse) -> types_.ActionRepor
     table_row = types_.TableRow(level=action.level, path=action.path, navlink=action.navlink)
     return types_.ActionReport(
         table_row=table_row,
-        location=_absolute_url(table_row.navlink.link, discourse=discourse),
+        location=_absolute_url(action=action, url=table_row.navlink.link, discourse=discourse),
         result=types_.ActionResult.SUCCESS,
         reason=None,
     )
@@ -121,14 +136,12 @@ class UpdateCase(str, Enum):
     """The possible cases for the update action.
 
     Attrs:
-        INVALID: The action is not valid.
         DRY_RUN: Do not make any changes.
         CONTENT_CHANGE: The content has been changed.
         BASE_MISSING: The base content is not available.
         DEFAULT: No other specific case applies.
     """
 
-    INVALID = "invalid"
     DRY_RUN = "dry-run"
     CONTENT_CHANGE = "content-change"
     BASE_MISSING = "base-missing"
@@ -145,21 +158,18 @@ def _get_update_case(action: types_.UpdateAction, dry_run: bool) -> UpdateCase:
     Returns:
         The named case for the action execution.
     """
-    # Check that action is valid
-    if action.navlink_change.new.link is not None and action.content_change is None:
-        return UpdateCase.INVALID
     if dry_run:
         return UpdateCase.DRY_RUN
     if (
         not dry_run
+        and isinstance(action, types_.UpdatePageAction)
         and action.navlink_change.new.link is not None
-        and action.content_change is not None
         and action.content_change.base is not None
         and action.content_change.local != action.content_change.server
     ):
         return UpdateCase.CONTENT_CHANGE
     if (
-        action.content_change is not None
+        isinstance(action, types_.UpdatePageAction)
         and action.content_change.base is None
         and action.content_change.local != action.content_change.server
     ):
@@ -184,7 +194,7 @@ def _update(
         ActionError: if the content change or new content for a page is None.
     """
     logging.info("dry run: %s, action: %s", dry_run, action)
-    if action.content_change is not None:
+    if isinstance(action, types_.UpdatePageAction):
         _log_content_change(
             base=action.content_change.base or action.content_change.server,
             new=action.content_change.local,
@@ -194,14 +204,11 @@ def _update(
 
     reason: str | None
     match update_case:
-        case UpdateCase.INVALID:
-            raise exceptions.ActionError(
-                f"internal error, content change for page is None, {action=!r}"
-            )
         case UpdateCase.DRY_RUN:
             result = types_.ActionResult.SKIP
             reason = DRY_RUN_REASON
         case UpdateCase.CONTENT_CHANGE:
+            action = typing.cast(types_.UpdatePageAction, action)
             try:
                 content_change = typing.cast(types_.ContentChange, action.content_change)
                 merged_content = content.merge(
@@ -224,7 +231,7 @@ def _update(
             result = types_.ActionResult.SUCCESS
             reason = None
 
-    url = _absolute_url(action.navlink_change.new.link, discourse=discourse)
+    url = _absolute_url(action=action, url=action.navlink_change.new.link, discourse=discourse)
     table_row = types_.TableRow(
         level=action.level, path=action.path, navlink=action.navlink_change.new
     )
@@ -259,7 +266,7 @@ def _delete(
             reason=DRY_RUN_REASON if dry_run else None,
         )
 
-    url = _absolute_url(action.navlink.link, discourse=discourse)
+    url = _absolute_url(action=action, url=action.navlink.link, discourse=discourse)
     if dry_run:
         return types_.ActionReport(
             table_row=None, location=url, result=types_.ActionResult.SKIP, reason=DRY_RUN_REASON
@@ -316,7 +323,7 @@ def _run_one(
         case types_.NoopPageAction | types_.NoopGroupAction | types_.NoopExternalRefAction:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
-        case types_.UpdateAction:
+        case types_.UpdatePageAction | types_.UpdateGroupAction | types_.UpdateExternalRefAction:
             assert isinstance(action, types_.UpdateAction)  # nosec
             report = _update(action=action, discourse=discourse, dry_run=dry_run)
         case types_.DeletePageAction | types_.DeleteGroupAction | types_.DeleteExternalRefAction:

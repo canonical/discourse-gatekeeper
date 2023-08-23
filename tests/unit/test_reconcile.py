@@ -313,7 +313,7 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(returned_action, types_.UpdatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -357,7 +357,7 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(returned_action, types_.UpdatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -398,7 +398,7 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(returned_action, types_.UpdatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -442,7 +442,7 @@ def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clie
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(returned_action, types_.UpdatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -508,7 +508,7 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(returned_action, types_.UpdateGroupAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -516,7 +516,6 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     assert returned_action.navlink_change.new == factories.NavlinkFactory(  # type: ignore
         title=path_info.navlink_title, link=None
     )
-    assert returned_action.content_change is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 

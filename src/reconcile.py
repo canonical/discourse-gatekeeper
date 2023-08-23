@@ -129,7 +129,7 @@ def _local_and_server_dir_local_group_server(
             ),
         )
     return (
-        types_.UpdateAction(
+        types_.UpdateGroupAction(
             level=path_info.level,
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(
@@ -138,7 +138,6 @@ def _local_and_server_dir_local_group_server(
                     title=path_info.navlink_title, link=table_row.navlink.link, hidden=False
                 ),
             ),
-            content_change=None,
         ),
     )
 
@@ -245,7 +244,7 @@ def _local_and_server_file_local_page_server(
             f"tag_name={DOCUMENTATION_TAG}"
         ) from exc
     return (
-        types_.UpdateAction(
+        types_.UpdatePageAction(
             level=path_info.level,
             path=path_info.table_path,
             navlink_change=types_.NavlinkChange(

@@ -207,13 +207,14 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
 # Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "noop_action, expected_table_row",
+    "noop_action, expected_table_row, expected_location",
     [
         pytest.param(
             action_1 := factories.NoopGroupActionFactory(),
             factories.TableRowFactory(
                 level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
+            None,
             id="directory",
         ),
         pytest.param(
@@ -221,25 +222,40 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
             factories.TableRowFactory(
                 level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
+            action_1.navlink.link,
             id="external ref",
-        ),
-        pytest.param(
-            action_1 := factories.NoopPageActionFactory(),
-            factories.TableRowFactory(
-                level=action_1.level, path=action_1.path, navlink=action_1.navlink
-            ),
-            id="file",
         ),
     ],
 )
 # pylint: enable=undefined-variable,unused-variable
-def test__noop(
+def test__noop_dir_external_ref(
     noop_action: src_types.NoopAction,
     expected_table_row: src_types.TableRow,
+    expected_location: str | None,
     caplog: pytest.LogCaptureFixture,
 ):
     """
-    arrange: given noop action
+    arrange: given noop action for a directory or external reference
+    act: when action is passed to _noop
+    assert: then the action is logged and a success report is returned.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
+
+    assert str(noop_action) in caplog.text
+    assert returned_report.table_row == expected_table_row
+    assert returned_report.location == expected_location
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
+
+
+def test__noop_file(
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given noop action for a file
     act: when action is passed to _noop
     assert: then the action is logged and a success report is returned.
     """
@@ -247,14 +263,16 @@ def test__noop(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     absolute_url = "absolute url 1"
     mocked_discourse.absolute_url.return_value = absolute_url
+    noop_action = factories.NoopPageActionFactory()
 
     returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
 
+    expected_table_row = factories.TableRowFactory(
+        level=noop_action.level, path=noop_action.path, navlink=noop_action.navlink
+    )
     assert str(noop_action) in caplog.text
     assert returned_report.table_row == expected_table_row
-    assert returned_report.location == (
-        absolute_url if expected_table_row.navlink.link is not None else None
-    )
+    assert returned_report.location == absolute_url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
@@ -484,14 +502,13 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             id="noop external ref",
         ),
         pytest.param(
-            src_types.UpdateAction(
+            src_types.UpdateGroupAction(
                 level=1,
                 path=("path 1",),
                 navlink_change=factories.NavlinkChangeFactory(
                     old=factories.NavlinkFactory(title="title 1", link=None),
                     new=factories.NavlinkFactory(title="title 1", link=None),
                 ),
-                content_change=None,
             ),
             src_types.TableRow,
             id="update",
