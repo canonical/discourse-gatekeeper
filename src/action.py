@@ -313,7 +313,7 @@ def _run_one(
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
             assert isinstance(action, types_.CreateAction)  # nosec
             report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
-        case types_.NoopAction:
+        case types_.NoopPageAction | types_.NoopGroupAction | types_.NoopExternalRefAction:
             assert isinstance(action, types_.NoopAction)  # nosec
             report = _noop(action=action, discourse=discourse)
         case types_.UpdateAction:

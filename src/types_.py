@@ -247,20 +247,42 @@ class CreateIndexAction:
 
 
 @dataclasses.dataclass
-class NoopAction:
+class _NoopActionBase:
     """Represents a page with no required changes.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink: The navling title and link for the page.
-        content: The documentation content of the page.
     """
 
     level: Level
     path: TablePath
     navlink: Navlink
-    content: Content | None
+
+
+@dataclasses.dataclass
+class NoopGroupAction(_NoopActionBase):
+    """Represents a group with no required changes."""
+
+
+@dataclasses.dataclass
+class NoopExternalRefAction(_NoopActionBase):
+    """Represents an external reference with no required changes."""
+
+
+@dataclasses.dataclass
+class NoopPageAction(_NoopActionBase):
+    """Represents a page with no required changes.
+
+    Attrs:
+        content: The documentation content of the page.
+    """
+
+    content: Content
+
+
+NoopAction = NoopPageAction | NoopGroupAction | NoopExternalRefAction
 
 
 @dataclasses.dataclass

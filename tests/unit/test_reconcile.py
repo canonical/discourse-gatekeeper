@@ -198,7 +198,7 @@ def test__local_and_server_file_same(local_content: str, server_content: str, mo
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.NoopAction)
+    assert isinstance(returned_action, types_.NoopPageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -479,12 +479,11 @@ def test__local_and_server_directory_same(mock_get_file, mocked_clients):
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.NoopAction)
+    assert isinstance(returned_action, types_.NoopGroupAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
     assert returned_action.navlink == navlink  # type: ignore
-    assert returned_action.content is None  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_not_called()
     mock_get_file.assert_not_called()
 
@@ -820,7 +819,7 @@ def test__calculate_action(
                     navlink=factories.NavlinkFactory(title=path_info_1.navlink_title, link=None),
                 ),
             ),
-            (types_.NoopAction,),
+            (types_.NoopGroupAction,),
             ((path_info_1.level, path_info_1.table_path),),
             id="single path info single table row match",
         ),

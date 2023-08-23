@@ -210,23 +210,24 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
     "noop_action, expected_table_row",
     [
         pytest.param(
-            src_types.NoopAction(
-                level=(level := 1),
-                path=(path := ("path 1",)),
-                navlink=(navlink := factories.NavlinkFactory(title="title 1", link=None)),
-                content=None,
+            action_1 := factories.NoopGroupActionFactory(),
+            factories.TableRowFactory(
+                level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
-            src_types.TableRow(level=level, path=path, navlink=navlink),
             id="directory",
         ),
         pytest.param(
-            src_types.NoopAction(
-                level=(level := 1),
-                path=(path := ("path 1",)),
-                navlink=(navlink := factories.NavlinkFactory(title="title 1", link="link 1")),
-                content="content 1",
+            action_1 := factories.NoopExternalRefActionFactory(),
+            factories.TableRowFactory(
+                level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
-            src_types.TableRow(level=level, path=path, navlink=navlink),
+            id="external ref",
+        ),
+        pytest.param(
+            action_1 := factories.NoopPageActionFactory(),
+            factories.TableRowFactory(
+                level=action_1.level, path=action_1.path, navlink=action_1.navlink
+            ),
             id="file",
         ),
     ],
@@ -468,14 +469,19 @@ def test__delete(caplog: pytest.LogCaptureFixture):
             id="create external ref",
         ),
         pytest.param(
-            src_types.NoopAction(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=None),
-                content=None,
-            ),
+            factories.NoopPageActionFactory(),
             src_types.TableRow,
-            id="noop",
+            id="noop pae",
+        ),
+        pytest.param(
+            factories.NoopGroupActionFactory(),
+            src_types.TableRow,
+            id="noop group",
+        ),
+        pytest.param(
+            factories.NoopExternalRefActionFactory(),
+            src_types.TableRow,
+            id="noop external ref",
         ),
         pytest.param(
             src_types.UpdateAction(
@@ -745,22 +751,13 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     [
         pytest.param((), [], id="empty"),
         pytest.param(
-            (
-                src_types.NoopAction(
-                    level=(level := 1),
-                    path=(path := ("path 1",)),
-                    navlink=(
-                        navlink := factories.NavlinkFactory(
-                            title="title 1", link=(link := "link 1")
-                        )
-                    ),
-                    content="content 1",
-                ),
-            ),
+            (action_1 := factories.NoopPageActionFactory(),),
             [
-                src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level, path=path, navlink=navlink),
-                    location=link,
+                factories.ActionReportFactory(
+                    table_row=factories.TableRowFactory(
+                        level=action_1.level, path=action_1.path, navlink=action_1.navlink
+                    ),
+                    location=action_1.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 )
@@ -769,37 +766,23 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             (
-                src_types.NoopAction(
-                    level=(level_1 := 1),
-                    path=(path_1 := ("path 1",)),
-                    navlink=(
-                        navlink_1 := factories.NavlinkFactory(
-                            title="title 1", link=(link_1 := "link 1")
-                        )
-                    ),
-                    content="content 1",
-                ),
-                src_types.NoopAction(
-                    level=(level_2 := 2),
-                    path=(path_2 := ("path 2",)),
-                    navlink=(
-                        navlink_2 := factories.NavlinkFactory(
-                            title="title 2", link=(link_2 := "link 2")
-                        )
-                    ),
-                    content="content 2",
-                ),
+                action_1 := factories.NoopPageActionFactory(),
+                action_2 := factories.NoopPageActionFactory(),
             ),
             [
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level_1, path=path_1, navlink=navlink_1),
-                    location=link_1,
+                    table_row=src_types.TableRow(
+                        level=action_1.level, path=action_1.path, navlink=action_1.navlink
+                    ),
+                    location=action_1.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 ),
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level_2, path=path_2, navlink=navlink_2),
-                    location=link_2,
+                    table_row=src_types.TableRow(
+                        level=action_2.level, path=action_2.path, navlink=action_2.navlink
+                    ),
+                    location=action_2.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 ),

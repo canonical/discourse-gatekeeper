@@ -182,7 +182,7 @@ def _test_conflicts_parameters():
     return [
         pytest.param((), False, (), id="empty"),
         pytest.param((factories.CreatePageActionFactory(),), False, (), id="single create"),
-        pytest.param((factories.NoopActionFactory(),), False, (), id="single noop"),
+        pytest.param((factories.NoopPageActionFactory(),), False, (), id="single noop"),
         pytest.param((factories.DeletePageActionFactory(),), False, (), id="single delete"),
         pytest.param(
             (factories.UpdateActionFactory(content_change=None),),
@@ -250,7 +250,7 @@ def _test_conflicts_parameters():
             id="single update conflict",
         ),
         pytest.param(
-            (factories.NoopActionFactory(), factories.NoopActionFactory()),
+            (factories.NoopPageActionFactory(), factories.NoopPageActionFactory()),
             False,
             (),
             id="multiple actions no problems",
@@ -260,7 +260,7 @@ def _test_conflicts_parameters():
                 action_1 := factories.UpdateActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
-                factories.NoopActionFactory(),
+                factories.NoopPageActionFactory(),
             ),
             False,
             (
@@ -276,7 +276,7 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                factories.NoopActionFactory(),
+                factories.NoopPageActionFactory(),
                 action_2 := factories.UpdateActionFactory(
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),

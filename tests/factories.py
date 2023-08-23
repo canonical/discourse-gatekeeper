@@ -119,21 +119,53 @@ class NavlinkFactory(
     hidden = False
 
 
-class NoopActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.NoopAction]  # type: ignore[misc]
+class NoopPageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopPageAction]  # type: ignore[misc]
 ):
-    """Generate NoopActions."""  # noqa: DCO060
+    """Generate NoopPageActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.NoopAction
+        model = types_.NoopPageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NoopGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopGroupAction]  # type: ignore[misc]
+):
+    """Generate NoopGroupActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=None)
+
+
+class NoopExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopExternalRefAction]  # type: ignore[misc]
+):
+    """Generate NoopExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=factory.Sequence(lambda n: (f"http://{n}",)))
 
 
 class NavlinkChangeFactory(

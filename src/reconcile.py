@@ -124,11 +124,8 @@ def _local_and_server_dir_local_group_server(
     """
     if table_row.navlink.title == path_info.navlink_title:
         return (
-            types_.NoopAction(
-                level=path_info.level,
-                path=path_info.table_path,
-                navlink=table_row.navlink,
-                content=None,
+            types_.NoopGroupAction(
+                level=path_info.level, path=path_info.table_path, navlink=table_row.navlink
             ),
         )
     return (
@@ -221,7 +218,7 @@ def _local_and_server_file_local_page_server(
         and table_row.navlink.hidden == path_info.navlink_hidden
     ):
         return (
-            types_.NoopAction(
+            types_.NoopPageAction(
                 level=path_info.level,
                 path=path_info.table_path,
                 navlink=table_row.navlink,
