@@ -485,6 +485,11 @@ class Discourse:
 
         return self.absolute_url(url=url)
 
+    @property
+    def base_path(self) -> str:
+        """The HTTP protocol and hostname for discourse (e.g., https://discourse)."""
+        return self._base_path
+
 
 def create_discourse(
     hostname: str, category_id: str, api_username: str, api_key: str

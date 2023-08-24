@@ -165,22 +165,31 @@ class TableRow(typing.NamedTuple):
         """Whether the row is a group of pages."""
         return self.navlink.link is None
 
-    @property
-    def is_external(self) -> bool:
+    def is_external(self, server_hostname: str) -> bool:
         """Whether the row is an external reference."""
-        return self.navlink.link is not None and self.navlink.link.lower().startswith("http")
+        if self.navlink.link is None:
+            return False
+        comparison_link = self.navlink.link.lower()
+        return comparison_link.startswith("http") and not comparison_link.startswith(
+            server_hostname.lower()
+        )
 
-    def to_markdown(self) -> str:
+    def to_markdown(self, server_hostname: str) -> str:
         """Convert to a line in the navigation table.
 
         Returns:
             The line in the navigation table.
         """
         level = f" {self.level} " if not self.navlink.hidden else " "
-        return (
-            f"|{level}| {'-'.join(self.path)} | "
-            f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
-        )
+
+        if self.is_external(server_hostname):
+            link = self.navlink.link
+        elif self.is_group:
+            link = ""
+        else:
+            link = urlparse(self.navlink.link or "").path
+
+        return f"|{level}| {'-'.join(self.path)} | " f"[{self.navlink.title}]({link}) |"
 
 
 TableRowLookup = dict[TablePath, TableRow]

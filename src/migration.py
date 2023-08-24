@@ -17,6 +17,7 @@ GITKEEP_FILENAME = ".gitkeep"
 
 def _validate_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
+    discourse: Discourse,
 ) -> typing.Iterable[types_.TableRow]:
     """Check whether a table row is valid in regards to the sequence.
 
@@ -25,6 +26,7 @@ def _validate_table_rows(
 
     Args:
         table_rows: Parsed rows from the index table.
+        discourse: Client to the documentation server.
 
     Raises:
         InputError: if the row is the first row but the value of level is not 1 or
@@ -42,19 +44,19 @@ def _validate_table_rows(
                 raise exceptions.InputError(
                     "Invalid starting row level. A table row must start with level value 1. "
                     "Please fix the upstream first and re-run."
-                    f"Row: {row.to_markdown()}"
+                    f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
                 )
         if row.level < 1:
             raise exceptions.InputError(
                 f"Invalid row level: {row.level=!r}."
                 "Zero or negative level value is invalid."
-                f"Row: {row.to_markdown()}"
+                f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
             )
         if row.level > current_group_level + 1:
             raise exceptions.InputError(
                 "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
                 f"Did you mean level {current_group_level + 1}?"
-                f"Row: {row.to_markdown()}"
+                f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
             )
 
         yield row
@@ -320,7 +322,7 @@ def run(
     Raises:
         MigrationError: if any migration report has failed.
     """
-    valid_table_rows = _validate_table_rows(table_rows=table_rows)
+    valid_table_rows = _validate_table_rows(table_rows=table_rows, discourse=discourse)
     document_metadata = _get_docs_metadata(
         table_rows=valid_table_rows, index_content=index_content
     )

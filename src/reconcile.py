@@ -384,7 +384,7 @@ def _local_and_server(
             )
 
         # External link on the server
-        if table_row.is_external:
+        if table_row.is_external(server_hostname=clients.discourse.base_path):
             return (
                 types_.CreateGroupAction(
                     level=item_info.level,
@@ -403,7 +403,9 @@ def _local_and_server(
     if isinstance(item_info, types_.PathInfo) and item_info.local_path.is_file():
         # Is a file locally and a grouping or external ref on the server, only need to create the
         # page since the entry is automatically removed from the navigation table
-        if table_row.is_group or table_row.is_external:
+        if table_row.is_group or table_row.is_external(
+            server_hostname=clients.discourse.base_path
+        ):
             return (
                 types_.CreatePageAction(
                     level=item_info.level,
@@ -437,7 +439,7 @@ def _local_and_server(
             )
 
         # External link on the server
-        if table_row.is_external:
+        if table_row.is_external(server_hostname=clients.discourse.base_path):
             return _local_and_server_external_ref_local_external_ref_server(
                 item_info=item_info, table_row=table_row
             )
@@ -473,7 +475,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
     # External link case
-    if table_row.is_external:
+    if table_row.is_external(server_hostname=discourse.base_path):
         return types_.DeleteExternalRefAction(
             level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
@@ -582,17 +584,22 @@ def run(
 def index_page(
     index: types_.Index,
     table_rows: typing.Iterable[types_.TableRow],
+    discourse: Discourse,
 ) -> types_.AnyIndexAction:
     """Reconcile differences for the index page.
 
     Args:
         index: Information about the index on the server and locally.
         table_rows: The current navigation table rows based on local files.
+        discourse: A client to the documentation server.
 
     Returns:
         The action to take for the index page.
     """
-    table_contents = "\n".join(table_row.to_markdown() for table_row in table_rows)
+    table_rows = list(table_rows)
+    table_contents = "\n".join(
+        table_row.to_markdown(discourse.base_path) for table_row in table_rows
+    )
     local_content = (
         f"{index_module.get_content_for_server(index.local)}{NAVIGATION_TABLE_START}\n"
         f"{table_contents}\n".strip()

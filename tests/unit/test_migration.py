@@ -92,7 +92,9 @@ from .helpers import assert_substrings_in_string
     ],
 )
 def test__validate_table_rows_invalid_rows(
-    table_rows: tuple[types_.TableRow, ...], expected_message_contents: Iterable[str]
+    table_rows: tuple[types_.TableRow, ...],
+    expected_message_contents: Iterable[str],
+    mocked_clients,
 ):
     """
     arrange: given invalid table_rows sequence
@@ -100,7 +102,12 @@ def test__validate_table_rows_invalid_rows(
     assert: InputError is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InputError) as exc:
-        tuple(row for row in migration._validate_table_rows(table_rows=table_rows))
+        tuple(
+            row
+            for row in migration._validate_table_rows(
+                table_rows=table_rows, discourse=mocked_clients.discourse
+            )
+        )
 
     assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
 
@@ -138,15 +145,18 @@ def test__validate_table_rows_invalid_rows(
         ),
     ],
 )
-def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
+def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...], mocked_clients):
     """
     arrange: given table rows of valid sequence
     act: when _validate_table_rows is called
     assert: an iterable with original sequence preserved is returned.
     """
-    assert tuple(row for row in migration._validate_table_rows(table_rows=table_rows)) == tuple(
-        row for row in table_rows
-    )
+    assert tuple(
+        row
+        for row in migration._validate_table_rows(
+            table_rows=table_rows, discourse=mocked_clients.discourse
+        )
+    ) == tuple(row for row in table_rows)
 
 
 # Pylint doesn't understand how the walrus operator works
@@ -590,13 +600,13 @@ def test__migrate_gitkeep(meta: types_.GitkeepMeta, tmp_path: Path):
     assert (tmp_path / meta.path).is_file()
 
 
-def test__migrate_document_fail(tmp_path: Path):
+def test__migrate_document_fail(tmp_path: Path, mocked_clients):
     """
     arrange: given valid document metadata and mocked discourse that raises an error
     act: when _migrate_document is called
     assert: failed migration report is returned.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.retrieve_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     table_row = types_.TableRow(
         level=(level := 1),

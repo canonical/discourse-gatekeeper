@@ -268,7 +268,9 @@ def test__noop_file(
     returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
 
     expected_table_row = factories.TableRowFactory(
-        level=noop_action.level, path=noop_action.path, navlink=noop_action.navlink
+        level=noop_action.level,
+        path=noop_action.path,
+        navlink=noop_action.navlink,
     )
     assert str(noop_action) in caplog.text
     assert returned_report.table_row == expected_table_row
@@ -788,7 +790,7 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
             ),
             [
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(
+                    table_row=factories.TableRowFactory(
                         level=action_1.level, path=action_1.path, navlink=action_1.navlink
                     ),
                     location=action_1.navlink.link,
@@ -796,8 +798,10 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
                     reason=None,
                 ),
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(
-                        level=action_2.level, path=action_2.path, navlink=action_2.navlink
+                    table_row=factories.TableRowFactory(
+                        level=action_2.level,
+                        path=action_2.path,
+                        navlink=action_2.navlink,
                     ),
                     location=action_2.navlink.link,
                     result=src_types.ActionResult.SUCCESS,

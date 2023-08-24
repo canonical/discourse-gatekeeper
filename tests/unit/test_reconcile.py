@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from src import constants, discourse, exceptions, reconcile, types_
+from src import constants, exceptions, reconcile, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
@@ -106,7 +106,9 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
         local_path=path, level=item_info_level, table_path=item_info_table_path
     )
     navlink = factories.NavlinkFactory(title=path_info.navlink_title, link="link 1")
-    table_row = types_.TableRow(level=table_row_level, path=(table_row_path,), navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=table_row_level, path=(table_row_path,), navlink=navlink
+    )
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._local_and_server(
@@ -129,31 +131,31 @@ def test__local_and_server_error(  # pylint: disable=too-many-arguments
         )
 
 
-def test__get_server_content_missing_link():
+def test__get_server_content_missing_link(mocked_clients):
     """
     arrange: table row with None link
     act: when _get_server_content is called with table row
     assert: then ReconcilliationError is raised.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     mock_discourse.retrieve_topic.return_value = "content 1"
     navlink = factories.NavlinkFactory(title="title 1", link=None)
-    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
+    table_row = factories.TableRowFactory(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ReconcilliationError):
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
 
 
-def test__get_server_content_server_error():
+def test__get_server_content_server_error(mocked_clients):
     """
     arrange: given table row and discourse client that raises an error
     act: when _get_server_content is called with the table row
     assert: then ServerError is raised.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = factories.NavlinkFactory(title="title 1", link=(navlink_link := "link 1"))
-    table_row = types_.TableRow(level=1, path=("table path 1",), navlink=navlink)
+    table_row = factories.TableRowFactory(level=1, path=("table path 1",), navlink=navlink)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         reconcile._get_server_content(table_row=table_row, discourse=mock_discourse)
@@ -189,7 +191,9 @@ def test__local_and_server_file_same(local_content: str, server_content: str, mo
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -226,7 +230,9 @@ def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -266,7 +272,9 @@ def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file,
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     with pytest.raises(exceptions.ReconcilliationError) as exc_info:
         reconcile._local_and_server(
@@ -304,7 +312,9 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -348,7 +358,9 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -389,7 +401,9 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
     mocked_clients.discourse.retrieve_topic.return_value = content
     mock_get_file.return_value = content
     navlink = factories.NavlinkFactory(title="title 2", link=(navlink_link := "link 1"))
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -433,7 +447,9 @@ def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clie
     mocked_clients.discourse.retrieve_topic.return_value = content
     mock_get_file.return_value = content
     navlink = factories.NavlinkFactory(title=title, link=(navlink_link := "link 1"), hidden=False)
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -470,7 +486,9 @@ def test__local_and_server_directory_same(mock_get_file, mocked_clients):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     navlink = factories.NavlinkFactory(title=path_info.navlink_title, link=None)
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -499,7 +517,9 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path, navlink_title="title 1")
     navlink = factories.NavlinkFactory(title="title 2", link=None)
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -532,7 +552,7 @@ def test__local_and_server_external_ref_same(mock_get_file, mocked_clients):
     navlink = factories.NavlinkFactory(
         title=item_info.reference_title, link=item_info.reference_value
     )
-    table_row = types_.TableRow(
+    table_row = factories.TableRowFactory(
         level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
     )
 
@@ -585,7 +605,7 @@ def test__local_and_server_external_ref_navlink_changed(
     """
     tmp_path = mocked_clients.repository.base_path
 
-    table_row = types_.TableRow(
+    table_row = factories.TableRowFactory(
         level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
     )
 
@@ -631,7 +651,9 @@ def test__local_and_server_group_external_ref_to_file(
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_hidden=hidden)
     navlink = factories.NavlinkFactory(title=path_info.navlink_title, link=link, hidden=False)
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     (returned_action,) = reconcile._local_and_server(
         item_info=path_info,
@@ -664,7 +686,9 @@ def test__local_and_server_file_to_directory(mocked_clients):
     navlink = factories.NavlinkFactory(
         title=path_info.navlink_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     returned_actions = reconcile._local_and_server(
         item_info=path_info,
@@ -702,7 +726,7 @@ def test__local_and_server_file_to_external_ref(mocked_clients):
     navlink = factories.NavlinkFactory(
         title=item_info.reference_title, link=(navlink_link := "link 1")
     )
-    table_row = types_.TableRow(
+    table_row = factories.TableRowFactory(
         level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
     )
 
@@ -741,7 +765,9 @@ def test__local_and_server_external_ref_to_directory(mocked_clients):
     (path := tmp_path / "dir1").mkdir()
     path_info = factories.PathInfoFactory(local_path=path)
     navlink = factories.NavlinkFactory(title=path_info.navlink_title, link="https://canonical.com")
-    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+    table_row = factories.TableRowFactory(
+        level=path_info.level, path=path_info.table_path, navlink=navlink
+    )
 
     returned_actions = reconcile._local_and_server(
         item_info=path_info,
@@ -759,13 +785,44 @@ def test__local_and_server_external_ref_to_directory(mocked_clients):
     assert returned_actions[0].navlink_hidden == path_info.navlink_hidden  # type: ignore
 
 
-def test__server_only_file():
+def test__local_and_server_directory_to_external_ref(mocked_clients):
+    """
+    arrange: given path info with a directory and table row with an external link
+    act: when _local_and_server is called with the path info and table row
+    assert: then a create group action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    item_info = factories.IndexContentsListItemFactory(reference_value="https://canonical.com")
+    navlink = factories.NavlinkFactory(title=item_info.reference_title, link=None)
+    table_row = factories.TableRowFactory(
+        level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
+    )
+
+    returned_actions = reconcile._local_and_server(
+        item_info=item_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert len(returned_actions) == 1
+    assert isinstance(returned_actions[0], types_.CreateExternalRefAction)
+    assert returned_actions[0].level == item_info.hierarchy
+    assert returned_actions[0].path == item_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[0].navlink_title == item_info.reference_title  # type: ignore
+    assert returned_actions[0].navlink_value == item_info.reference_value  # type: ignore
+    assert returned_actions[0].navlink_hidden == item_info.hidden  # type: ignore
+
+
+def test__server_only_file(mocked_clients):
     """
     arrange: given table row with a file
     act: when _server_only is called with the table row
     assert: then a delete action with the file content is returned.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     mock_discourse.retrieve_topic.return_value = (content := "content 1")
     navlink = factories.NavlinkFactory(link="link 1")
     table_row = factories.TableRowFactory(navlink=navlink)
@@ -780,13 +837,13 @@ def test__server_only_file():
     mock_discourse.retrieve_topic.assert_called_once_with(url=navlink.link)
 
 
-def test__server_only_file_discourse_error():
+def test__server_only_file_discourse_error(mocked_clients):
     """
     arrange: given table row with a file and mocked discourse that raises an error
     act: when _server_only is called with the table row
     assert: then ServerError is raised.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     mock_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
     navlink = factories.NavlinkFactory(link=(link := "link 1"))
     table_row = factories.TableRowFactory(navlink=navlink)
@@ -797,13 +854,13 @@ def test__server_only_file_discourse_error():
     assert link in str(exc_info.value)
 
 
-def test__server_only_directory():
+def test__server_only_directory(mocked_clients):
     """
     arrange: given table row with a directory
     act: when _server_only is called with the table row
     assert: then a delete action for the directory is returned.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     navlink = factories.NavlinkFactory(link=None)
     table_row = factories.TableRowFactory(navlink=navlink)
 
@@ -816,13 +873,13 @@ def test__server_only_directory():
     mock_discourse.retrieve_topic.assert_not_called()
 
 
-def test__server_only_external_ref():
+def test__server_only_external_ref(mocked_clients):
     """
     arrange: given table row with an external reference
     act: when _server_only is called with the table row
     assert: then a delete action for the external reference is returned.
     """
-    mock_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mock_discourse = mocked_clients.discourse
     navlink = factories.NavlinkFactory(link="https://canonical.com")
     table_row = factories.TableRowFactory(navlink=navlink)
 
@@ -1099,7 +1156,7 @@ def test_run(  # pylint: disable=too-many-arguments
                 title=local_title,
                 content=(
                     f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
-                    f"{table_row.to_markdown()}"
+                    f"{table_row.to_markdown('')}"
                 ),
             ),
             id="local only single row",
@@ -1120,7 +1177,7 @@ def test_run(  # pylint: disable=too-many-arguments
                 title=local_title,
                 content=(
                     f"{local_content}{constants.NAVIGATION_TABLE_START}\n"
-                    f"{table_row_1.to_markdown()}\n{table_row_2.to_markdown()}"
+                    f"{table_row_1.to_markdown('')}\n{table_row_2.to_markdown('')}"
                 ),
             ),
             id="local only multiple rows",
@@ -1194,12 +1251,15 @@ def test_index_page(
     index: types_.Index,
     table_rows: tuple[types_.TableRow],
     expected_action: types_.AnyIndexAction,
+    mocked_clients,
 ):
     """
     arrange: given index information and server and local table rows
     act: when index_page is called with the index and server and table rows
     assert: then the expected action is returned.
     """
-    returned_action = reconcile.index_page(index=index, table_rows=table_rows)
+    returned_action = reconcile.index_page(
+        index=index, table_rows=table_rows, discourse=mocked_clients.discourse
+    )
 
     assert returned_action == expected_action

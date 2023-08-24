@@ -878,3 +878,4 @@ def test_create_discourse(kwargs: dict):
     discourse = create_discourse(**kwargs)
 
     assert isinstance(discourse, Discourse)
+    assert discourse.base_path == f"https://{kwargs['hostname']}"

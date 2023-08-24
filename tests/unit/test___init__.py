@@ -275,7 +275,7 @@ def test__run_reconcile_external_item(mocked_clients):
         title="Name 1 Documentation Overview",
         content=(
             f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
-            f"| | page-1 | [{page_1_title}]({page_1_url}) |"
+            f"| 1 | https-canonical-com | [{page_1_title}]({page_1_url}) |"
         ),
     )
     assert returned_page_interactions == {

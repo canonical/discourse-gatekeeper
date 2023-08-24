@@ -69,6 +69,8 @@ def index_file_content(tmp_path: Path) -> str:
 
 
 @pytest.fixture()
-def mocked_clients(repository_client: repository.Client):
+def mocked_clients(repository_client: repository.Client, base_path: str):
     """Create index file."""
-    return Clients(discourse=mock.MagicMock(spec=Discourse), repository=repository_client)
+    mocked_discourse = mock.MagicMock(spec=Discourse)
+    mocked_discourse.base_path = base_path
+    return Clients(discourse=mocked_discourse, repository=repository_client)

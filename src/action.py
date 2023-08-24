@@ -100,7 +100,8 @@ def _create(
             url = FAIL_NAVLINK_LINK
             result = types_.ActionResult.FAIL
             reason = str(exc)
-    else:
+    # This should not occur since all the create action types have been implemented
+    else:  # pragma: no cover
         raise NotImplementedError(f"internal error: {action} has not been implemented")
 
     table_row = types_.TableRow(
@@ -460,7 +461,7 @@ def run_all(
         for action in actions
     ]
     table_rows = (report.table_row for report in action_reports if report.table_row is not None)
-    index_action = reconcile.index_page(index=index, table_rows=table_rows)
+    index_action = reconcile.index_page(index=index, table_rows=table_rows, discourse=discourse)
     index_action_report = _run_index(action=index_action, discourse=discourse, dry_run=dry_run)
     action_reports.append(index_action_report)
     return action_reports
