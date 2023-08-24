@@ -142,18 +142,54 @@ def _local_and_server_dir_local_group_server(
     )
 
 
+def _local_and_server_external_ref_local_external_ref_server(
+    item_info: types_.IndexContentsListItem, table_row: types_.TableRow
+) -> tuple[types_.UpdateAction | types_.NoopAction, ...]:
+    """Handle the case where the item is an external reference locally and on the server.
+
+    Args:
+        item_info: Information about the local contents item.
+        table_row: A row from the navigation table.
+
+    Returns:
+        The action to execute against the server.
+
+    """
+    if (
+        table_row.navlink.title == item_info.reference_title
+        and table_row.navlink.link == item_info.reference_value
+    ):
+        return (
+            types_.NoopExternalRefAction(
+                level=item_info.hierarchy, path=item_info.table_path, navlink=table_row.navlink
+            ),
+        )
+    return (
+        types_.UpdateExternalRefAction(
+            level=item_info.hierarchy,
+            path=item_info.table_path,
+            navlink_change=types_.NavlinkChange(
+                old=table_row.navlink,
+                new=types_.Navlink(
+                    title=item_info.reference_title, link=item_info.reference_value, hidden=False
+                ),
+            ),
+        ),
+    )
+
+
 def _local_and_server_dir_local_page_server(
     path_info: types_.PathInfo, table_row: types_.TableRow, clients: Clients
 ) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
-    """Handle the case where the item is a file locally and a grouping on the server.
+    """Handle the case where the item is a group locally and a file on the server.
 
     Args:
-        path_info: Information about the local documentation file.
+        path_info: Information about the local documentation directory.
         table_row: A row from the navigation table.
         clients: The clients to interact with things like discourse and the repository.
 
     Returns:
-        The action to execute against the server.
+        The actions to execute against the server.
 
     Raises:
         ReconcilliationError:
@@ -179,7 +215,50 @@ def _local_and_server_dir_local_page_server(
             level=path_info.level,
             path=path_info.table_path,
             navlink_title=path_info.navlink_title,
-            navlink_hidden=False,
+            navlink_hidden=path_info.navlink_hidden,
+        ),
+    )
+
+
+def _local_and_server_external_ref_local_page_server(
+    item_info: types_.IndexContentsListItem, table_row: types_.TableRow, clients: Clients
+) -> tuple[types_.CreateAction | types_.DeleteAction, ...]:
+    """Handle the case where the item is an external reference locally and a page on the server.
+
+    Args:
+        item_info: Information about the local external reference.
+        table_row: A row from the navigation table.
+        clients: The clients to interact with things like discourse and the repository.
+
+    Returns:
+        The actions to execute against the server.
+
+    Raises:
+        ReconcilliationError:
+            - If certain edge cases occur that are not expected, such as table_row.navlink.link for
+              a page on the server.
+    """
+    # This is an edge case that can't actually occur because table_row.is_group is based on
+    # whether the navlink link is None so this case would have been caught in the local
+    # directory and server group case, here for defensive programming if definition of is_group
+    # is buggy or changed
+    if table_row.navlink.link is None:  # pragma: no cover
+        raise exceptions.ReconcilliationError(
+            f"internal error, expecting link on table row, {item_info=!r}, {table_row=!r}"
+        )
+    return (
+        types_.DeletePageAction(
+            level=item_info.hierarchy,
+            path=item_info.table_path,
+            navlink=table_row.navlink,
+            content=clients.discourse.retrieve_topic(url=table_row.navlink.link),
+        ),
+        types_.CreateExternalRefAction(
+            level=item_info.hierarchy,
+            path=item_info.table_path,
+            navlink_title=item_info.reference_title,
+            navlink_value=item_info.reference_value,
+            navlink_hidden=item_info.hidden,
         ),
     )
 
@@ -306,8 +385,13 @@ def _local_and_server(
 
         # External link on the server
         if table_row.is_external:
-            raise exceptions.ReconcilliationError(
-                f"internal error, handling for item has not been implemented, {item_info=!r}, {table_row=!r}"
+            return (
+                types_.CreateGroupAction(
+                    level=item_info.level,
+                    path=item_info.table_path,
+                    navlink_title=item_info.navlink_title,
+                    navlink_hidden=item_info.navlink_hidden,
+                ),
             )
 
         # Page on the server
@@ -317,10 +401,9 @@ def _local_and_server(
 
     # Is a page locally
     if isinstance(item_info, types_.PathInfo) and item_info.local_path.is_file():
-        # Is a file locally and a grouping on the server, only need to create the page since the
-        # grouping is automatically removed from the navigation table since the directory has been
-        # removed locally
-        if table_row.is_group:
+        # Is a file locally and a grouping or external ref on the server, only need to create the
+        # page since the entry is automatically removed from the navigation table
+        if table_row.is_group or table_row.is_external:
             return (
                 types_.CreatePageAction(
                     level=item_info.level,
@@ -341,8 +424,27 @@ def _local_and_server(
 
     # Is an external link locally
     if isinstance(item_info, types_.IndexContentsListItem):
-        raise exceptions.ReconcilliationError(
-            f"internal error, handling for item has not been implemented, {item_info=!r}, {table_row=!r}"
+        # Group on the server
+        if table_row.is_group:
+            return (
+                types_.CreateExternalRefAction(
+                    level=item_info.hierarchy,
+                    path=item_info.table_path,
+                    navlink_title=item_info.reference_title,
+                    navlink_value=item_info.reference_value,
+                    navlink_hidden=item_info.hidden,
+                ),
+            )
+
+        # External link on the server
+        if table_row.is_external:
+            return _local_and_server_external_ref_local_external_ref_server(
+                item_info=item_info, table_row=table_row
+            )
+
+        # Page on the server
+        return _local_and_server_external_ref_local_page_server(
+            item_info=item_info, table_row=table_row, clients=clients
         )
 
     # This should never be reached since items can only be a directory, file or external link

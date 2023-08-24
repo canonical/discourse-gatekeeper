@@ -519,12 +519,109 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "hidden", [pytest.param(False, id="not hidden"), pytest.param(True, id="hidden")]
-)
-def test__local_and_server_directory_to_file(mocked_clients, hidden: bool):
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_external_ref_same(mock_get_file, mocked_clients):
     """
-    arrange: given path info with a file and table row with a group
+    arrange: given item info with a external ref and table row with no changes
+    act: when _local_and_server is called with the item info and table row
+    assert: then a noop action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    item_info = factories.IndexContentsListItemFactory(reference_value="https://canonical.com")
+    navlink = factories.NavlinkFactory(
+        title=item_info.reference_title, link=item_info.reference_value
+    )
+    table_row = types_.TableRow(
+        level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
+    )
+
+    returned_actions = reconcile._local_and_server(
+        item_info=item_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert len(returned_actions) == 1
+    assert isinstance(returned_actions[0], types_.NoopExternalRefAction)
+    assert returned_actions[0].level == item_info.hierarchy
+    assert returned_actions[0].path == item_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[0].navlink == navlink  # type: ignore
+    mocked_clients.discourse.retrieve_topic.assert_not_called()
+    mock_get_file.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "item_info, navlink",
+    [
+        pytest.param(
+            item_info_1 := factories.IndexContentsListItemFactory(
+                reference_title="title 1", reference_value="https://canonical.com"
+            ),
+            factories.NavlinkFactory(title="title 2", link=item_info_1.reference_value),
+            id="title changed",
+        ),
+        pytest.param(
+            item_info_1 := factories.IndexContentsListItemFactory(
+                reference_value="https://canonical.com/1"
+            ),
+            factories.NavlinkFactory(
+                title=item_info_1.reference_title, link="https://canonical.com/2"
+            ),
+            id="link changed",
+        ),
+    ],
+)
+def test__local_and_server_external_ref_navlink_changed(
+    item_info: types_.IndexContentsListItem, navlink: types_.Navlink, mocked_clients
+):
+    """
+    arrange: given item info with an external ref and table row with different navlink title or
+        link
+    act: when _local_and_server is called with the item info and table row
+    assert: then an update action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    table_row = types_.TableRow(
+        level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
+    )
+
+    returned_actions = reconcile._local_and_server(
+        item_info=item_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert len(returned_actions) == 1
+    assert isinstance(returned_actions[0], types_.UpdateExternalRefAction)
+    assert returned_actions[0].level == item_info.hierarchy
+    assert returned_actions[0].path == item_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[0].navlink_change.old == navlink  # type: ignore
+    assert returned_actions[0].navlink_change.new == factories.NavlinkFactory(  # type: ignore
+        title=item_info.reference_title, link=item_info.reference_value
+    )
+    mocked_clients.discourse.retrieve_topic.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "hidden, link",
+    [
+        pytest.param(False, None, id="group not hidden"),
+        pytest.param(True, None, id="group hidden"),
+        pytest.param(False, "https://canonical.com", id="external ref not hidden"),
+        pytest.param(True, "https://canonical.com", id="external ref hidden"),
+    ],
+)
+def test__local_and_server_group_external_ref_to_file(
+    mocked_clients, hidden: bool, link: str | None
+):
+    """
+    arrange: given path info with a file and table row with a group or external reference
     act: when _local_and_server is called with the path info and table row
     assert: then a create action is returned.
     """
@@ -533,7 +630,7 @@ def test__local_and_server_directory_to_file(mocked_clients, hidden: bool):
     (path := tmp_path / "file1.md").touch()
     path.write_text(content := "content 1", encoding="utf-8")
     path_info = factories.PathInfoFactory(local_path=path, navlink_hidden=hidden)
-    navlink = factories.NavlinkFactory(title=path_info.navlink_title, link=None, hidden=False)
+    navlink = factories.NavlinkFactory(title=path_info.navlink_title, link=link, hidden=False)
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
@@ -543,7 +640,7 @@ def test__local_and_server_directory_to_file(mocked_clients, hidden: bool):
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.CreateAction)
+    assert isinstance(returned_action, types_.CreatePageAction)
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned
@@ -577,18 +674,89 @@ def test__local_and_server_file_to_directory(mocked_clients):
     )
 
     assert len(returned_actions) == 2
-    assert isinstance(returned_actions[0], types_.DeleteAction)
+    assert isinstance(returned_actions[0], types_.DeletePageAction)
     assert returned_actions[0].level == path_info.level
     assert returned_actions[0].path == path_info.table_path
     # mypy has difficulty with determining which action is returned
     assert returned_actions[0].navlink == navlink  # type: ignore
     assert returned_actions[0].content == content  # type: ignore
-    assert isinstance(returned_actions[1], types_.CreateAction)
+    assert isinstance(returned_actions[1], types_.CreateGroupAction)
     assert returned_actions[1].level == path_info.level
     assert returned_actions[1].path == path_info.table_path
     # mypy has difficulty with determining which action is returned
     assert returned_actions[1].navlink_title == path_info.navlink_title  # type: ignore
+    assert returned_actions[1].navlink_hidden == path_info.navlink_hidden  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+
+
+def test__local_and_server_file_to_external_ref(mocked_clients):
+    """
+    arrange: given item info with an external ref and table row with a file
+    act: when _local_and_server is called with the item info and table row
+    assert: then a delete and create action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    item_info = factories.IndexContentsListItemFactory(reference_value="https://canonical.com/")
+    mocked_clients.discourse.retrieve_topic.return_value = (content := "content 1")
+    navlink = factories.NavlinkFactory(
+        title=item_info.reference_title, link=(navlink_link := "link 1")
+    )
+    table_row = types_.TableRow(
+        level=item_info.hierarchy, path=item_info.table_path, navlink=navlink
+    )
+
+    returned_actions = reconcile._local_and_server(
+        item_info=item_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert len(returned_actions) == 2
+    assert isinstance(returned_actions[0], types_.DeletePageAction)
+    assert returned_actions[0].level == item_info.hierarchy
+    assert returned_actions[0].path == item_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[0].navlink == navlink  # type: ignore
+    assert returned_actions[0].content == content  # type: ignore
+    assert isinstance(returned_actions[1], types_.CreateExternalRefAction)
+    assert returned_actions[1].level == item_info.hierarchy
+    assert returned_actions[1].path == item_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[1].navlink_title == item_info.reference_title  # type: ignore
+    assert returned_actions[1].navlink_value == item_info.reference_value  # type: ignore
+    assert returned_actions[1].navlink_hidden == item_info.hidden  # type: ignore
+    mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+
+
+def test__local_and_server_external_ref_to_directory(mocked_clients):
+    """
+    arrange: given path info with a directory and table row with an external link
+    act: when _local_and_server is called with the path info and table row
+    assert: then a create group action is returned.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    (path := tmp_path / "dir1").mkdir()
+    path_info = factories.PathInfoFactory(local_path=path)
+    navlink = factories.NavlinkFactory(title=path_info.navlink_title, link="https://canonical.com")
+    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+
+    returned_actions = reconcile._local_and_server(
+        item_info=path_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert len(returned_actions) == 1
+    assert isinstance(returned_actions[0], types_.CreateGroupAction)
+    assert returned_actions[0].level == path_info.level
+    assert returned_actions[0].path == path_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_actions[0].navlink_title == path_info.navlink_title  # type: ignore
+    assert returned_actions[0].navlink_hidden == path_info.navlink_hidden  # type: ignore
 
 
 def test__server_only_file():
