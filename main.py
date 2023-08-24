@@ -201,7 +201,8 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.Reconci
 @execute_in_tmpdir
 def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
     """Checks to make sure that the repository is in a consistent state.
-
+    
+      The repository is in a consistent state if there is a `upload-charm-docs/base-content` tag exists in the `base_branch` and the commit belongs to the `base_branch`. If no tag exists, the `upload-charm-docs/base-content` tag will be created for the current commit.
     Args:
         path: path of the git repository
         user_inputs: Configurable inputs for running upload-charm-docs.
