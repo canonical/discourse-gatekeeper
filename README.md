@@ -49,7 +49,7 @@ charmhub.
         steps:
           - uses: actions/checkout@v3
           - name: Publish documentation
-            uses: canonical/upload-charm-docs@main
+            uses: canonical/upload-charm-docs@stable
             id: publishDocumentation
             with:
               discourse_host: discourse.charmhub.io
@@ -93,7 +93,7 @@ charmhub.
         steps:
           - uses: actions/checkout@v3
           - name: Publish documentation
-            uses: canonical/upload-charm-docs@main
+            uses: canonical/upload-charm-docs@stable
             id: publishDocumentation
             with:
               discourse_host: discourse.charmhub.io
@@ -229,3 +229,40 @@ on the navigation but can still be used in links.
 * Files and directories don’t have to be listed, if they are not listed they are
   injected in the appropriate location after any listed items (for backwards
   compatibility and ease of use) in alphabetical order
+
+## Developers
+
+### Risk-based branching
+
+This action uses the notion of risks, similarly to what used in SNAP (see 
+[here](https://snapcraft.io/docs/channels) for a description and explanation of these concepts). 
+We currently only provide support on one single track (say latest), with the following 
+branching naming convention:
+
+* [main](https://github.com/canonical/upload-charm-docs/tree/main) corresponds to the edge risk
+* [stable](https://github.com/canonical/upload-charm-docs/tree/stable) corresponds to the stable version of the action
+
+We therefore generally advise you to pick the risk channel that best fits to your need. 
+
+### End-to-End Integration Tests
+
+When merging a PR, we make sure the code follows all code conventions (linting), unit-tests and 
+integration tests. **Edge version are however NOT checked against full end-to-end integration tests**. 
+
+<!-- LINK BELOW TO BE CHANGED -->
+End-to-End tests are implemented in a separated [test repository](https://github.com/deusebio/repo-test), 
+and run as scheduled workflows against the edge branch. When working on large and impactful feature, 
+we generally suggest to test your branch PR against End-to-End tests even before merging. To do so, 
+follow these steps:
+
+1. Fork the [test repository](https://github.com/deusebio/repo-test)
+2. Amend the E2E workflows to point to your PR branch, i.e. 
+```yaml
+      name: Publish documentation
+      uses: canonical/upload-charm-docs@your-pr-branch # CHANGE HERE
+```
+3. Raise a PR against the test-repository. This PR will not be merged but it will allow you to tests
+    your changes
+
+Periodically, we review the latest changes on edge branches and we rebase lower risks branches (
+e.g. stable) onto higher risk branches (e.g. edge). 

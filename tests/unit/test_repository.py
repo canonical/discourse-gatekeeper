@@ -130,6 +130,64 @@ def test_current_branch_switch_to_tag(repository_client):
     assert repository_client.current_branch == "my-tag"
 
 
+def test_commit_in_branch_check(repository_client, docs_path):
+    """
+    arrange: given a repository in a placeholder branch on top of main
+    act: we call the is_commit_in_branch
+    assert: the checks fail or pass depending on the hash
+    """
+    test_branch = "test"
+
+    with repository_client.create_branch(test_branch, DEFAULT_BRANCH).with_branch(
+        test_branch
+    ) as repo:
+        (docs_path / "placeholder.md").touch()
+        repo.update_branch("commit of placeholder")
+        assert repo.is_commit_in_branch(repo.current_commit)
+        assert repo.is_commit_in_branch(repo.current_commit, test_branch)
+        assert not repo.is_commit_in_branch(repo.current_commit, DEFAULT_BRANCH)
+
+    repository_client.switch(DEFAULT_BRANCH)
+
+    repository_client.is_commit_in_branch(repository_client.current_commit, DEFAULT_BRANCH)
+    repository_client.is_commit_in_branch(
+        repository_client._git_repo.tags[0].commit, DEFAULT_BRANCH
+    )
+
+
+def test_commit_in_branch_non_existing_hash(repository_client):
+    """
+    arrange: given a repository
+    act: we call the is_commit_in_branch with a non existing hash
+    assert: an RepositoryClientError exception is raised
+    """
+    non_existing_hash = "1" + repository_client.current_commit[:-1]
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.is_commit_in_branch(non_existing_hash)
+
+    assert_substrings_in_string(("not found", non_existing_hash), str(exc.value).lower())
+
+
+def test_commit_in_branch_unknown_error(
+    monkeypatch: pytest.MonkeyPatch, repository_client: Client
+):
+    """
+    arrange: given Client with a mocked local git repository that raises an exception
+    act: when is_commit_in_branch is called
+    assert: RepositoryClientError is raised.
+    """
+    err_str = "mocked error"
+    mock_git_repository = mock.MagicMock(spec=Repo)
+    mock_git_repository.git.branch.side_effect = [GitCommandError(err_str)]
+    monkeypatch.setattr(repository_client, "_git_repo", mock_git_repository)
+
+    with pytest.raises(RepositoryClientError) as exc:
+        repository_client.is_commit_in_branch("placeholder")
+
+    assert_substrings_in_string(("unknown error", err_str), str(exc.value).lower())
+
+
 def test_create_branch_error(monkeypatch: pytest.MonkeyPatch, repository_client: Client):
     """
     arrange: given Client with a mocked local git repository that raises an exception
@@ -248,7 +306,9 @@ def test_create_pull_request_error():
     ]
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository._create_github_pull_request(mock_github_repository, branch_name="mybranch-1")
+        repository._create_github_pull_request(
+            mock_github_repository, branch_name="mybranch-1", base=DEFAULT_BRANCH
+        )
 
     assert_substrings_in_string(
         ("unexpected error creating pull request", "githubexception"), str(exc.value).lower()

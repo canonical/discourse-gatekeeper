@@ -52,5 +52,9 @@ class RepositoryTagNotFoundError(BaseError):
     """A problem retrieving a tag from a git repository occurred."""
 
 
+class TaggingNotAllowedError(BaseError):
+    """The commit cannot be tagged as it is outside of the main."""
+
+
 class ContentError(BaseError):
     """A problem with the content occurred."""

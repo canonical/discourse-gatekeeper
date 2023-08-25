@@ -419,7 +419,7 @@ def run_all(
     discourse: Discourse,
     dry_run: bool,
     delete_pages: bool,
-) -> list[types_.ActionReport]:
+) -> tuple[str, list[types_.ActionReport]]:
     """Take the actions against the server.
 
     Args:
@@ -430,7 +430,7 @@ def run_all(
         delete_pages: Whether to delete pages that are no longer needed.
 
     Returns:
-        The reports of taking all the requested action and the index action report.
+        A 2-element tuple with the index url and the reports of all the requested action.
     """
     action_reports = [
         _run_one(
@@ -446,4 +446,4 @@ def run_all(
     index_action = reconcile.index_page(index=index, table_rows=table_rows)
     index_action_report = _run_index(action=index_action, discourse=discourse, dry_run=dry_run)
     action_reports.append(index_action_report)
-    return action_reports
+    return str(index_action_report.location), action_reports
