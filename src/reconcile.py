@@ -180,8 +180,7 @@ def _is_same_content(action: types_.AnyAction) -> bool:
             if not content:
                 return True
             return content.local == content.server
-        case _:
-            return False
+    return False
 
 
 def is_same_content(index: types_.Index, actions: typing.Iterable[types_.AnyAction]) -> bool:
