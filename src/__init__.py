@@ -85,6 +85,21 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
     # it is passed
     actions, check_actions = tee(actions, 2)
+    if reconcile.is_same_content(index, check_actions):
+        logging.info(
+            "Reconcile not required to run as the content is the same on "
+            "Discourse and Github. Updating the tag."
+        )
+        if clients.repository.is_commit_in_branch(user_inputs.commit_sha, user_inputs.base_branch):
+            # This means we are running from the base_branch
+            clients.repository.tag_commit(DOCUMENTATION_TAG, user_inputs.commit_sha)
+        return ReconcileOutputs(
+            index_url=index.server.url if index.server else "",
+            topics={},
+            documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG),
+        )
+
+    actions, check_actions = tee(actions, 2)
     problems = tuple(
         check.conflicts(
             actions=check_actions, repository=clients.repository, user_inputs=user_inputs

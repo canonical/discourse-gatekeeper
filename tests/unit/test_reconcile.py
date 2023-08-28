@@ -2,10 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Unit tests for reconcile module."""
-
-# Need access to protected functions for testing, using walrus operator causes too-many-locals
-# pylint: disable=protected-access,too-many-locals
-
+import typing
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +12,9 @@ from src import constants, discourse, exceptions, reconcile, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
+
+# Need access to protected functions for testing, using walrus operator causes too-many-locals
+# pylint: disable=protected-access,too-many-locals,too-many-lines
 
 
 @pytest.mark.parametrize(
@@ -988,3 +988,105 @@ def test_index_page(
     returned_action = reconcile.index_page(index=index, table_rows=table_rows)
 
     assert returned_action == expected_action
+
+
+@pytest.mark.parametrize(
+    "actions, expected_value",
+    [
+        pytest.param(
+            [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)], True
+        ),
+        pytest.param([types_.CreateAction(1, tuple("path"), "title", None, True)], False),
+        pytest.param(
+            [types_.DeleteAction(1, tuple("path"), types_.Navlink("title", None, True), None)],
+            False,
+        ),
+        pytest.param(
+            [
+                types_.UpdateAction(
+                    1,
+                    tuple("path"),
+                    types_.NavlinkChange(
+                        types_.Navlink("title", None, True), types_.Navlink("title", None, True)
+                    ),
+                    types_.ContentChange(None, "one", "two"),
+                )
+            ],
+            False,
+        ),
+        pytest.param(
+            [
+                types_.UpdateAction(
+                    1,
+                    tuple("path"),
+                    types_.NavlinkChange(
+                        types_.Navlink("title", None, True), types_.Navlink("title", None, True)
+                    ),
+                    types_.ContentChange(None, "same", "same"),
+                )
+            ],
+            True,
+        ),
+    ],
+)
+def test__is_same_content_actions(
+    actions: typing.Iterable[types_.AnyAction], expected_value: bool
+):
+    """
+    arrange: given some mock list of actions
+    act: when is_same_content function is called
+    assert: then the correct results is returned.
+    """
+    index = types_.Index(
+        types_.Page("index-url", "index-content"),
+        types_.IndexFile("index-title", "index-content"),
+        "charm",
+    )
+
+    assert reconcile.is_same_content(index, actions) == expected_value
+
+
+@pytest.mark.parametrize(
+    "index, expected_value",
+    [
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", "index-content"),
+                "charm",
+            ),
+            True,
+        ),
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", "index-content-different"),
+                "charm",
+            ),
+            False,
+        ),
+        pytest.param(
+            types_.Index(
+                None, types_.IndexFile("index-title", "index-content-different"), "charm"
+            ),
+            False,
+        ),
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", None),
+                "charm",
+            ),
+            False,
+        ),
+    ],
+)
+def test__is_same_content_index(index: types_.Index, expected_value: bool):
+    """
+    arrange: given some mock Index object
+    act: when is_same_content function is called
+    assert: then the correct results is returned.
+    """
+    actions = [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)]
+
+    assert reconcile.is_same_content(index, actions) == expected_value
