@@ -97,16 +97,16 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         return ReconcileOutputs(
             index_url=index.server.url if index.server else "",
             topics=(
-                {clients.discourse.absolute_url(index.server.url): ActionResult.SKIP}
-                if index.server
-                else {}
-            )
-            | (
                 {
                     f"{clients.discourse.absolute_url(row.navlink.link)}": ActionResult.SKIP
                     for row in table_rows
                     if row.navlink.link
                 }
+            )
+            | (
+                {clients.discourse.absolute_url(index.server.url): ActionResult.SKIP}
+                if index.server
+                else {}
             ),
             documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG),
         )
