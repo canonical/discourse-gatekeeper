@@ -994,12 +994,17 @@ def test_index_page(
     "actions, expected_value",
     [
         pytest.param(
-            [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)], True
+            [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)],
+            True,
+            id="Noop action",
         ),
-        pytest.param([types_.CreateAction(1, tuple("path"), "title", None, True)], False),
+        pytest.param(
+            [types_.CreateAction(1, tuple("path"), "title", None, True)], False, id="Create action"
+        ),
         pytest.param(
             [types_.DeleteAction(1, tuple("path"), types_.Navlink("title", None, True), None)],
             False,
+            id="Delete action",
         ),
         pytest.param(
             [
@@ -1013,6 +1018,7 @@ def test_index_page(
                 )
             ],
             False,
+            id="Update action with different content",
         ),
         pytest.param(
             [
@@ -1026,6 +1032,7 @@ def test_index_page(
                 )
             ],
             True,
+            id="Update action with same content",
         ),
     ],
 )
@@ -1033,7 +1040,7 @@ def test__is_same_content_actions(
     actions: typing.Iterable[types_.AnyAction], expected_value: bool
 ):
     """
-    arrange: given some mock list of actions
+    arrange: given some mock list of actions and an index with matching local and server content
     act: when is_same_content function is called
     assert: then the correct results is returned.
     """
@@ -1056,6 +1063,7 @@ def test__is_same_content_actions(
                 "charm",
             ),
             True,
+            id="same index",
         ),
         pytest.param(
             types_.Index(
@@ -1064,12 +1072,14 @@ def test__is_same_content_actions(
                 "charm",
             ),
             False,
+            id="different index",
         ),
         pytest.param(
             types_.Index(
                 None, types_.IndexFile("index-title", "index-content-different"), "charm"
             ),
             False,
+            id="missing server content",
         ),
         pytest.param(
             types_.Index(
@@ -1078,12 +1088,13 @@ def test__is_same_content_actions(
                 "charm",
             ),
             False,
+            id="missing local content",
         ),
     ],
 )
 def test__is_same_content_index(index: types_.Index, expected_value: bool):
     """
-    arrange: given some mock Index object
+    arrange: given some mock Index object and an action list that only contains a NoopAction
     act: when is_same_content function is called
     assert: then the correct results is returned.
     """

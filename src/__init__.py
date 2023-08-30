@@ -87,11 +87,13 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     actions, check_actions = tee(actions, 2)
     if reconcile.is_same_content(index, check_actions):
         logging.info(
-            "Reconcile not required to run as the content is the same on "
-            "Discourse and Github. Updating the tag."
+            "Reconcile not required to run as the content is the same on Discourse and Github."
         )
         if clients.repository.is_commit_in_branch(user_inputs.commit_sha, user_inputs.base_branch):
             # This means we are running from the base_branch
+            logging.info(
+                "Updating the tag %s on commit %s", DOCUMENTATION_TAG, user_inputs.commit_sha
+            )
             clients.repository.tag_commit(DOCUMENTATION_TAG, user_inputs.commit_sha)
 
         return ReconcileOutputs(

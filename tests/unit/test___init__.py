@@ -182,10 +182,10 @@ def test_run_reconcile_same_content_local_and_server(
 ):
     """
     arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
-        and mocked discourse (with tag and main branch aligned)
+        and mocked discourse (with tag and branch aligned)
     act: when run_reconcile is called
-    assert: then nothing is done, and the repository is tagged as the two versions are the
-        compatible.
+    assert: that nothing is done, and, depending on the branch we are at, the DOCUMENTATION_TAG
+        is updated with the current commit if we are in the base branch
     """
     repository_path = mocked_clients.repository.base_path
 
@@ -265,8 +265,10 @@ def test_run_reconcile_same_content_local_and_server(
 
     assert returned_reconcile_reports
 
+    assert "Reconcile not required to run" in caplog.text
+
     if branch_name == DEFAULT_BRANCH:
-        assert "Updating the tag" in caplog.records[0].msg
+        assert "Updating the tag" in caplog.text
         assert (
             mocked_clients.repository.tag_exists(DOCUMENTATION_TAG)
             == mocked_clients.repository.current_commit

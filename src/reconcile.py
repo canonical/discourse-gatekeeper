@@ -188,7 +188,7 @@ def is_same_content(index: types_.Index, actions: typing.Iterable[types_.AnyActi
 
     Args:
         index: Index object representing local and server content for the index file
-        actions: List of actions representing what the reconcile actions over all topics
+        actions: List of actions representing what the reconcile action would do over all topics
 
     Returns:
         Boolean true if the contents match, false otherwise
