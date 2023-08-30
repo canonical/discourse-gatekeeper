@@ -270,6 +270,15 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_external=True
+                ),
+            ),
+            (),
+            id="single initial external ref",
+        ),
+        pytest.param(
+            (
                 doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
                 doc_row_2 := factories.TableRowFactory(level=1, path=("doc-2",), is_document=True),
             ),
@@ -321,6 +330,22 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_external=True
+                ),
+            ),
+            (
+                types_.DocumentMeta(
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
+                ),
+            ),
+            id="distinct document and external ref",
+        ),
+        pytest.param(
+            (
                 group_row_1 := factories.TableRowFactory(
                     level=1, path=("group-1",), is_group=True
                 ),
@@ -335,6 +360,22 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
                 ),
             ),
             id="distinct group and document",
+        ),
+        pytest.param(
+            (
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_external=True
+                ),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+            ),
+            (
+                types_.DocumentMeta(
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
+                ),
+            ),
+            id="distinct external ref and document",
         ),
         pytest.param(
             (

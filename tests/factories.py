@@ -383,6 +383,13 @@ class TableRowFactory(
                 lambda n: types_.Navlink(f"navlink-title-{n}", link=None, hidden=False)
             )
         )
+        is_external = factory.Trait(
+            navlink=factory.Sequence(
+                lambda n: types_.Navlink(
+                    f"navlink-title-{n}", link=f"https://canonical.com/{n}", hidden=False
+                )
+            )
+        )
         is_document = factory.Trait(
             navlink=factory.Sequence(
                 lambda n: types_.Navlink(f"navlink-title-{n}", link=f"navlink-{n}", hidden=False)
