@@ -52,7 +52,7 @@ def _parse_env_vars() -> types_.UserInputs:
             "Path to GitHub event information not found, is this action running on GitHub?"
         )
     event = json.loads(pathlib.Path(event_path).read_text(encoding="utf-8"))
-    if commit_sha is None:
+    if not commit_sha:
         try:
             commit_sha = event["pull_request"]["head"]["sha"]
         except KeyError:
