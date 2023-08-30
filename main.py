@@ -59,6 +59,12 @@ def _parse_env_vars() -> types_.UserInputs:
             # Use the commit SHA if not running as a pull request
             commit_sha = os.environ["GITHUB_SHA"]
 
+    if not commit_sha:
+        raise exceptions.InputError(
+            "No valid value for the commit sha found in the input, event information or the "
+            "environment, is this action running on GitHub?"
+        )
+
     logging.info("Base branch: %s (commit %s)", base_branch, commit_sha)
 
     return types_.UserInputs(
