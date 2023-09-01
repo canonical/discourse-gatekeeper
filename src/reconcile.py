@@ -173,13 +173,8 @@ def _is_same_content(action: types_.AnyAction) -> bool:
     Returns:
         Boolean true if the contents match, false otherwise
     """
-    match action:
-        case types_.NoopAction(_, _, _, _):
-            return True
-        case types_.UpdateAction(_, _, _, content):
-            if not content:
-                return True
-            return content.local == content.server
+    if isinstance(action, types_.NoopAction):
+        return True
     return False
 
 

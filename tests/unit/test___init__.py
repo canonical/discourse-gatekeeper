@@ -200,16 +200,16 @@ def test_run_reconcile_same_content_local_and_server(
 
     Content body."""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
-    | 1 | their-path-1 | [empty-navlink]() |
-    | 2 | their-file-1 | [file-navlink](/file-navlink) |"""
+    | 1 | folder | [Folder]() |
+    | 2 | their-file-1 | [file-navlink-title](/file-navlink) |"""
     index_page = f"{index_content}{index_table}"
-    navlink_page = "file-navlink-content"
+    navlink_page = "# file-navlink-title\nfile-navlink-content"
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(index_content)
-    (docs_folder / "their-path-1").mkdir()
-    (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
+    (docs_folder / "folder").mkdir()
+    (docs_folder / "folder" / "their-file-1.md").write_text(navlink_page)
 
     mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
         "First document version", directory=None

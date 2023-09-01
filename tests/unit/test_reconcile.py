@@ -1031,7 +1031,7 @@ def test_index_page(
                     types_.ContentChange(None, "same", "same"),
                 )
             ],
-            True,
+            False,
             id="Update action with same content",
         ),
     ],
