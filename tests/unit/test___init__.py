@@ -207,9 +207,9 @@ def test_run_reconcile_same_content_local_and_server(
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_content)
+    (index_file := docs_folder / "index.md").write_text(index_content)
     (docs_folder / "folder").mkdir()
-    (docs_folder / "folder" / "their-file-1.md").write_text(navlink_page)
+    (their_file := docs_folder / "folder" / "their-file-1.md").write_text(navlink_page)
 
     mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
         "First document version", directory=None
@@ -227,11 +227,9 @@ def test_run_reconcile_same_content_local_and_server(
         """
         assert tag_name
 
-        if path == str((docs_folder / "index.md").relative_to(repository_path)):
+        if path == str(index_file.relative_to(repository_path)):
             return index_content
-        if path == str(
-            (docs_folder / "their-path-1" / "their-file-1.md").relative_to(repository_path)
-        ):
+        if path == str(their_file.relative_to(repository_path)):
             return navlink_page
         return ""
 

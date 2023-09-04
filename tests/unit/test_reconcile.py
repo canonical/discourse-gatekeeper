@@ -1041,42 +1041,14 @@ def test_index_page(
 @pytest.mark.parametrize(
     "actions, expected_value",
     [
-        pytest.param(
-            [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)],
-            True,
-            id="Noop action",
-        ),
-        pytest.param(
-            [types_.CreateAction(1, tuple("path"), "title", None, True)], False, id="Create action"
-        ),
-        pytest.param(
-            [types_.DeleteAction(1, tuple("path"), types_.Navlink("title", None, True), None)],
-            False,
-            id="Delete action",
-        ),
+        pytest.param([factories.NoopActionFactory()], True, id="Noop action"),
+        pytest.param([factories.CreateActionFactory], False, id="Create action"),
+        pytest.param([factories.DeleteActionFactory], False, id="Delete action"),
+        pytest.param([factories.UpdateActionFactory], False, id="Update action"),
         pytest.param(
             [
-                types_.UpdateAction(
-                    1,
-                    tuple("path"),
-                    types_.NavlinkChange(
-                        types_.Navlink("title", None, True), types_.Navlink("title", None, True)
-                    ),
-                    types_.ContentChange(None, "one", "two"),
-                )
-            ],
-            False,
-            id="Update action with different content",
-        ),
-        pytest.param(
-            [
-                types_.UpdateAction(
-                    1,
-                    tuple("path"),
-                    types_.NavlinkChange(
-                        types_.Navlink("title", None, True), types_.Navlink("title", None, True)
-                    ),
-                    types_.ContentChange(None, "same", "same"),
+                factories.UpdateActionFactory(
+                    content_change=types_.ContentChange(None, "same", "same")
                 )
             ],
             False,
