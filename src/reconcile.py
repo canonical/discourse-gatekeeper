@@ -164,6 +164,38 @@ def _local_and_server_dir_local_page_server(
     )
 
 
+def _is_same_content(action: types_.AnyAction) -> bool:
+    """Check whether the action would result in a Noop action.
+
+    Args:
+        action: action representing interaction with Discourse
+
+    Returns:
+        Boolean true if the contents match, false otherwise
+    """
+    if isinstance(action, types_.NoopAction):
+        return True
+    return False
+
+
+def is_same_content(index: types_.Index, actions: typing.Iterable[types_.AnyAction]) -> bool:
+    """Check if the content on Discourse and Github matches.
+
+    Args:
+        index: Index object representing local and server content for the index file
+        actions: List of actions representing what the reconcile action would do over all topics
+
+    Returns:
+        Boolean true if the contents match, false otherwise
+    """
+    if (not index.local) or (not index.server):
+        return False
+
+    return all(_is_same_content(action) for action in actions) and (
+        index.local.content == index_module.contents_from_page(index.server.content)
+    )
+
+
 def _local_and_server_file_local_page_server(
     path_info: types_.PathInfo,
     table_row: types_.TableRow,

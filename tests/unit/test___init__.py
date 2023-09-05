@@ -169,6 +169,116 @@ def test__run_reconcile_local_empty_server(mocked_clients):
     }
 
 
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+@pytest.mark.parametrize(
+    "branch_name",
+    [pytest.param(DEFAULT_BRANCH), pytest.param("other-main")],
+)
+def test_run_reconcile_same_content_local_and_server(
+    get_file_content_from_tag,
+    caplog,
+    mocked_clients,
+    branch_name,
+):
+    """
+    arrange: given a path with a metadata.yaml that has docs key and docs directory aligned
+        and mocked discourse (with tag and branch aligned)
+    act: when run_reconcile is called
+    assert: that nothing is done, and, depending on the branch we are at, the DOCUMENTATION_TAG
+        is updated with the current commit if we are in the base branch
+    """
+    repository_path = mocked_clients.repository.base_path
+
+    if branch_name != DEFAULT_BRANCH:
+        mocked_clients.repository.create_branch(branch_name, DEFAULT_BRANCH)
+
+    create_metadata_yaml(
+        content=f"{METADATA_NAME_KEY}: name 1\n" f"{METADATA_DOCS_KEY}: https://discourse/t/docs",
+        path=repository_path,
+    )
+    index_content = """Content header lorem.
+
+    Content body."""
+    index_table = f"""{constants.NAVIGATION_TABLE_START}
+    | 1 | folder | [Folder]() |
+    | 2 | their-file-1 | [file-navlink-title](/file-navlink) |"""
+    index_page = f"{index_content}{index_table}"
+    navlink_page = "# file-navlink-title\nfile-navlink-content"
+    mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
+
+    (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
+    (index_file := docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "folder").mkdir()
+    (their_file := docs_folder / "folder" / "their-file-1.md").write_text(navlink_page)
+
+    mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
+        "First document version", directory=None
+    )
+
+    def patch(path, tag_name) -> str:
+        """Return the patches content of a given tag.
+
+        Args:
+            path: path of the file
+            tag_name: name of the tag
+
+        Returns:
+            Content of the given tag
+        """
+        assert tag_name
+
+        if path == str(index_file.relative_to(repository_path)):
+            return index_content
+        if path == str(their_file.relative_to(repository_path)):
+            return navlink_page
+        return ""
+
+    get_file_content_from_tag.side_effect = patch
+
+    mocked_clients.repository.tag_commit(
+        DOCUMENTATION_TAG, mocked_clients.repository.current_commit
+    )
+
+    (mocked_clients.repository.base_path / "placeholder.md").touch()
+
+    mocked_clients.repository.switch(DEFAULT_BRANCH).update_branch(
+        "Placeholder modification outside of docs", directory=None
+    )
+
+    user_inputs = factories.UserInputsFactory(
+        commit_sha=mocked_clients.repository.current_commit, base_branch=branch_name
+    )
+
+    assert (
+        mocked_clients.repository.tag_exists(DOCUMENTATION_TAG)
+        != mocked_clients.repository.current_commit
+    )
+
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        # run is repeated in unit tests / integration tests
+        returned_reconcile_reports = run_reconcile(
+            clients=mocked_clients, user_inputs=user_inputs
+        )  # pylint: disable=duplicate-code
+
+    assert returned_reconcile_reports
+
+    assert "Reconcile not required to run" in caplog.text
+
+    if branch_name == DEFAULT_BRANCH:
+        assert "Updating the tag" in caplog.text
+        assert (
+            mocked_clients.repository.tag_exists(DOCUMENTATION_TAG)
+            == mocked_clients.repository.current_commit
+        )
+    else:
+        # Running outside of base branch
+        assert (
+            mocked_clients.repository.tag_exists(DOCUMENTATION_TAG)
+            != mocked_clients.repository.current_commit
+        )
+
+
 @mock.patch(
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),

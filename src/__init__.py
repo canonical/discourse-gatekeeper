@@ -74,7 +74,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     sorted_path_infos = sort_module.using_contents_index(
         path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
     )
-    table_rows = navigation_table.from_page(page=server_content, discourse=clients.discourse)
+    table_rows = list(navigation_table.from_page(page=server_content, discourse=clients.discourse))
     actions = reconcile.run(
         sorted_path_infos=sorted_path_infos,
         table_rows=table_rows,
@@ -84,6 +84,35 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
     # it is passed
+    actions, check_actions = tee(actions, 2)
+    if reconcile.is_same_content(index, check_actions):
+        logging.info(
+            "Reconcile not required to run as the content is the same on Discourse and Github."
+        )
+        if clients.repository.is_commit_in_branch(user_inputs.commit_sha, user_inputs.base_branch):
+            # This means we are running from the base_branch
+            logging.info(
+                "Updating the tag %s on commit %s", DOCUMENTATION_TAG, user_inputs.commit_sha
+            )
+            clients.repository.tag_commit(DOCUMENTATION_TAG, user_inputs.commit_sha)
+
+        return ReconcileOutputs(
+            index_url=index.server.url if index.server else "",
+            topics=(
+                {
+                    f"{clients.discourse.absolute_url(row.navlink.link)}": ActionResult.SKIP
+                    for row in table_rows
+                    if row.navlink.link
+                }
+            )
+            | (
+                {clients.discourse.absolute_url(index.server.url): ActionResult.SKIP}
+                if index.server
+                else {}
+            ),
+            documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG),
+        )
+
     actions, check_actions = tee(actions, 2)
     problems = tuple(
         check.conflicts(
