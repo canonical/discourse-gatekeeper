@@ -280,6 +280,7 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         star_pattern = re.compile(r"^\* ")
         try:
+            self._git_repo.git.fetch("--depth=2147483647")
             branches_with_commit = {
                 star_pattern.sub("", _branch).strip()
                 for _branch in self._git_repo.git.branch("--contains", commit_sha).split("\n")

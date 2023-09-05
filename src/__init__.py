@@ -225,10 +225,26 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
     Returns:
         Boolean representing whether the checks have all been passed.
     """
-    with clients.repository.with_branch(user_inputs.base_branch) as repo:
-        if repo.tag_exists(DOCUMENTATION_TAG):
-            return repo.is_commit_in_branch(
-                repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
+    clients.repository.switch(user_inputs.base_branch)
+
+    if documentation_commit := clients.repository.tag_exists(DOCUMENTATION_TAG):
+        flag = clients.repository.is_commit_in_branch(
+            documentation_commit, user_inputs.base_branch
+        )
+        if not flag:
+            logging.error(
+                "Inconsistent repository: documentation tag %s (at commit %s)"
+                " not in base branch %s",
+                DOCUMENTATION_TAG,
+                documentation_commit,
+                user_inputs.base_branch,
             )
-        repo.tag_commit(DOCUMENTATION_TAG, repo.current_commit)
-        return True
+        return flag
+
+    logging.info(
+        "documentation tag %s does not exists. Creating at commit %s",
+        DOCUMENTATION_TAG,
+        clients.repository.current_commit,
+    )
+    clients.repository.tag_commit(DOCUMENTATION_TAG, clients.repository.current_commit)
+    return True
