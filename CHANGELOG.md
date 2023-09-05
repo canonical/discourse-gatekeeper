@@ -12,6 +12,11 @@
 - Navigation table not getting removed if the contents was hidden using the
   `[details=...]...[/details]` tag.
 
+### Fixed
+
+- No longer use empty values from `INPUT_COMMIT_SHA` instead of reading the
+  event/ environment
+
 ## [v0.6.0] - 2023-07-07
 
 ### Added

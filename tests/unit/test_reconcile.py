@@ -3,8 +3,9 @@
 
 """Unit tests for reconcile module."""
 
-# Need access to protected functions for testing, using walrus operator causes too-many-locals
-# pylint: disable=protected-access,too-many-locals
+# Need access to protected functions for testing, using walrus operator causes too-many-locals,
+# module has too many lines and might need refactoring.
+# pylint: disable=protected-access,too-many-locals,too-many-lines
 
 from pathlib import Path
 from unittest import mock
@@ -167,12 +168,12 @@ def test__get_server_content_server_error(mocked_clients):
     "local_content, server_content",
     [
         pytest.param("content 1", "content 1", id="same"),
-        pytest.param(" content 1", "content 1", id="server leading whitespace"),
-        pytest.param("\ncontent 1", "content 1", id="server leading whitespace new line"),
-        pytest.param("content 1 ", "content 1", id="server trailing whitespace"),
-        pytest.param("content 1", " content 1", id="local leading whitespace"),
-        pytest.param("content 1", "\ncontent 1", id="local leading whitespace new line"),
-        pytest.param("content 1", "content 1 ", id="local trailing whitespace"),
+        pytest.param(" content 1", "content 1", id="local leading whitespace"),
+        pytest.param("\ncontent 1", "content 1", id="local leading whitespace new line"),
+        pytest.param("content 1 ", "content 1", id="local trailing whitespace"),
+        pytest.param("content 1", " content 1", id="server leading whitespace"),
+        pytest.param("content 1", "\ncontent 1", id="server leading whitespace new line"),
+        pytest.param("content 1", "content 1 ", id="server trailing whitespace"),
     ],
 )
 def test__local_and_server_file_same(local_content: str, server_content: str, mocked_clients):
@@ -378,6 +379,52 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     assert returned_action.content_change.server == server_content  # type: ignore
     assert returned_action.content_change.local == local_content  # type: ignore
     assert returned_action.content_change.base == base_content  # type: ignore
+    mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
+    mock_get_file.assert_called_once_with(
+        path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG
+    )
+
+
+@mock.patch("src.repository.Client.get_file_content_from_tag")
+def test__local_and_server_file_content_change_base_content_ws(mock_get_file, mocked_clients):
+    """
+    arrange: given path info with a file and table row with no changes and discourse client that
+        returns the different content as in the file
+        and base content that has leading and trailing whitespace chars
+    act: when _local_and_server is called with the path info and table row
+    assert: then an update action is returned
+        with base content without leading and trailing whitespace chars.
+    """
+    tmp_path = mocked_clients.repository.base_path
+
+    relative_path = Path("file1.md")
+    (path := tmp_path / relative_path).touch()
+    path.write_text(local_content := "content 1", encoding="utf-8")
+    path_info = factories.PathInfoFactory(local_path=path)
+    mocked_clients.discourse.retrieve_topic.return_value = (server_content := "content 2")
+    base_content = " \tcontent 3\n"
+    mock_get_file.return_value = base_content
+    navlink = factories.NavlinkFactory(
+        title=path_info.navlink_title, link=(navlink_link := "link 1")
+    )
+    table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
+
+    (returned_action,) = reconcile._local_and_server(
+        path_info=path_info,
+        table_row=table_row,
+        clients=mocked_clients,
+        base_path=tmp_path,
+    )
+
+    assert isinstance(returned_action, types_.UpdateAction)
+    assert returned_action.level == path_info.level
+    assert returned_action.path == path_info.table_path
+    # mypy has difficulty with determining which action is returned
+    assert returned_action.navlink_change.old == navlink  # type: ignore
+    assert returned_action.navlink_change.new == navlink  # type: ignore
+    assert returned_action.content_change.server == server_content  # type: ignore
+    assert returned_action.content_change.local == local_content  # type: ignore
+    assert returned_action.content_change.base == "content 3"  # type: ignore
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
     mock_get_file.assert_called_once_with(
         path=str(relative_path), tag_name=constants.DOCUMENTATION_TAG

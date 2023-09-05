@@ -104,14 +104,15 @@ async def test_run(
         "1. docs with an index file in dry run mode", directory=None
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert tuple(urls_with_actions) == (index_url,)
+    assert output_reconcile is not None
+    assert output_reconcile.index_url == index_url
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{constants.NAVIGATION_TABLE_START}".strip()
     assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
@@ -123,12 +124,13 @@ async def test_run(
         dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=user_inputs_2,
     )
 
-    assert tuple(urls_with_actions) == (index_url,)
+    assert output_reconcile is not None
+    assert output_reconcile.index_url == index_url
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_topic == f"{index_content}{constants.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
@@ -144,14 +146,15 @@ async def test_run(
         "3. docs with a documentation file added in dry run mode"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert tuple(urls_with_actions) == (index_url,)
+    assert output_reconcile is not None
+    assert output_reconcile.index_url == index_url
     assert_substrings_in_string(("Create", "'skip'"), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_content_1 not in index_topic
@@ -159,16 +162,17 @@ async def test_run(
     # 4. docs with a documentation file added
     caplog.clear()
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert len(urls_with_actions) == 2
-    (doc_url, _) = urls_with_actions.keys()
-    assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
+    assert output_reconcile is not None
+    assert len(output_reconcile.topics) == 2
+    (doc_url, _) = output_reconcile.topics.keys()
+    assert (urls := tuple(output_reconcile.topics)) == (doc_url, index_url)
     doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_content_1}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
         chain(urls, (doc_table_line_1, "Create", "Update", "'success'")), caplog.text
@@ -189,14 +193,15 @@ async def test_run(
         "5. docs with a documentation file updated in dry run mode"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
+    assert output_reconcile is not None
+    assert (urls := tuple(output_reconcile.topics)) == (doc_url, index_url)
     assert_substrings_in_string(chain(urls, (doc_table_line_1, "Update", "'skip'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_1 in index_topic
@@ -210,14 +215,15 @@ async def test_run(
     # 6. docs with a documentation file updated
     caplog.clear()
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
+    assert output_reconcile is not None
+    assert (urls := tuple(output_reconcile.topics)) == (doc_url, index_url)
     doc_table_line_2 = f"| 1 | {doc_table_key} | [{doc_content_2}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
         chain(urls, (doc_table_line_1, doc_table_line_2, "Update", "'success'")), caplog.text
@@ -235,14 +241,15 @@ async def test_run(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch("7. docs with a nested directory added")
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
+    assert output_reconcile is not None
+    assert (urls := tuple(output_reconcile.topics)) == (doc_url, index_url)
     nested_dir_table_line_1 = f"| 1 | {nested_dir_table_key} | [Nested Dir]() |"
     assert_substrings_in_string(
         chain(urls, (nested_dir_table_line_1, "Create", "'success'")), caplog.text
@@ -261,13 +268,17 @@ async def test_run(
         "8. docs with a documentation file added in the nested directory"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
+
+    assert urls_with_actions is not None
     assert len(urls_with_actions) == 3
     (_, nested_dir_doc_url, _) = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
@@ -300,13 +311,16 @@ async def test_run(
         "9. docs with index file with a local contents index"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
+    assert output_reconcile is not None
+
+    urls_with_actions = output_reconcile.topics
     assert len(urls_with_actions) == 3
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     doc_table_line_3 = f"| 1 | {doc_table_key} | [{doc_title}]({urlparse(doc_url).path}) |"
@@ -342,12 +356,15 @@ async def test_run(
         "10. docs with the documentation file in the nested directory removed in dry run mode"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=True, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
@@ -362,12 +379,15 @@ async def test_run(
     # disabled
     caplog.clear()
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=False, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     assert_substrings_in_string(
@@ -384,12 +404,15 @@ async def test_run(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch("12. with the nested directory removed")
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
@@ -406,12 +429,15 @@ async def test_run(
         "13. with the documentation file removed"
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     assert_substrings_in_string(
@@ -428,14 +454,14 @@ async def test_run(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch("14. with the index file removed")
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
 
-    assert not urls_with_actions
+    assert not output_reconcile
 
 
 @pytest.mark.asyncio
@@ -505,12 +531,15 @@ async def test_run_hidden(
         "1. docs with an index file with a documentation file", directory=None
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 2
     (doc_url, index_url) = urls_with_actions.keys()
@@ -542,12 +571,15 @@ async def test_run_hidden(
         "2. docs with an index file with a documentation file changed to hidden", directory=None
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert_substrings_in_string(
         chain(urls, (doc_table_line_1, "Update", "'success'")), caplog.text
@@ -568,12 +600,15 @@ async def test_run_hidden(
         "3. docs with an index file with a hidden documentation file updated", directory=None
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert_substrings_in_string(
         chain(urls, (doc_table_line_2, "Update", "'success'")), caplog.text
@@ -609,12 +644,15 @@ async def test_run_hidden(
         directory=None,
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 3
     (_, alt_doc_url, _) = urls_with_actions.keys()
@@ -647,12 +685,16 @@ async def test_run_hidden(
         directory=None,
     )
 
-    urls_with_actions = run_reconcile(
+    output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
         ),
     )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
+
     assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
     assert_substrings_in_string(chain(urls, ("Delete", "Update", "'success'")), caplog.text)
     index_topic = discourse_api.retrieve_topic(url=index_url)

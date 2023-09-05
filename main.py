@@ -16,8 +16,10 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, run_migrate, run_reconcile, types_
+from src import GETTING_STARTED, exceptions, pre_flight_checks, run_migrate, run_reconcile, types_
 from src.clients import get_clients
+from src.constants import DEFAULT_BRANCH
+from src.types_ import ActionResult, PullRequestAction
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"
@@ -41,6 +43,8 @@ def _parse_env_vars() -> types_.UserInputs:
     delete_topics = os.getenv("INPUT_DELETE_TOPICS") == "true"
     dry_run = os.getenv("INPUT_DRY_RUN") == "true"
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
+    base_branch = os.getenv("INPUT_BASE_BRANCH", DEFAULT_BRANCH)
+    commit_sha = os.getenv("INPUT_COMMIT_SHA")
 
     event_path = os.getenv("GITHUB_EVENT_PATH")
     if not event_path:
@@ -48,11 +52,20 @@ def _parse_env_vars() -> types_.UserInputs:
             "Path to GitHub event information not found, is this action running on GitHub?"
         )
     event = json.loads(pathlib.Path(event_path).read_text(encoding="utf-8"))
-    try:
-        commit_sha = event["pull_request"]["head"]["sha"]
-    except KeyError:
-        # Use the commit SHA if not running as a pull request
-        commit_sha = os.environ["GITHUB_SHA"]
+    if not commit_sha:
+        try:
+            commit_sha = event["pull_request"]["head"]["sha"]
+        except KeyError:
+            # Use the commit SHA if not running as a pull request
+            commit_sha = os.environ["GITHUB_SHA"]
+
+    if not commit_sha:
+        raise exceptions.InputError(
+            "No valid value for the commit sha found in the input, event information or the "
+            "environment, is this action running on GitHub?"
+        )
+
+    logging.info("Base branch: %s (commit %s)", base_branch, commit_sha)
 
     return types_.UserInputs(
         discourse=types_.UserInputsDiscourse(
@@ -65,10 +78,13 @@ def _parse_env_vars() -> types_.UserInputs:
         dry_run=dry_run,
         github_access_token=github_access_token,
         commit_sha=commit_sha,
+        base_branch=base_branch,
     )
 
 
-def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
+def _serialize_for_github(
+    urls_with_actions_dict: str | dict[str, ActionResult] | PullRequestAction | typing.Any
+) -> str:
     """Serialize dictionary output into a string to be outputted to GitHub.
 
     Args:
@@ -83,12 +99,13 @@ def _serialize_for_github(urls_with_actions_dict: dict[str, str]) -> str:
 
 
 def _write_github_output(
-    **urls_with_actions_dicts: dict[str, str],
+    migrate: types_.MigrateOutputs | None, reconcile: types_.ReconcileOutputs | None
 ) -> None:
     """Writes results produced by the action to github_output.
 
     Args:
-        urls_with_actions_dicts: list of key value pairs of link to result of action.
+        migrate: outputs of the migrate process
+        reconcile: outputs of the reconcile process
 
     Raises:
         InputError: if not running inside a github actions environment.
@@ -101,9 +118,14 @@ def _write_github_output(
             f"{GETTING_STARTED}"
         )
 
-    output: str = "".join(
-        f"{key}={_serialize_for_github(urls_with_actions_dict)}\n"
-        for key, urls_with_actions_dict in urls_with_actions_dicts.items()
+    output_dict = (
+        {"index_url": reconcile.index_url, "topics": reconcile.topics} if reconcile else {}
+    ) | (
+        {"pr_action": migrate.action.value, "pr_link": migrate.pull_request_url} if migrate else {}
+    )
+
+    output: str = "\n".join(
+        f"{key}={_serialize_for_github(value)}" for key, value in output_dict.items()
     )
 
     logging.info("Output: %s", output)
@@ -153,7 +175,7 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
 
 
 @execute_in_tmpdir
-def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
+def main_migrate(path: Path, user_inputs: types_.UserInputs) -> types_.MigrateOutputs | None:
     """Main to migrate content from Discourse to Git repository.
 
     Args:
@@ -168,7 +190,7 @@ def main_migrate(path: Path, user_inputs: types_.UserInputs) -> dict:
 
 
 @execute_in_tmpdir
-def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
+def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.ReconcileOutputs | None:
     """Main to reconcile content from Git repository to Discourse.
 
     Args:
@@ -182,6 +204,30 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> dict:
     return run_reconcile(clients=clients, user_inputs=user_inputs)
 
 
+@execute_in_tmpdir
+def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
+    """Checks to make sure that the repository is in a consistent state.
+
+    The repository is in a consistent state if there is a `upload-charm-docs/base-content` tag
+    exists in the `base_branch` and the commit belongs to the `base_branch`. If no tag exists,
+    the `upload-charm-docs/base-content` tag will be created for the current commit.
+
+    Args:
+        path: path of the git repository
+        user_inputs: Configurable inputs for running upload-charm-docs.
+
+    Returns:
+        dictionary representing the output of the process
+    """
+    clients = get_clients(user_inputs, path)
+    logging.info(
+        "Repository at %s (%s)",
+        clients.repository.current_branch,
+        clients.repository.current_commit,
+    )
+    return pre_flight_checks(clients=clients, user_inputs=user_inputs)
+
+
 def main() -> None:
     """Execute the action."""
     logging.basicConfig(level=logging.INFO)
@@ -189,11 +235,17 @@ def main() -> None:
     # Read input
     user_inputs = _parse_env_vars()
 
+    assert main_checks(user_inputs=user_inputs)  # pylint: disable=no-value-for-parameter
+
     # Push data to Discourse, avoiding community conflicts
-    reconcile_urls_with_actions = main_reconcile(user_inputs=user_inputs)  # pylint: disable=E1120
+    reconcile_urls_with_actions = main_reconcile(  # pylint: disable=no-value-for-parameter
+        user_inputs=user_inputs
+    )
 
     # Open a PR with community contributions if necessary
-    migrate_urls_with_actions = main_migrate(user_inputs=user_inputs)  # pylint: disable=E1120
+    migrate_urls_with_actions = main_migrate(  # pylint: disable=no-value-for-parameter
+        user_inputs=user_inputs
+    )
 
     # Write output
     _write_github_output(migrate=migrate_urls_with_actions, reconcile=reconcile_urls_with_actions)
