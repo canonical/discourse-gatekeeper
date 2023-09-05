@@ -42,8 +42,8 @@ async def discourse(model: Model) -> Application:
     await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
 
     discourse_app: Application = await model.deploy(discourse_charm_name)
-    await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
-    await model.relate(discourse_charm_name, redis_charm_name)
+    await model.integrate(discourse_charm_name, f"{postgres_charm_name}:db")
+    await model.integrate(discourse_charm_name, redis_charm_name)
 
     # Need to wait for the waiting status to be resolved
 
