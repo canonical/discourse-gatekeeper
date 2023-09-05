@@ -101,7 +101,7 @@ def _create_gitkeep_meta(row: types_.TableRow) -> types_.GitkeepMeta:
 
 
 def _extract_docs_from_table_rows(
-    table_rows: typing.Iterable[types_.TableRow],
+    table_rows: typing.Iterable[types_.TableRow], discourse: Discourse
 ) -> typing.Iterable[types_.MigrationFileMeta]:
     """Extract necessary migration documents to build docs directory.
 
@@ -115,6 +115,7 @@ def _extract_docs_from_table_rows(
 
     Args:
         table_rows: Table rows from the index file in the order of group hierarchy.
+        discourse: Client to the documentation server.
 
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
@@ -133,7 +134,7 @@ def _extract_docs_from_table_rows(
         ):
             yield _create_gitkeep_meta(row=previous_row)
 
-        if not row.is_group:
+        if not row.is_group and not row.is_external(server_hostname=discourse.base_path):
             yield _create_document_meta(row=row)
 
         previous_row = row
@@ -289,19 +290,20 @@ def _run_one(
 
 
 def _get_docs_metadata(
-    table_rows: typing.Iterable[types_.TableRow], index_content: str
+    table_rows: typing.Iterable[types_.TableRow], index_content: str, discourse: Discourse
 ) -> itertools.chain[types_.MigrationFileMeta]:
     """Get metadata for all documents to be migrated.
 
     Args:
         table_rows: Table rows from the index table.
         index_content: Index content from index page.
+        discourse: Client to the documentation server.
 
     Returns:
         Metadata of files to be migrated.
     """
     index_doc = _index_file_from_content(content=index_content)
-    table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
+    table_docs = _extract_docs_from_table_rows(table_rows=table_rows, discourse=discourse)
     return itertools.chain((index_doc,), table_docs)
 
 
@@ -324,7 +326,7 @@ def run(
     """
     valid_table_rows = _validate_table_rows(table_rows=table_rows, discourse=discourse)
     document_metadata = _get_docs_metadata(
-        table_rows=valid_table_rows, index_content=index_content
+        table_rows=valid_table_rows, index_content=index_content, discourse=discourse
     )
     migration_reports = (
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)

@@ -410,7 +410,7 @@ def test__local_and_server_file_content_change_base_content_ws(mock_get_file, mo
     table_row = types_.TableRow(level=path_info.level, path=path_info.table_path, navlink=navlink)
 
     (returned_action,) = reconcile._local_and_server(
-        path_info=path_info,
+        item_info=path_info,
         table_row=table_row,
         clients=mocked_clients,
         base_path=tmp_path,

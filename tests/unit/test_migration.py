@@ -363,9 +363,7 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
-                group_row_1 := factories.TableRowFactory(
-                    level=1, path=("group-1",), is_external=True
-                ),
+                factories.TableRowFactory(level=1, path=("external-1",), is_external=True),
                 doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
             ),
             (
@@ -599,7 +597,9 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
     ],
 )
 def test__extract_docs_from_table_rows(
-    table_rows: tuple[types_.TableRow, ...], expected_metas: tuple[types_.DocumentMeta, ...]
+    table_rows: tuple[types_.TableRow, ...],
+    expected_metas: tuple[types_.DocumentMeta, ...],
+    mocked_clients,
 ):
     """
     arrange: given an valid table row sequences
@@ -607,7 +607,12 @@ def test__extract_docs_from_table_rows(
     assert: expected document metadatas are yielded.
     """
     assert (
-        tuple(row for row in migration._extract_docs_from_table_rows(table_rows=table_rows))
+        tuple(
+            row
+            for row in migration._extract_docs_from_table_rows(
+                table_rows=table_rows, discourse=mocked_clients.discourse
+            )
+        )
         == expected_metas
     )
 
@@ -797,7 +802,7 @@ def test__run_one(
     assert returned_report.table_row == expected_report.table_row
 
 
-def test__get_docs_metadata():
+def test__get_docs_metadata(mocked_clients):
     """
     arrange: given table rows from index table and the index_content from index file
     act: when _get_docs_metadata is called
@@ -809,8 +814,7 @@ def test__get_docs_metadata():
     returned_docs_metadata = tuple(
         meta
         for meta in migration._get_docs_metadata(
-            table_rows=table_rows,
-            index_content=index_content,
+            table_rows=table_rows, index_content=index_content, discourse=mocked_clients.discourse
         )
     )
 

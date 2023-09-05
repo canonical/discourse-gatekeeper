@@ -316,7 +316,8 @@ def test__run_reconcile_external_item(mocked_clients):
             f"| 1 | https-canonical-com | [{page_1_title}]({page_1_url}) |"
         ),
     )
-    assert returned_page_interactions == {
+    assert returned_page_interactions
+    assert returned_page_interactions.topics == {
         page_1_url: types_.ActionResult.SUCCESS,
         index_url: types_.ActionResult.SUCCESS,
     }
