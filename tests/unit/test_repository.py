@@ -122,6 +122,8 @@ def test_current_branch_switch_to_tag(repository_client):
     act: we first tag the commit and then switch to the tag
     assert: current_branch should provide first the commit hash and then the tag name
     """
+    repository_client._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+
     _hash = repository_client.current_branch
 
     repository_client._git_repo.git.tag("my-tag")
