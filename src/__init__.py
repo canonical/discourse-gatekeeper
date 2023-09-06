@@ -227,24 +227,26 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
     """
     clients.repository.switch(user_inputs.base_branch)
 
-    if documentation_commit := clients.repository.tag_exists(DOCUMENTATION_TAG):
-        flag = clients.repository.is_commit_in_branch(
-            documentation_commit, user_inputs.base_branch
-        )
-        if not flag:
-            logging.error(
-                "Inconsistent repository: documentation tag %s (at commit %s)"
-                " not in base branch %s",
-                DOCUMENTATION_TAG,
-                documentation_commit,
-                user_inputs.base_branch,
-            )
-        return flag
+    documentation_commit = clients.repository.tag_exists(DOCUMENTATION_TAG)
 
-    logging.info(
-        "documentation tag %s does not exists. Creating at commit %s",
-        DOCUMENTATION_TAG,
-        clients.repository.current_commit,
+    if not documentation_commit:
+        logging.info(
+            "documentation tag %s does not exists. Creating at commit %s",
+            DOCUMENTATION_TAG,
+            clients.repository.current_commit,
+        )
+        clients.repository.tag_commit(DOCUMENTATION_TAG, clients.repository.current_commit)
+        return True
+
+    commit_in_branch = clients.repository.is_commit_in_branch(
+        documentation_commit, user_inputs.base_branch
     )
-    clients.repository.tag_commit(DOCUMENTATION_TAG, clients.repository.current_commit)
-    return True
+    if not commit_in_branch:
+        logging.error(
+            "Inconsistent repository: documentation tag %s (at commit %s)"
+            " not in base branch %s",
+            DOCUMENTATION_TAG,
+            documentation_commit,
+            user_inputs.base_branch,
+        )
+    return commit_in_branch
