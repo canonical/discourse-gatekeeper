@@ -34,7 +34,7 @@ Upload the documentation to charmhub.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 
@@ -66,7 +66,7 @@ Migrate existing docs from charmhub to local repository.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 
@@ -91,7 +91,7 @@ Perform checks to make sure the repository is in a consistent state.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 

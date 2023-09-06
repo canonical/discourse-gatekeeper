@@ -240,8 +240,8 @@ This action uses the notion of risks, similarly to what used in SNAP (see
 We currently only provide support on one single track (say latest), with the following 
 branching naming convention:
 
-* [main](https://github.com/canonical/upload-charm-docs/tree/main) corresponds to the edge risk
-* [stable](https://github.com/canonical/upload-charm-docs/tree/stable) corresponds to the stable version of the action
+* [main](https://github.com/canonical/discourse-gatekeeper/tree/main) corresponds to the edge risk
+* [stable](https://github.com/canonical/discourse-gatekeeper/tree/stable) corresponds to the stable version of the action
 
 We therefore generally advise you to pick the risk channel that best fits to your need. 
 
@@ -260,7 +260,7 @@ follow these steps:
 2. Amend the E2E workflows to point to your PR branch, i.e. 
 ```yaml
       name: Publish documentation
-      uses: canonical/upload-charm-docs@your-pr-branch # CHANGE HERE
+      uses: canonical/discourse-gatekeeper@your-pr-branch # CHANGE HERE
 ```
 3. Raise a PR against the test-repository. This PR will not be merged but it will allow you to tests
     your changes
