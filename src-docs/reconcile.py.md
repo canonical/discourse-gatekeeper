@@ -12,7 +12,35 @@ Module for calculating required changes based on docs directory and navigation t
 
 ---
 
-<a href="../src/reconcile.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_same_content`
+
+```python
+is_same_content(
+    index: Index,
+    actions: Iterable[CreateAction | NoopAction | UpdateAction | DeleteAction]
+) → bool
+```
+
+Check if the content on Discourse and Github matches. 
+
+
+
+**Args:**
+ 
+ - <b>`index`</b>:  Index object representing local and server content for the index file 
+ - <b>`actions`</b>:  List of actions representing what the reconcile action would do over all topics 
+
+
+
+**Returns:**
+ Boolean true if the contents match, false otherwise 
+
+
+---
+
+<a href="../src/reconcile.py#L421"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -50,7 +78,7 @@ Items only in table_rows won't have their order preserved. Those items are the i
 
 ---
 
-<a href="../src/reconcile.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L468"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `index_page`
 
