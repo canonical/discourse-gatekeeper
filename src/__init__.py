@@ -5,17 +5,17 @@
 import logging
 from itertools import tee
 
-from . import action, check, docs_directory
-from . import index as index_module
-from . import navigation_table, reconcile
-from . import sort as sort_module
-from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
-from .clients import Clients
-from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from .download import recreate_docs
-from .exceptions import InputError, TaggingNotAllowedError
-from .repository import DEFAULT_BRANCH_NAME
-from .types_ import (
+from src import action, check, docs_directory
+from src import index as index_module
+from src import navigation_table, reconcile
+from src import sort as sort_module
+from src.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
+from src.clients import Clients
+from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from src.download import recreate_docs
+from src.exceptions import InputError, TaggingNotAllowedError
+from src.repository import DEFAULT_BRANCH_NAME
+from src.types_ import (
     ActionResult,
     MigrateOutputs,
     PullRequestAction,

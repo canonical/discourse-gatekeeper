@@ -5,12 +5,12 @@
 
 import shutil
 
-from .clients import Clients
-from .constants import DOCUMENTATION_FOLDER_NAME
-from .index import contents_from_page
-from .index import get as get_index
-from .migration import run as migrate_contents
-from .navigation_table import from_page as navigation_table_from_page
+from src.clients import Clients
+from src.constants import DOCUMENTATION_FOLDER_NAME
+from src.index import contents_from_page
+from src.index import get as get_index
+from src.migration import run as migrate_contents
+from src.navigation_table import from_page as navigation_table_from_page
 
 
 def _download_from_discourse(clients: Clients) -> None:
