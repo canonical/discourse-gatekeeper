@@ -7,8 +7,8 @@ import logging
 import typing
 from enum import Enum
 
-from . import content, exceptions, reconcile, types_
-from .discourse import Discourse
+from src import content, exceptions, reconcile, types_
+from src.discourse import Discourse
 
 DRY_RUN_NAVLINK_LINK = "<not created due to dry run>"
 DRY_RUN_REASON = "dry run"

@@ -10,7 +10,7 @@ from pathlib import Path
 from git.exc import GitCommandError
 from git.repo import Repo
 
-from .exceptions import ContentError
+from src.exceptions import ContentError
 
 _BASE_BRANCH = "base"
 _THEIR_BRANCH = "theirs"
