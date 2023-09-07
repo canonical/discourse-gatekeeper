@@ -279,6 +279,11 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         star_pattern = re.compile(r"^\* ")
         try:
+            # This effectively means preventing a shallow repository to not behave correctly.
+            # Note that the special depth 2147483647 (or 0x7fffffff, the largest positive number a
+            # signed 32-bit integer can contain) means infinite depth.
+            # Reference: https://git-scm.com/docs/shallow
+            self._git_repo.git.fetch("--depth=2147483647")
             branches_with_commit = {
                 star_pattern.sub("", _branch).strip()
                 for _branch in self._git_repo.git.branch("--contains", commit_sha).split("\n")
