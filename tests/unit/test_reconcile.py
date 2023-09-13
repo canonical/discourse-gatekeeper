@@ -1316,13 +1316,13 @@ def test_index_page(
 @pytest.mark.parametrize(
     "actions, expected_value",
     [
-        pytest.param([factories.NoopActionFactory()], True, id="Noop action"),
-        pytest.param([factories.CreateActionFactory], False, id="Create action"),
-        pytest.param([factories.DeleteActionFactory], False, id="Delete action"),
-        pytest.param([factories.UpdateActionFactory], False, id="Update action"),
+        pytest.param([factories.NoopPageActionFactory()], True, id="Noop action"),
+        pytest.param([factories.CreatePageActionFactory], False, id="Create action"),
+        pytest.param([factories.DeletePageActionFactory], False, id="Delete action"),
+        pytest.param([factories.UpdatePageActionFactory], False, id="Update action"),
         pytest.param(
             [
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(None, "same", "same")
                 )
             ],
@@ -1393,6 +1393,6 @@ def test__is_same_content_index(index: types_.Index, expected_value: bool):
     act: when is_same_content function is called
     assert: then the correct results is returned.
     """
-    actions = [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)]
+    actions = [types_.NoopGroupAction(1, tuple("path"), types_.Navlink("title", None, True))]
 
     assert reconcile.is_same_content(index, actions) == expected_value
