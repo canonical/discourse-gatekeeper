@@ -404,6 +404,9 @@ def _local_and_server(
     Returns:
         The action to execute against the server.
 
+    Raises:
+        ReconcilliationError: For any action that is not yet supported.
+
     """
     _local_and_server_validation(item_info=item_info, table_row=table_row)
 
