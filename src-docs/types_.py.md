@@ -160,7 +160,7 @@ Attrs:  old: The previous content.  new: The new content.
 ## <kbd>class</kbd> `IndexContentsListItem`
 Represents an item in the contents table. 
 
-Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table 
+Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table. 
 
 
 ---
@@ -368,9 +368,20 @@ is_external(server_hostname: str) → bool
 
 Whether the row is an external reference. 
 
+
+
+**Args:**
+ 
+ - <b>`server_hostname`</b>:  The hostname of the discourse server. 
+
+
+
+**Returns:**
+ Whether the item in the table is an external item. 
+
 ---
 
-<a href="../src/types_.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/types_.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `to_markdown`
 
@@ -382,8 +393,14 @@ Convert to a line in the navigation table.
 
 
 
+**Args:**
+ 
+ - <b>`server_hostname`</b>:  The hostname of the discourse server. 
+
+
+
 **Returns:**
-  The line in the navigation table. 
+ The line in the navigation table. 
 
 
 ---

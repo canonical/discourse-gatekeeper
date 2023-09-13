@@ -167,7 +167,14 @@ class TableRow(typing.NamedTuple):
         return self.navlink.link is None
 
     def is_external(self, server_hostname: str) -> bool:
-        """Whether the row is an external reference."""
+        """Whether the row is an external reference.
+
+        Args:
+            server_hostname: The hostname of the discourse server.
+
+        Returns:
+            Whether the item in the table is an external item.
+        """
         if self.navlink.link is None:
             return False
         comparison_link = self.navlink.link.lower()
@@ -177,6 +184,9 @@ class TableRow(typing.NamedTuple):
 
     def to_markdown(self, server_hostname: str) -> str:
         """Convert to a line in the navigation table.
+
+        Args:
+            server_hostname: The hostname of the discourse server.
 
         Returns:
             The line in the navigation table.
@@ -542,6 +552,7 @@ class IndexContentsListItem(typing.NamedTuple):
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list at any hierarchy
         hidden: Whether the item should be displayed on the navigation table
+        table_path: The path for the item on the table.
     """
 
     hierarchy: int

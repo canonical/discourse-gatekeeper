@@ -66,7 +66,11 @@ KeyT = typing.TypeVar("KeyT")
 
 
 class Discourse:
-    """Interact with a discourse server."""
+    """Interact with a discourse server.
+
+    Attrs:
+        base_path: The base path to the discourse server.
+    """
 
     _tags = ("docs",)
 

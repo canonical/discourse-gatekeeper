@@ -264,6 +264,7 @@ def classify_item_reference(reference: str, docs_path: Path) -> ItemReferenceTyp
 
     Args:
         reference: The reference to classify.
+        docs_path: The parent path of the reference.
 
     Returns:
         The type of the reference.

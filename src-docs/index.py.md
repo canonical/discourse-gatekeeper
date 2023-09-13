@@ -114,6 +114,7 @@ Classify the type of a reference.
 **Args:**
  
  - <b>`reference`</b>:  The reference to classify. 
+ - <b>`docs_path`</b>:  The parent path of the reference. 
 
 
 
@@ -123,7 +124,7 @@ Classify the type of a reference.
 
 ---
 
-<a href="../src/index.py#L413"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_contents`
 

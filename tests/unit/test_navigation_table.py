@@ -6,11 +6,9 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
-from unittest import mock
-
 import pytest
 
-from src import discourse, exceptions, navigation_table, types_
+from src import exceptions, navigation_table, types_
 from src.exceptions import NavigationTableParseError
 
 from .. import factories

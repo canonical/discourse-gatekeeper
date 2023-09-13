@@ -23,6 +23,7 @@ def _absolute_url(
     """Get the absolute URL.
 
     Args:
+        action: The associated action for retrieving the URL.
         url: The url to convert.
         discourse: A client to the documentation server.
 
@@ -71,6 +72,9 @@ def _create(
 
     Returns:
         A report on the outcome of executing the action.
+
+    Raises:
+        NotImplementedError: if a requested action has not been implemented yet.
     """
     logging.info("dry run: %s, action: %s", dry_run, action)
 
@@ -190,9 +194,6 @@ def _update(
 
     Returns:
         A report on the outcome of executing the action.
-
-    Raises:
-        ActionError: if the content change or new content for a page is None.
     """
     logging.info("dry run: %s, action: %s", dry_run, action)
     if isinstance(action, types_.UpdatePageAction):

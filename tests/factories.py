@@ -377,7 +377,8 @@ class TableRowFactory(
 
         Attrs:
             is_group: flag to instantiate a table row representing a group.
-            is_document: flag to instantiate a table row representing a document(Default).
+            is_document: flag to instantiate a table row representing a document (Default).
+            is_external: Flag to instantiate a table row representing an external item.
         """
 
         is_group = factory.Trait(
