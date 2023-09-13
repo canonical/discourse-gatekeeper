@@ -8,10 +8,10 @@ from collections.abc import Iterable, Iterator
 from itertools import chain, tee
 from typing import NamedTuple, TypeGuard
 
-from . import constants, content
-from .constants import DOCUMENTATION_TAG
-from .repository import Client
-from .types_ import AnyAction, UpdateAction, UpdatePageAction, UserInputs
+from src import constants, content
+from src.constants import DOCUMENTATION_TAG
+from src.repository import Client
+from src.types_ import AnyAction, UpdateAction, UpdatePageAction, UserInputs
 
 
 class Problem(NamedTuple):

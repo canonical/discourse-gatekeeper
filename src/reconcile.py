@@ -7,12 +7,12 @@ import itertools
 import typing
 from pathlib import Path
 
-from . import exceptions
-from . import index as index_module
-from . import types_
-from .clients import Clients
-from .constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
-from .discourse import Discourse
+from src import exceptions
+from src import index as index_module
+from src import types_
+from src.clients import Clients
+from src.constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
+from src.discourse import Discourse
 
 
 def _local_only(item_info: types_.PathInfo | types_.IndexContentsListItem) -> types_.CreateAction:
@@ -260,6 +260,38 @@ def _local_and_server_external_ref_local_page_server(
             navlink_value=item_info.reference_value,
             navlink_hidden=item_info.hidden,
         ),
+    )
+
+
+def _is_same_content(action: types_.AnyAction) -> bool:
+    """Check whether the action would result in a Noop action.
+
+    Args:
+        action: action representing interaction with Discourse
+
+    Returns:
+        Boolean true if the contents match, false otherwise
+    """
+    if isinstance(action, types_.NoopAction):
+        return True
+    return False
+
+
+def is_same_content(index: types_.Index, actions: typing.Iterable[types_.AnyAction]) -> bool:
+    """Check if the content on Discourse and Github matches.
+
+    Args:
+        index: Index object representing local and server content for the index file
+        actions: List of actions representing what the reconcile action would do over all topics
+
+    Returns:
+        Boolean true if the contents match, false otherwise
+    """
+    if (not index.local) or (not index.server):
+        return False
+
+    return all(_is_same_content(action) for action in actions) and (
+        index.local.content == index_module.contents_from_page(index.server.content)
     )
 
 

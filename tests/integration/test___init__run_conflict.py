@@ -210,9 +210,6 @@ async def test_run_conflict(
     urls_with_actions = reconcile_output.topics
 
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
-    assert_substrings_in_string(
-        chain(urls, (doc_table_line_1, doc_table_line_1, "Noop", "'success'")), caplog.text
-    )
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert doc_table_line_1 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)

@@ -6,10 +6,10 @@
 import typing
 from pathlib import Path
 
-from .discourse import Discourse, create_discourse
-from .repository import Client as RepositoryClient
-from .repository import create_repository_client
-from .types_ import UserInputs
+from src.discourse import Discourse, create_discourse
+from src.repository import Client as RepositoryClient
+from src.repository import create_repository_client
+from src.types_ import UserInputs
 
 
 class Clients(typing.NamedTuple):

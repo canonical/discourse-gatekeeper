@@ -7,6 +7,7 @@
 # module has too many lines and might need refactoring.
 # pylint: disable=protected-access,too-many-locals,too-many-lines
 
+import typing
 from pathlib import Path
 from unittest import mock
 
@@ -1310,3 +1311,88 @@ def test_index_page(
     )
 
     assert returned_action == expected_action
+
+
+@pytest.mark.parametrize(
+    "actions, expected_value",
+    [
+        pytest.param([factories.NoopActionFactory()], True, id="Noop action"),
+        pytest.param([factories.CreateActionFactory], False, id="Create action"),
+        pytest.param([factories.DeleteActionFactory], False, id="Delete action"),
+        pytest.param([factories.UpdateActionFactory], False, id="Update action"),
+        pytest.param(
+            [
+                factories.UpdateActionFactory(
+                    content_change=types_.ContentChange(None, "same", "same")
+                )
+            ],
+            False,
+            id="Update action with same content",
+        ),
+    ],
+)
+def test__is_same_content_actions(
+    actions: typing.Iterable[types_.AnyAction], expected_value: bool
+):
+    """
+    arrange: given some mock list of actions and an index with matching local and server content
+    act: when is_same_content function is called
+    assert: then the correct results is returned.
+    """
+    index = types_.Index(
+        types_.Page("index-url", "index-content"),
+        types_.IndexFile("index-title", "index-content"),
+        "charm",
+    )
+
+    assert reconcile.is_same_content(index, actions) == expected_value
+
+
+@pytest.mark.parametrize(
+    "index, expected_value",
+    [
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", "index-content"),
+                "charm",
+            ),
+            True,
+            id="same index",
+        ),
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", "index-content-different"),
+                "charm",
+            ),
+            False,
+            id="different index",
+        ),
+        pytest.param(
+            types_.Index(
+                None, types_.IndexFile("index-title", "index-content-different"), "charm"
+            ),
+            False,
+            id="missing server content",
+        ),
+        pytest.param(
+            types_.Index(
+                types_.Page("index-url", "index-content"),
+                types_.IndexFile("index-title", None),
+                "charm",
+            ),
+            False,
+            id="missing local content",
+        ),
+    ],
+)
+def test__is_same_content_index(index: types_.Index, expected_value: bool):
+    """
+    arrange: given some mock Index object and an action list that only contains a NoopAction
+    act: when is_same_content function is called
+    assert: then the correct results is returned.
+    """
+    actions = [types_.NoopAction(1, tuple("path"), types_.Navlink("title", None, True), None)]
+
+    assert reconcile.is_same_content(index, actions) == expected_value

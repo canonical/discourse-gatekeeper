@@ -5,17 +5,17 @@
 import logging
 from itertools import tee
 
-from . import action, check, docs_directory
-from . import index as index_module
-from . import navigation_table, reconcile
-from . import sort as sort_module
-from .action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
-from .clients import Clients
-from .constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from .download import recreate_docs
-from .exceptions import InputError, TaggingNotAllowedError
-from .repository import DEFAULT_BRANCH_NAME
-from .types_ import (
+from src import action, check, docs_directory
+from src import index as index_module
+from src import navigation_table, reconcile
+from src import sort as sort_module
+from src.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
+from src.clients import Clients
+from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from src.download import recreate_docs
+from src.exceptions import InputError, TaggingNotAllowedError
+from src.repository import DEFAULT_BRANCH_NAME
+from src.types_ import (
     ActionResult,
     MigrateOutputs,
     PullRequestAction,
@@ -74,7 +74,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     sorted_path_infos = sort_module.using_contents_index(
         path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
     )
-    table_rows = navigation_table.from_page(page=server_content, discourse=clients.discourse)
+    table_rows = list(navigation_table.from_page(page=server_content, discourse=clients.discourse))
     actions = reconcile.run(
         sorted_path_infos=sorted_path_infos,
         table_rows=table_rows,
@@ -84,6 +84,35 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
     # it is passed
+    actions, check_actions = tee(actions, 2)
+    if reconcile.is_same_content(index, check_actions):
+        logging.info(
+            "Reconcile not required to run as the content is the same on Discourse and Github."
+        )
+        if clients.repository.is_commit_in_branch(user_inputs.commit_sha, user_inputs.base_branch):
+            # This means we are running from the base_branch
+            logging.info(
+                "Updating the tag %s on commit %s", DOCUMENTATION_TAG, user_inputs.commit_sha
+            )
+            clients.repository.tag_commit(DOCUMENTATION_TAG, user_inputs.commit_sha)
+
+        return ReconcileOutputs(
+            index_url=index.server.url if index.server else "",
+            topics=(
+                {
+                    f"{clients.discourse.absolute_url(row.navlink.link)}": ActionResult.SKIP
+                    for row in table_rows
+                    if row.navlink.link
+                }
+            )
+            | (
+                {clients.discourse.absolute_url(index.server.url): ActionResult.SKIP}
+                if index.server
+                else {}
+            ),
+            documentation_tag=clients.repository.tag_exists(DOCUMENTATION_TAG),
+        )
+
     actions, check_actions = tee(actions, 2)
     problems = tuple(
         check.conflicts(
@@ -196,10 +225,28 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
     Returns:
         Boolean representing whether the checks have all been passed.
     """
-    with clients.repository.with_branch(user_inputs.base_branch) as repo:
-        if repo.tag_exists(DOCUMENTATION_TAG):
-            return repo.is_commit_in_branch(
-                repo.switch(DOCUMENTATION_TAG).current_commit, user_inputs.base_branch
-            )
-        repo.tag_commit(DOCUMENTATION_TAG, repo.current_commit)
+    clients.repository.switch(user_inputs.base_branch)
+
+    documentation_commit = clients.repository.tag_exists(DOCUMENTATION_TAG)
+
+    if not documentation_commit:
+        logging.info(
+            "documentation tag %s does not exists. Creating at commit %s",
+            DOCUMENTATION_TAG,
+            clients.repository.current_commit,
+        )
+        clients.repository.tag_commit(DOCUMENTATION_TAG, clients.repository.current_commit)
         return True
+
+    commit_in_branch = clients.repository.is_commit_in_branch(
+        documentation_commit, user_inputs.base_branch
+    )
+    if not commit_in_branch:
+        logging.error(
+            "Inconsistent repository: documentation tag %s (at commit %s)"
+            " not in base branch %s",
+            DOCUMENTATION_TAG,
+            documentation_commit,
+            user_inputs.base_branch,
+        )
+    return commit_in_branch

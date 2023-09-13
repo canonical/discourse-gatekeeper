@@ -7,8 +7,8 @@ from pathlib import Path
 
 import yaml
 
-from . import types_
-from .exceptions import InputError
+from src import types_
+from src.exceptions import InputError
 
 METADATA_DOCS_KEY = "docs"
 METADATA_FILENAME = "metadata.yaml"
