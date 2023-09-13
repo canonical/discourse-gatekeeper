@@ -12,17 +12,45 @@ Module for calculating required changes based on docs directory and navigation t
 
 ---
 
-<a href="../src/reconcile.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_same_content`
+
+```python
+is_same_content(
+    index: Index,
+    actions: Iterable[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction]
+) → bool
+```
+
+Check if the content on Discourse and Github matches. 
+
+
+
+**Args:**
+ 
+ - <b>`index`</b>:  Index object representing local and server content for the index file 
+ - <b>`actions`</b>:  List of actions representing what the reconcile action would do over all topics 
+
+
+
+**Returns:**
+ Boolean true if the contents match, false otherwise 
+
+
+---
+
+<a href="../src/reconcile.py#L569"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
 ```python
 run(
-    sorted_path_infos: Iterable[PathInfo],
+    sorted_path_infos: Iterable[PathInfo | IndexContentsListItem],
     table_rows: Iterable[TableRow],
     clients: Clients,
     base_path: Path
-) → Iterator[CreateAction | NoopAction | UpdateAction | DeleteAction]
+) → Iterator[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction]
 ```
 
 Reconcile differences between the docs directory and documentation server. 
@@ -50,14 +78,15 @@ Items only in table_rows won't have their order preserved. Those items are the i
 
 ---
 
-<a href="../src/reconcile.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L616"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `index_page`
 
 ```python
 index_page(
     index: Index,
-    table_rows: Iterable[TableRow]
+    table_rows: Iterable[TableRow],
+    discourse: Discourse
 ) → CreateIndexAction | NoopIndexAction | UpdateIndexAction
 ```
 
@@ -69,6 +98,7 @@ Reconcile differences for the index page.
  
  - <b>`index`</b>:  Information about the index on the server and locally. 
  - <b>`table_rows`</b>:  The current navigation table rows based on local files. 
+ - <b>`discourse`</b>:  A client to the documentation server. 
 
 
 

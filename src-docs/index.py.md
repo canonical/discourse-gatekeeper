@@ -96,7 +96,34 @@ Get the contents from the index file that should be passed to the server.
 
 ---
 
-<a href="../src/index.py#L371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `classify_item_reference`
+
+```python
+classify_item_reference(
+    reference: str,
+    docs_path: Path
+) → <enum 'ItemReferenceType'>
+```
+
+Classify the type of a reference. 
+
+
+
+**Args:**
+ 
+ - <b>`reference`</b>:  The reference to classify. 
+
+
+
+**Returns:**
+ The type of the reference. 
+
+
+---
+
+<a href="../src/index.py#L413"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_contents`
 
@@ -120,5 +147,16 @@ Get the contents list items from the index file.
 
 **Returns:**
  Iterator with all items from the contents list. 
+
+
+---
+
+## <kbd>class</kbd> `ItemReferenceType`
+Classification for the path of an item. 
+
+Attrs:  EXTERNAL: a link to an external resource.  DIR: a link to a local directory.  FILE: a link to a local file.  UNKNOWN: The reference is not a known type. 
+
+
+
 
 

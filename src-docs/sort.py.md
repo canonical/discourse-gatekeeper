@@ -8,7 +8,7 @@ Sort items for publishing.
 
 ---
 
-<a href="../src/sort.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/sort.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `using_contents_index`
 
@@ -17,7 +17,7 @@ using_contents_index(
     path_infos: Iterable[PathInfo],
     index_contents: Iterable[IndexContentsListItem],
     docs_path: Path
-) → Iterator[PathInfo]
+) → Iterator[PathInfo | IndexContentsListItem]
 ```
 
 Sort PathInfos based on the contents index and alphabetical rank. 

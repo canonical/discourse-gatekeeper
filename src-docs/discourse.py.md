@@ -8,7 +8,7 @@ Interface for Discourse interactions.
 
 ---
 
-<a href="../src/discourse.py#L489"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/discourse.py#L494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_discourse`
 
@@ -72,6 +72,12 @@ Construct.
  - <b>`api_key`</b>:  The API key for requests. 
  - <b>`category_id`</b>:  The category identifier to put the topics into. 
 
+
+---
+
+#### <kbd>property</kbd> base_path
+
+The HTTP protocol and hostname for discourse (e.g., https://discourse). 
 
 
 
