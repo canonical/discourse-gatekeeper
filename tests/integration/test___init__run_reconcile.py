@@ -705,3 +705,160 @@ async def test_run_hidden(
         discourse_api.retrieve_topic(url=doc_url)
     with pytest.raises(exceptions.DiscourseError):
         discourse_api.retrieve_topic(url=alt_doc_url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("patch_create_repository_client")
+async def test_run_external(
+    discourse_api: Discourse,
+    caplog: pytest.LogCaptureFixture,
+    repository_path: Path,
+    mock_github_repo: MagicMock,
+):
+    """
+    arrange: given running discourse server
+    act: when run is called with:
+        1. docs with an index file with an external item
+        2. docs with an index file with with an external item not changed
+        3. docs with an index file with with an external item changed
+        4. docs with an index file with with an external item removed
+    assert: then:
+        1. the index is created with external item
+        2. no change
+        3. index updated with updated external item
+        4. index updated with removed external item
+    """
+    document_name = "external name 1"
+    caplog.set_level(logging.INFO)
+
+    repository_client = Client(Repo(repository_path), mock_github_repo)
+
+    repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
+
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
+    )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "first commit of metadata", directory=None
+    )
+
+    # 1. docs with an index file with an external item
+    caplog.clear()
+    index_url = discourse_api.create_topic(
+        title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
+        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+    )
+    create_metadata_yaml(
+        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
+        path=repository_path,
+    )
+    (docs_dir := repository_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (index_file := docs_dir / "index.md").write_text(
+        f"""{(index_content := "index content 1")}
+# contents
+- [{(item_title_1 := "external item title 1")}]({(item_url_1 := "https://canonical.com")})
+""",
+        encoding="utf-8",
+    )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "1. docs with an index file with an external item", directory=None
+    )
+
+    output_reconcile = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
+
+    assert len(urls_with_actions) == 2
+    (external_url, index_url) = urls_with_actions.keys()
+    assert (urls := tuple(urls_with_actions)) == (external_url, index_url)
+    item_table_line_1 = f"| 1 | https-canonical-com | [{item_title_1}]({item_url_1}) |"
+    assert_substrings_in_string(
+        chain(urls, (item_table_line_1, "Create", "'success'")), caplog.text
+    )
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert index_content in index_topic
+    assert item_table_line_1 in index_topic
+    assert external_url == item_url_1
+
+    # 2. docs with an index file with with an external item not changed
+    caplog.clear()
+
+    output_reconcile = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert output_reconcile is None
+
+    # 3. docs with an index file with with an external item changed
+    caplog.clear()
+    index_file.write_text(
+        f"""{(index_content := "index content 1")}
+# contents
+- [{(item_title_3 := "external item title 3")}]({(external_url)})
+""",
+        encoding="utf-8",
+    )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "3. docs with an index file with with an external item changed", directory=None
+    )
+
+    output_reconcile = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert output_reconcile is not None
+    urls_with_actions = output_reconcile.topics
+
+    assert len(urls_with_actions) == 2
+    (external_url, index_url) = urls_with_actions.keys()
+    assert (urls := tuple(urls_with_actions)) == (external_url, index_url)
+    item_table_line_3 = f"| 1 | https-canonical-com | [{item_title_3}]({external_url}) |"
+    assert_substrings_in_string(
+        chain(urls, (item_table_line_3, "Update", "'success'")), caplog.text
+    )
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert index_content in index_topic
+    assert item_table_line_3 in index_topic
+    assert external_url == external_url
+
+    # 4. docs with an index file with with an external item removed
+    caplog.clear()
+    index_file.write_text(
+        f"""{(index_content := "index content 1")}
+# contents
+""",
+        encoding="utf-8",
+    )
+
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "4. docs with an index file with with an external item removed",
+        directory=None,
+    )
+
+    output_reconcile = run_reconcile(
+        clients=Clients(discourse=discourse_api, repository=repository_client),
+        user_inputs=factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+        ),
+    )
+
+    assert_substrings_in_string(chain(urls, (item_table_line_3, "'success'")), caplog.text)
+    assert (urls := tuple(urls_with_actions)) == (external_url, index_url)
+    index_topic = discourse_api.retrieve_topic(url=index_url)
+    assert index_content in index_topic
+    assert item_table_line_3 not in index_topic
