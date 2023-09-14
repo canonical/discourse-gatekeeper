@@ -320,16 +320,40 @@ def _run_one(
     match type(action):
         case types_.CreatePageAction | types_.CreateGroupAction | types_.CreateExternalRefAction:
             # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
-            assert isinstance(action, types_.CreateAction)  # nosec
+            assert isinstance(
+                action,
+                (
+                    types_.CreatePageAction,
+                    types_.CreateGroupAction,
+                    types_.CreateExternalRefAction,
+                ),
+            )  # nosec
             report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
         case types_.NoopPageAction | types_.NoopGroupAction | types_.NoopExternalRefAction:
-            assert isinstance(action, types_.NoopAction)  # nosec
+            assert isinstance(
+                action,
+                (types_.NoopPageAction, types_.NoopGroupAction, types_.NoopExternalRefAction),
+            )  # nosec
             report = _noop(action=action, discourse=discourse)
         case types_.UpdatePageAction | types_.UpdateGroupAction | types_.UpdateExternalRefAction:
-            assert isinstance(action, types_.UpdateAction)  # nosec
+            assert isinstance(
+                action,
+                (
+                    types_.UpdatePageAction,
+                    types_.UpdateGroupAction,
+                    types_.UpdateExternalRefAction,
+                ),
+            )  # nosec
             report = _update(action=action, discourse=discourse, dry_run=dry_run)
         case types_.DeletePageAction | types_.DeleteGroupAction | types_.DeleteExternalRefAction:
-            assert isinstance(action, types_.DeleteAction)  # nosec
+            assert isinstance(
+                action,
+                (
+                    types_.DeletePageAction,
+                    types_.DeleteGroupAction,
+                    types_.DeleteExternalRefAction,
+                ),
+            )  # nosec
             report = _delete(
                 action=action,
                 discourse=discourse,

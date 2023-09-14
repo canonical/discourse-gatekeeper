@@ -272,7 +272,9 @@ def _is_same_content(action: types_.AnyAction) -> bool:
     Returns:
         Boolean true if the contents match, false otherwise
     """
-    if isinstance(action, types_.NoopAction):
+    if isinstance(
+        action, (types_.NoopPageAction, types_.NoopGroupAction, types_.NoopExternalRefAction)
+    ):
         return True
     return False
 

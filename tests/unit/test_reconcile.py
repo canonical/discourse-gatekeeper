@@ -417,7 +417,10 @@ def test__local_and_server_file_content_change_base_content_ws(mock_get_file, mo
         base_path=tmp_path,
     )
 
-    assert isinstance(returned_action, types_.UpdateAction)
+    assert isinstance(
+        returned_action,
+        (types_.UpdatePageAction, types_.UpdateGroupAction, types_.UpdateExternalRefAction),
+    )
     assert returned_action.level == path_info.level
     assert returned_action.path == path_info.table_path
     # mypy has difficulty with determining which action is returned

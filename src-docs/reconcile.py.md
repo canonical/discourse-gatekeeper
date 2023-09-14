@@ -12,7 +12,7 @@ Module for calculating required changes based on docs directory and navigation t
 
 ---
 
-<a href="../src/reconcile.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L282"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_same_content`
 
@@ -40,7 +40,7 @@ Check if the content on Discourse and Github matches.
 
 ---
 
-<a href="../src/reconcile.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L574"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 
@@ -78,7 +78,7 @@ Items only in table_rows won't have their order preserved. Those items are the i
 
 ---
 
-<a href="../src/reconcile.py#L619"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/reconcile.py#L621"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `index_page`
 

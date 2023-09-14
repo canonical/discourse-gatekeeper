@@ -11,7 +11,7 @@ Module for running checks.
 
 ---
 
-<a href="../src/check.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_path_with_diffs`
 
@@ -37,7 +37,7 @@ Generate the paths that have either local or server content changes.
 
 ---
 
-<a href="../src/check.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `conflicts`
 

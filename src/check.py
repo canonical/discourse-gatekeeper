@@ -11,7 +11,14 @@ from typing import NamedTuple, TypeGuard
 from src import constants, content
 from src.constants import DOCUMENTATION_TAG
 from src.repository import Client
-from src.types_ import AnyAction, UpdateAction, UpdatePageAction, UserInputs
+from src.types_ import (
+    AnyAction,
+    UpdateAction,
+    UpdateExternalRefAction,
+    UpdateGroupAction,
+    UpdatePageAction,
+    UserInputs,
+)
 
 
 class Problem(NamedTuple):
@@ -86,7 +93,7 @@ def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
     Returns:
         Whether the action is an UpdateAction.
     """
-    return isinstance(action, UpdateAction)
+    return isinstance(action, (UpdatePageAction, UpdateGroupAction, UpdateExternalRefAction))
 
 
 def _update_action_problem(action: UpdateAction) -> Problem | None:
