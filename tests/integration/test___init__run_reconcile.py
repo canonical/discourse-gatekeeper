@@ -834,7 +834,6 @@ async def test_run_external(
     index_topic = discourse_api.retrieve_topic(url=index_url)
     assert index_content in index_topic
     assert item_table_line_3 in index_topic
-    assert external_url == external_url
 
     # 4. docs with an index file with with an external item removed
     caplog.clear()

@@ -624,9 +624,13 @@ def test__local_and_server_external_ref_same(mock_get_file, mocked_clients):
     mock_get_file.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "item_info, navlink",
-    [
+def _test__local_and_server_external_ref_navlink_changed_parameters():
+    """Generate parameters for the test__local_and_server_external_ref_navlink_changed test.
+
+    Returns:
+        The tests.
+    """
+    return [
         pytest.param(
             item_info_1 := factories.IndexContentsListItemFactory(
                 reference_title="title 1", reference_value="https://canonical.com"
@@ -643,7 +647,11 @@ def test__local_and_server_external_ref_same(mock_get_file, mocked_clients):
             ),
             id="link changed",
         ),
-    ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "item_info, navlink", _test__local_and_server_external_ref_navlink_changed_parameters()
 )
 def test__local_and_server_external_ref_navlink_changed(
     item_info: types_.IndexContentsListItem, navlink: types_.Navlink, mocked_clients

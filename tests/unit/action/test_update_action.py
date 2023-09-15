@@ -19,9 +19,13 @@ from ... import factories
 from ..helpers import assert_substrings_in_string
 
 
-@pytest.mark.parametrize(
-    "update_action, dry_run, expected_location",
-    [
+def _test__update_directory_parameters():
+    """Generate parameters for the test__update_directory test.
+
+    Returns:
+        The tests.
+    """
+    return [
         pytest.param(
             action_1 := factories.UpdateExternalRefActionFactory(),
             True,
@@ -40,7 +44,11 @@ from ..helpers import assert_substrings_in_string
         pytest.param(
             factories.UpdateGroupActionFactory(), False, None, id="group dry run mode disabled"
         ),
-    ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "update_action, dry_run, expected_location", _test__update_directory_parameters()
 )
 def test__update_directory(
     update_action: src_types.UpdateAction,
