@@ -307,7 +307,7 @@ def _check_contents_item(
     item_reference_type = classify_item_reference(
         reference=item.reference_value, docs_path=docs_path
     )
-    item_path = docs_path / Path(item.reference_value)
+
     if item.hidden and item_reference_type == ItemReferenceType.DIR:
         raise InputError(f"A hidden item is a directory. {item=!r}")
 
@@ -330,8 +330,8 @@ def _check_contents_item(
             )
 
         # Check that if the item is a file, it has the correct extension
-        if item_path.is_file():
-            if item_path.suffix.lower() != DOC_FILE_EXTENSION:
+        if item_reference_type == ItemReferenceType.FILE:
+            if (docs_path / Path(item.reference_value)).suffix.lower() != DOC_FILE_EXTENSION:
                 raise InputError(
                     "An item in the contents list is not of the expected file type. "
                     f"{item=!r}, expected extension: {DOC_FILE_EXTENSION}"
