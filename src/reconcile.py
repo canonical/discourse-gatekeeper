@@ -164,7 +164,9 @@ def _local_and_server_external_ref_local_external_ref_server(
             navlink_change=types_.NavlinkChange(
                 old=table_row.navlink,
                 new=types_.Navlink(
-                    title=item_info.reference_title, link=item_info.reference_value, hidden=False
+                    title=item_info.reference_title,
+                    link=item_info.reference_value,
+                    hidden=item_info.hidden,
                 ),
             ),
         ),
