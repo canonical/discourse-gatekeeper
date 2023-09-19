@@ -89,24 +89,17 @@ def _local_and_server_validation(
         ReconcilliationError:
             If the table path or level do not match for the item info and table row.
     """
-    if isinstance(item_info, types_.PathInfo):
-        if item_info.level != table_row.level:
-            raise exceptions.ReconcilliationError(
-                f"internal error, level mismatch, {item_info=!r}, {table_row=!r}"
-            )
-        if item_info.table_path != table_row.path:
-            raise exceptions.ReconcilliationError(
-                f"internal error, table path mismatch, {item_info=!r}, {table_row=!r}"
-            )
-    if isinstance(item_info, types_.IndexContentsListItem):
-        if item_info.hierarchy != table_row.level:
-            raise exceptions.ReconcilliationError(
-                f"internal error, level mismatch, {item_info=!r}, {table_row=!r}"
-            )
-        if item_info.table_path != table_row.path:
-            raise exceptions.ReconcilliationError(
-                f"internal error, table path mismatch, {item_info=!r}, {table_row=!r}"
-            )
+    item_info_level = (
+        item_info.level if isinstance(item_info, types_.PathInfo) else item_info.hierarchy
+    )
+    if item_info_level != table_row.level:
+        raise exceptions.ReconcilliationError(
+            f"internal error, level mismatch, {item_info=!r}, {table_row=!r}"
+        )
+    if item_info.table_path != table_row.path:
+        raise exceptions.ReconcilliationError(
+            f"internal error, table path mismatch, {item_info=!r}, {table_row=!r}"
+        )
 
 
 def _local_and_server_dir_local_group_server(
