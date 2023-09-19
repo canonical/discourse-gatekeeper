@@ -75,6 +75,22 @@ def test_table_row_is_group(table_row: types_.TableRow, expected_is_group: bool)
         ),
         pytest.param(
             factories.TableRowFactory(
+                navlink=factories.NavlinkFactory(link="https://canonical.com?param=val")
+            ),
+            "https://discourse.com",
+            True,
+            id="external link query string",
+        ),
+        pytest.param(
+            factories.TableRowFactory(
+                navlink=factories.NavlinkFactory(link="https://canonical.com#anchor")
+            ),
+            "https://discourse.com",
+            True,
+            id="external link anchor",
+        ),
+        pytest.param(
+            factories.TableRowFactory(
                 navlink=factories.NavlinkFactory(link="HTTPS://canonical.com")
             ),
             "https://discourse.com",
@@ -264,6 +280,28 @@ def test_table_row_to_markdown(
             factories.IndexContentsListItemFactory(reference_value="https://canonical.com/page"),
             ("https", "canonical", "com", "page"),
             id="external with path",
+        ),
+        pytest.param(
+            factories.IndexContentsListItemFactory(
+                reference_value="https://canonical.com?key=value"
+            ),
+            ("https", "canonical", "com", "keyvalue"),
+            id="external with query",
+        ),
+        pytest.param(
+            factories.IndexContentsListItemFactory(reference_value="https://canonical.com#anchor"),
+            ("https", "canonical", "com", "anchor"),
+            id="external with anchor",
+        ),
+        pytest.param(
+            factories.IndexContentsListItemFactory(reference_value="https://canonical.com%"),
+            ("https", "canonical", "com"),
+            id="external with single special characters",
+        ),
+        pytest.param(
+            factories.IndexContentsListItemFactory(reference_value="https://canonical.com%$"),
+            ("https", "canonical", "com"),
+            id="external with multiple special characters",
         ),
         pytest.param(
             factories.IndexContentsListItemFactory(

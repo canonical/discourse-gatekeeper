@@ -169,7 +169,7 @@ Attrs:  hierarchy: The number of parent items to the root of the list  reference
 
 The table path for the item. 
 
-In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1 removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP case. For a non-HTTP case, removes the file suffix and splits on / to built the path. 
+In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1 removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP case. Any remaining characters not allowed in the path are also removed. For a non-HTTP case, removes the file suffix and splits on / to built the path. 
 
 
 
@@ -360,7 +360,7 @@ Whether the row is a group of pages.
 
 ---
 
-<a href="../src/types_.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/types_.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_external`
 
@@ -383,7 +383,7 @@ Whether the row is an external reference.
 
 ---
 
-<a href="../src/types_.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/types_.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `to_markdown`
 

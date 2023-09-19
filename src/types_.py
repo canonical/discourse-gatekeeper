@@ -4,10 +4,13 @@
 """Types for uploading docs to charmhub."""
 
 import dataclasses
+import re
 import typing
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
+
+from src import constants
 
 Content = str
 Url = str
@@ -567,17 +570,24 @@ class IndexContentsListItem(typing.NamedTuple):
 
         In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1
         removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP
-        case. For a non-HTTP case, removes the file suffix and splits on / to built the path.
+        case. Any remaining characters not allowed in the path are also removed. For a non-HTTP
+        case, removes the file suffix and splits on / to built the path.
 
         Returns:
             The table path for the item.
         """
         if self.reference_value.lower().startswith("http"):
-            return tuple(
-                (self.reference_value.replace("//", "/").replace(":", "").replace(".", "/")).split(
-                    "/"
-                )
+            transformed_reference_value = (
+                self.reference_value.replace("//", "/")
+                .replace(":", "")
+                .replace(".", "/")
+                .replace("?", "/")
+                .replace("#", "/")
             )
+            transformed_reference_value = re.sub(
+                rf"[^\/{constants.PATH_CHARS}]", "", transformed_reference_value
+            )
+            return tuple((transformed_reference_value).split("/"))
         return tuple(self.reference_value.rsplit(".", 1)[0].split("/"))
 
 
