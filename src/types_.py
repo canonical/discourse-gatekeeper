@@ -565,6 +565,10 @@ class IndexContentsListItem(typing.NamedTuple):
     def table_path(self) -> TablePath:
         """The table path for the item.
 
+        In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1
+        removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP
+        case. For a non-HTTP case, removes the file suffix and splits on / to built the path.
+
         Returns:
             The table path for the item.
         """
