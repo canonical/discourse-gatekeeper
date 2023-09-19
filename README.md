@@ -1,7 +1,9 @@
 # Upload Charm Documentation
 
-*This action is still in alpha, breaking changes could occur. For now, it should
-only be used on Canonical repositories after approval.*
+**This action is in development, and should not be used except on
+repositories that are part of our development and testing programme.** 
+
+*The action is still in alpha, and breaking changes could occur.*
 
 This action automates uploading documentation from the `docs` folder in a
 repository to discourse which is how the charm documentation is published to
