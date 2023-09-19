@@ -19,7 +19,7 @@ Module for calculating required changes based on docs directory and navigation t
 ```python
 is_same_content(
     index: Index,
-    actions: Iterable[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction]
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction]
 ) → bool
 ```
 
@@ -50,7 +50,7 @@ run(
     table_rows: Iterable[TableRow],
     clients: Clients,
     base_path: Path
-) → Iterator[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction]
+) → Iterator[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction]
 ```
 
 Reconcile differences between the docs directory and documentation server. 

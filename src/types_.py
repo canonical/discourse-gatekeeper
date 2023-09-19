@@ -224,17 +224,6 @@ class _CreateActionBase:
 
 
 @dataclasses.dataclass
-class CreateExternalRefAction(_CreateActionBase):
-    """Represents a external reference to be created.
-
-    Attrs:
-        navlink_value: The external reference.
-    """
-
-    navlink_value: NavlinkValue
-
-
-@dataclasses.dataclass
 class CreateGroupAction(_CreateActionBase):
     """Represents a group to be created."""
 
@@ -250,7 +239,18 @@ class CreatePageAction(_CreateActionBase):
     content: Content
 
 
-CreateAction = CreatePageAction | CreateGroupAction | CreateExternalRefAction
+@dataclasses.dataclass
+class CreateExternalRefAction(_CreateActionBase):
+    """Represents a external reference to be created.
+
+    Attrs:
+        navlink_value: The external reference.
+    """
+
+    navlink_value: NavlinkValue
+
+
+CreateAction = CreateGroupAction | CreatePageAction | CreateExternalRefAction
 
 
 @dataclasses.dataclass
@@ -287,11 +287,6 @@ class NoopGroupAction(_NoopActionBase):
 
 
 @dataclasses.dataclass
-class NoopExternalRefAction(_NoopActionBase):
-    """Represents an external reference with no required changes."""
-
-
-@dataclasses.dataclass
 class NoopPageAction(_NoopActionBase):
     """Represents a page with no required changes.
 
@@ -302,7 +297,12 @@ class NoopPageAction(_NoopActionBase):
     content: Content
 
 
-NoopAction = NoopPageAction | NoopGroupAction | NoopExternalRefAction
+@dataclasses.dataclass
+class NoopExternalRefAction(_NoopActionBase):
+    """Represents an external reference with no required changes."""
+
+
+NoopAction = NoopGroupAction | NoopPageAction | NoopExternalRefAction
 
 
 @dataclasses.dataclass
@@ -392,7 +392,7 @@ class UpdateExternalRefAction(_UpdateActionBase):
     """Represents an external reference to be updated."""
 
 
-UpdateAction = UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction
+UpdateAction = UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction
 
 
 @dataclasses.dataclass
@@ -429,11 +429,6 @@ class DeleteGroupAction(_DeleteActionBase):
 
 
 @dataclasses.dataclass
-class DeleteExternalRefAction(_DeleteActionBase):
-    """Represents an external reference to be deleted."""
-
-
-@dataclasses.dataclass
 class DeletePageAction(_DeleteActionBase):
     """Represents a page to be deleted.
 
@@ -444,7 +439,12 @@ class DeletePageAction(_DeleteActionBase):
     content: Content
 
 
-DeleteAction = DeletePageAction | DeleteGroupAction | DeleteExternalRefAction
+@dataclasses.dataclass
+class DeleteExternalRefAction(_DeleteActionBase):
+    """Represents an external reference to be deleted."""
+
+
+DeleteAction = DeleteGroupAction | DeletePageAction | DeleteExternalRefAction
 
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction

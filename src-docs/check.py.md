@@ -17,7 +17,7 @@ Module for running checks.
 
 ```python
 get_path_with_diffs(
-    actions: Iterable[UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction]
+    actions: Iterable[UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction]
 ) → PathsWithDiff
 ```
 
@@ -43,7 +43,7 @@ Generate the paths that have either local or server content changes.
 
 ```python
 conflicts(
-    actions: Iterable[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction],
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction],
     repository: Client,
     user_inputs: UserInputs
 ) → Iterator[Problem]

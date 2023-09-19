@@ -21,7 +21,7 @@ Module for taking the required actions to match the server state with the local 
 
 ```python
 run_all(
-    actions: Iterable[CreatePageAction | CreateGroupAction | CreateExternalRefAction | NoopPageAction | NoopGroupAction | NoopExternalRefAction | UpdatePageAction | UpdateGroupAction | UpdateExternalRefAction | DeletePageAction | DeleteGroupAction | DeleteExternalRefAction],
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction],
     index: Index,
     discourse: Discourse,
     dry_run: bool,
