@@ -1,23 +1,28 @@
 # Upload Charm Documentation
 
-*This action is still in alpha, breaking changes could occur. For now, it should
-only be used on Canonical repositories after approval.*
+**This action is in development, and should not be used except on
+repositories that are part of our development and testing programme.** 
+
+*The action is still in alpha, and breaking changes could occur.*
 
 This action automates syncing of documentation between a `docs` folder in a
 repository and discourse, which is how the charm documentation is published to
 charmhub.
 
 In particular, the action does:
-1. **Raise** PR in the repository with new content and modifications done in Discourse, that 
-   have not yet been synced in the current repository
-2. **Check** that (when included in the CI) new documentation updates of the `docs` folder in a 
-   given PR does not conflict with external contributions in Discourse
-3. *(experimental)* **Upload** documentation update to Discourse automatically, only as long as
-   the modifications do not conflict with external contributions in Discourse
+1. **Raise** PR in the repository with new content and modifications done in 
+   Discourse, that have not yet been synced in the current repository
+2. **Check** that (when included in the CI) new documentation updates of the 
+   `docs` folder in a given PR does not conflict with external contributions in 
+   Discourse
+3. *(experimental)* **Upload** documentation update to Discourse automatically, 
+   only as long as the modifications do not conflict with external contributions 
+   in Discourse
 
-In its operation, the action will manage a tag (named `discourse-gatekeeper/content`), 
-that represents the last synced content with Discourse. Please do not remove this tag to ensure 
-correct execution of the action. 
+In its operation, the action will manage a tag (named 
+`discourse-gatekeeper/content`), that represents the last synced content with 
+Discourse. Please do not remove this tag to ensure correct execution of the 
+action. 
 
 ## Getting Started
 
@@ -41,24 +46,25 @@ rate limit on the number of topics that can be created by a user per day on
 discourse. 
 
 There is a parameter, `dry_run`, which will do everything except
-make changes on discourse and log what would have happened. This is the recommended
-use to enable one-way sync where the content in the repository is kept in sync with 
-Discourse but where no upload is allowed.
+make changes on discourse and log what would have happened. This is the 
+recommended use to enable one-way sync where the content in the repository is 
+kept in sync with Discourse but where no upload is allowed.
 
-> :warning: Two-way sync between Discourse and Github is currently not allowed and 
-> can only be used with leadership approval.
+> :warning: Two-way sync between Discourse and Github is currently not allowed 
+> and can only be used with leadership approval.
 
 ### Permissions
 
 Make sure that the action runs in workflow with correct permission settings. In 
 particular, the action should be allowed to:
-1. Edit content and push commits/branches/tags in order to commit community contributions 
-   to dedicated branches, e.g. `discourse-gatekeeper/migrate` , as well update the position 
-   of the `discourse-gatekeeper/content` tag. 
-2. Open/amend/close pull-requests in order to raise PR with community contributions
+1. Edit content and push commits/branches/tags in order to commit community 
+   contributions to dedicated branches, e.g. `discourse-gatekeeper/migrate`, 
+   as well update the position of the `discourse-gatekeeper/content` tag. 
+2. Open/amend/close pull-requests in order to raise PR with community 
+   contributions
 
-Thus, when the action is embedded in an external workflow, make sure that you pass 
-credentials and permissions accordingly, e.g. 
+Thus, when the action is embedded in an external workflow, make sure that you 
+pass credentials and permissions accordingly, e.g. 
 
 ```shell
   sync-docs:
@@ -71,21 +77,24 @@ credentials and permissions accordingly, e.g.
 
 ### Recommended Setup
 
-Although the action is designed to always perform **Raise, Check and Upload** functions,
-for best user-experience, we suggest the action to be included in:
+Although the action is designed to always perform **Raise, Check and Upload** 
+functions, for best user-experience, we suggest the action to be included in:
 
-1. Scheduled workflows with dry-run enabled: to make sure PR with community contributions
-   are raised regularly
-2. CI checks with dry-run enabled: to make sure amends to documentations are not conflicting with community 
-   contributions, as well as increases the rate at which PR with community contributions are raised
-3. Release pipelines: to upload *(experimental)* documentations edits to Discourse and make sure 
-   that the `discourse-gatekeeper/content` tag is updated regularly 
+1. Scheduled workflows with dry-run enabled: to make sure PR with community 
+   contributions are raised regularly
+2. CI checks with dry-run enabled: to make sure amends to documentations are not
+   conflicting with community contributions, as well as increases the rate at 
+   which PR with community contributions are raised
+3. Release pipelines: to upload *(experimental)* documentations edits to 
+   Discourse and make sure that the `discourse-gatekeeper/content` tag is 
+   updated regularly 
 
 ### Disclaimers
  
-1. The action is currently in alpha state. If you encounter this issue, the action will fail and report
-   that as the reason. It may help to space out adopting this action if you are 
-   planning to use it for multiple charms or to use different users for each charm. 
+1. The action is currently in alpha state. If you encounter any issue with 
+   secrets, permissions or execution, the action will fail and report that as 
+   the reason. It may help to space out adopting this action if you are planning
+   to use it for multiple charms or to use different users for each charm. 
  
 2. Note that other rate limits also apply which is why execution
    might look like it is stalled for a short period and then resume. The
@@ -94,14 +103,14 @@ for best user-experience, we suggest the action to be included in:
 
 ## Initial Setup   
 
-Depending on the status of your project, you may have your documentation either in 
-Discourse or in GitHub already. If you don't have any documentation, we recommend 
-that you start including your documentation in Discourse first, as this is generally 
-the *source of truth*, and the primary platform where the documentation is exposed and 
-fetch by frontend platforms, e.g. Charmhub. 
+Depending on the status of your project, you may have your documentation either 
+in Discourse or in GitHub already. If you don't have any documentation, we 
+recommend that you start including your documentation in Discourse first, as 
+this is generally the *source of truth*, and the primary platform where the 
+documentation is exposed and fetch by frontend platforms, e.g. Charmhub. 
 
-In the following, we outline the process to enable Discourse Gatekeeper, depending on
-whether:
+In the following, we outline the process to enable Discourse Gatekeeper, 
+depending on whether:
 
 1. Documentation in Discourse
 2. Documentation in Github 
@@ -111,13 +120,14 @@ whether:
 1. Create a `docs` key in `metadata.yaml` with the link to the documentation on
    charmhub.
 2. After updating the `metadata.yaml` in your main branch, trigger the action 
-   manually or via automated processes (either in the CI or in the release pipeline)
-3. As a part of the action, a branch name with `upload-charm-docs/migrate` will be created 
-   and a pull request named `[upload-charm-docs] Migrate charm docs` will be created
-   targeting the default branch of the repository. In order to ensure that the
-   branches can be created successfully, please make sure that there are no
-   existing branches clashing with the name above. Please note that the
-   `dry_run` input has no effect on migrate mode.
+   manually or via automated processes (either in the CI or in the release 
+   pipeline)
+3. As a part of the action, a branch name with `upload-charm-docs/migrate` will 
+   be created and a pull request named `[upload-charm-docs] Migrate charm docs` 
+   will be created targeting the default branch of the repository. In order to 
+   ensure that the branches can be created successfully, please make sure that 
+   there are no existing branches clashing with the name above. Please note 
+   that the `dry_run` input has no effect on migrate mode.
 
 The action will now compare the discourse topics with the files and directories
 under the `docs` directory and make any changes based on differences.
@@ -132,8 +142,8 @@ Additional recommended steps:
 
 ### Sync docs
 
-> :warning: Note that this requires content to be pushed to Discourse, and therefore cannot be 
-used without explicit approval from leadership
+> :warning: Note that this requires content to be pushed to Discourse, and 
+> therefore cannot be used without explicit approval from leadership
 
 1. Create the `docs` folder in the repository.
 2. Optionally, create a file `docs/index.md` for any content you would like to
@@ -156,9 +166,9 @@ used without explicit approval from leadership
     what the action does, you can easily revert back to the previous
     documentation. Be sure to file an issue with the reason if the action does
     something unexpected or you would prefer it to do something different.
-5. Trigger the action manually or via automated processes (either in the CI or in the release pipeline).
-   We also suggest you to include a log of the created URLs as part of the action, e.g. 
-   Add this action to your desired workflow. For example:
+5. Trigger the action manually or via automated processes (either in the CI or 
+   in the release pipeline). We also suggest you to include a log of the 
+   created URLs as part of the action, e.g.
 
     ```yaml
       steps:
@@ -290,24 +300,27 @@ on the navigation but can still be used in links.
 
 This action uses the notion of risks, similarly to what used in SNAP (see 
 [here](https://snapcraft.io/docs/channels) for a description and explanation of these concepts). 
-We currently only provide support on one single track (say latest), with the following 
-branching naming convention:
+We currently only provide support on one single track (say latest), with the 
+following branching naming convention:
 
 * [main](https://github.com/canonical/upload-charm-docs/tree/main) corresponds to the edge risk
 * [stable](https://github.com/canonical/upload-charm-docs/tree/stable) corresponds to the stable version of the action
 
-We therefore generally advise you to pick the risk channel that best fits to your need. 
+We therefore generally advise you to pick the risk channel that best fits to 
+your need. 
 
 ### End-to-End Integration Tests
 
-When merging a PR, we make sure the code follows all code conventions (linting), unit-tests and 
-integration tests. **Edge version are however NOT checked against full end-to-end integration tests**. 
+When merging a PR, we make sure the code follows all code conventions (linting),
+unit-tests and integration tests. 
+**Edge version are however NOT checked against full end-to-end integration 
+tests**. 
 
 <!-- LINK BELOW TO BE CHANGED -->
 End-to-End tests are implemented in a separated [test repository](https://github.com/canonical/gatekeeper-repo-test), 
-and run as scheduled workflows against the edge branch. When working on large and impactful feature, 
-we generally suggest to test your branch PR against End-to-End tests even before merging. To do so, 
-follow these steps:
+and run as scheduled workflows against the edge branch. When working on large 
+and impactful feature, we generally suggest to test your branch PR against 
+End-to-End tests even before merging. To do so, follow these steps:
 
 1. Fork the [test repository](https://github.com/canonical/gatekeeper-repo-test)
 2. Amend the E2E workflows to point to your PR branch, i.e. 
@@ -315,8 +328,9 @@ follow these steps:
       name: Publish documentation
       uses: canonical/upload-charm-docs@your-pr-branch # CHANGE HERE
 ```
-3. Raise a PR against the test-repository. This PR will not be merged but it will allow you to tests
+3. Raise a PR against the test-repository. This PR will not be merged but it 
+    will allow you to tests
     your changes
 
-Periodically, we review the latest changes on edge branches and we rebase lower risks branches (
-e.g. stable) onto higher risk branches (e.g. edge). 
+Periodically, we review the latest changes on edge branches and we rebase lower 
+risks branches (e.g. stable) onto higher risk branches (e.g. edge). 
