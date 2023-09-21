@@ -268,16 +268,15 @@ def _run_one(
     """
     match type(file_meta):
         case types_.GitkeepMeta:
-            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
-            assert isinstance(file_meta, types_.GitkeepMeta)  # nosec
+            file_meta = typing.cast(types_.GitkeepMeta, file_meta)
             report = _migrate_gitkeep(gitkeep_meta=file_meta, docs_path=docs_path)
         case types_.DocumentMeta:
-            assert isinstance(file_meta, types_.DocumentMeta)  # nosec
+            file_meta = typing.cast(types_.DocumentMeta, file_meta)
             report = _migrate_document(
                 document_meta=file_meta, discourse=discourse, docs_path=docs_path
             )
         case types_.IndexDocumentMeta:
-            assert isinstance(file_meta, types_.IndexDocumentMeta)  # nosec
+            file_meta = typing.cast(types_.IndexDocumentMeta, file_meta)
             report = _migrate_index(index_meta=file_meta, docs_path=docs_path)
         # Edge case that should not be possible.
         case _:  # pragma: no cover

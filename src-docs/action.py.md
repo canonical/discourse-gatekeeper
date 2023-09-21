@@ -15,7 +15,7 @@ Module for taking the required actions to match the server state with the local 
 
 ---
 
-<a href="../src/action.py#L459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/action.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_all`
 

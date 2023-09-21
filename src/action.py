@@ -319,41 +319,16 @@ def _run_one(
     """
     match type(action):
         case types_.CreatePageAction | types_.CreateGroupAction | types_.CreateExternalRefAction:
-            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
-            assert isinstance(
-                action,
-                (
-                    types_.CreatePageAction,
-                    types_.CreateGroupAction,
-                    types_.CreateExternalRefAction,
-                ),
-            )  # nosec
+            action = typing.cast(types_.CreateAction, action)
             report = _create(action=action, discourse=discourse, dry_run=dry_run, name=name)
         case types_.NoopPageAction | types_.NoopGroupAction | types_.NoopExternalRefAction:
-            assert isinstance(
-                action,
-                (types_.NoopPageAction, types_.NoopGroupAction, types_.NoopExternalRefAction),
-            )  # nosec
+            action = typing.cast(types_.NoopAction, action)
             report = _noop(action=action, discourse=discourse)
         case types_.UpdatePageAction | types_.UpdateGroupAction | types_.UpdateExternalRefAction:
-            assert isinstance(
-                action,
-                (
-                    types_.UpdatePageAction,
-                    types_.UpdateGroupAction,
-                    types_.UpdateExternalRefAction,
-                ),
-            )  # nosec
+            action = typing.cast(types_.UpdateAction, action)
             report = _update(action=action, discourse=discourse, dry_run=dry_run)
         case types_.DeletePageAction | types_.DeleteGroupAction | types_.DeleteExternalRefAction:
-            assert isinstance(
-                action,
-                (
-                    types_.DeletePageAction,
-                    types_.DeleteGroupAction,
-                    types_.DeleteExternalRefAction,
-                ),
-            )  # nosec
+            action = typing.cast(types_.DeleteAction, action)
             report = _delete(
                 action=action,
                 discourse=discourse,
@@ -405,9 +380,7 @@ def _run_index(
     match type(action):
         case types_.CreateIndexAction:
             try:
-                # To help mypy (same for the rest of the asserts), it is ok if the assert does not
-                # run
-                assert isinstance(action, types_.CreateIndexAction)  # nosec
+                action = typing.cast(types_.CreateIndexAction, action)
                 url = discourse.create_topic(title=action.title, content=action.content)
                 report = types_.ActionReport(
                     table_row=None, location=url, result=types_.ActionResult.SUCCESS, reason=None
@@ -420,7 +393,7 @@ def _run_index(
                     reason=str(exc),
                 )
         case types_.NoopIndexAction:
-            assert isinstance(action, types_.NoopIndexAction)  # nosec
+            action = typing.cast(types_.NoopIndexAction, action)
             report = types_.ActionReport(
                 table_row=None,
                 location=action.url,
@@ -428,8 +401,8 @@ def _run_index(
                 reason=None,
             )
         case types_.UpdateIndexAction:
+            action = typing.cast(types_.UpdateIndexAction, action)
             try:
-                assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 _log_content_change(base=action.content_change.old, new=action.content_change.new)
                 discourse.update_topic(url=action.url, content=action.content_change.new)
                 report = types_.ActionReport(
@@ -439,7 +412,6 @@ def _run_index(
                     reason=None,
                 )
             except exceptions.DiscourseError as exc:
-                assert isinstance(action, types_.UpdateIndexAction)  # nosec
                 report = types_.ActionReport(
                     table_row=None,
                     location=action.url,
