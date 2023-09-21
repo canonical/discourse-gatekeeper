@@ -677,7 +677,6 @@ def index_page(
     Returns:
         The action to take for the index page.
     """
-    table_rows = list(table_rows)
     table_contents = "\n".join(
         table_row.to_markdown(discourse.base_path) for table_row in table_rows
     )
