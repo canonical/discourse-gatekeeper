@@ -25,7 +25,7 @@ Module for handling interactions with git repository.
 
 ---
 
-<a href="../src/repository.py#L716"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L721"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_repository_client`
 
@@ -113,7 +113,7 @@ Return the Metadata object of the charm.
 
 ---
 
-<a href="../src/repository.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_branch`
 
@@ -147,7 +147,7 @@ repository.create_branch(branch_name).switch(branch_name)
 
 ---
 
-<a href="../src/repository.py#L514"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L519"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_pull_request`
 
@@ -176,7 +176,7 @@ Create pull request for changes in given repository path.
 
 ---
 
-<a href="../src/repository.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L615"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_file_content_from_tag`
 
@@ -208,7 +208,7 @@ Get the content of a file for a specific tag.
 
 ---
 
-<a href="../src/repository.py#L488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L493"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_pull_request`
 
@@ -290,7 +290,7 @@ Check if commit exists in a given branch.
 
 ---
 
-<a href="../src/repository.py#L556"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_dirty`
 
@@ -313,7 +313,7 @@ Check if repository path has any changes including new files.
 
 ---
 
-<a href="../src/repository.py#L473"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L478"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_same_commit`
 
@@ -337,7 +337,7 @@ Return whether tag and commit coincides.
 
 ---
 
-<a href="../src/repository.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L297"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `pull`
 
@@ -355,7 +355,7 @@ Pull content from remote for the provided branch.
 
 ---
 
-<a href="../src/repository.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `switch`
 
@@ -378,7 +378,7 @@ Switch branch for the repository.
 
 ---
 
-<a href="../src/repository.py#L586"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L591"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_commit`
 
@@ -403,7 +403,7 @@ Tag a commit, if the tag already exists, it is deleted first.
 
 ---
 
-<a href="../src/repository.py#L571"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L576"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_exists`
 
@@ -426,7 +426,7 @@ Check if a given tag exists.
 
 ---
 
-<a href="../src/repository.py#L398"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_branch`
 
@@ -463,7 +463,7 @@ Update branch with a new commit.
 
 ---
 
-<a href="../src/repository.py#L542"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L547"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_pull_request`
 
