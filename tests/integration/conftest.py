@@ -325,7 +325,7 @@ async def discourse_api(
 ):
     """Create discourse instance."""
     return Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key=discourse_user_api_key,
         category_id=discourse_category_id,

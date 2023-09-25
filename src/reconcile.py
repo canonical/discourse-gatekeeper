@@ -391,7 +391,7 @@ def _local_and_server_dir_local(
         return _local_and_server_dir_local_group_server(path_info=path_info, table_row=table_row)
 
     # External link on the server
-    if table_row.is_external(server_hostname=clients.discourse.base_path):
+    if table_row.is_external(server_hostname=clients.discourse.host):
         return (
             types_.CreateGroupAction(
                 level=path_info.level,
@@ -426,7 +426,7 @@ def _local_and_server_file_local(
     """
     # Is a file locally and a grouping or external ref on the server, only need to create the
     # page since the entry is automatically removed from the navigation table
-    if table_row.is_group or table_row.is_external(server_hostname=clients.discourse.base_path):
+    if table_row.is_group or table_row.is_external(server_hostname=clients.discourse.host):
         return (
             types_.CreatePageAction(
                 level=path_info.level,
@@ -475,7 +475,7 @@ def _local_and_server_external_ref_local(
         )
 
     # External link on the server
-    if table_row.is_external(server_hostname=clients.discourse.base_path):
+    if table_row.is_external(server_hostname=clients.discourse.host):
         return _local_and_server_external_ref_local_external_ref_server(
             item_info=item_info, table_row=table_row
         )
@@ -556,7 +556,7 @@ def _server_only(table_row: types_.TableRow, discourse: Discourse) -> types_.Del
             level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
     # External link case
-    if table_row.is_external(server_hostname=discourse.base_path):
+    if table_row.is_external(server_hostname=discourse.host):
         return types_.DeleteExternalRefAction(
             level=table_row.level, path=table_row.path, navlink=table_row.navlink
         )
@@ -677,9 +677,7 @@ def index_page(
     Returns:
         The action to take for the index page.
     """
-    table_contents = "\n".join(
-        table_row.to_markdown(discourse.base_path) for table_row in table_rows
-    )
+    table_contents = "\n".join(table_row.to_markdown(discourse.host) for table_row in table_rows)
     local_content = (
         f"{index_module.get_content_for_server(index.local)}{NAVIGATION_TABLE_START}\n"
         f"{table_contents}\n".strip()

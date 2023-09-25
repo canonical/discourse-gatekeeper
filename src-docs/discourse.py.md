@@ -48,19 +48,14 @@ Create discourse client.
 ## <kbd>class</kbd> `Discourse`
 Interact with a discourse server. 
 
-Attrs:  base_path: The base path to the discourse server. 
+Attrs:  host: The host of the discourse server. 
 
 <a href="../src/discourse.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(
-    base_path: str,
-    api_username: str,
-    api_key: str,
-    category_id: int
-) → None
+__init__(host: str, api_username: str, api_key: str, category_id: int) → None
 ```
 
 Construct. 
@@ -69,7 +64,7 @@ Construct.
 
 **Args:**
  
- - <b>`base_path`</b>:  The HTTP protocol and hostname for discourse (e.g., https://discourse). 
+ - <b>`host`</b>:  The HTTP protocol and hostname for discourse (e.g., https://discourse). 
  - <b>`api_username`</b>:  The username to use for API requests. 
  - <b>`api_key`</b>:  The API key for requests. 
  - <b>`category_id`</b>:  The category identifier to put the topics into. 
@@ -77,7 +72,7 @@ Construct.
 
 ---
 
-#### <kbd>property</kbd> base_path
+#### <kbd>property</kbd> host
 
 The HTTP protocol and hostname for discourse (e.g., https://discourse). 
 

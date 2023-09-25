@@ -53,7 +53,7 @@ def test_setup_clients(get_repo_mock, git_repo_with_remote):
     assert clients.repository.base_path == path
 
     assert clients.discourse._category_id == int(user_inputs.discourse.category_id)
-    assert clients.discourse._base_path == f"https://{user_inputs.discourse.hostname}"
+    assert clients.discourse.host == f"https://{user_inputs.discourse.hostname}"
     assert clients.discourse._api_username == user_inputs.discourse.api_username
     assert clients.discourse._api_key == user_inputs.discourse.api_key
 

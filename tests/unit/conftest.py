@@ -15,16 +15,16 @@ from src.discourse import Discourse
 from . import helpers
 
 
-@pytest.fixture(scope="module", name="base_path")
-def fixture_base_path() -> str:
+@pytest.fixture(scope="module", name="host")
+def fixture_host() -> str:
     """Get the base path for discourse."""
-    return helpers.get_discourse_base_path()
+    return helpers.get_discourse_host()
 
 
 @pytest.fixture(name="discourse")
-def fixture_discourse(base_path: str) -> Discourse:
+def fixture_discourse(host: str) -> Discourse:
     """Get the discourse client."""
-    return Discourse(base_path=base_path, api_username="", api_key="", category_id=0)
+    return Discourse(host=host, api_username="", api_key="", category_id=0)
 
 
 @pytest.fixture(name="discourse_mocked_get_requests_session")
@@ -69,8 +69,8 @@ def index_file_content(tmp_path: Path) -> str:
 
 
 @pytest.fixture()
-def mocked_clients(repository_client: repository.Client, base_path: str):
+def mocked_clients(repository_client: repository.Client, host: str):
     """Create index file."""
     mocked_discourse = mock.MagicMock(spec=Discourse)
-    mocked_discourse.base_path = base_path
+    mocked_discourse.host = host
     return Clients(discourse=mocked_discourse, repository=repository_client)

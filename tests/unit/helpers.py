@@ -46,7 +46,7 @@ def path_to_markdown(path: Path) -> Path:
     return Path(f"{path}.md")
 
 
-def get_discourse_base_path() -> str:
+def get_discourse_host() -> str:
     """Get the base path for discourse.
 
     Returns:
@@ -61,7 +61,7 @@ def get_discourse_topic_url() -> str:
     Returns:
         A topic url for discourse.
     """
-    return f"{get_discourse_base_path()}{_URL_PATH_PREFIX}slug/1"
+    return f"{get_discourse_host()}{_URL_PATH_PREFIX}slug/1"
 
 
 def mock_discourse_raw_topic_api(content: str) -> str:

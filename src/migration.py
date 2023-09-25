@@ -44,19 +44,19 @@ def _validate_table_rows(
                 raise exceptions.InputError(
                     "Invalid starting row level. A table row must start with level value 1. "
                     "Please fix the upstream first and re-run."
-                    f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
+                    f"Row: {row.to_markdown(server_hostname=discourse.host)}"
                 )
         if row.level < 1:
             raise exceptions.InputError(
                 f"Invalid row level: {row.level=!r}."
                 "Zero or negative level value is invalid."
-                f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
+                f"Row: {row.to_markdown(server_hostname=discourse.host)}"
             )
         if row.level > current_group_level + 1:
             raise exceptions.InputError(
                 "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
                 f"Did you mean level {current_group_level + 1}?"
-                f"Row: {row.to_markdown(server_hostname=discourse.base_path)}"
+                f"Row: {row.to_markdown(server_hostname=discourse.host)}"
             )
 
         yield row
@@ -134,7 +134,7 @@ def _extract_docs_from_table_rows(
         ):
             yield _create_gitkeep_meta(row=previous_row)
 
-        if not row.is_group and not row.is_external(server_hostname=discourse.base_path):
+        if not row.is_group and not row.is_external(server_hostname=discourse.host):
             yield _create_document_meta(row=row)
 
         previous_row = row
