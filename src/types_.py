@@ -579,7 +579,6 @@ class IndexContentsListItem(typing.NamedTuple):
         if self.reference_value.lower().startswith("http"):
             transformed_reference_value = (
                 self.reference_value.replace("//", "/")
-                .replace(":", "")
                 .replace(".", "/")
                 .replace("?", "/")
                 .replace("#", "/")
