@@ -405,7 +405,7 @@ def test_create_topic_post_malformed(
     assert "data" in exc_str
 
 
-def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse: Discourse):
+def test_create_topic(monkeypatch: pytest.MonkeyPatch, host: str, discourse: Discourse):
     """
     arrange: given a mocked discourse client that returns valid data for a post
     act: when create_topic is called
@@ -420,11 +420,11 @@ def test_create_topic(monkeypatch: pytest.MonkeyPatch, base_path: str, discourse
 
     url = discourse.create_topic(title="title 1", content="content 1")
 
-    assert url == f"{base_path}{_URL_PATH_PREFIX}{topic_slug}/{topic_id}"
+    assert url == f"{host}{_URL_PATH_PREFIX}{topic_slug}/{topic_id}"
 
 
 def test_delete_topic(
-    monkeypatch: pytest.MonkeyPatch, topic_url: str, base_path: str, discourse: Discourse
+    monkeypatch: pytest.MonkeyPatch, topic_url: str, host: str, discourse: Discourse
 ):
     """
     arrange: given a mocked discourse client
@@ -432,7 +432,7 @@ def test_delete_topic(
     assert: then the url to the topic is returned.
     """
     mocked_client = mock.MagicMock(spec=pydiscourse.DiscourseClient)
-    url_path = topic_url.removeprefix(base_path)
+    url_path = topic_url.removeprefix(host)
     monkeypatch.setattr(discourse, "_client", mocked_client)
 
     returned_url = discourse.delete_topic(url=url_path)
@@ -508,7 +508,7 @@ def test_update_topic_discourse_error(
 
 
 def test_update_topic(
-    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, base_path: str, topic_url: str
+    monkeypatch: pytest.MonkeyPatch, discourse: Discourse, host: str, topic_url: str
 ):
     """
     arrange: given a mocked discourse client that returns valid data for a topic
@@ -520,7 +520,7 @@ def test_update_topic(
         "post_stream": {"posts": [{"post_number": 1, "user_deleted": False, "id": 1}]}
     }
     monkeypatch.setattr(discourse, "_client", mocked_client)
-    url_path = topic_url.removeprefix(base_path)
+    url_path = topic_url.removeprefix(host)
 
     returned_url = discourse.update_topic(url=url_path, content="content 1")
 
@@ -723,7 +723,7 @@ def test_retrieve_topic_get_http_error(
 def test_retrieve_topic(
     monkeypatch: pytest.MonkeyPatch,
     discourse_mocked_get_requests_session: Discourse,
-    base_path: str,
+    host: str,
     topic_url: str,
 ):
     """
@@ -748,19 +748,19 @@ def test_retrieve_topic(
 
     assert returned_content == content
 
-    url_path = topic_url.removeprefix(base_path)
+    url_path = topic_url.removeprefix(host)
     returned_content = discourse.retrieve_topic(url=url_path)
 
     assert returned_content == content
 
 
-def test_absolute_url(topic_url: str, base_path: str, discourse: Discourse):
+def test_absolute_url(topic_url: str, host: str, discourse: Discourse):
     """
     arrange: given a mocked discourse client
     act: when absolute_url is called first without the base path and then with it
     assert: then the url to the topic is returned.
     """
-    url_path = topic_url.removeprefix(base_path)
+    url_path = topic_url.removeprefix(host)
 
     returned_url = discourse.absolute_url(url=url_path)
 
@@ -878,3 +878,4 @@ def test_create_discourse(kwargs: dict):
     discourse = create_discourse(**kwargs)
 
     assert isinstance(discourse, Discourse)
+    assert discourse.host == f"https://{kwargs['hostname']}"

@@ -23,12 +23,13 @@ def _track_paths_with_diff_parameters():
     """
     return [
         pytest.param((), (), (), id="empty"),
+        pytest.param((factories.UpdateGroupActionFactory(),), (), (), id="single group"),
         pytest.param(
-            (factories.UpdateActionFactory(content_change=None),), (), (), id="single None"
+            (factories.UpdateExternalRefActionFactory(),), (), (), id="single external ref"
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base=(base_1 := "base 1"), local=base_1, server=base_1
                     )
@@ -40,7 +41,7 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base=(base_1 := "base 1"), local="local 1", server=base_1
                     ),
@@ -53,7 +54,7 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base=(base_1 := "base 1"), local=base_1, server="server 1"
                     ),
@@ -66,7 +67,7 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 1", local=(local_1 := "local 1"), server=local_1
                     ),
@@ -79,7 +80,7 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 1", local="local 1", server="server 1"
                     ),
@@ -92,7 +93,7 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base=None, local="local 1", server="server 1"
                     ),
@@ -105,13 +106,13 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 1", local="local 1", server="server 1"
                     ),
                     path=(path_1 := ("path 1",)),
                 ),
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 2", local="local 2", server="server 2"
                     ),
@@ -124,12 +125,12 @@ def _track_paths_with_diff_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 1", local=(local_1 := "local 1"), server=local_1
                     )
                 ),
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=factories.ContentChangeFactory(
                         base="base 2", local=(local_2 := "local 2"), server=local_2
                     )
@@ -181,18 +182,19 @@ def _test_conflicts_parameters():
     """
     return [
         pytest.param((), False, (), id="empty"),
-        pytest.param((factories.CreateActionFactory(),), False, (), id="single create"),
-        pytest.param((factories.NoopActionFactory(),), False, (), id="single noop"),
-        pytest.param((factories.DeleteActionFactory(),), False, (), id="single delete"),
+        pytest.param((factories.CreatePageActionFactory(),), False, (), id="single create"),
+        pytest.param((factories.NoopPageActionFactory(),), False, (), id="single noop"),
+        pytest.param((factories.DeletePageActionFactory(),), False, (), id="single delete"),
+        pytest.param((factories.UpdateGroupActionFactory(),), False, (), id="single group update"),
         pytest.param(
-            (factories.UpdateActionFactory(content_change=None),),
+            (factories.UpdateExternalRefActionFactory(),),
             False,
             (),
-            id="single update no content",
+            id="single external ref update",
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base=None, server="a", local="a")
                 ),
             ),
@@ -202,7 +204,7 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base=None, server="a", local="b")
                 ),
             ),
@@ -223,7 +225,7 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                factories.UpdateActionFactory(
+                factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="a", local="a")
                 ),
             ),
@@ -233,7 +235,7 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
             ),
@@ -250,17 +252,17 @@ def _test_conflicts_parameters():
             id="single update conflict",
         ),
         pytest.param(
-            (factories.NoopActionFactory(), factories.NoopActionFactory()),
+            (factories.NoopPageActionFactory(), factories.NoopPageActionFactory()),
             False,
             (),
             id="multiple actions no problems",
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
-                factories.NoopActionFactory(),
+                factories.NoopPageActionFactory(),
             ),
             False,
             (
@@ -276,8 +278,8 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                factories.NoopActionFactory(),
-                action_2 := factories.UpdateActionFactory(
+                factories.NoopPageActionFactory(),
+                action_2 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
@@ -295,10 +297,10 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
-                action_2 := factories.UpdateActionFactory(
+                action_2 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
@@ -323,10 +325,10 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="a")
                 ),
-                action_2 := factories.UpdateActionFactory(
+                action_2 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),
@@ -351,10 +353,10 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (
-                action_1 := factories.UpdateActionFactory(
+                action_1 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="a", server="b", local="a")
                 ),
-                action_2 := factories.UpdateActionFactory(
+                action_2 := factories.UpdatePageActionFactory(
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),

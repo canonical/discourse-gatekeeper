@@ -7,7 +7,7 @@ import re
 import string
 import typing
 
-from src import types_
+from src import constants, types_
 from src.discourse import Discourse
 from src.exceptions import (
     DiscourseError,
@@ -28,7 +28,7 @@ _TABLE_PATTERN = re.compile(rf"[\s\S]*{_TABLE_HEADER_REGEX}[\s\S]*\|?", re.IGNOR
 _FILLER_ROW_REGEX_COLUMN = rf"{_WHITESPACE}-+{_WHITESPACE}\|"
 _FILLER_ROW_PATTERN = re.compile(rf"{_WHITESPACE}\|{_FILLER_ROW_REGEX_COLUMN * 3}{_WHITESPACE}")
 _LEVEL_REGEX = rf"{_WHITESPACE}(\d+)?{_WHITESPACE}"
-_PATH_REGEX = rf"{_WHITESPACE}([\w-]+){_WHITESPACE}"
+_PATH_REGEX = rf"{_WHITESPACE}([${constants.PATH_CHARS}]+){_WHITESPACE}"
 _PUNCTUATION = string.punctuation.replace("/", "\\/")
 _NAVLINK_TITLE_REGEX = rf"[\w\- {_PUNCTUATION}]+?"
 _NAVLINK_LINK_REGEX = r"[\w\/-]*"

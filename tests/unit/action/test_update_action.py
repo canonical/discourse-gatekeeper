@@ -19,30 +19,50 @@ from ... import factories
 from ..helpers import assert_substrings_in_string
 
 
-@pytest.mark.parametrize(
-    "dry_run",
-    [
-        pytest.param(True, id="dry run mode enabled"),
-        pytest.param(False, id="dry run mode disabled"),
-    ],
-)
-def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
+def _test__update_directory_parameters():
+    """Generate parameters for the test__update_directory test.
+
+    Returns:
+        The tests.
     """
-    arrange: given update action for a directory, dry run mode and mocked discourse
+    return [
+        pytest.param(
+            action_1 := factories.UpdateExternalRefActionFactory(),
+            True,
+            action_1.navlink_change.new.link,
+            id="external ref dry run mode enabled",
+        ),
+        pytest.param(
+            action_1 := factories.UpdateExternalRefActionFactory(),
+            False,
+            action_1.navlink_change.new.link,
+            id="external ref dry run mode disabled",
+        ),
+        pytest.param(
+            factories.UpdateGroupActionFactory(), True, None, id="group dry run mode enabled"
+        ),
+        pytest.param(
+            factories.UpdateGroupActionFactory(), False, None, id="group dry run mode disabled"
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "update_action, dry_run, expected_location", _test__update_directory_parameters()
+)
+def test__update_directory(
+    update_action: src_types.UpdateAction,
+    dry_run: bool,
+    expected_location: str | None,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given update action for a directory or external ref, dry run mode and mocked discourse
     act: when action is passed to _update with dry_run
     assert: then no topic is updated, the action is logged and the expected report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    update_action = src_types.UpdateAction(
-        level=(level := 1),
-        path=(path := ("path 1",)),
-        navlink_change=factories.NavlinkChangeFactory(
-            old=factories.NavlinkFactory(title="title 1", link=None),
-            new=factories.NavlinkFactory(title="title 2", link=None),
-        ),
-        content_change=None,
-    )
 
     returned_report = action._update(
         action=update_action, discourse=mocked_discourse, dry_run=dry_run
@@ -51,10 +71,10 @@ def test__update_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     assert_substrings_in_string((f"action: {update_action}", f"dry run: {dry_run}"), caplog.text)
     mocked_discourse.update_topic.assert_not_called()
     assert returned_report.table_row is not None
-    assert returned_report.table_row.level == level
-    assert returned_report.table_row.path == path
+    assert returned_report.table_row.level == update_action.level
+    assert returned_report.table_row.path == update_action.path
     assert returned_report.table_row.navlink == update_action.navlink_change.new
-    assert returned_report.location is None
+    assert returned_report.location == expected_location
     assert (
         returned_report.result == src_types.ActionResult.SKIP
         if dry_run
@@ -74,7 +94,7 @@ def test__update_file_dry_run(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     server_content: str
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -125,7 +145,7 @@ def test__update_file_navlink_title_change(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     content: str
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -168,7 +188,7 @@ def test__update_file_navlink_hidden_change(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     content: str
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -214,7 +234,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
     server_content: str
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -288,7 +308,7 @@ def test__update_file_navlink_content_change_conflict(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -338,7 +358,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     server_content: str
-    update_action = src_types.UpdateAction(
+    update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_change=factories.NavlinkChangeFactory(
@@ -379,24 +399,3 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     assert returned_report.location == url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
-
-
-def test__update_file_navlink_content_change_error():
-    """
-    arrange: given update action for a file where content change is None
-    act: when action is passed to _update with dry_run False
-    assert: ActionError is raised.
-    """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    update_action = src_types.UpdateAction(
-        level=1,
-        path=("path 1",),
-        navlink_change=factories.NavlinkChangeFactory(
-            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
-            new=factories.NavlinkFactory(title="title 2", link=link),
-        ),
-        content_change=None,
-    )
-
-    with pytest.raises(exceptions.ActionError):
-        action._update(action=update_action, discourse=mocked_discourse, dry_run=False)

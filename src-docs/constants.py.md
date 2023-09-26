@@ -17,5 +17,6 @@ The use of this module should be limited to cases where the constant is not bett
 - **DOCUMENTATION_INDEX_FILENAME**
 - **NAVIGATION_HEADING**
 - **NAVIGATION_TABLE_START**
+- **PATH_CHARS**
 
 

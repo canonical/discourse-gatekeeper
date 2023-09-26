@@ -243,6 +243,41 @@ def _get_contents_parsed_items(index_file: IndexFile) -> typing.Iterator[_Parsed
     )
 
 
+class ItemReferenceType(Enum):
+    """Classification for the path of an item.
+
+    Attrs:
+        EXTERNAL: a link to an external resource.
+        DIR: a link to a local directory.
+        FILE: a link to a local file.
+        UNKNOWN: The reference is not a known type.
+    """
+
+    EXTERNAL = auto()
+    DIR = auto()
+    FILE = auto()
+    UNKNOWN = auto()
+
+
+def classify_item_reference(reference: str, docs_path: Path) -> ItemReferenceType:
+    """Classify the type of a reference.
+
+    Args:
+        reference: The reference to classify.
+        docs_path: The parent path of the reference.
+
+    Returns:
+        The type of the reference.
+    """
+    if reference.lower().startswith("http"):
+        return ItemReferenceType.EXTERNAL
+    if (reference_path := docs_path / Path(reference)).is_dir():
+        return ItemReferenceType.DIR
+    if reference_path.is_file():
+        return ItemReferenceType.FILE
+    return ItemReferenceType.UNKNOWN
+
+
 def _check_contents_item(
     item: _ParsedListItem, max_whitespace: int, aggregate_dir: Path, docs_path: Path
 ) -> None:
@@ -269,34 +304,38 @@ def _check_contents_item(
         )
 
     # Check whether item is hidden and a directory
-    item_path = docs_path / Path(item.reference_value)
-    if item.hidden and item_path.is_dir():
+    item_reference_type = classify_item_reference(
+        reference=item.reference_value, docs_path=docs_path
+    )
+
+    if item.hidden and item_reference_type == ItemReferenceType.DIR:
         raise InputError(f"A hidden item is a directory. {item=!r}")
 
-    # Check that the next item is within the directory
-    item_relative_path = Path(item.reference_value)
-    try:
-        item_to_aggregate_path = item_relative_path.relative_to(aggregate_dir)
-    except ValueError as exc:
-        raise InputError(
-            "A nested item is a reference to a path that is not within the directory of its "
-            f"parent. {item=!r}, expected parent path: {aggregate_dir!r}"
-        ) from exc
-
-    # Check that the item is directly within the current directory
-    if len(item_to_aggregate_path.parents) != 1:
-        raise InputError(
-            "A nested item is a reference to a path that is not immediately within the "
-            f"directory of its parent. {item=!r}, expected parent path: {aggregate_dir!r}"
-        )
-
-    # Check that if the item is a file, it has the correct extension
-    if item_path.is_file():
-        if item_path.suffix.lower() != DOC_FILE_EXTENSION:
+    if item_reference_type in {ItemReferenceType.DIR, ItemReferenceType.FILE}:
+        # Check that the next item is within the directory
+        item_relative_path = Path(item.reference_value)
+        try:
+            item_to_aggregate_path = item_relative_path.relative_to(aggregate_dir)
+        except ValueError as exc:
             raise InputError(
-                "An item in the contents list is not of the expected file type. "
-                f"{item=!r}, expected extension: {DOC_FILE_EXTENSION}"
+                "A nested item is a reference to a path that is not within the directory of its "
+                f"parent. {item=!r}, expected parent path: {aggregate_dir!r}"
+            ) from exc
+
+        # Check that the item is directly within the current directory
+        if len(item_to_aggregate_path.parents) != 1:
+            raise InputError(
+                "A nested item is a reference to a path that is not immediately within the "
+                f"directory of its parent. {item=!r}, expected parent path: {aggregate_dir!r}"
             )
+
+        # Check that if the item is a file, it has the correct extension
+        if item_reference_type == ItemReferenceType.FILE:
+            if (docs_path / Path(item.reference_value)).suffix.lower() != DOC_FILE_EXTENSION:
+                raise InputError(
+                    "An item in the contents list is not of the expected file type. "
+                    f"{item=!r}, expected extension: {DOC_FILE_EXTENSION}"
+                )
 
 
 def _calculate_contents_hierarchy(
@@ -341,30 +380,34 @@ def _calculate_contents_hierarchy(
         )
 
         # Advance the iterator
-        item_path = Path(item.reference_value)
+        item_reference_type = classify_item_reference(
+            reference=item.reference_value, docs_path=docs_path
+        )
         next_item = next(parsed_items, None)
 
-        if (docs_path / item_path).is_file() or (docs_path / item_path).is_dir():
-            yield IndexContentsListItem(
-                hierarchy=hierarchy + 1,
-                reference_title=item.reference_title,
-                reference_value=item.reference_value,
-                rank=item.rank,
-                hidden=item.hidden,
+        if item_reference_type == ItemReferenceType.UNKNOWN:
+            raise InputError(
+                f"An item is not a file, directory or external HTTP resource. {item=!r}"
             )
-            # Process directory contents
-            if (
-                (docs_path / item_path).is_dir()
-                and next_item is not None
-                and next_item.whitespace_count > whitespace_expectation_per_level[hierarchy]
-            ):
-                hierarchy = hierarchy + 1
-                aggregate_dir = item_path
-                if hierarchy not in whitespace_expectation_per_level:
-                    whitespace_expectation_per_level[hierarchy] = next_item.whitespace_count
-                parents.append(item)
-        else:
-            raise InputError(f"An item is not a file or directory. {item=!r}")
+
+        yield IndexContentsListItem(
+            hierarchy=hierarchy + 1,
+            reference_title=item.reference_title,
+            reference_value=item.reference_value,
+            rank=item.rank,
+            hidden=item.hidden,
+        )
+        # Process directory contents
+        if (
+            item_reference_type == ItemReferenceType.DIR
+            and next_item is not None
+            and next_item.whitespace_count > whitespace_expectation_per_level[hierarchy]
+        ):
+            hierarchy = hierarchy + 1
+            aggregate_dir = Path(item.reference_value)
+            if hierarchy not in whitespace_expectation_per_level:
+                whitespace_expectation_per_level[hierarchy] = next_item.whitespace_count
+            parents.append(item)
         item = next_item
 
 

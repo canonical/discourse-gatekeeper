@@ -11,12 +11,14 @@ Module for running checks.
 
 ---
 
-<a href="../src/check.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_path_with_diffs`
 
 ```python
-get_path_with_diffs(actions: Iterable[UpdateAction]) → PathsWithDiff
+get_path_with_diffs(
+    actions: Iterable[UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction]
+) → PathsWithDiff
 ```
 
 Generate the paths that have either local or server content changes. 
@@ -35,13 +37,13 @@ Generate the paths that have either local or server content changes.
 
 ---
 
-<a href="../src/check.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `conflicts`
 
 ```python
 conflicts(
-    actions: Iterable[CreateAction | NoopAction | UpdateAction | DeleteAction],
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction],
     repository: Client,
     user_inputs: UserInputs
 ) → Iterator[Problem]

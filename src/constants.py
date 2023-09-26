@@ -19,3 +19,4 @@ NAVIGATION_TABLE_START = f"""
 
 | Level | Path | Navlink |
 | -- | -- | -- |"""
+PATH_CHARS = r"\w-"

@@ -6,11 +6,9 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
-from unittest import mock
-
 import pytest
 
-from src import discourse, exceptions, navigation_table, types_
+from src import exceptions, navigation_table, types_
 from src.exceptions import NavigationTableParseError
 
 from .. import factories
@@ -415,14 +413,14 @@ def test__line_to_row_no_match():
         navigation_table._line_to_row("", default_level=0)
 
 
-def test__check_table_row_write_permission_group():
+def test__check_table_row_write_permission_group(mocked_clients):
     """
     arrange: given mocked discourse and table row for a group
     act: when _check_table_row_write_permission is called with the table row and mocked discourse
     assert: then the table row is returned.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    table_row = types_.TableRow(
+    mocked_discourse = mocked_clients.discourse
+    table_row = factories.TableRowFactory(
         level=1, path=("path 1",), navlink=factories.NavlinkFactory(title="title 1", link=None)
     )
 
@@ -434,18 +432,18 @@ def test__check_table_row_write_permission_group():
     mocked_discourse.check_topic_write_permission.assert_not_called()
 
 
-def test__check_table_row_write_permission_page_error():
+def test__check_table_row_write_permission_page_error(mocked_clients):
     """
     arrange: given mocked discourse that raises an error and table row for a page
     act: when _check_table_row_write_permission is called with the table row and mocked discourse
     assert: then ServerError is raised.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.side_effect = exceptions.DiscourseError
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         navigation_table._check_table_row_write_permission(
-            table_row=types_.TableRow(
+            table_row=factories.TableRowFactory(
                 level=1,
                 path=("path 1",),
                 navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -456,19 +454,19 @@ def test__check_table_row_write_permission_page_error():
     assert link in str(exc_info.value)
 
 
-def test__check_table_row_write_permission_page_false():
+def test__check_table_row_write_permission_page_false(mocked_clients):
     """
     arrange: given mocked discourse that returns false for write permission and table row for a
         page
     act: when _check_table_row_write_permission is called with the table row and mocked discourse
     assert: then PagePermissionError is raised.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = False
 
     with pytest.raises(exceptions.PagePermissionError) as exc_info:
         navigation_table._check_table_row_write_permission(
-            table_row=types_.TableRow(
+            table_row=factories.TableRowFactory(
                 level=1,
                 path=("path 1",),
                 navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -479,15 +477,15 @@ def test__check_table_row_write_permission_page_false():
     assert_substrings_in_string((link, "write", "permission"), str(exc_info.value))
 
 
-def test__check_table_row_write_permission_page_true():
+def test__check_table_row_write_permission_page_true(mocked_clients):
     """
     arrange: given mocked discourse that returns true for write permission and table row for a page
     act: when _check_table_row_write_permission is called with the table row and mocked discourse
     assert: then the table row is returned.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = True
-    table_row = types_.TableRow(
+    table_row = factories.TableRowFactory(
         level=1,
         path=("path 1",),
         navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -501,13 +499,13 @@ def test__check_table_row_write_permission_page_true():
     mocked_discourse.check_topic_write_permission.assert_called_once_with(url=link)
 
 
-def test_from_page_missing_write_permission():
+def test_from_page_missing_write_permission(mocked_clients):
     """
     arrange: given page and mocked discourse server that returns false for the write permission
     act: when from_page is called with the page
     assert: then PagePermissionError is raised.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = False
 
     with pytest.raises(exceptions.PagePermissionError):
@@ -617,13 +615,13 @@ def _test_from_page_parameters():
 
 
 @pytest.mark.parametrize("page, expected_table", _test_from_page_parameters())
-def test_from_page(page: str, expected_table: tuple[types_.TableRow, ...]):
+def test_from_page(page: str, expected_table: tuple[types_.TableRow, ...], mocked_clients):
     """
     arrange: given page and expected table
     act: when from_page is called with the page
     assert: then the expected rtable is returned.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = True
 
     returned_table = navigation_table.from_page(page=page, discourse=mocked_discourse)
@@ -631,7 +629,7 @@ def test_from_page(page: str, expected_table: tuple[types_.TableRow, ...]):
     assert tuple(returned_table) == expected_table
 
 
-def test_from_page_indico():
+def test_from_page_indico(mocked_clients):
     """
     arrange: given Indico's navigation page
     act: when from_page is called with the page
@@ -657,7 +655,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 | 2 | theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
 | 1 | explanation | [Explanation]() |
 | 2 | charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = True
 
     returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)
@@ -728,7 +726,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
     )
 
 
-def test_from_page_indico_path():
+def test_from_page_indico_path(mocked_clients):
     """
     arrange: given Indico's navigation page
     act: when from_page is called with the page
@@ -754,7 +752,7 @@ For details on Indico's features, see [this page](https://getindico.io/features/
 | 2 | reference-theme-customisation | [Theme Customisation](/t/indico-docs-themes/6554) |
 | 1 | explanation | [Explanation]() |
 | 2 | explanation-charm-architecture | [Charm Architecture](/t/indico-docs-charm-architecture/7010) |"""  # noqa: E501
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = True
 
     returned_table = navigation_table.from_page(page=indico_page, discourse=mocked_discourse)

@@ -11,7 +11,14 @@ from typing import NamedTuple, TypeGuard
 from src import constants, content
 from src.constants import DOCUMENTATION_TAG
 from src.repository import Client
-from src.types_ import AnyAction, UpdateAction, UserInputs
+from src.types_ import (
+    AnyAction,
+    UpdateAction,
+    UpdateExternalRefAction,
+    UpdateGroupAction,
+    UpdatePageAction,
+    UserInputs,
+)
 
 
 class Problem(NamedTuple):
@@ -55,7 +62,7 @@ def get_path_with_diffs(actions: Iterable[UpdateAction]) -> PathsWithDiff:
     actions_with_changes = (
         action
         for action in actions
-        if action.content_change is not None
+        if isinstance(action, UpdatePageAction)
         and action.content_change.base is not None
         and action.content_change.local != action.content_change.server
     )
@@ -86,7 +93,7 @@ def _is_update_action(action: AnyAction) -> TypeGuard[UpdateAction]:
     Returns:
         Whether the action is an UpdateAction.
     """
-    return isinstance(action, UpdateAction)
+    return isinstance(action, (UpdatePageAction, UpdateGroupAction, UpdateExternalRefAction))
 
 
 def _update_action_problem(action: UpdateAction) -> Problem | None:
@@ -98,7 +105,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     Returns:
         None if there is no problem or the problem if there is an issue with the action.
     """
-    if action.content_change is None:
+    if not isinstance(action, UpdatePageAction):
         return None
 
     if (
