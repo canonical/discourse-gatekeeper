@@ -17,6 +17,7 @@ GITKEEP_FILENAME = ".gitkeep"
 
 def _validate_table_rows(
     table_rows: typing.Iterable[types_.TableRow],
+    discourse: Discourse,
 ) -> typing.Iterable[types_.TableRow]:
     """Check whether a table row is valid in regards to the sequence.
 
@@ -25,6 +26,7 @@ def _validate_table_rows(
 
     Args:
         table_rows: Parsed rows from the index table.
+        discourse: Client to the documentation server.
 
     Raises:
         InputError: if the row is the first row but the value of level is not 1 or
@@ -42,19 +44,19 @@ def _validate_table_rows(
                 raise exceptions.InputError(
                     "Invalid starting row level. A table row must start with level value 1. "
                     "Please fix the upstream first and re-run."
-                    f"Row: {row.to_markdown()}"
+                    f"Row: {row.to_markdown(server_hostname=discourse.host)}"
                 )
         if row.level < 1:
             raise exceptions.InputError(
                 f"Invalid row level: {row.level=!r}."
                 "Zero or negative level value is invalid."
-                f"Row: {row.to_markdown()}"
+                f"Row: {row.to_markdown(server_hostname=discourse.host)}"
             )
         if row.level > current_group_level + 1:
             raise exceptions.InputError(
                 "Invalid row level value sequence. Level sequence jumps of more than 1 is invalid."
                 f"Did you mean level {current_group_level + 1}?"
-                f"Row: {row.to_markdown()}"
+                f"Row: {row.to_markdown(server_hostname=discourse.host)}"
             )
 
         yield row
@@ -99,7 +101,7 @@ def _create_gitkeep_meta(row: types_.TableRow) -> types_.GitkeepMeta:
 
 
 def _extract_docs_from_table_rows(
-    table_rows: typing.Iterable[types_.TableRow],
+    table_rows: typing.Iterable[types_.TableRow], discourse: Discourse
 ) -> typing.Iterable[types_.MigrationFileMeta]:
     """Extract necessary migration documents to build docs directory.
 
@@ -113,6 +115,7 @@ def _extract_docs_from_table_rows(
 
     Args:
         table_rows: Table rows from the index file in the order of group hierarchy.
+        discourse: Client to the documentation server.
 
     Yields:
         Migration documents with navlink to content. .gitkeep file if empty group.
@@ -131,7 +134,7 @@ def _extract_docs_from_table_rows(
         ):
             yield _create_gitkeep_meta(row=previous_row)
 
-        if not row.is_group:
+        if not row.is_group and not row.is_external(server_hostname=discourse.host):
             yield _create_document_meta(row=row)
 
         previous_row = row
@@ -265,16 +268,15 @@ def _run_one(
     """
     match type(file_meta):
         case types_.GitkeepMeta:
-            # To help mypy (same for the rest of the asserts), it is ok if the assert does not run
-            assert isinstance(file_meta, types_.GitkeepMeta)  # nosec
+            file_meta = typing.cast(types_.GitkeepMeta, file_meta)
             report = _migrate_gitkeep(gitkeep_meta=file_meta, docs_path=docs_path)
         case types_.DocumentMeta:
-            assert isinstance(file_meta, types_.DocumentMeta)  # nosec
+            file_meta = typing.cast(types_.DocumentMeta, file_meta)
             report = _migrate_document(
                 document_meta=file_meta, discourse=discourse, docs_path=docs_path
             )
         case types_.IndexDocumentMeta:
-            assert isinstance(file_meta, types_.IndexDocumentMeta)  # nosec
+            file_meta = typing.cast(types_.IndexDocumentMeta, file_meta)
             report = _migrate_index(index_meta=file_meta, docs_path=docs_path)
         # Edge case that should not be possible.
         case _:  # pragma: no cover
@@ -287,19 +289,20 @@ def _run_one(
 
 
 def _get_docs_metadata(
-    table_rows: typing.Iterable[types_.TableRow], index_content: str
+    table_rows: typing.Iterable[types_.TableRow], index_content: str, discourse: Discourse
 ) -> itertools.chain[types_.MigrationFileMeta]:
     """Get metadata for all documents to be migrated.
 
     Args:
         table_rows: Table rows from the index table.
         index_content: Index content from index page.
+        discourse: Client to the documentation server.
 
     Returns:
         Metadata of files to be migrated.
     """
     index_doc = _index_file_from_content(content=index_content)
-    table_docs = _extract_docs_from_table_rows(table_rows=table_rows)
+    table_docs = _extract_docs_from_table_rows(table_rows=table_rows, discourse=discourse)
     return itertools.chain((index_doc,), table_docs)
 
 
@@ -320,9 +323,9 @@ def run(
     Raises:
         MigrationError: if any migration report has failed.
     """
-    valid_table_rows = _validate_table_rows(table_rows=table_rows)
+    valid_table_rows = _validate_table_rows(table_rows=table_rows, discourse=discourse)
     document_metadata = _get_docs_metadata(
-        table_rows=valid_table_rows, index_content=index_content
+        table_rows=valid_table_rows, index_content=index_content, discourse=discourse
     )
     migration_reports = (
         _run_one(file_meta=document, discourse=discourse, docs_path=docs_path)

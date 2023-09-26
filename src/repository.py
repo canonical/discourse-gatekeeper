@@ -17,6 +17,7 @@ from git import GitCommandError
 from git.diff import Diff
 from git.repo import Repo
 from github import Github
+from github.Auth import Token
 from github.GithubException import GithubException, UnknownObjectException
 from github.InputGitTreeElement import InputGitTreeElement
 from github.PullRequest import PullRequest
@@ -738,7 +739,7 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
 
     local_repo = Repo(base_path)
     logging.info("executing in git repository in the directory: %s", local_repo.working_dir)
-    github_client = Github(login_or_token=access_token)
+    github_client = Github(auth=Token(access_token))
     remote_url = local_repo.remote().url
     repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)
     remote_repo = github_client.get_repo(repository_fullname)

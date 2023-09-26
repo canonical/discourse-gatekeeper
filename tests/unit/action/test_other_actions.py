@@ -30,15 +30,12 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a directory, dry run mode and mocked discourse
     act: when action is passed to _create with dry_run
-    assert: then no topic is created, the action is logged and a skip report is returned.
+    assert: then no topic is created, the action is logged and the expected report is returned.
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = factories.CreateActionFactory(
-        level=(level := 1),
-        path=(path := ("path 1",)),
-        navlink_title=(navlink_title := "title 1"),
-        content=None,
+    create_action = factories.CreateGroupActionFactory(
+        level=(level := 1), path=(path := ("path 1",)), navlink_title=(navlink_title := "title 1")
     )
 
     returned_report = action._create(
@@ -61,6 +58,48 @@ def test__create_directory(dry_run: bool, caplog: pytest.LogCaptureFixture):
     assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
 
 
+@pytest.mark.parametrize(
+    "dry_run",
+    [
+        pytest.param(True, id="dry run mode enabled"),
+        pytest.param(False, id="dry run mode disabled"),
+    ],
+)
+def test__create_external_ref(dry_run: bool, caplog: pytest.LogCaptureFixture):
+    """
+    arrange: given create action for an external reference, dry run mode and mocked discourse
+    act: when action is passed to _create with dry_run
+    assert: then no topic is created, the action is logged and the expected report is returned.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    create_action = factories.CreateExternalRefActionFactory(
+        level=(level := 1),
+        path=(path := ("path 1",)),
+        navlink_title=(navlink_title := "title 1"),
+        navlink_value=(navlink_value := "value 1"),
+    )
+
+    returned_report = action._create(
+        action=create_action, discourse=mocked_discourse, dry_run=dry_run, name="name 1"
+    )
+
+    assert_substrings_in_string((f"action: {create_action}", f"dry run: {dry_run}"), caplog.text)
+    mocked_discourse.create_topic.assert_not_called()
+    assert returned_report.table_row is not None
+    assert returned_report.table_row.level == level
+    assert returned_report.table_row.path == path
+    assert returned_report.table_row.navlink.title == navlink_title
+    assert returned_report.table_row.navlink.link == navlink_value
+    assert returned_report.location == navlink_value
+    assert (
+        returned_report.result == src_types.ActionResult.SKIP
+        if dry_run
+        else src_types.ActionResult.SUCCESS
+    )
+    assert returned_report.reason == (action.DRY_RUN_REASON if dry_run else None)
+
+
 def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     """
     arrange: given create action for a file and mocked discourse
@@ -69,7 +108,7 @@ def test__create_file_dry_run(caplog: pytest.LogCaptureFixture):
     """
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -101,7 +140,7 @@ def test__create_file_fail(caplog: pytest.LogCaptureFixture):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.side_effect = (error := exceptions.DiscourseError("failed"))
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -138,7 +177,7 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
     caplog.set_level(logging.INFO)
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     mocked_discourse.create_topic.return_value = (url := "url 1")
-    create_action = factories.CreateActionFactory(
+    create_action = factories.CreatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
         navlink_title=(navlink_title := "title 1"),
@@ -168,38 +207,55 @@ def test__create_file(caplog: pytest.LogCaptureFixture, hidden: bool):
 # Pylint doesn't understand how the walrus operator works
 # pylint: disable=undefined-variable,unused-variable
 @pytest.mark.parametrize(
-    "noop_action, expected_table_row",
+    "noop_action, expected_table_row, expected_location",
     [
         pytest.param(
-            src_types.NoopAction(
-                level=(level := 1),
-                path=(path := ("path 1",)),
-                navlink=(navlink := factories.NavlinkFactory(title="title 1", link=None)),
-                content=None,
+            action_1 := factories.NoopGroupActionFactory(),
+            factories.TableRowFactory(
+                level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
-            src_types.TableRow(level=level, path=path, navlink=navlink),
+            None,
             id="directory",
         ),
         pytest.param(
-            src_types.NoopAction(
-                level=(level := 1),
-                path=(path := ("path 1",)),
-                navlink=(navlink := factories.NavlinkFactory(title="title 1", link="link 1")),
-                content="content 1",
+            action_1 := factories.NoopExternalRefActionFactory(),
+            factories.TableRowFactory(
+                level=action_1.level, path=action_1.path, navlink=action_1.navlink
             ),
-            src_types.TableRow(level=level, path=path, navlink=navlink),
-            id="file",
+            action_1.navlink.link,
+            id="external ref",
         ),
     ],
 )
 # pylint: enable=undefined-variable,unused-variable
-def test__noop(
+def test__noop_dir_external_ref(
     noop_action: src_types.NoopAction,
     expected_table_row: src_types.TableRow,
+    expected_location: str | None,
     caplog: pytest.LogCaptureFixture,
 ):
     """
-    arrange: given noop action
+    arrange: given noop action for a directory or external reference
+    act: when action is passed to _noop
+    assert: then the action is logged and a success report is returned.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
+
+    assert str(noop_action) in caplog.text
+    assert returned_report.table_row == expected_table_row
+    assert returned_report.location == expected_location
+    assert returned_report.result == src_types.ActionResult.SUCCESS
+    assert returned_report.reason is None
+
+
+def test__noop_file(
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given noop action for a file
     act: when action is passed to _noop
     assert: then the action is logged and a success report is returned.
     """
@@ -207,25 +263,28 @@ def test__noop(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     absolute_url = "absolute url 1"
     mocked_discourse.absolute_url.return_value = absolute_url
+    noop_action = factories.NoopPageActionFactory()
 
     returned_report = action._noop(action=noop_action, discourse=mocked_discourse)
 
+    expected_table_row = factories.TableRowFactory(
+        level=noop_action.level,
+        path=noop_action.path,
+        navlink=noop_action.navlink,
+    )
     assert str(noop_action) in caplog.text
     assert returned_report.table_row == expected_table_row
-    assert returned_report.location == (
-        absolute_url if expected_table_row.navlink.link is not None else None
-    )
+    assert returned_report.location == absolute_url
     assert returned_report.result == src_types.ActionResult.SUCCESS
     assert returned_report.reason is None
 
 
 @pytest.mark.parametrize(
-    "dry_run, delete_pages, navlink_link, expected_result, expected_reason",
+    "dry_run, delete_pages, expected_result, expected_reason",
     [
         pytest.param(
             True,
             True,
-            "link 1",
             src_types.ActionResult.SKIP,
             action.DRY_RUN_REASON,
             id="dry run mode enabled",
@@ -233,20 +292,15 @@ def test__noop(
         pytest.param(
             False,
             False,
-            "link 1",
             src_types.ActionResult.SKIP,
             action.NOT_DELETE_REASON,
             id="delete pages false enabled",
         ),
-        pytest.param(False, True, None, src_types.ActionResult.SUCCESS, None, id="directory"),
     ],
 )
-# Simplifying the test would mean needing to write many more tests instead of parametrize
-# pylint: disable=too-many-arguments
-def test__delete_not_delete(
+def test__delete_not_delete_page(
     dry_run: bool,
     delete_pages: bool,
-    navlink_link: str | None,
     expected_result: src_types.ActionResult,
     expected_reason: str | None,
     caplog: pytest.LogCaptureFixture,
@@ -260,12 +314,7 @@ def test__delete_not_delete(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    delete_action = src_types.DeleteAction(
-        level=1,
-        path=("path 1",),
-        navlink=factories.NavlinkFactory(title="title 1", link=navlink_link),
-        content="content 1",
-    )
+    delete_action = factories.DeletePageActionFactory()
 
     returned_report = action._delete(
         action=delete_action,
@@ -280,7 +329,74 @@ def test__delete_not_delete(
     )
     mocked_discourse.delete_topic.assert_not_called()
     assert returned_report.table_row is None
-    assert returned_report.location == (url if navlink_link else None)
+    assert returned_report.location == url
+    assert returned_report.result == expected_result
+    assert returned_report.reason == expected_reason
+
+
+@pytest.mark.parametrize(
+    "dry_run, delete_action, expected_result, expected_reason",
+    [
+        pytest.param(
+            True,
+            factories.DeleteGroupActionFactory(),
+            src_types.ActionResult.SKIP,
+            action.DRY_RUN_REASON,
+            id="group dry run enabled",
+        ),
+        pytest.param(
+            False,
+            factories.DeleteGroupActionFactory(),
+            src_types.ActionResult.SUCCESS,
+            None,
+            id="group dry run disabled",
+        ),
+        pytest.param(
+            True,
+            factories.DeleteExternalRefActionFactory(),
+            src_types.ActionResult.SKIP,
+            action.DRY_RUN_REASON,
+            id="external ref dry run enabled",
+        ),
+        pytest.param(
+            False,
+            factories.DeleteExternalRefActionFactory(),
+            src_types.ActionResult.SUCCESS,
+            None,
+            id="external ref dry run disabled",
+        ),
+    ],
+)
+def test__delete_not_delete_group_external_ref(
+    dry_run: bool,
+    delete_action: src_types.DeleteAction,
+    expected_result: src_types.ActionResult,
+    expected_reason: str | None,
+    caplog: pytest.LogCaptureFixture,
+):
+    """
+    arrange: given delete action for a group or external ref and whether dry run is enabled
+    act: when action is passed to _delete with delete pages enabled
+    assert: then no topic is deleted, the action is logged and the expected report is returned.
+    """
+    delete_pages = True
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+
+    returned_report = action._delete(
+        action=delete_action,
+        discourse=mocked_discourse,
+        dry_run=dry_run,
+        delete_pages=delete_pages,
+    )
+
+    assert_substrings_in_string(
+        (f"action: {delete_action}", f"dry run: {dry_run}", f"delete pages: {delete_pages}"),
+        caplog.text,
+    )
+    mocked_discourse.delete_topic.assert_not_called()
+    assert returned_report.table_row is None
+    assert returned_report.location is None
     assert returned_report.result == expected_result
     assert returned_report.reason == expected_reason
 
@@ -296,7 +412,7 @@ def test__delete_error(caplog: pytest.LogCaptureFixture):
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
     mocked_discourse.delete_topic.side_effect = (error := exceptions.DiscourseError("fail"))
-    delete_action = src_types.DeleteAction(
+    delete_action = src_types.DeletePageAction(
         level=1,
         path=("path 1",),
         navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -330,7 +446,7 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    delete_action = src_types.DeleteAction(
+    delete_action = src_types.DeletePageAction(
         level=1,
         path=("path 1",),
         navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
@@ -358,47 +474,61 @@ def test__delete(caplog: pytest.LogCaptureFixture):
     "test_action, expected_return_type",
     [
         pytest.param(
-            factories.CreateActionFactory(
-                level=1,
-                path=("path 1",),
-                navlink_title="title 1",
-                content=None,
-            ),
+            factories.CreatePageActionFactory(),
             src_types.TableRow,
-            id="create",
+            id="create page",
         ),
         pytest.param(
-            src_types.NoopAction(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=None),
-                content=None,
-            ),
+            factories.CreateGroupActionFactory(),
             src_types.TableRow,
-            id="noop",
+            id="create group",
         ),
         pytest.param(
-            src_types.UpdateAction(
+            factories.CreateExternalRefActionFactory(),
+            src_types.TableRow,
+            id="create external ref",
+        ),
+        pytest.param(
+            factories.NoopPageActionFactory(),
+            src_types.TableRow,
+            id="noop pae",
+        ),
+        pytest.param(
+            factories.NoopGroupActionFactory(),
+            src_types.TableRow,
+            id="noop group",
+        ),
+        pytest.param(
+            factories.NoopExternalRefActionFactory(),
+            src_types.TableRow,
+            id="noop external ref",
+        ),
+        pytest.param(
+            src_types.UpdateGroupAction(
                 level=1,
                 path=("path 1",),
                 navlink_change=factories.NavlinkChangeFactory(
                     old=factories.NavlinkFactory(title="title 1", link=None),
                     new=factories.NavlinkFactory(title="title 1", link=None),
                 ),
-                content_change=None,
             ),
             src_types.TableRow,
             id="update",
         ),
         pytest.param(
-            src_types.DeleteAction(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=None),
-                content=None,
-            ),
+            factories.DeletePageActionFactory(),
             types.NoneType,
-            id="delete",
+            id="delete page",
+        ),
+        pytest.param(
+            factories.DeleteGroupActionFactory(),
+            types.NoneType,
+            id="delete group",
+        ),
+        pytest.param(
+            factories.DeleteExternalRefActionFactory(),
+            types.NoneType,
+            id="delete external ref",
         ),
     ],
 )
@@ -640,22 +770,13 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
     [
         pytest.param((), [], id="empty"),
         pytest.param(
-            (
-                src_types.NoopAction(
-                    level=(level := 1),
-                    path=(path := ("path 1",)),
-                    navlink=(
-                        navlink := factories.NavlinkFactory(
-                            title="title 1", link=(link := "link 1")
-                        )
-                    ),
-                    content="content 1",
-                ),
-            ),
+            (action_1 := factories.NoopPageActionFactory(),),
             [
-                src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level, path=path, navlink=navlink),
-                    location=link,
+                factories.ActionReportFactory(
+                    table_row=factories.TableRowFactory(
+                        level=action_1.level, path=action_1.path, navlink=action_1.navlink
+                    ),
+                    location=action_1.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 )
@@ -664,37 +785,25 @@ def test__run_index_update(caplog: pytest.LogCaptureFixture):
         ),
         pytest.param(
             (
-                src_types.NoopAction(
-                    level=(level_1 := 1),
-                    path=(path_1 := ("path 1",)),
-                    navlink=(
-                        navlink_1 := factories.NavlinkFactory(
-                            title="title 1", link=(link_1 := "link 1")
-                        )
-                    ),
-                    content="content 1",
-                ),
-                src_types.NoopAction(
-                    level=(level_2 := 2),
-                    path=(path_2 := ("path 2",)),
-                    navlink=(
-                        navlink_2 := factories.NavlinkFactory(
-                            title="title 2", link=(link_2 := "link 2")
-                        )
-                    ),
-                    content="content 2",
-                ),
+                action_1 := factories.NoopPageActionFactory(),
+                action_2 := factories.NoopPageActionFactory(),
             ),
             [
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level_1, path=path_1, navlink=navlink_1),
-                    location=link_1,
+                    table_row=factories.TableRowFactory(
+                        level=action_1.level, path=action_1.path, navlink=action_1.navlink
+                    ),
+                    location=action_1.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 ),
                 src_types.ActionReport(
-                    table_row=src_types.TableRow(level=level_2, path=path_2, navlink=navlink_2),
-                    location=link_2,
+                    table_row=factories.TableRowFactory(
+                        level=action_2.level,
+                        path=action_2.path,
+                        navlink=action_2.navlink,
+                    ),
+                    location=action_2.navlink.link,
                     result=src_types.ActionResult.SUCCESS,
                     reason=None,
                 ),

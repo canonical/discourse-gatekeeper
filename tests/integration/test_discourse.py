@@ -195,7 +195,7 @@ async def test_create_topic_auth_error(
     assert: then DiscourseError is raised.
     """
     discourse = Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -227,7 +227,7 @@ async def test_retrieve_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -256,7 +256,7 @@ async def test_update_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -286,7 +286,7 @@ async def test_delete_topic_auth_error(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     unauth_discourse = Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key="invalid key",
         category_id=discourse_category_id,
@@ -318,7 +318,7 @@ async def test_read_write_permission(
     url = discourse_api.create_topic(title=title, content=content_1)
 
     alternate_user_discourse = Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_alternate_user_credentials.username,
         api_key=discourse_alternate_user_api_key,
         category_id=discourse_category_id,

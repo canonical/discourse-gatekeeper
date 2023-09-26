@@ -42,10 +42,19 @@ Attrs:  base: The content which is the base for comparison.  server: The content
 
 ---
 
-## <kbd>class</kbd> `CreateAction`
-Represents a page to be created. 
+## <kbd>class</kbd> `CreateExternalRefAction`
+Represents a external reference to be created. 
 
-Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a unique string identifying the navigation table row.  navlink_title: The title of the navlink.  navlink_hidden: Whether the item should be displayed on the navigation table.  content: The documentation content, is None for directories. 
+Attrs:  navlink_value: The external reference. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `CreateGroupAction`
+Represents a group to be created. 
 
 
 
@@ -64,10 +73,39 @@ Attrs:  title: The title of the index page.  content: The content including the 
 
 ---
 
-## <kbd>class</kbd> `DeleteAction`
+## <kbd>class</kbd> `CreatePageAction`
+Represents a page to be created. 
+
+Attrs:  content: The documentation content. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `DeleteExternalRefAction`
+Represents an external reference to be deleted. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `DeleteGroupAction`
+Represents a group to be deleted. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `DeletePageAction`
 Represents a page to be deleted. 
 
-Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a unique string identifying the navigation table row.  navlink: The link to the page  content: The documentation content. 
+Attrs:  content: The documentation content. 
 
 
 
@@ -122,8 +160,21 @@ Attrs:  old: The previous content.  new: The new content.
 ## <kbd>class</kbd> `IndexContentsListItem`
 Represents an item in the contents table. 
 
-Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table 
+Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table. 
 
+
+---
+
+#### <kbd>property</kbd> table_path
+
+The table path for the item. 
+
+In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1 removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP case. Any remaining characters not allowed in the path are also removed. For a non-HTTP case, removes the file suffix and splits on / to built the path. 
+
+
+
+**Returns:**
+  The table path for the item. 
 
 
 
@@ -209,10 +260,17 @@ Attrs:  old: The previous navlink.  new: The new navlink.
 
 ---
 
-## <kbd>class</kbd> `NoopAction`
-Represents a page with no required changes. 
+## <kbd>class</kbd> `NoopExternalRefAction`
+Represents an external reference with no required changes. 
 
-Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a unique string identifying the navigation table row.  navlink: The navling title and link for the page.  content: The documentation content of the page. 
+
+
+
+
+---
+
+## <kbd>class</kbd> `NoopGroupAction`
+Represents a group with no required changes. 
 
 
 
@@ -224,6 +282,17 @@ Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a u
 Represents an index page with no required changes. 
 
 Attrs:  content: The content including the navigation table.  url: The URL to the index page. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `NoopPageAction`
+Represents a page with no required changes. 
+
+Attrs:  content: The documentation content of the page. 
 
 
 
@@ -291,28 +360,64 @@ Whether the row is a group of pages.
 
 ---
 
-<a href="../src/types_.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/types_.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `is_external`
+
+```python
+is_external(server_hostname: str) → bool
+```
+
+Whether the row is an external reference. 
+
+
+
+**Args:**
+ 
+ - <b>`server_hostname`</b>:  The hostname of the discourse server. 
+
+
+
+**Returns:**
+ Whether the item in the table is an external item. 
+
+---
+
+<a href="../src/types_.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `to_markdown`
 
 ```python
-to_markdown() → str
+to_markdown(server_hostname: str) → str
 ```
 
 Convert to a line in the navigation table. 
 
 
 
+**Args:**
+ 
+ - <b>`server_hostname`</b>:  The hostname of the discourse server. 
+
+
+
 **Returns:**
-  The line in the navigation table. 
+ The line in the navigation table. 
 
 
 ---
 
-## <kbd>class</kbd> `UpdateAction`
-Represents a page to be updated. 
+## <kbd>class</kbd> `UpdateExternalRefAction`
+Represents an external reference to be updated. 
 
-Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a unique string identifying the navigation table row.  navlink_change: The changeto the navlink.  content_change: The change to the documentation content. 
+
+
+
+
+---
+
+## <kbd>class</kbd> `UpdateGroupAction`
+Represents a group to be updated. 
 
 
 
@@ -324,6 +429,17 @@ Attrs:  level: The number of parents, is 1 if there is no parent.  path: The a u
 Represents an index page to be updated. 
 
 Attrs:  content_change: The change to the content including the navigation table.  url: The URL to the index page. 
+
+
+
+
+
+---
+
+## <kbd>class</kbd> `UpdatePageAction`
+Represents a page to be updated. 
+
+Attrs:  content_change: The change to the documentation content. 
 
 
 

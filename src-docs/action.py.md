@@ -15,13 +15,13 @@ Module for taking the required actions to match the server state with the local 
 
 ---
 
-<a href="../src/action.py#L416"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/action.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_all`
 
 ```python
 run_all(
-    actions: Iterable[CreateAction | NoopAction | UpdateAction | DeleteAction],
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction],
     index: Index,
     discourse: Discourse,
     dry_run: bool,
@@ -52,7 +52,7 @@ Take the actions against the server.
 ## <kbd>class</kbd> `UpdateCase`
 The possible cases for the update action. 
 
-Attrs:  INVALID: The action is not valid.  DRY_RUN: Do not make any changes.  CONTENT_CHANGE: The content has been changed.  BASE_MISSING: The base content is not available.  DEFAULT: No other specific case applies. 
+Attrs:  DRY_RUN: Do not make any changes.  CONTENT_CHANGE: The content has been changed.  BASE_MISSING: The base content is not available.  DEFAULT: No other specific case applies. 
 
 
 

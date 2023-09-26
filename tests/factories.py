@@ -51,15 +51,50 @@ class PathInfoFactory(
     navlink_hidden = False
 
 
-class CreateActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.CreateAction]  # type: ignore[misc]
+class CreateExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreateExternalRefAction]  # type: ignore[misc]
 ):
-    """Generate CreateActions."""  # noqa: DCO060
+    """Generate CreateExternalRefAction."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.CreateAction
+        model = types_.CreateExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    navlink_value = factory.Sequence(lambda n: f"value {n}")
+    navlink_hidden = False
+
+
+class CreateGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreateGroupAction]  # type: ignore[misc]
+):
+    """Generate CreateGroupAction."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreateGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_title = factory.Sequence(lambda n: f"title {n}")
+    navlink_hidden = False
+
+
+class CreatePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.CreatePageAction]  # type: ignore[misc]
+):
+    """Generate CreatePageAction."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.CreatePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
@@ -85,21 +120,53 @@ class NavlinkFactory(
     hidden = False
 
 
-class NoopActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.NoopAction]  # type: ignore[misc]
+class NoopPageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopPageAction]  # type: ignore[misc]
 ):
-    """Generate NoopActions."""  # noqa: DCO060
+    """Generate NoopPageActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.NoopAction
+        model = types_.NoopPageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
+
+
+class NoopGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopGroupAction]  # type: ignore[misc]
+):
+    """Generate NoopGroupActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=None)
+
+
+class NoopExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.NoopExternalRefAction]  # type: ignore[misc]
+):
+    """Generate NoopExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.NoopExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=factory.Sequence(lambda n: (f"http://{n}",)))
 
 
 class NavlinkChangeFactory(
@@ -133,15 +200,15 @@ class ContentChangeFactory(
     local = factory.Sequence(lambda n: f"local {n}")
 
 
-class UpdateActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateAction]  # type: ignore[misc]
+class UpdatePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdatePageAction]  # type: ignore[misc]
 ):
-    """Generate UpdateActions."""  # noqa: DCO060
+    """Generate UpdatePageActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.UpdateAction
+        model = types_.UpdatePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
@@ -150,21 +217,97 @@ class UpdateActionFactory(
     content_change = factory.SubFactory(ContentChangeFactory)
 
 
-class DeleteActionFactory(
-    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteAction]  # type: ignore[misc]
+class UpdateGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateGroupAction]  # type: ignore[misc]
 ):
-    """Generate DeleteActions."""  # noqa: DCO060
+    """Generate UpdateGroupActions."""  # noqa: DCO060
 
     class Meta:
         """Configuration for factory."""  # noqa: DCO060
 
-        model = types_.DeleteAction
+        model = types_.UpdateGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_change = factory.SubFactory(
+        NavlinkChangeFactory,
+        old=factory.SubFactory(NavlinkFactory, link=None),
+        new=factory.SubFactory(NavlinkFactory, link=None),
+    )
+
+
+class UpdateExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.UpdateExternalRefAction]  # type: ignore[misc]
+):
+    """Generate UpdateExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.UpdateExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink_change = factory.SubFactory(
+        NavlinkChangeFactory,
+        old=factory.SubFactory(
+            NavlinkFactory, link=factory.Sequence(lambda n: (f"http://old-{n}",))
+        ),
+        new=factory.SubFactory(
+            NavlinkFactory, link=factory.Sequence(lambda n: (f"http://new-{n}",))
+        ),
+    )
+
+
+class DeletePageActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeletePageAction]  # type: ignore[misc]
+):
+    """Generate DeletePageActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeletePageAction
         abstract = False
 
     level = factory.Sequence(lambda n: n)
     path = factory.Sequence(lambda n: (f"path {n}",))
     navlink = factory.SubFactory(NavlinkFactory)
     content = factory.Sequence(lambda n: f"content {n}")
+
+
+class DeleteGroupActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteGroupAction]  # type: ignore[misc]
+):
+    """Generate DeleteGroupActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteGroupAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=None)
+
+
+class DeleteExternalRefActionFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.DeleteExternalRefAction]  # type: ignore[misc]
+):
+    """Generate DeleteExternalRefActions."""  # noqa: DCO060
+
+    class Meta:
+        """Configuration for factory."""  # noqa: DCO060
+
+        model = types_.DeleteExternalRefAction
+        abstract = False
+
+    level = factory.Sequence(lambda n: n)
+    path = factory.Sequence(lambda n: (f"path {n}",))
+    navlink = factory.SubFactory(NavlinkFactory, link=factory.Sequence(lambda n: (f"http://{n}",)))
 
 
 class ContentPageFactory(
@@ -234,12 +377,20 @@ class TableRowFactory(
 
         Attrs:
             is_group: flag to instantiate a table row representing a group.
-            is_document: flag to instantiate a table row representing a document(Default).
+            is_document: flag to instantiate a table row representing a document (Default).
+            is_external: Flag to instantiate a table row representing an external item.
         """
 
         is_group = factory.Trait(
             navlink=factory.Sequence(
                 lambda n: types_.Navlink(f"navlink-title-{n}", link=None, hidden=False)
+            )
+        )
+        is_external = factory.Trait(
+            navlink=factory.Sequence(
+                lambda n: types_.Navlink(
+                    f"navlink-title-{n}", link=f"https://canonical.com/{n}", hidden=False
+                )
             )
         )
         is_document = factory.Trait(
@@ -307,7 +458,9 @@ class IndexParsedListItemFactory(factory.Factory):
 
 
 # The attributes of these classes are generators for the attributes of the meta class
-class IndexContentsListItemFactory(factory.Factory):
+class IndexContentsListItemFactory(
+    factory.Factory, metaclass=BaseMetaFactory[types_.IndexContentsListItem]  # type: ignore[misc]
+):
     # Docstrings have been abbreviated for factories, checking for docstrings on model attributes
     # can be skipped.
     """Generate types.IndexContentsListItems."""  # noqa: DCO060
