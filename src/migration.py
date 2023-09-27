@@ -65,6 +65,19 @@ def _validate_table_rows(
         current_group_level = row.level if row.is_group else row.level - 1
 
 
+def _generate_document_path(row: types_.TableRow) -> Path:
+    """Generate the path to a document from the table row.
+
+    Args:
+        row: Row containing link to document and path information.
+
+    Returns:
+        The path to the documentation file.
+
+    """
+    return Path(*row.path[:-1]) / f"{row.path[-1]}.md"
+
+
 def _create_document_meta(row: types_.TableRow) -> types_.DocumentMeta:
     """Create document meta file for migration from table row.
 
@@ -84,7 +97,7 @@ def _create_document_meta(row: types_.TableRow) -> types_.DocumentMeta:
             "Internal error, no implementation for creating document meta with missing link in row."
         )
     return types_.DocumentMeta(
-        path=Path(*row.path[:-1]) / f"{row.path[-1]}.md", link=row.navlink.link, table_row=row
+        path=_generate_document_path(row), link=row.navlink.link, table_row=row
     )
 
 
@@ -226,6 +239,41 @@ def _migrate_document(
         location=full_path,
         reason=None,
     )
+
+
+def _table_row_to_contents_index_line(row: types_.TableRow, discourse: Discourse) -> str:
+    """Generate a line of the contents index from a row of the navigation table.
+
+    Args:
+        row: the row of the navigation table.
+
+    Returns:
+        The contents index line.
+
+    """
+    leader = f"{(len(row.path) - 1) * '  '}1. "
+    if row.is_external(server_hostname=discourse.host):
+        return f"{leader}[{row.navlink.title}]({row.navlink.link})"
+    if row.is_group:
+        return f"{leader}[{row.navlink.title}]({Path(*row.path)})"
+    return f"{leader}[{row.navlink.title}]({_generate_document_path(row)})"
+
+
+def _migrate_navigation_table(rows: typing.Iterable[types_.TableRow], discourse: Discourse) -> str:
+    """Generate the contents index from the table rows of the navigation table.
+
+    Args:
+        rows: the rows of the navigation table.
+
+    Returns:
+        The contents index.
+
+    """
+    contents_index_lines = (
+        _table_row_to_contents_index_line(row=row, discourse=discourse) for row in rows
+    )
+    contents_index_body = "\n".join(contents_index_lines)
+    return f"# Contents\n\n{contents_index_body}".strip()
 
 
 def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> types_.ActionReport:
