@@ -7,6 +7,7 @@
 - Support for defining a contents index in the `index.md` file.
 - Support for hidden items on the contentx index.
 - Support for external items on the contents index
+- Support for migrating the navigation table to the contents index
 
 ### Fixed
 
