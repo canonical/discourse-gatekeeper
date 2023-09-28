@@ -723,6 +723,56 @@ def test__table_row_to_contents_index_line(
     assert returned_line == expected_line
 
 
+def _test__migrate_navigation_table_parameters():
+    """Generate parameters for the test__migrate_navigation_table test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param(
+            (),
+            "# Contents",
+            id="empty rows",
+        ),
+        pytest.param(
+            (row_1 := factories.TableRowFactory(is_document=True),),
+            f"# Contents\n\n1. [{row_1.navlink.title}]({row_1.path[0]}.md)",
+            id="single row",
+        ),
+        pytest.param(
+            (
+                row_1 := factories.TableRowFactory(is_document=True),
+                row_2 := factories.TableRowFactory(is_document=True),
+            ),
+            (
+                "# Contents\n\n"
+                f"1. [{row_1.navlink.title}]({row_1.path[0]}.md)\n"
+                f"1. [{row_2.navlink.title}]({row_2.path[0]}.md)"
+            ),
+            id="multiple rows",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "rows, expected_contents_index", _test__migrate_navigation_table_parameters()
+)
+def test__migrate_navigation_table(
+    rows: tuple[types_.TableRow, ...], expected_contents_index: str, mocked_clients
+):
+    """
+    arrange: given table rows
+    act: when _migrate_navigation_table is called with the rows
+    assert: then the expected contents index is returned.
+    """
+    returned_contents_index = migration._migrate_navigation_table(
+        rows=rows, discourse=mocked_clients.discourse
+    )
+
+    assert returned_contents_index == expected_contents_index
+
+
 def test__migrate_document_fail(tmp_path: Path, mocked_clients):
     """
     arrange: given valid document metadata and mocked discourse that raises an error

@@ -246,6 +246,7 @@ def _table_row_to_contents_index_line(row: types_.TableRow, discourse: Discourse
 
     Args:
         row: the row of the navigation table.
+        discourse: Client to the documentation server.
 
     Returns:
         The contents index line.
@@ -264,6 +265,7 @@ def _migrate_navigation_table(rows: typing.Iterable[types_.TableRow], discourse:
 
     Args:
         rows: the rows of the navigation table.
+        discourse: Client to the documentation server.
 
     Returns:
         The contents index.

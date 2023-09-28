@@ -85,14 +85,16 @@ async def test_run_migrate(
 
     | Level | Path | Navlink |
     | -- | -- | -- |
-    | 1 | https-canonical-com | [Canonical](https://canonical.com) |
+    | 1 | https-canonical-com-1 | [Canonical](https://canonical.com/1) |
     | 1 | group-1 | [Group 1]() |
     | 1 | group-2 | [Group 2]() |
     | 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |
     | 2 | group-2-content-2 | [{content_page_2.content}]({content_page_2_url}) |
+    | 2 | https-canonical-com-2 | [Canonical](https://canonical.com/2) |
     | 1 | group-3 | [Group 3]() |
     | 2 | group-3-group-4 | [Group 4]() |
     | 3 | group-3-group-4-content-3 | [{content_page_3.content}]({content_page_3_url}) |
+    | 3 | https-canonical-com-3 | [Canonical](https://canonical.com/3) |
     | 2 | group-3-content-4 | [{content_page_4.content}]({content_page_4_url}) |
     | 1 | group-5 | [Group 5]() |"""
     index_url = discourse_api.create_topic(
