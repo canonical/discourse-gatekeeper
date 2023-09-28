@@ -5,14 +5,11 @@
 
 import pytest
 
-from src import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG, constants  # GETTING_STARTED,
+from src import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG, constants
 from src.download import recreate_docs
 from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 
 from .helpers import create_metadata_yaml
-
-# Need access to protected functions for testing
-# pylint: disable=protected-access
 
 
 @pytest.mark.usefixtures("patch_create_repository_client")
@@ -47,5 +44,10 @@ def test_recreate_docs(
     assert (
         path_file := repository_path / DOCUMENTATION_FOLDER_NAME / "page-path-1" / "page-file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == (
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        f"1. [empty-navlink](page-path-1)\n"
+        f"  1. [file-navlink](page-path-1/page-file-1.md)"
+    )
     assert path_file.read_text(encoding="utf-8") == navlink_page
