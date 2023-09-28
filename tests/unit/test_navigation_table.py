@@ -59,6 +59,9 @@ from .helpers import assert_substrings_in_string
         pytest.param("|1|a|[a()|", True, id="third column closing square bracket missing"),
         pytest.param("|1|a|[a])|", True, id="third column opening link bracket missing"),
         pytest.param(r"|1|a|[a](\)|", True, id="third column link includes backslash"),
+        pytest.param(
+            r"|1|a|[a](https://canonical.com/1?2#3)|", False, id="third column link is external"
+        ),
         pytest.param("|1|a|[a](|", True, id="third column closing link bracket missing"),
         pytest.param("|1|a|[a]()|", False, id="matches row"),
         pytest.param("||a|[a]()|", False, id="matches hidden row"),
@@ -420,9 +423,24 @@ def test__check_table_row_write_permission_group(mocked_clients):
     assert: then the table row is returned.
     """
     mocked_discourse = mocked_clients.discourse
-    table_row = factories.TableRowFactory(
-        level=1, path=("path 1",), navlink=factories.NavlinkFactory(title="title 1", link=None)
+    table_row = factories.TableRowFactory(is_group=True)
+
+    returned_table_row = navigation_table._check_table_row_write_permission(
+        table_row=table_row, discourse=mocked_discourse
     )
+
+    assert returned_table_row == table_row
+    mocked_discourse.check_topic_write_permission.assert_not_called()
+
+
+def test__check_table_row_write_permission_external(mocked_clients):
+    """
+    arrange: given mocked discourse and table row for a external reference
+    act: when _check_table_row_write_permission is called with the table row and mocked discourse
+    assert: then the table row is returned.
+    """
+    mocked_discourse = mocked_clients.discourse
+    table_row = factories.TableRowFactory(is_external=True)
 
     returned_table_row = navigation_table._check_table_row_write_permission(
         table_row=table_row, discourse=mocked_discourse
@@ -440,18 +458,16 @@ def test__check_table_row_write_permission_page_error(mocked_clients):
     """
     mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.side_effect = exceptions.DiscourseError
+    table_row = factories.TableRowFactory(is_document=True)
 
     with pytest.raises(exceptions.ServerError) as exc_info:
         navigation_table._check_table_row_write_permission(
-            table_row=factories.TableRowFactory(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
-            ),
+            table_row=table_row,
             discourse=mocked_discourse,
         )
 
-    assert link in str(exc_info.value)
+    assert table_row.navlink.link
+    assert table_row.navlink.link in str(exc_info.value)
 
 
 def test__check_table_row_write_permission_page_false(mocked_clients):
@@ -463,18 +479,18 @@ def test__check_table_row_write_permission_page_false(mocked_clients):
     """
     mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = False
+    table_row = factories.TableRowFactory(is_document=True)
 
     with pytest.raises(exceptions.PagePermissionError) as exc_info:
         navigation_table._check_table_row_write_permission(
-            table_row=factories.TableRowFactory(
-                level=1,
-                path=("path 1",),
-                navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
-            ),
+            table_row=table_row,
             discourse=mocked_discourse,
         )
 
-    assert_substrings_in_string((link, "write", "permission"), str(exc_info.value))
+    assert table_row.navlink.link
+    assert_substrings_in_string(
+        (table_row.navlink.link, "write", "permission"), str(exc_info.value)
+    )
 
 
 def test__check_table_row_write_permission_page_true(mocked_clients):
@@ -485,18 +501,17 @@ def test__check_table_row_write_permission_page_true(mocked_clients):
     """
     mocked_discourse = mocked_clients.discourse
     mocked_discourse.check_topic_write_permission.return_value = True
-    table_row = factories.TableRowFactory(
-        level=1,
-        path=("path 1",),
-        navlink=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
-    )
+    table_row = factories.TableRowFactory(is_document=True)
 
     returned_table_row = navigation_table._check_table_row_write_permission(
         table_row=table_row, discourse=mocked_discourse
     )
 
     assert returned_table_row == table_row
-    mocked_discourse.check_topic_write_permission.assert_called_once_with(url=link)
+    assert table_row.navlink.link
+    mocked_discourse.check_topic_write_permission.assert_called_once_with(
+        url=table_row.navlink.link
+    )
 
 
 def test_from_page_missing_write_permission(mocked_clients):
