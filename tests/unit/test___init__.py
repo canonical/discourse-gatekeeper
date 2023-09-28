@@ -868,10 +868,6 @@ def test__run_migrate_with_pull_request_no_modification(
     assert upstream_git_repo.head.ref.commit.hexsha == _hash
 
 
-"Content header.\n\n    Content body.\n\n# Contents\n\n1. [empty-navlink](path-1)\n  1. [file-navlink](path-1/file-1.md)"
-"Content header.\n\n    Content body.\n\n\n# Contents\n\n1. [empty-navlink](path-1)\n  1. [file-navlink](path-1/file-1.md)"
-
-
 @pytest.mark.usefixtures("patch_create_repository_client")
 def test_run_no_docs_empty_dir(mocked_clients):
     """
