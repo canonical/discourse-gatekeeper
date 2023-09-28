@@ -137,6 +137,7 @@ Testing index page content.
 
 Testing index page content.
 
+
 # Contents
 
 1. [Canonical 1](https://canonical.com/1)
@@ -144,11 +145,11 @@ Testing index page content.
 1. [Group 2](group-2)
   1. [{content_page_1.content}](group-2/content-1.md)
   1. [{content_page_2.content}](group-2/content-2.md)
-  1. [Canonical 2](https://canonical.com/2) |
+  1. [Canonical 2](https://canonical.com/2)
 1. [Group 3](group-3)
   1. [Group 4](group-3/group-4)
     1. [{content_page_3.content}](group-3/group-4/content-3.md)
-    1. [Canonical 3](https://canonical.com/3) |
+    1. [Canonical 3](https://canonical.com/3)
   1. [{content_page_4.content}](group-3/content-4.md)
 1. [Group 5](group-5)"""
     )
