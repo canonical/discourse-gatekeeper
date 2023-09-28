@@ -47,7 +47,7 @@ def test_recreate_docs(
     assert index_file.read_text(encoding="utf-8") == (
         f"{index_content}\n\n"
         "# Contents\n\n"
-        f"1. [empty-navlink](page-path-1)\n"
-        f"  1. [file-navlink](page-path-1/page-file-1.md)"
+        "1. [empty-navlink](page-path-1)\n"
+        "  1. [file-navlink](page-path-1/page-file-1.md)"
     )
     assert path_file.read_text(encoding="utf-8") == navlink_page
