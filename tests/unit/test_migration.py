@@ -230,22 +230,24 @@ def test__create_gitkeep_meta(row: types_.TableRow, expected_meta: types_.Gitkee
     assert migration._create_gitkeep_meta(row=row) == expected_meta
 
 
-@pytest.mark.parametrize(
-    "content, expected_meta",
-    [
-        pytest.param(
-            content := "content-1",
-            types_.IndexDocumentMeta(path=Path("index.md"), content=content),
-        ),
-    ],
-)
-def test__index_file_from_content(content: str, expected_meta: types_.IndexDocumentMeta):
+def test__index_file_from_content(mocked_clients):
     """
     arrange: given an index file content
     act: when _index_file_from_content is called
     assert: expected index document metadata is returned.
     """
-    assert migration._index_file_from_content(content) == expected_meta
+    content = "content 1"
+    table_row = factories.TableRowFactory(is_document=True)
+
+    returned_index_file = migration._index_file_from_content(
+        content, table_rows=(table_row,), discourse=mocked_clients.discourse
+    )
+
+    assert returned_index_file.path == Path("index.md")
+    assert (
+        returned_index_file.content
+        == f"{content}\n\n# Contents\n\n1. [{table_row.navlink.title}]({table_row.path[0]}.md)"
+    )
 
 
 @pytest.mark.parametrize(
@@ -970,40 +972,67 @@ def test_run_error(tmp_path: Path):
         )
 
 
-@pytest.mark.parametrize(
-    "table_rows, index_content, expected_files",
-    [
+def _test_run_parameters():
+    """Generate parameters for the test_run test.
+
+    Returns:
+        The tests.
+    """
+    return [
         pytest.param(
-            (factories.TableRowFactory(is_document=True, path=("doc-1",), level=1),),
-            "content-1",
-            (Path("doc-1.md"),),
+            (row_1 := factories.TableRowFactory(is_document=True, path=("doc-1",), level=1),),
+            (index_content := "content-1"),
+            (path_1 := Path(f"{row_1.path[0]}.md"),),
+            f"{index_content}\n\n# Contents\n\n1. [{row_1.navlink.title}]({path_1})",
             id="single doc",
         ),
         pytest.param(
             (
-                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
-                factories.TableRowFactory(is_document=True, path=("group-1", "doc-1"), level=2),
+                row_1 := factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
+                row_2 := factories.TableRowFactory(
+                    is_document=True, path=("group-1", "doc-1"), level=2
+                ),
             ),
-            "content-1",
-            (Path("group-1/doc-1.md"),),
+            (index_content := "content-1"),
+            (path_2 := Path(f"{row_2.path[0]}/{row_2.path[1]}.md"),),
+            (
+                f"{index_content}\n\n"
+                "# Contents\n\n"
+                f"1. [{row_1.navlink.title}]({row_1.path[0]})\n"
+                f"  1. [{row_2.navlink.title}]({path_2})"
+            ),
             id="nested doc",
         ),
         pytest.param(
             (
-                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
-                factories.TableRowFactory(is_group=True, path=("group-1", "group-2"), level=2),
+                row_1 := factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
+                row_2 := factories.TableRowFactory(
+                    is_group=True, path=("group-1", "group-2"), level=2
+                ),
             ),
-            "content-1",
-            (Path("group-1/group-2/.gitkeep"),),
+            (index_content := "content-1"),
+            (Path(f"{row_2.path[0]}/{row_2.path[1]}/.gitkeep"),),
+            (
+                f"{index_content}\n\n"
+                "# Contents\n\n"
+                f"1. [{row_1.navlink.title}]({row_1.path[0]})\n"
+                f"  1. [{row_2.navlink.title}]({row_2.path[0]}/{row_2.path[1]})"
+            ),
             id="nested group no docs",
         ),
-    ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "table_rows, index_content, expected_files, expected_index_content",
+    _test_run_parameters(),
 )
 def test_run(
     table_rows: tuple[types_.TableRow, ...],
     index_content: str,
     tmp_path: Path,
     expected_files: Iterable[Path],
+    expected_index_content: str,
 ):
     """
     arrange: given table rows, index content, mocked discourse and a temporary docs path
@@ -1020,6 +1049,6 @@ def test_run(
         docs_path=tmp_path,
     )
 
-    assert (tmp_path / "index.md").read_text() == index_content
+    assert (tmp_path / "index.md").read_text() == expected_index_content
     for path in expected_files:
         assert (tmp_path / path).is_file()

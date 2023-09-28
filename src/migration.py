@@ -158,16 +158,62 @@ def _extract_docs_from_table_rows(
         yield _create_gitkeep_meta(row=previous_row)
 
 
-def _index_file_from_content(content: str) -> types_.IndexDocumentMeta:
+def _table_row_to_contents_index_line(row: types_.TableRow, discourse: Discourse) -> str:
+    """Generate a line of the contents index from a row of the navigation table.
+
+    Args:
+        row: the row of the navigation table.
+        discourse: Client to the documentation server.
+
+    Returns:
+        The contents index line.
+
+    """
+    leader = f"{(len(row.path) - 1) * '  '}1. "
+    if row.is_external(server_hostname=discourse.host):
+        return f"{leader}[{row.navlink.title}]({row.navlink.link})"
+    if row.is_group:
+        return f"{leader}[{row.navlink.title}]({Path(*row.path)})"
+    return f"{leader}[{row.navlink.title}]({_generate_document_path(row)})"
+
+
+def _migrate_navigation_table(rows: typing.Iterable[types_.TableRow], discourse: Discourse) -> str:
+    """Generate the contents index from the table rows of the navigation table.
+
+    Args:
+        rows: the rows of the navigation table.
+        discourse: Client to the documentation server.
+
+    Returns:
+        The contents index.
+
+    """
+    contents_index_lines = (
+        _table_row_to_contents_index_line(row=row, discourse=discourse) for row in rows
+    )
+    contents_index_body = "\n".join(contents_index_lines)
+    return f"# Contents\n\n{contents_index_body}".strip()
+
+
+def _index_file_from_content(
+    content: str,
+    table_rows: typing.Iterable[types_.TableRow],
+    discourse: Discourse,
+) -> types_.IndexDocumentMeta:
     """Get index file document metadata.
 
     Args:
         content: Index file content.
+        table_rows: Table rows from the index table.
+        discourse: Client to the documentation server.
 
     Returns:
         Index file document metadata.
     """
-    return types_.IndexDocumentMeta(path=Path("index.md"), content=content)
+    contents_index = _migrate_navigation_table(rows=table_rows, discourse=discourse)
+    return types_.IndexDocumentMeta(
+        path=Path("index.md"), content=f"{content}\n\n{contents_index}"
+    )
 
 
 def make_parent(docs_path: Path, document_meta: types_.MigrationFileMeta) -> Path:
@@ -239,43 +285,6 @@ def _migrate_document(
         location=full_path,
         reason=None,
     )
-
-
-def _table_row_to_contents_index_line(row: types_.TableRow, discourse: Discourse) -> str:
-    """Generate a line of the contents index from a row of the navigation table.
-
-    Args:
-        row: the row of the navigation table.
-        discourse: Client to the documentation server.
-
-    Returns:
-        The contents index line.
-
-    """
-    leader = f"{(len(row.path) - 1) * '  '}1. "
-    if row.is_external(server_hostname=discourse.host):
-        return f"{leader}[{row.navlink.title}]({row.navlink.link})"
-    if row.is_group:
-        return f"{leader}[{row.navlink.title}]({Path(*row.path)})"
-    return f"{leader}[{row.navlink.title}]({_generate_document_path(row)})"
-
-
-def _migrate_navigation_table(rows: typing.Iterable[types_.TableRow], discourse: Discourse) -> str:
-    """Generate the contents index from the table rows of the navigation table.
-
-    Args:
-        rows: the rows of the navigation table.
-        discourse: Client to the documentation server.
-
-    Returns:
-        The contents index.
-
-    """
-    contents_index_lines = (
-        _table_row_to_contents_index_line(row=row, discourse=discourse) for row in rows
-    )
-    contents_index_body = "\n".join(contents_index_lines)
-    return f"# Contents\n\n{contents_index_body}".strip()
 
 
 def _migrate_index(index_meta: types_.IndexDocumentMeta, docs_path: Path) -> types_.ActionReport:
@@ -351,7 +360,10 @@ def _get_docs_metadata(
     Returns:
         Metadata of files to be migrated.
     """
-    index_doc = _index_file_from_content(content=index_content)
+    table_rows, table_rows_for_index = itertools.tee(table_rows, 2)
+    index_doc = _index_file_from_content(
+        content=index_content, table_rows=table_rows_for_index, discourse=discourse
+    )
     table_docs = _extract_docs_from_table_rows(table_rows=table_rows, discourse=discourse)
     return itertools.chain((index_doc,), table_docs)
 
