@@ -161,7 +161,7 @@ Additional recommended steps:
     Note that the action may change the order of how groups and pages are
     displayed in the navigation pane. The action will sort them alphabetically.
 4. Optionally, remove the current `docs` key from `metadata.yaml` if you would
-    like the action to create its own topics on discourse rather than re-use
+    like the action to create its own topics on discourse rather than reuse
     any existing topics. This means that if, for some reason, you don't like
     what the action does, you can easily revert back to the previous
     documentation. Be sure to file an issue with the reason if the action does
