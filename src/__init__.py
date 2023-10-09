@@ -25,8 +25,8 @@ from src.types_ import (
 )
 
 GETTING_STARTED = (
-    "To get started with upload-charm-docs, "
-    "please refer to https://github.com/canonical/upload-charm-docs#getting-started"
+    "To get started with discourse-gatekeeper, "
+    "please refer to https://github.com/canonical/discourse-gatekeeper#getting-started"
 )
 
 
@@ -35,7 +35,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         ReconcileOutputs object with the result of the action. None, if there is no reconcile.
@@ -164,7 +164,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         MigrateOutputs providing details on the action performed and a link to the
@@ -209,7 +209,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
             action=PullRequestAction.OPENED, pull_request_url=pull_request.html_url
         )
 
-    logging.info("upload-charm-documents pull request already open at %s", pull_request.html_url)
+    logging.info("discourse-gatekeeper pull request already open at %s", pull_request.html_url)
     clients.repository.update_pull_request(DEFAULT_BRANCH_NAME)
 
     return MigrateOutputs(action=PullRequestAction.UPDATED, pull_request_url=pull_request.html_url)
@@ -220,7 +220,7 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         Boolean representing whether the checks have all been passed.

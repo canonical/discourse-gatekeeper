@@ -122,6 +122,8 @@ def test_current_branch_switch_to_tag(repository_client):
     act: we first tag the commit and then switch to the tag
     assert: current_branch should provide first the commit hash and then the tag name
     """
+    repository_client._git_repo.git.tag("-d", DOCUMENTATION_TAG)
+
     _hash = repository_client.current_branch
 
     repository_client._git_repo.git.tag("my-tag")
@@ -617,8 +619,8 @@ def test_get_file_content_from_tag_commit_tag(
 @pytest.mark.parametrize(
     "remote_url",
     [
-        pytest.param("https://gitlab.com/canonical/upload-charm-docs.git", id="non-github url"),
-        pytest.param("http://gitlab.com/canonical/upload-charm-docs.git", id="http url"),
+        pytest.param("https://gitlab.com/canonical/discourse-gatekeeper.git", id="non-github url"),
+        pytest.param("http://gitlab.com/canonical/discourse-gatekeeper.git", id="http url"),
         pytest.param("git@github.com:yanksyoon/actionrefer.git", id="ssh url"),
     ],
 )
@@ -641,13 +643,13 @@ def test_get_repository_name_invalid(remote_url: str):
     "remote_url, expected_repository_name",
     [
         pytest.param(
-            "https://github.com/canonical/upload-charm-docs",
-            "canonical/upload-charm-docs",
+            "https://github.com/canonical/discourse-gatekeeper",
+            "canonical/discourse-gatekeeper",
             id="valid url",
         ),
         pytest.param(
-            "https://github.com/canonical/upload-charm-docs.git",
-            "canonical/upload-charm-docs",
+            "https://github.com/canonical/discourse-gatekeeper.git",
+            "canonical/discourse-gatekeeper",
             id="valid git url",
         ),
     ],
@@ -1217,7 +1219,7 @@ def test_create_pull_request_existing_branch(
 
     hash2 = repository_client._git_repo.head.commit
 
-    # make sure the hash of the upload-charm-docs/migrate branch agree
+    # make sure the hash of the discourse-gatekeeper/migrate branch agree
     assert hash1 == hash2
 
     repository_path = repository_client.switch(DEFAULT_BRANCH).base_path
@@ -1231,7 +1233,7 @@ def test_create_pull_request_existing_branch(
 
     hash3 = repository_client._git_repo.head.commit
 
-    # Make sure that the upload-charm-docs/migrate branch has now be overridden
+    # Make sure that the discourse-gatekeeper/migrate branch has now be overridden
     assert hash2 != hash3
     assert pull_request.html_url == "test_url"
 

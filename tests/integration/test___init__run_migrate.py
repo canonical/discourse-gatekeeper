@@ -158,7 +158,7 @@ async def test_run_migrate(
     assert "test_url" in output_migrate.pull_request_url
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
-        ["upload-charm-documents pull request already open at test_url"], caplog.text
+        ["discourse-gatekeeper pull request already open at test_url"], caplog.text
     )
 
     # 3. Add modification to an existing open PR
@@ -179,7 +179,7 @@ async def test_run_migrate(
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
         [
-            "upload-charm-documents pull request already open at test_url",
+            "discourse-gatekeeper pull request already open at test_url",
             "Updating PR with new commit",
         ],
         caplog.text,
