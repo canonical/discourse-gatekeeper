@@ -92,7 +92,9 @@ from .helpers import assert_substrings_in_string
     ],
 )
 def test__validate_table_rows_invalid_rows(
-    table_rows: tuple[types_.TableRow, ...], expected_message_contents: Iterable[str]
+    table_rows: tuple[types_.TableRow, ...],
+    expected_message_contents: Iterable[str],
+    mocked_clients,
 ):
     """
     arrange: given invalid table_rows sequence
@@ -100,7 +102,12 @@ def test__validate_table_rows_invalid_rows(
     assert: InputError is raised with expected error message contents.
     """
     with pytest.raises(exceptions.InputError) as exc:
-        tuple(row for row in migration._validate_table_rows(table_rows=table_rows))
+        tuple(
+            row
+            for row in migration._validate_table_rows(
+                table_rows=table_rows, discourse=mocked_clients.discourse
+            )
+        )
 
     assert_substrings_in_string(expected_message_contents, str(exc.value).lower())
 
@@ -138,15 +145,18 @@ def test__validate_table_rows_invalid_rows(
         ),
     ],
 )
-def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...]):
+def test__validate_table_rows(table_rows: tuple[types_.TableRow, ...], mocked_clients):
     """
     arrange: given table rows of valid sequence
     act: when _validate_table_rows is called
     assert: an iterable with original sequence preserved is returned.
     """
-    assert tuple(row for row in migration._validate_table_rows(table_rows=table_rows)) == tuple(
-        row for row in table_rows
-    )
+    assert tuple(
+        row
+        for row in migration._validate_table_rows(
+            table_rows=table_rows, discourse=mocked_clients.discourse
+        )
+    ) == tuple(row for row in table_rows)
 
 
 # Pylint doesn't understand how the walrus operator works
@@ -260,6 +270,15 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_external=True
+                ),
+            ),
+            (),
+            id="single initial external ref",
+        ),
+        pytest.param(
+            (
                 doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
                 doc_row_2 := factories.TableRowFactory(level=1, path=("doc-2",), is_document=True),
             ),
@@ -311,6 +330,22 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
         ),
         pytest.param(
             (
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+                group_row_1 := factories.TableRowFactory(
+                    level=1, path=("group-1",), is_external=True
+                ),
+            ),
+            (
+                types_.DocumentMeta(
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
+                ),
+            ),
+            id="distinct document and external ref",
+        ),
+        pytest.param(
+            (
                 group_row_1 := factories.TableRowFactory(
                     level=1, path=("group-1",), is_group=True
                 ),
@@ -325,6 +360,20 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
                 ),
             ),
             id="distinct group and document",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(level=1, path=("external-1",), is_external=True),
+                doc_row_1 := factories.TableRowFactory(level=1, path=("doc-1",), is_document=True),
+            ),
+            (
+                types_.DocumentMeta(
+                    path=Path("doc-1.md"),
+                    link=cast(str, doc_row_1.navlink.link),
+                    table_row=doc_row_1,
+                ),
+            ),
+            id="distinct external ref and document",
         ),
         pytest.param(
             (
@@ -548,7 +597,9 @@ def test__index_file_from_content(content: str, expected_meta: types_.IndexDocum
     ],
 )
 def test__extract_docs_from_table_rows(
-    table_rows: tuple[types_.TableRow, ...], expected_metas: tuple[types_.DocumentMeta, ...]
+    table_rows: tuple[types_.TableRow, ...],
+    expected_metas: tuple[types_.DocumentMeta, ...],
+    mocked_clients,
 ):
     """
     arrange: given an valid table row sequences
@@ -556,7 +607,12 @@ def test__extract_docs_from_table_rows(
     assert: expected document metadatas are yielded.
     """
     assert (
-        tuple(row for row in migration._extract_docs_from_table_rows(table_rows=table_rows))
+        tuple(
+            row
+            for row in migration._extract_docs_from_table_rows(
+                table_rows=table_rows, discourse=mocked_clients.discourse
+            )
+        )
         == expected_metas
     )
 
@@ -590,13 +646,13 @@ def test__migrate_gitkeep(meta: types_.GitkeepMeta, tmp_path: Path):
     assert (tmp_path / meta.path).is_file()
 
 
-def test__migrate_document_fail(tmp_path: Path):
+def test__migrate_document_fail(tmp_path: Path, mocked_clients):
     """
     arrange: given valid document metadata and mocked discourse that raises an error
     act: when _migrate_document is called
     assert: failed migration report is returned.
     """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    mocked_discourse = mocked_clients.discourse
     mocked_discourse.retrieve_topic.side_effect = (error := exceptions.DiscourseError("fail"))
     table_row = types_.TableRow(
         level=(level := 1),
@@ -746,7 +802,7 @@ def test__run_one(
     assert returned_report.table_row == expected_report.table_row
 
 
-def test__get_docs_metadata():
+def test__get_docs_metadata(mocked_clients):
     """
     arrange: given table rows from index table and the index_content from index file
     act: when _get_docs_metadata is called
@@ -758,8 +814,7 @@ def test__get_docs_metadata():
     returned_docs_metadata = tuple(
         meta
         for meta in migration._get_docs_metadata(
-            table_rows=table_rows,
-            index_content=index_content,
+            table_rows=table_rows, index_content=index_content, discourse=mocked_clients.discourse
         )
     )
 

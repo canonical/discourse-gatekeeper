@@ -4,10 +4,13 @@
 """Types for uploading docs to charmhub."""
 
 import dataclasses
+import re
 import typing
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
+
+from src import constants
 
 Content = str
 Url = str
@@ -79,6 +82,7 @@ class Page(typing.NamedTuple):
 
 
 NavlinkTitle = str
+NavlinkValue = str
 
 
 class IndexFile(typing.NamedTuple):
@@ -132,9 +136,6 @@ class PathInfo(typing.NamedTuple):
     navlink_hidden: bool
 
 
-PathInfoLookup = dict[TablePath, PathInfo]
-
-
 class Navlink(typing.NamedTuple):
     """Represents navlink of a table row of the navigation table.
 
@@ -145,7 +146,7 @@ class Navlink(typing.NamedTuple):
     """
 
     title: NavlinkTitle
-    link: str | None
+    link: NavlinkValue | None
     hidden: bool
 
 
@@ -168,39 +169,91 @@ class TableRow(typing.NamedTuple):
         """Whether the row is a group of pages."""
         return self.navlink.link is None
 
-    def to_markdown(self) -> str:
+    def is_external(self, server_hostname: str) -> bool:
+        """Whether the row is an external reference.
+
+        Args:
+            server_hostname: The hostname of the discourse server.
+
+        Returns:
+            Whether the item in the table is an external item.
+        """
+        if self.navlink.link is None:
+            return False
+        comparison_link = self.navlink.link.lower()
+        return comparison_link.startswith("http") and not comparison_link.startswith(
+            server_hostname.lower()
+        )
+
+    def to_markdown(self, server_hostname: str) -> str:
         """Convert to a line in the navigation table.
+
+        Args:
+            server_hostname: The hostname of the discourse server.
 
         Returns:
             The line in the navigation table.
         """
         level = f" {self.level} " if not self.navlink.hidden else " "
-        return (
-            f"|{level}| {'-'.join(self.path)} | "
-            f"[{self.navlink.title}]({urlparse(self.navlink.link or '').path}) |"
-        )
+
+        if self.is_external(server_hostname):
+            link = self.navlink.link
+        elif self.is_group:
+            link = ""
+        else:
+            link = urlparse(self.navlink.link or "").path
+
+        return f"|{level}| {'-'.join(self.path)} | " f"[{self.navlink.title}]({link}) |"
 
 
 TableRowLookup = dict[TablePath, TableRow]
 
 
 @dataclasses.dataclass
-class CreateAction:
-    """Represents a page to be created.
+class _CreateActionBase:
+    """Represents an item to be updated.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_title: The title of the navlink.
         navlink_hidden: Whether the item should be displayed on the navigation table.
-        content: The documentation content, is None for directories.
     """
 
     level: Level
     path: TablePath
     navlink_title: NavlinkTitle
-    content: Content | None
     navlink_hidden: bool
+
+
+@dataclasses.dataclass
+class CreateGroupAction(_CreateActionBase):
+    """Represents a group to be created."""
+
+
+@dataclasses.dataclass
+class CreatePageAction(_CreateActionBase):
+    """Represents a page to be created.
+
+    Attrs:
+        content: The documentation content.
+    """
+
+    content: Content
+
+
+@dataclasses.dataclass
+class CreateExternalRefAction(_CreateActionBase):
+    """Represents a external reference to be created.
+
+    Attrs:
+        navlink_value: The external reference.
+    """
+
+    navlink_value: NavlinkValue
+
+
+CreateAction = CreateGroupAction | CreatePageAction | CreateExternalRefAction
 
 
 @dataclasses.dataclass
@@ -217,20 +270,42 @@ class CreateIndexAction:
 
 
 @dataclasses.dataclass
-class NoopAction:
-    """Represents a page with no required changes.
+class _NoopActionBase:
+    """Represents an item with no required changes.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink: The navling title and link for the page.
-        content: The documentation content of the page.
     """
 
     level: Level
     path: TablePath
     navlink: Navlink
-    content: Content | None
+
+
+@dataclasses.dataclass
+class NoopGroupAction(_NoopActionBase):
+    """Represents a group with no required changes."""
+
+
+@dataclasses.dataclass
+class NoopPageAction(_NoopActionBase):
+    """Represents a page with no required changes.
+
+    Attrs:
+        content: The documentation content of the page.
+    """
+
+    content: Content
+
+
+@dataclasses.dataclass
+class NoopExternalRefAction(_NoopActionBase):
+    """Represents an external reference with no required changes."""
+
+
+NoopAction = NoopGroupAction | NoopPageAction | NoopExternalRefAction
 
 
 @dataclasses.dataclass
@@ -285,20 +360,42 @@ class IndexContentChange(typing.NamedTuple):
 
 
 @dataclasses.dataclass
-class UpdateAction:
-    """Represents a page to be updated.
+class _UpdateActionBase:
+    """Base for all the update actions.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink_change: The changeto the navlink.
-        content_change: The change to the documentation content.
     """
 
     level: Level
     path: TablePath
     navlink_change: NavlinkChange
-    content_change: ContentChange | None
+
+
+@dataclasses.dataclass
+class UpdateGroupAction(_UpdateActionBase):
+    """Represents a group to be updated."""
+
+
+@dataclasses.dataclass
+class UpdatePageAction(_UpdateActionBase):
+    """Represents a page to be updated.
+
+    Attrs:
+        content_change: The change to the documentation content.
+    """
+
+    content_change: ContentChange
+
+
+@dataclasses.dataclass
+class UpdateExternalRefAction(_UpdateActionBase):
+    """Represents an external reference to be updated."""
+
+
+UpdateAction = UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction
 
 
 @dataclasses.dataclass
@@ -315,20 +412,42 @@ class UpdateIndexAction:
 
 
 @dataclasses.dataclass
-class DeleteAction:
-    """Represents a page to be deleted.
+class _DeleteActionBase:
+    """Represents an item to be deleted.
 
     Attrs:
         level: The number of parents, is 1 if there is no parent.
         path: The a unique string identifying the navigation table row.
         navlink: The link to the page
-        content: The documentation content.
     """
 
     level: Level
     path: TablePath
     navlink: Navlink
-    content: Content | None
+
+
+@dataclasses.dataclass
+class DeleteGroupAction(_DeleteActionBase):
+    """Represents a group to be deleted."""
+
+
+@dataclasses.dataclass
+class DeletePageAction(_DeleteActionBase):
+    """Represents a page to be deleted.
+
+    Attrs:
+        content: The documentation content.
+    """
+
+    content: Content
+
+
+@dataclasses.dataclass
+class DeleteExternalRefAction(_DeleteActionBase):
+    """Represents an external reference to be deleted."""
+
+
+DeleteAction = DeleteGroupAction | DeletePageAction | DeleteExternalRefAction
 
 
 AnyAction = CreateAction | NoopAction | UpdateAction | DeleteAction
@@ -436,6 +555,7 @@ class IndexContentsListItem(typing.NamedTuple):
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list at any hierarchy
         hidden: Whether the item should be displayed on the navigation table
+        table_path: The path for the item on the table.
     """
 
     hierarchy: int
@@ -443,6 +563,34 @@ class IndexContentsListItem(typing.NamedTuple):
     reference_value: str
     rank: int
     hidden: bool
+
+    @property
+    def table_path(self) -> TablePath:
+        """The table path for the item.
+
+        In the case of a HTTP reference, changes http://canonical.com/1 to http,canonical,com,1
+        removing the HTTP protocol characters so that the path conforms to the path in the non-HTTP
+        case. Any remaining characters not allowed in the path are also removed. For a non-HTTP
+        case, removes the file suffix and splits on / to built the path.
+
+        Returns:
+            The table path for the item.
+        """
+        if self.reference_value.lower().startswith("http"):
+            transformed_reference_value = (
+                self.reference_value.replace("//", "/")
+                .replace(".", "/")
+                .replace("?", "/")
+                .replace("#", "/")
+            )
+            transformed_reference_value = re.sub(
+                rf"[^\/{constants.PATH_CHARS}]", "", transformed_reference_value
+            )
+            return tuple((transformed_reference_value).split("/"))
+        return tuple(self.reference_value.rsplit(".", 1)[0].split("/"))
+
+
+ItemInfoLookup = dict[TablePath, PathInfo | IndexContentsListItem]
 
 
 class ReconcileOutputs(typing.NamedTuple):

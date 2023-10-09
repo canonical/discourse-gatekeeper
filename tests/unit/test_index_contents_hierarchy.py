@@ -29,12 +29,25 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
                 item := factories.IndexParsedListItemFactory(
                     whitespace_count=0,
                     reference_title="title 1",
+                    reference_value="ftp://localhost",
+                    rank=1,
+                ),
+            ),
+            (),
+            ("not", "file", "directory", "HTTP", repr(item)),
+            id="invalid external reference",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title="title 1",
                     reference_value="file_1.md",
                     rank=1,
                 ),
             ),
             (),
-            ("not", "file or directory", repr(item)),
+            ("not", "file", "directory", "HTTP", repr(item)),
             id="file doesn't exist",
         ),
         pytest.param(
@@ -339,6 +352,57 @@ def _test__calculate_contents_hierarchy_parameters():
         pytest.param(
             (
                 item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value := "https://canonical.com")
+                ),
+            ),
+            ("skip",),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item.reference_title,
+                    reference_value=value,
+                    rank=item.rank,
+                ),
+            ),
+            id="single external link",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value := "HTTPS://canonical.com")
+                ),
+            ),
+            ("skip",),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item.reference_title,
+                    reference_value=value,
+                    rank=item.rank,
+                ),
+            ),
+            id="single external link upper case",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value := "http://canonical.com")
+                ),
+            ),
+            ("skip",),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item.reference_title,
+                    reference_value=value,
+                    rank=item.rank,
+                ),
+            ),
+            id="single external link http",
+        ),
+        pytest.param(
+            (
+                item := factories.IndexParsedListItemFactory(
                     whitespace_count=0, reference_value=(value := "file_1.md"), hidden=True
                 ),
             ),
@@ -500,6 +564,32 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_1 := "dir_1")
                 ),
                 item_2 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_2 := "https://canonical.com")
+                ),
+            ),
+            ("dir", "skip"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_1.reference_title,
+                    reference_value=value_1,
+                    rank=item_1.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_2.reference_title,
+                    reference_value=value_2,
+                    rank=item_2.rank,
+                ),
+            ),
+            id="single directory single external link",
+        ),
+        pytest.param(
+            (
+                item_1 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_1 := "dir_1")
+                ),
+                item_2 := factories.IndexParsedListItemFactory(
                     whitespace_count=1, reference_value=(value_2 := f"{value_1}/file_2.md")
                 ),
             ),
@@ -519,6 +609,32 @@ def _test__calculate_contents_hierarchy_parameters():
                 ),
             ),
             id="single directory single file in directory",
+        ),
+        pytest.param(
+            (
+                item_1 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_1 := "dir_1")
+                ),
+                item_2 := factories.IndexParsedListItemFactory(
+                    whitespace_count=1, reference_value=(value_2 := "https://canonical.com")
+                ),
+            ),
+            ("dir", "skip"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_1.reference_title,
+                    reference_value=value_1,
+                    rank=item_1.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=2,
+                    reference_title=item_2.reference_title,
+                    reference_value=value_2,
+                    rank=item_2.rank,
+                ),
+            ),
+            id="single directory single external link",
         ),
         pytest.param(
             (

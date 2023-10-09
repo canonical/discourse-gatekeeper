@@ -42,8 +42,8 @@ async def discourse(model: Model) -> Application:
     await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
 
     discourse_app: Application = await model.deploy(discourse_charm_name)
-    await model.relate(discourse_charm_name, f"{postgres_charm_name}:db")
-    await model.relate(discourse_charm_name, redis_charm_name)
+    await model.integrate(discourse_charm_name, f"{postgres_charm_name}:db")
+    await model.integrate(discourse_charm_name, redis_charm_name)
 
     # Need to wait for the waiting status to be resolved
 
@@ -325,7 +325,7 @@ async def discourse_api(
 ):
     """Create discourse instance."""
     return Discourse(
-        base_path=discourse_address,
+        host=discourse_address,
         api_username=discourse_user_credentials.username,
         api_key=discourse_user_api_key,
         category_id=discourse_category_id,

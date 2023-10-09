@@ -85,6 +85,7 @@ async def test_run_migrate(
 
     | Level | Path | Navlink |
     | -- | -- | -- |
+    | 1 | https-canonical-com | [Canonical](https://canonical.com) |
     | 1 | group-1 | [Group 1]() |
     | 1 | group-2 | [Group 2]() |
     | 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |

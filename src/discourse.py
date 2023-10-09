@@ -12,7 +12,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-from .exceptions import DiscourseError, InputError
+from src.exceptions import DiscourseError, InputError
 
 _URL_PATH_PREFIX = "/t/"
 _POST_SPLIT_LINE = "\n\n-------------------------\n\n"
@@ -66,25 +66,29 @@ KeyT = typing.TypeVar("KeyT")
 
 
 class Discourse:
-    """Interact with a discourse server."""
+    """Interact with a discourse server.
+
+    Attrs:
+        host: The host of the discourse server.
+    """
 
     _tags = ("docs",)
 
-    def __init__(self, base_path: str, api_username: str, api_key: str, category_id: int) -> None:
+    def __init__(self, host: str, api_username: str, api_key: str, category_id: int) -> None:
         """Construct.
 
         Args:
-            base_path: The HTTP protocol and hostname for discourse (e.g., https://discourse).
+            host: The HTTP protocol and hostname for discourse (e.g., https://discourse).
             api_username: The username to use for API requests.
             api_key: The API key for requests.
             category_id: The category identifier to put the topics into.
 
         """
         self._client = pydiscourse.DiscourseClient(
-            host=base_path, api_username=api_username, api_key=api_key, timeout=10 * 60
+            host=host, api_username=api_username, api_key=api_key, timeout=10 * 60
         )
         self._category_id = category_id
-        self._base_path = base_path
+        self._host = host
         self._api_username = api_username
         self._api_key = api_key
 
@@ -144,15 +148,15 @@ class Discourse:
         Returns:
             Whether the URL is a valid topic URL.
         """
-        if not url.startswith((self._base_path, _URL_PATH_PREFIX)):
+        if not url.startswith((self._host, _URL_PATH_PREFIX)):
             return _ValidationResultInvalid(
                 "The base path is different to the expected base path, "
-                f"expected: {self._base_path}, {url=}"
+                f"expected: {self._host}, {url=}"
             )
 
         try:
             response = self._get_requests_session().head(
-                url if url.startswith(self._base_path) else f"{self._base_path}{url}",
+                url if url.startswith(self._host) else f"{self._host}{url}",
                 allow_redirects=True,
             )
             response.raise_for_status()
@@ -212,7 +216,7 @@ class Discourse:
             The link to the topic.
 
         """
-        return f"{self._base_path}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
+        return f"{self._host}{_URL_PATH_PREFIX}{topic_info.slug}/{topic_info.id_}"
 
     def _retrieve_topic_first_post(self, url: str) -> dict:
         """Retrieve the first post from a topic based on the URL to the topic.
@@ -387,7 +391,7 @@ class Discourse:
         topic_info = self._url_to_topic_info(url=url)
         headers = {"Api-Key": self._api_key, "Api-Username": self._api_username}
         response = self._get_requests_session().get(
-            f"{self._base_path}/raw/{topic_info.id_}", headers=headers, timeout=60
+            f"{self._host}/raw/{topic_info.id_}", headers=headers, timeout=60
         )
         try:
             response.raise_for_status()
@@ -485,6 +489,11 @@ class Discourse:
 
         return self.absolute_url(url=url)
 
+    @property
+    def host(self) -> str:
+        """The HTTP protocol and hostname for discourse (e.g., https://discourse)."""
+        return self._host
+
 
 def create_discourse(
     hostname: str, category_id: str, api_username: str, api_key: str
@@ -539,7 +548,7 @@ def create_discourse(
         )
 
     return Discourse(
-        base_path=f"https://{hostname}",
+        host=f"https://{hostname}",
         api_username=api_username,
         api_key=api_key,
         category_id=category_id_int,
