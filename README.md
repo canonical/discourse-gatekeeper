@@ -1,4 +1,4 @@
-# Upload Charm Documentation
+# Discourse Gatekeeper Documentation
 
 **This action is in development, and should not be used except on
 repositories that are part of our development and testing programme.** 
@@ -122,8 +122,8 @@ depending on whether:
 2. After updating the `metadata.yaml` in your main branch, trigger the action 
    manually or via automated processes (either in the CI or in the release 
    pipeline)
-3. As a part of the action, a branch name with `upload-charm-docs/migrate` will 
-   be created and a pull request named `[upload-charm-docs] Migrate charm docs` 
+3. As a part of the action, a branch name with `discourse-gatekeeper/migrate` will 
+   be created and a pull request named `[discourse-gatekeeper] Migrate charm docs` 
    will be created targeting the default branch of the repository. In order to 
    ensure that the branches can be created successfully, please make sure that 
    there are no existing branches clashing with the name above. Please note 
@@ -161,7 +161,7 @@ Additional recommended steps:
     Note that the action may change the order of how groups and pages are
     displayed in the navigation pane. The action will sort them alphabetically.
 4. Optionally, remove the current `docs` key from `metadata.yaml` if you would
-    like the action to create its own topics on discourse rather than re-use
+    like the action to create its own topics on discourse rather than reuse
     any existing topics. This means that if, for some reason, you don't like
     what the action does, you can easily revert back to the previous
     documentation. Be sure to file an issue with the reason if the action does
@@ -174,7 +174,7 @@ Additional recommended steps:
       steps:
         ...
         - id: publishDocumentation
-          uses: canonical/upload-charm-docs@stable
+          uses: canonical/discourse-gatekeeper@stable
         - name: Show index page
           run: echo '${{ steps.publishDocumentation.outputs.index_url }}'
         ...
@@ -194,7 +194,7 @@ repository. Be sure to explain the reasoning for any changes on discourse.
 
 The content that was last pushed to discourse is determined by getting the
 content from a given file from a commit with the
-`upload-charm-docs/base-content` tag. If the tag does not exist, the action will
+`discourse-gatekeeper/base-content` tag. If the tag does not exist, the action will
 fail and request for the tag to be created.
 
 In addition to page-by-page conflict detection, the action will check whether
@@ -211,7 +211,7 @@ that have not been merged into `main` and a PR proposes changes to
 the changes to `docs/getting-started.md` are no longer accurate.
 
 If, after checking the community contributions on discourse, you determine that
-there are no logical conflicts, the `upload-charm-docs/discourse-ahead-ok` tag
+there are no logical conflicts, the `discourse-gatekeeper/discourse-ahead-ok` tag
 can be applied to the latest commit in the PR which will allow the action to
 proceed assuming there are no page-by-page conflicts.
 
@@ -303,8 +303,8 @@ This action uses the notion of risks, similarly to what used in SNAP (see
 We currently only provide support on one single track (say latest), with the 
 following branching naming convention:
 
-* [main](https://github.com/canonical/upload-charm-docs/tree/main) corresponds to the edge risk
-* [stable](https://github.com/canonical/upload-charm-docs/tree/stable) corresponds to the stable version of the action
+* [main](https://github.com/canonical/discourse-gatekeeper/tree/main) corresponds to the edge risk
+* [stable](https://github.com/canonical/discourse-gatekeeper/tree/stable) corresponds to the stable version of the action
 
 We therefore generally advise you to pick the risk channel that best fits to 
 your need. 
@@ -326,10 +326,10 @@ End-to-End tests even before merging. To do so, follow these steps:
 2. Amend the E2E workflows to point to your PR branch, i.e. 
 ```yaml
       name: Publish documentation
-      uses: canonical/upload-charm-docs@your-pr-branch # CHANGE HERE
+      uses: canonical/discourse-gatekeeper@your-pr-branch # CHANGE HERE
 ```
 3. Raise a PR against the test-repository. This PR will not be merged but it 
-    will allow you to tests
+    will allow you to test
     your changes
 
 Periodically, we review the latest changes on edge branches and we rebase lower 

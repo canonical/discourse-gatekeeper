@@ -448,7 +448,7 @@ Attrs:  content_change: The change to the documentation content.
 ---
 
 ## <kbd>class</kbd> `UserInputs`
-Configurable user input values used to run upload-charm-docs. 
+Configurable user input values used to run discourse-gatekeeper. 
 
 Attrs:  discourse: The configuration for interacting with discourse.  dry_run: If enabled, only log the action that would be taken. Has no effect in migration  mode.  delete_pages: Whether to delete pages that are no longer needed. Has no effect in  migration mode.  github_access_token: A Personal Access Token(PAT) or access token with repository access.  Required in migration mode.  commit_sha: The SHA of the commit the action is running on.  base_branch: The main branch against which the syncs act on 
 
@@ -459,7 +459,7 @@ Attrs:  discourse: The configuration for interacting with discourse.  dry_run: I
 ---
 
 ## <kbd>class</kbd> `UserInputsDiscourse`
-Configurable user input values used to run upload-charm-docs. 
+Configurable user input values used to run discourse-gatekeeper. 
 
 Attrs:  hostname: The base path to the discourse server.  category_id: The category identifier to use on discourse for all topics.  api_username: The discourse API username to use for interactions with the server.  api_key: The discourse API key to use for interactions with the server. 
 

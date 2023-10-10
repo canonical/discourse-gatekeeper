@@ -4,20 +4,26 @@
 
 ### Added
 
+- Support for migrating the navigation table to the contents index
+
+## [v0.7.0] - 2023-10-09
+
+### Added
+
 - Support for defining a contents index in the `index.md` file.
 - Support for hidden items on the contentx index.
 - Support for external items on the contents index
-- Support for migrating the navigation table to the contents index
+- Automatically moving the `discourse-gatekeeper/content` tag when the
+  documentation is up to date with discourse
 
 ### Fixed
 
 - Navigation table not getting removed if the contents was hidden using the
   `[details=...]...[/details]` tag.
-
-### Fixed
-
 - No longer use empty values from `INPUT_COMMIT_SHA` instead of reading the
   event/ environment
+- Removing leading and trailing whitespace in base content for comparison
+- Correct failing pre-flight checks due to shallowly checked out repos
 
 ## [v0.6.0] - 2023-07-07
 
