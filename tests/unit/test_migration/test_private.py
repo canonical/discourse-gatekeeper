@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Unit tests for migration module."""
+"""Unit tests for private functions of migration module."""
 
 # Need access to protected functions for testing
 # pylint: disable=protected-access
@@ -15,8 +15,8 @@ import pytest
 
 from src import discourse, exceptions, migration, types_
 
-from .. import factories
-from .helpers import assert_substrings_in_string
+from ... import factories
+from ..helpers import assert_substrings_in_string
 
 
 @pytest.mark.parametrize(
@@ -230,22 +230,24 @@ def test__create_gitkeep_meta(row: types_.TableRow, expected_meta: types_.Gitkee
     assert migration._create_gitkeep_meta(row=row) == expected_meta
 
 
-@pytest.mark.parametrize(
-    "content, expected_meta",
-    [
-        pytest.param(
-            content := "content-1",
-            types_.IndexDocumentMeta(path=Path("index.md"), content=content),
-        ),
-    ],
-)
-def test__index_file_from_content(content: str, expected_meta: types_.IndexDocumentMeta):
+def test__index_file_from_content(mocked_clients):
     """
     arrange: given an index file content
     act: when _index_file_from_content is called
     assert: expected index document metadata is returned.
     """
-    assert migration._index_file_from_content(content) == expected_meta
+    content = "content 1"
+    table_row = factories.TableRowFactory(is_document=True)
+
+    returned_index_file = migration._index_file_from_content(
+        content, table_rows=(table_row,), discourse=mocked_clients.discourse
+    )
+
+    assert returned_index_file.path == Path("index.md")
+    assert (
+        returned_index_file.content
+        == f"{content}\n\n# Contents\n\n1. [{table_row.navlink.title}]({table_row.path[0]}.md)"
+    )
 
 
 @pytest.mark.parametrize(
@@ -646,6 +648,133 @@ def test__migrate_gitkeep(meta: types_.GitkeepMeta, tmp_path: Path):
     assert (tmp_path / meta.path).is_file()
 
 
+def _test__table_row_to_contents_index_line_parameters():
+    """Generate parameters for the test__table_row_to_contents_index_line test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param(
+            row := factories.TableRowFactory(is_document=True),
+            f"1. [{row.navlink.title}]({row.path[0]}.md)",
+            id="page top level path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_document=True, path=("dir_1", "file")),
+            f"  1. [{row.navlink.title}]({row.path[0]}/{row.path[1]}.md)",
+            id="page nested path path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_document=True, path=("dir_1", "dir_2", "file")),
+            f"    1. [{row.navlink.title}]({row.path[0]}/{row.path[1]}/{row.path[2]}.md)",
+            id="page deeply nested path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_group=True),
+            f"1. [{row.navlink.title}]({row.path[0]})",
+            id="group top level path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_group=True, path=("dir_1", "dir_2")),
+            f"  1. [{row.navlink.title}]({row.path[0]}/{row.path[1]})",
+            id="group nested path path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_group=True, path=("dir_1", "dir_2", "dir_3")),
+            f"    1. [{row.navlink.title}]({row.path[0]}/{row.path[1]}/{row.path[2]})",
+            id="group deeply nested path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(is_external=True),
+            f"1. [{row.navlink.title}]({row.navlink.link})",
+            id="page top level path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(
+                is_external=True, path=("dir_1", "https-canonical-com")
+            ),
+            f"  1. [{row.navlink.title}]({row.navlink.link})",
+            id="page nested path path",
+        ),
+        pytest.param(
+            row := factories.TableRowFactory(
+                is_external=True, path=("dir_1", "dir_2", "https-canonical-com")
+            ),
+            f"    1. [{row.navlink.title}]({row.navlink.link})",
+            id="page deeply nested path",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "row, expected_line", _test__table_row_to_contents_index_line_parameters()
+)
+def test__table_row_to_contents_index_line(
+    row: types_.TableRow, expected_line: str, mocked_clients
+):
+    """
+    arrange: given table row
+    act: when _table_row_to_contents_index_line is called with the row
+    assert: then the expected contents index line is returned.
+    """
+    returned_line = migration._table_row_to_contents_index_line(
+        row=row, discourse=mocked_clients.discourse
+    )
+
+    assert returned_line == expected_line
+
+
+def _test__migrate_navigation_table_parameters():
+    """Generate parameters for the test__migrate_navigation_table test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param(
+            (),
+            "# Contents",
+            id="empty rows",
+        ),
+        pytest.param(
+            (row_1 := factories.TableRowFactory(is_document=True),),
+            f"# Contents\n\n1. [{row_1.navlink.title}]({row_1.path[0]}.md)",
+            id="single row",
+        ),
+        pytest.param(
+            (
+                row_1 := factories.TableRowFactory(is_document=True),
+                row_2 := factories.TableRowFactory(is_document=True),
+            ),
+            (
+                "# Contents\n\n"
+                f"1. [{row_1.navlink.title}]({row_1.path[0]}.md)\n"
+                f"1. [{row_2.navlink.title}]({row_2.path[0]}.md)"
+            ),
+            id="multiple rows",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "rows, expected_contents_index", _test__migrate_navigation_table_parameters()
+)
+def test__migrate_navigation_table(
+    rows: tuple[types_.TableRow, ...], expected_contents_index: str, mocked_clients
+):
+    """
+    arrange: given table rows
+    act: when _migrate_navigation_table is called with the rows
+    assert: then the expected contents index is returned.
+    """
+    returned_contents_index = migration._migrate_navigation_table(
+        rows=rows, discourse=mocked_clients.discourse
+    )
+
+    assert returned_contents_index == expected_contents_index
+
+
 def test__migrate_document_fail(tmp_path: Path, mocked_clients):
     """
     arrange: given valid document metadata and mocked discourse that raises an error
@@ -821,78 +950,3 @@ def test__get_docs_metadata(mocked_clients):
     assert len(returned_docs_metadata) == 2
     assert isinstance(returned_docs_metadata[0], types_.IndexDocumentMeta)
     assert isinstance(returned_docs_metadata[1], types_.MigrationFileMeta)
-
-
-def test_run_error(tmp_path: Path):
-    """
-    arrange: given table rows, index content, mocked discourse that throws an exception and a
-        temporary docs path
-    act: when run is called
-    assert: table rows are successfully migrated
-    """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.side_effect = exceptions.DiscourseError
-    table_rows = (factories.TableRowFactory(level=1),)
-
-    with pytest.raises(exceptions.MigrationError):
-        migration.run(
-            table_rows=table_rows,
-            index_content="content-1",
-            discourse=mocked_discourse,
-            docs_path=tmp_path,
-        )
-
-
-@pytest.mark.parametrize(
-    "table_rows, index_content, expected_files",
-    [
-        pytest.param(
-            (factories.TableRowFactory(is_document=True, path=("doc-1",), level=1),),
-            "content-1",
-            (Path("doc-1.md"),),
-            id="single doc",
-        ),
-        pytest.param(
-            (
-                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
-                factories.TableRowFactory(is_document=True, path=("group-1", "doc-1"), level=2),
-            ),
-            "content-1",
-            (Path("group-1/doc-1.md"),),
-            id="nested doc",
-        ),
-        pytest.param(
-            (
-                factories.TableRowFactory(is_group=True, path=("group-1",), level=1),
-                factories.TableRowFactory(is_group=True, path=("group-1", "group-2"), level=2),
-            ),
-            "content-1",
-            (Path("group-1/group-2/.gitkeep"),),
-            id="nested group no docs",
-        ),
-    ],
-)
-def test_run(
-    table_rows: tuple[types_.TableRow, ...],
-    index_content: str,
-    tmp_path: Path,
-    expected_files: Iterable[Path],
-):
-    """
-    arrange: given table rows, index content, mocked discourse and a temporary docs path
-    act: when run is called
-    assert: table rows are successfully migrated
-    """
-    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
-    mocked_discourse.retrieve_topic.return_value = "document-content"
-
-    migration.run(
-        table_rows=table_rows,
-        index_content=index_content,
-        discourse=mocked_discourse,
-        docs_path=tmp_path,
-    )
-
-    assert (tmp_path / "index.md").read_text() == index_content
-    for path in expected_files:
-        assert (tmp_path / path).is_file()
