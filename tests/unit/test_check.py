@@ -417,3 +417,165 @@ def test_conflicts(
             ),
             caplog.text,
         )
+
+
+def _test_external_refs_parameters():
+    """Generate parameters for the test_external_refs test.
+
+    Returns:
+        The tests.
+    """
+    return [
+        pytest.param((), (), id="empty"),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link="https://canonical.com")
+                ),
+            ),
+            (),
+            id="single valid link",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link=(path_1 := "https://invalid.link.com"))
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=path_1,
+                    description_contents=("unable", "connect", "ConnectionError"),
+                ),
+            ),
+            id="single invalid link connection error",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(
+                        link=(path_1 := "https://canonica.com/invalid-page")
+                    )
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=path_1,
+                    description_contents=("broken", "link", "404"),
+                ),
+            ),
+            id="single invalid link 404",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(
+                        link=(path_1 := "https://canonica.com/invalid-page-1")
+                    )
+                ),
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link="https://canonical.com")
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=path_1,
+                    description_contents=("broken", "link", "404"),
+                ),
+            ),
+            id="multiple first invalid",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link="https://canonical.com")
+                ),
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(
+                        link=(path_2 := "https://canonica.com/invalid-page-2")
+                    )
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=path_2,
+                    description_contents=("broken", "link", "404"),
+                ),
+            ),
+            id="multiple second invalid",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link=(path_1 := "https://invalid.url.com"))
+                ),
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(
+                        link=(path_2 := "https://canonica.com/invalid-page-2")
+                    )
+                ),
+            ),
+            (
+                ExpectedProblem(
+                    path=path_1,
+                    description_contents=("unable", "connect", "ConnectionError"),
+                ),
+                ExpectedProblem(
+                    path=path_2,
+                    description_contents=("broken", "link", "404"),
+                ),
+            ),
+            id="multiple invalid",
+        ),
+        pytest.param(
+            (
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link="https://canonical.com")
+                ),
+                factories.TableRowFactory(
+                    navlink=factories.NavlinkFactory(link="https://canonical.com/blog")
+                ),
+            ),
+            (),
+            id="multiple valid links",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "table_rows, expected_problems",
+    _test_external_refs_parameters(),
+)
+def test_external_refs(
+    table_rows: tuple[types_.TableRow, ...],
+    expected_problems: tuple[ExpectedProblem],
+    caplog: pytest.LogCaptureFixture,
+    mocked_clients,
+):
+    """
+    arrange: given table_rows
+    act: when external_refs is called with the table rows
+    assert: then the expected problems are yielded.
+    """
+    caplog.set_level(logging.INFO)
+
+    returned_problems = tuple(
+        check.external_refs(table_rows=table_rows, discourse=mocked_clients.discourse)
+    )
+
+    assert len(returned_problems) == len(expected_problems)
+    for returned_problem, expected_problem in zip(returned_problems, expected_problems):
+        assert returned_problem.path == expected_problem.path
+        assert_substrings_in_string(
+            expected_problem.description_contents, returned_problem.description
+        )
+        assert_substrings_in_string(
+            (
+                "problem",
+                "table",
+                "row",
+                returned_problem.path,
+                returned_problem.description,
+            ),
+            caplog.text,
+        )

@@ -6,13 +6,17 @@
 import logging
 from collections.abc import Iterable, Iterator
 from itertools import chain, tee
-from typing import NamedTuple, TypeGuard
+from typing import NamedTuple, TypeGuard, cast
+
+from requests import ConnectionError, head
 
 from src import constants, content
 from src.constants import DOCUMENTATION_TAG
+from src.discourse import Discourse
 from src.repository import Client
 from src.types_ import (
     AnyAction,
+    TableRow,
     UpdateAction,
     UpdateExternalRefAction,
     UpdateGroupAction,
@@ -219,3 +223,73 @@ def conflicts(
         problem.description,
     )
     yield problem
+
+
+def _external_ref_table_row_problem(table_row: TableRow) -> Problem | None:
+    """Get any problem with a table row with an external reference.
+
+    Args:
+        table_row: The table row to check.
+
+    Returns:
+        None if there is no problem or the problem if there is an issue with the table row.
+    """
+    # Since external references are guaranteed to have a link
+    url = cast(str, table_row.navlink.link)
+
+    try:
+        response = head(url)
+
+        if response.status_code // 100 == 2:
+            return None
+
+        problem = Problem(
+            path=url,
+            description=(
+                "an item on the navigation table points to an external reference where a HEAD request "
+                "does not return a 2XX response - probably a broken link, response code: "
+                f"{response.status_code}"
+            ),
+        )
+    except ConnectionError as exc:
+        problem = Problem(
+            path=url,
+            description=(
+                "an item on the navigation table points to an external reference where a HEAD request "
+                f"was unable to connect, exception: \n{exc}"
+            ),
+        )
+
+    logging.error(
+        (
+            "there is a problem with a row on the navigation table\n"
+            "path: %s\n"
+            "problem: %s\n"
+            "table row: %s"
+        ),
+        problem.path,
+        problem.description,
+        table_row,
+    )
+    return problem
+
+
+def external_refs(table_rows: Iterable[TableRow], discourse: Discourse) -> Iterator[Problem]:
+    """Check whether external references are valid.
+
+    This check sends a HEAD requests and checks for a 2XX response after any redirects.
+
+    Args:
+        table_rows: The table rows to check.
+
+    Yields:
+        A problem for each table row with an invalid external reference.
+    """
+    external_ref_table_rows = (
+        table_row for table_row in table_rows if table_row.is_external(discourse.host)
+    )
+
+    for problem in filter(
+        None, (_external_ref_table_row_problem(table_row) for table_row in external_ref_table_rows)
+    ):
+        yield problem
