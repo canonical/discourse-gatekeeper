@@ -441,7 +441,7 @@ def _test_external_refs_parameters():
             (
                 ExpectedProblem(
                     path=path_1,
-                    description_contents=("unable", "connect", "ConnectionError"),
+                    description_contents=("unable", "connect", "exception"),
                 ),
             ),
             id="single invalid link connection error",
@@ -502,7 +502,7 @@ def _test_external_refs_parameters():
             (
                 ExpectedProblem(
                     path=path_1,
-                    description_contents=("unable", "connect", "ConnectionError"),
+                    description_contents=("unable", "connect", "exception"),
                 ),
                 ExpectedProblem(
                     path=path_2,
