@@ -285,8 +285,7 @@ def external_refs(index_contents: Iterable[IndexContentsListItem]) -> Iterator[P
         list_item for list_item in index_contents if list_item.is_external
     )
 
-    for problem in filter(
+    yield from filter(
         None,
         (_external_ref_list_item_problem(list_item) for list_item in external_ref_index_contents),
-    ):
-        yield problem
+    )
