@@ -6,13 +6,12 @@
 import logging
 from collections.abc import Iterable, Iterator
 from itertools import chain, tee
-from typing import NamedTuple, TypeGuard, cast
+from typing import NamedTuple, TypeGuard
 
-from requests import ConnectionError, head
+import requests
 
 from src import constants, content
 from src.constants import DOCUMENTATION_TAG
-from src.discourse import Discourse
 from src.repository import Client
 from src.types_ import (
     AnyAction,
@@ -229,13 +228,13 @@ def _external_ref_list_item_problem(list_item: IndexContentsListItem) -> Problem
     """Get any problem with a list item with an external reference.
 
     Args:
-        list_items: The contents list item to check.
+        list_item: The contents list item to check.
 
     Returns:
         None if there is no problem or the problem if there is an issue with the list item.
     """
     try:
-        response = head(list_item.reference_value)
+        response = requests.head(list_item.reference_value, timeout=60)
 
         if response.status_code // 100 == 2:
             return None
@@ -243,17 +242,17 @@ def _external_ref_list_item_problem(list_item: IndexContentsListItem) -> Problem
         problem = Problem(
             path=list_item.reference_value,
             description=(
-                "an item on the contents index points to an external reference where a HEAD request "
-                "does not return a 2XX response - probably a broken link, response code: "
+                "an item on the contents index points to an external reference where a HEAD "
+                "request does not return a 2XX response - probably a broken link, response code: "
                 f"{response.status_code}"
             ),
         )
-    except ConnectionError as exc:
+    except requests.ConnectionError as exc:
         problem = Problem(
             path=list_item.reference_value,
             description=(
-                "an item on the contents index points to an external reference where a HEAD request "
-                f"was unable to connect, exception: \n{exc}"
+                "an item on the contents index points to an external reference where a HEAD "
+                f"request was unable to connect, exception: \n{exc}"
             ),
         )
 

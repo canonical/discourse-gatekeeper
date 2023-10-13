@@ -85,16 +85,16 @@ Testing index page content.
 
 | Level | Path | Navlink |
 | -- | -- | -- |
-| 1 | https-canonical-com-1 | [Canonical 1](https://canonical.com/1) |
+| 1 | https-canonical-com-1 | [Canonical 1](https://canonical.com/blog) |
 | 1 | group-1 | [Group 1]() |
 | 1 | group-2 | [Group 2]() |
 | 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |
 | 2 | group-2-content-2 | [{content_page_2.content}]({content_page_2_url}) |
-| 2 | https-canonical-com-2 | [Canonical 2](https://canonical.com/2) |
+| 2 | https-canonical-com-2 | [Canonical 2](https://canonical.com/press-centre) |
 | 1 | group-3 | [Group 3]() |
 | 2 | group-3-group-4 | [Group 4]() |
 | 3 | group-3-group-4-content-3 | [{content_page_3.content}]({content_page_3_url}) |
-| 3 | https-canonical-com-3 | [Canonical 3](https://canonical.com/3) |
+| 3 | https-canonical-com-3 | [Canonical 3](https://canonical.com/projects) |
 | 2 | group-3-content-4 | [{content_page_4.content}]({content_page_4_url}) |
 | 1 | group-5 | [Group 5]() |"""
     index_url = discourse_api.create_topic(
@@ -140,16 +140,16 @@ Testing index page content.
 
 # Contents
 
-1. [Canonical 1](https://canonical.com/1)
+1. [Canonical 1](https://canonical.com/blog)
 1. [Group 1](group-1)
 1. [Group 2](group-2)
   1. [{content_page_1.content}](group-2/content-1.md)
   1. [{content_page_2.content}](group-2/content-2.md)
-  1. [Canonical 2](https://canonical.com/2)
+  1. [Canonical 2](https://canonical.com/press-centre)
 1. [Group 3](group-3)
   1. [Group 4](group-3/group-4)
     1. [{content_page_3.content}](group-3/group-4/content-3.md)
-    1. [Canonical 3](https://canonical.com/3)
+    1. [Canonical 3](https://canonical.com/projects)
   1. [{content_page_4.content}](group-3/content-4.md)
 1. [Group 5](group-5)"""
     )

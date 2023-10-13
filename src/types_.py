@@ -556,6 +556,7 @@ class IndexContentsListItem(typing.NamedTuple):
         rank: The number of preceding elements in the list at any hierarchy
         hidden: Whether the item should be displayed on the navigation table
         table_path: The path for the item on the table.
+        is_external: Whether the item is an external reference.
     """
 
     hierarchy: int

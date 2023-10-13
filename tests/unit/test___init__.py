@@ -403,7 +403,7 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (docs_dir := repo.base_path / "docs").mkdir()
         (docs_dir / "index.md").write_text(
-            f"""index content
+            """index content
 # contents
 - [Page 1](https://invalid.link.com')
 """,
