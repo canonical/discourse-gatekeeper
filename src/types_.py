@@ -569,9 +569,6 @@ class IndexContentsListItem(typing.NamedTuple):
     def is_external(self) -> bool:
         """Whether the row is an external reference.
 
-        Args:
-            server_hostname: The hostname of the discourse server.
-
         Returns:
             Whether the item in the table is an external item.
         """

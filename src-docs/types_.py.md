@@ -171,14 +171,8 @@ Whether the row is an external reference.
 
 
 
-**Args:**
- 
- - <b>`server_hostname`</b>:  The hostname of the discourse server. 
-
-
-
 **Returns:**
- Whether the item in the table is an external item. 
+  Whether the item in the table is an external item. 
 
 ---
 
