@@ -428,18 +428,14 @@ def _test_external_refs_parameters():
     return [
         pytest.param((), (), id="empty"),
         pytest.param(
-            (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link="https://canonical.com")
-                ),
-            ),
+            (factories.IndexContentsListItemFactory(reference_value="https://canonical.com"),),
             (),
             id="single valid link",
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link=(path_1 := "https://invalid.link.com"))
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_1 := "https://invalid.link.com")
                 ),
             ),
             (
@@ -452,10 +448,8 @@ def _test_external_refs_parameters():
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(
-                        link=(path_1 := "https://canonica.com/invalid-page")
-                    )
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_1 := "https://canonica.com/invalid-page")
                 ),
             ),
             (
@@ -468,14 +462,10 @@ def _test_external_refs_parameters():
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(
-                        link=(path_1 := "https://canonica.com/invalid-page-1")
-                    )
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_1 := "https://canonica.com/invalid-page-1")
                 ),
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link="https://canonical.com")
-                ),
+                factories.IndexContentsListItemFactory(reference_value="https://canonical.com"),
             ),
             (
                 ExpectedProblem(
@@ -487,13 +477,9 @@ def _test_external_refs_parameters():
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link="https://canonical.com")
-                ),
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(
-                        link=(path_2 := "https://canonica.com/invalid-page-2")
-                    )
+                factories.IndexContentsListItemFactory(reference_value="https://canonical.com"),
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_2 := "https://canonica.com/invalid-page-2")
                 ),
             ),
             (
@@ -506,13 +492,11 @@ def _test_external_refs_parameters():
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link=(path_1 := "https://invalid.url.com"))
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_1 := "https://invalid.url.com")
                 ),
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(
-                        link=(path_2 := "https://canonica.com/invalid-page-2")
-                    )
+                factories.IndexContentsListItemFactory(
+                    reference_value=(path_2 := "https://canonica.com/invalid-page-2")
                 ),
             ),
             (
@@ -529,11 +513,9 @@ def _test_external_refs_parameters():
         ),
         pytest.param(
             (
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link="https://canonical.com")
-                ),
-                factories.TableRowFactory(
-                    navlink=factories.NavlinkFactory(link="https://canonical.com/blog")
+                factories.IndexContentsListItemFactory(reference_value="https://canonical.com"),
+                factories.IndexContentsListItemFactory(
+                    reference_value="https://canonical.com/blog"
                 ),
             ),
             (),
@@ -543,25 +525,22 @@ def _test_external_refs_parameters():
 
 
 @pytest.mark.parametrize(
-    "table_rows, expected_problems",
+    "index_contents, expected_problems",
     _test_external_refs_parameters(),
 )
 def test_external_refs(
-    table_rows: tuple[types_.TableRow, ...],
+    index_contents: tuple[types_.IndexContentsListItem, ...],
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
-    mocked_clients,
 ):
     """
-    arrange: given table_rows
-    act: when external_refs is called with the table rows
+    arrange: given index_contents
+    act: when external_refs is called with the list items
     assert: then the expected problems are yielded.
     """
     caplog.set_level(logging.INFO)
 
-    returned_problems = tuple(
-        check.external_refs(table_rows=table_rows, discourse=mocked_clients.discourse)
-    )
+    returned_problems = tuple(check.external_refs(index_contents=index_contents))
 
     assert len(returned_problems) == len(expected_problems)
     for returned_problem, expected_problem in zip(returned_problems, expected_problems):
@@ -572,7 +551,8 @@ def test_external_refs(
         assert_substrings_in_string(
             (
                 "problem",
-                "table",
+                "contents",
+                "index",
                 "row",
                 returned_problem.path,
                 returned_problem.description,

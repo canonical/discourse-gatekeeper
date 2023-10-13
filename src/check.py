@@ -16,7 +16,7 @@ from src.discourse import Discourse
 from src.repository import Client
 from src.types_ import (
     AnyAction,
-    TableRow,
+    IndexContentsListItem,
     UpdateAction,
     UpdateExternalRefAction,
     UpdateGroupAction,
@@ -225,71 +225,69 @@ def conflicts(
     yield problem
 
 
-def _external_ref_table_row_problem(table_row: TableRow) -> Problem | None:
-    """Get any problem with a table row with an external reference.
+def _external_ref_list_item_problem(list_item: IndexContentsListItem) -> Problem | None:
+    """Get any problem with a list item with an external reference.
 
     Args:
-        table_row: The table row to check.
+        list_items: The contents list item to check.
 
     Returns:
-        None if there is no problem or the problem if there is an issue with the table row.
+        None if there is no problem or the problem if there is an issue with the list item.
     """
-    # Since external references are guaranteed to have a link
-    url = cast(str, table_row.navlink.link)
-
     try:
-        response = head(url)
+        response = head(list_item.reference_value)
 
         if response.status_code // 100 == 2:
             return None
 
         problem = Problem(
-            path=url,
+            path=list_item.reference_value,
             description=(
-                "an item on the navigation table points to an external reference where a HEAD request "
+                "an item on the contents index points to an external reference where a HEAD request "
                 "does not return a 2XX response - probably a broken link, response code: "
                 f"{response.status_code}"
             ),
         )
     except ConnectionError as exc:
         problem = Problem(
-            path=url,
+            path=list_item.reference_value,
             description=(
-                "an item on the navigation table points to an external reference where a HEAD request "
+                "an item on the contents index points to an external reference where a HEAD request "
                 f"was unable to connect, exception: \n{exc}"
             ),
         )
 
     logging.error(
         (
-            "there is a problem with a row on the navigation table\n"
+            "there is a problem with a row on the contents index\n"
             "path: %s\n"
             "problem: %s\n"
             "table row: %s"
         ),
         problem.path,
         problem.description,
-        table_row,
+        list_item,
     )
     return problem
 
 
-def external_refs(table_rows: Iterable[TableRow], discourse: Discourse) -> Iterator[Problem]:
+def external_refs(index_contents: Iterable[IndexContentsListItem]) -> Iterator[Problem]:
     """Check whether external references are valid.
 
     This check sends a HEAD requests and checks for a 2XX response after any redirects.
 
     Args:
-        table_rows: The table rows to check.
+        index_contents: The contents list items to check.
 
     Yields:
-        A problem for each table row with an invalid external reference.
+        A problem for each list item with an invalid external reference.
     """
-    external_ref_table_rows = (
-        table_row for table_row in table_rows if table_row.is_external(discourse.host)
+    external_ref_index_contents = (
+        list_item for list_item in index_contents if list_item.is_external
     )
 
     for problem in filter(
-        None, (_external_ref_table_row_problem(table_row) for table_row in external_ref_table_rows)
+        None,
+        (_external_ref_list_item_problem(list_item) for list_item in external_ref_index_contents),
     ):
         yield problem

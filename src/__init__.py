@@ -70,7 +70,15 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
+
     index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)
+    index_contents, check_index_contents = tee(index_contents, 2)
+    problems = tuple(check.external_refs(index_contents=check_index_contents))
+    if problems:
+        raise InputError(
+            "One or more of the contents index entries are not valid, see the log for details"
+        )
+
     sorted_path_infos = sort_module.using_contents_index(
         path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
     )

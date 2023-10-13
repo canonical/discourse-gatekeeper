@@ -71,14 +71,13 @@ The second type of conflict is a logical conflict which arises out of that there
 
 ---
 
-<a href="../src/check.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `external_refs`
 
 ```python
 external_refs(
-    table_rows: Iterable[TableRow],
-    discourse: Discourse
+    index_contents: Iterable[IndexContentsListItem]
 ) → Iterator[Problem]
 ```
 
@@ -90,12 +89,12 @@ This check sends a HEAD requests and checks for a 2XX response after any redirec
 
 **Args:**
  
- - <b>`table_rows`</b>:  The table rows to check. 
+ - <b>`index_contents`</b>:  The contents list items to check. 
 
 
 
 **Yields:**
- A problem for each table row with an invalid external reference. 
+ A problem for each list item with an invalid external reference. 
 
 
 ---

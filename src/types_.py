@@ -565,6 +565,18 @@ class IndexContentsListItem(typing.NamedTuple):
     hidden: bool
 
     @property
+    def is_external(self) -> bool:
+        """Whether the row is an external reference.
+
+        Args:
+            server_hostname: The hostname of the discourse server.
+
+        Returns:
+            Whether the item in the table is an external item.
+        """
+        return self.reference_value.lower().startswith("http")
+
+    @property
     def table_path(self) -> TablePath:
         """The table path for the item.
 
@@ -576,7 +588,7 @@ class IndexContentsListItem(typing.NamedTuple):
         Returns:
             The table path for the item.
         """
-        if self.reference_value.lower().startswith("http"):
+        if self.is_external:
             transformed_reference_value = (
                 self.reference_value.replace("//", "/")
                 .replace(".", "/")

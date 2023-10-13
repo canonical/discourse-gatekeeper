@@ -165,6 +165,23 @@ Attrs:  hierarchy: The number of parent items to the root of the list  reference
 
 ---
 
+#### <kbd>property</kbd> is_external
+
+Whether the row is an external reference. 
+
+
+
+**Args:**
+ 
+ - <b>`server_hostname`</b>:  The hostname of the discourse server. 
+
+
+
+**Returns:**
+ Whether the item in the table is an external item. 
+
+---
+
 #### <kbd>property</kbd> table_path
 
 The table path for the item. 
