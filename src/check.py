@@ -261,7 +261,7 @@ def _external_ref_list_item_problem(list_item: IndexContentsListItem) -> Problem
             "there is a problem with a row on the contents index\n"
             "path: %s\n"
             "problem: %s\n"
-            "table row: %s"
+            "list item: %s"
         ),
         problem.path,
         problem.description,
