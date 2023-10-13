@@ -707,7 +707,8 @@ def test__run_migrate(
 
     Content body."""
     index_table = f"""{constants.NAVIGATION_TABLE_START}
-    | 1 | path-1 | [Tutorials](link-1) |"""
+| 1 | path-1 | [Tutorials](link-1) |
+| 1 | https-canonical-com | [Canonical](https://canonical.com/) |"""
     index_page = f"{index_content}{index_table}"
 
     mocked_clients.discourse.retrieve_topic.side_effect = [
@@ -732,7 +733,12 @@ def test__run_migrate(
     assert (
         path_file := upstream_repository_path / DOCUMENTATION_FOLDER_NAME / "path-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == (
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [Tutorials](path-1.md)\n"
+        "1. [Canonical](https://canonical.com/)"
+    )
     assert path_file.read_text(encoding="utf-8") == link_content
 
 
@@ -831,7 +837,12 @@ def test__run_migrate_with_pull_request_no_modification(
 
     # Set up remote repository with content
     (docs_folder := upstream_repository_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "index.md").write_text(
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [empty-navlink](path-1)\n"
+        "  1. [file-navlink](path-1/file-1.md)"
+    )
     (docs_folder / "path-1").mkdir()
     (docs_folder / "path-1" / "file-1.md").write_text(navlink_page)
 
@@ -941,7 +952,12 @@ def test_run_no_docs_dir(
         / "my-path-1"
         / "my-file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == (
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [empty-navlink](my-path-1)\n"
+        "  1. [file-navlink](my-path-1/my-file-1.md)"
+    )
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
@@ -997,7 +1013,12 @@ def test_run_no_docs_dir_no_tag(
         / "t-path-1"
         / "t-file-1.md"
     ).is_file()
-    assert index_file.read_text(encoding="utf-8") == index_content
+    assert index_file.read_text(encoding="utf-8") == (
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [empty-navlink](t-path-1)\n"
+        "  1. [file-navlink](t-path-1/t-file-1.md)"
+    )
     assert path_file.read_text(encoding="utf-8") == navlink_page
 
 
@@ -1026,7 +1047,12 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "index.md").write_text(
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [empty-navlink](their-path-1)\n"
+        "  1. [file-navlink](their-path-1/their-file-1.md)"
+    )
     (docs_folder / "their-path-1").mkdir()
     (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
 
@@ -1084,7 +1110,12 @@ def test_run_migrate_same_content_local_and_server_open_pr(
     mocked_clients.discourse.retrieve_topic.side_effect = [index_page, navlink_page]
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
-    (docs_folder / "index.md").write_text(index_content)
+    (docs_folder / "index.md").write_text(
+        f"{index_content}\n\n"
+        "# Contents\n\n"
+        "1. [empty-navlink](their-path-1)\n"
+        "  1. [file-navlink](their-path-1/their-file-1.md)"
+    )
     (docs_folder / "their-path-1").mkdir()
     (docs_folder / "their-path-1" / "their-file-1.md").write_text(navlink_page)
 

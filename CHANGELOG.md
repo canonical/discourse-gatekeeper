@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Support for migrating the navigation table to the contents index
+
 ## [v0.7.0] - 2023-10-09
 
 ### Added
