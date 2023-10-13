@@ -37,7 +37,7 @@ GETTING_STARTED = (
 def _get_reconcile_actions(
     index: Index, table_rows: Iterable[TableRow], clients: Clients
 ) -> Iterator[AnyAction]:
-    """Upload the documentation to charmhub.
+    """Get the actions to be executed for reconciliation.
 
     Args:
         index: Information about the index of the documentation.
