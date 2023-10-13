@@ -5,6 +5,8 @@
 ### Added
 
 - Support for migrating the navigation table to the contents index
+- Checks that external references on the contents index return a 2XX response to
+  HEAD requests
 
 ## [v0.7.0] - 2023-10-09
 
