@@ -160,8 +160,19 @@ Attrs:  old: The previous content.  new: The new content.
 ## <kbd>class</kbd> `IndexContentsListItem`
 Represents an item in the contents table. 
 
-Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table. 
+Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table.  is_external: Whether the item is an external reference. 
 
+
+---
+
+#### <kbd>property</kbd> is_external
+
+Whether the row is an external reference. 
+
+
+
+**Returns:**
+  Whether the item in the table is an external item. 
 
 ---
 

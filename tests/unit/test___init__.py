@@ -391,6 +391,40 @@ def test__run_reconcile_hidden_item(mocked_clients):
     "src.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
+def test__run_reconcile_invalid_external_item(mocked_clients):
+    """
+    arrange: given metadata with name but not docs and docs folder with an external item on the
+        index that points to a broken link
+    act: when _run_reconcile is called
+    assert: then InputError is raised.
+    """
+    mocked_clients.discourse.create_topic.side_effect = ["url 1"]
+
+    with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
+        (docs_dir := repo.base_path / "docs").mkdir()
+        (docs_dir / "index.md").write_text(
+            """index content
+# contents
+- [Page 1](https://invalid.link.com')
+""",
+            encoding="utf-8",
+        )
+        repo.update_branch("new commit")
+
+        user_inputs = factories.UserInputsFactory(
+            dry_run=False, delete_pages=True, commit_sha=repo.current_commit
+        )
+
+        with pytest.raises(exceptions.InputError) as exc_info:
+            run_reconcile(clients=mocked_clients, user_inputs=user_inputs)
+
+        assert_substrings_in_string(("contents", "index", "not", "valid"), str(exc_info.value))
+
+
+@mock.patch(
+    "src.repository.Client.metadata",
+    types_.Metadata(name="name 1", docs=None),
+)
 def test__run_reconcile_external_item(mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with an external item on the
