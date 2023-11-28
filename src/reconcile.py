@@ -678,8 +678,9 @@ def index_page(
         The action to take for the index page.
     """
     table_contents = "\n".join(table_row.to_markdown(discourse.host) for table_row in table_rows)
+    # Strip any whitespace around file contents to avoid building up more and more whitespace
     local_content = (
-        f"{index_module.get_content_for_server(index.local)}{NAVIGATION_TABLE_START}\n"
+        f"{index_module.get_content_for_server(index.local).strip()}\n{NAVIGATION_TABLE_START}\n"
         f"{table_contents}\n".strip()
     )
 
