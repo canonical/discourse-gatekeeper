@@ -38,28 +38,32 @@ async def discourse(model: Model) -> Application:
     postgres_charm_name = "postgresql-k8s"
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
-    await asyncio.gather(model.deploy(postgres_charm_name), model.deploy(redis_charm_name))
-    await model.wait_for_idle(apps=[postgres_charm_name, redis_charm_name], raise_on_error=False)
+    await asyncio.gather(
+        model.deploy(
+            postgres_charm_name,
+            channel="14/edge",
+            series="jammy",
+            trust=True,
+            config={
+                "profile": "testing",
+                "plugin_hstore_enable": "true",
+                "plugin_pg_trgm_enable": "true",
+            },
+        ),
+        model.deploy(redis_charm_name, channel="latest/edge", series="jammy"),
+    )
+    await model.wait_for_idle(
+        apps=[postgres_charm_name, redis_charm_name], status="active", raise_on_error=False
+    )
 
-    discourse_app: Application = await model.deploy(discourse_charm_name)
-    await model.integrate(discourse_charm_name, f"{postgres_charm_name}:db")
+    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
+    await model.wait_for_idle(apps=[discourse_charm_name], status="waiting", raise_on_error=False)
+
+    await model.integrate(discourse_charm_name, f"{postgres_charm_name}:database")
     await model.integrate(discourse_charm_name, redis_charm_name)
-
-    # Need to wait for the waiting status to be resolved
-
-    async def get_discourse_status():
-        """Get the status of discourse.
-
-        Returns:
-            The status of discourse.
-        """
-        return (await model.get_status())["applications"]["discourse-k8s"].status["status"]
-
-    for _ in range(200):
-        if await get_discourse_status() != "waiting":
-            break
-        await asyncio.sleep(10)
-    assert await get_discourse_status() != "waiting", "discourse never stopped waiting"
+    await model.wait_for_idle(
+        apps=[discourse_charm_name], status="active", timeout=60 * 60, raise_on_error=False
+    )
 
     status: FullStatus = await model.get_status()
     app_status = typing.cast(ApplicationStatus, status.applications[discourse_app.name])
@@ -69,7 +73,7 @@ async def discourse(model: Model) -> Application:
     # the client cannot reach. Hence we need to override it with accessible address.
     await discourse_app.set_config({"external_hostname": f"{unit_ip}:3000"})
 
-    await model.wait_for_idle()
+    await model.wait_for_idle(raise_on_error=False)
 
     return discourse_app
 
