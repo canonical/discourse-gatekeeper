@@ -137,7 +137,6 @@ Testing index page content.
 
 Testing index page content.
 
-
 # Contents
 
 1. [Canonical 1](https://canonical.com/blog)

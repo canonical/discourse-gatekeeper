@@ -141,7 +141,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (docs_folder := repo.base_path / "docs").mkdir()
-        (docs_folder / "index.md").write_text(index_content := "index content")
+        (docs_folder / "index.md").write_text(index_content := "index content\n")
         (docs_folder / "page.md").write_text(page_content := "page content")
         repo.update_branch("new commit")
 
@@ -324,7 +324,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
     mocked_clients.discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
-            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"{index_content}\n{constants.NAVIGATION_TABLE_START}\n"
             f"| 1 | page-2 | [{page_2_title}]({page_2_url}) |\n"
             f"| 1 | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
@@ -376,7 +376,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
     mocked_clients.discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
-            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"{index_content}\n{constants.NAVIGATION_TABLE_START}\n"
             f"| | page-1 | [{page_1_title}]({page_1_url}) |"
         ),
     )
@@ -456,7 +456,7 @@ def test__run_reconcile_external_item(mocked_clients):
     mocked_clients.discourse.create_topic.assert_any_call(
         title="Name 1 Documentation Overview",
         content=(
-            f"{index_content}{constants.NAVIGATION_TABLE_START}\n"
+            f"{index_content}\n{constants.NAVIGATION_TABLE_START}\n"
             f"| 1 | https-canonical-com | [{page_1_title}]({page_1_url}) |"
         ),
     )
@@ -872,7 +872,7 @@ def test__run_migrate_with_pull_request_no_modification(
     # Set up remote repository with content
     (docs_folder := upstream_repository_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(
-        f"{index_content}\n\n"
+        f"{index_content}\n"
         "# Contents\n\n"
         "1. [empty-navlink](path-1)\n"
         "  1. [file-navlink](path-1/file-1.md)"
@@ -987,7 +987,7 @@ def test_run_no_docs_dir(
         / "my-file-1.md"
     ).is_file()
     assert index_file.read_text(encoding="utf-8") == (
-        f"{index_content}\n\n"
+        f"{index_content}\n"
         "# Contents\n\n"
         "1. [empty-navlink](my-path-1)\n"
         "  1. [file-navlink](my-path-1/my-file-1.md)"
@@ -1048,7 +1048,7 @@ def test_run_no_docs_dir_no_tag(
         / "t-file-1.md"
     ).is_file()
     assert index_file.read_text(encoding="utf-8") == (
-        f"{index_content}\n\n"
+        f"{index_content}\n"
         "# Contents\n\n"
         "1. [empty-navlink](t-path-1)\n"
         "  1. [file-navlink](t-path-1/t-file-1.md)"
@@ -1145,7 +1145,7 @@ def test_run_migrate_same_content_local_and_server_open_pr(
 
     (docs_folder := mocked_clients.repository.base_path / "docs").mkdir()
     (docs_folder / "index.md").write_text(
-        f"{index_content}\n\n"
+        f"{index_content}\n"
         "# Contents\n\n"
         "1. [empty-navlink](their-path-1)\n"
         "  1. [file-navlink](their-path-1/their-file-1.md)"

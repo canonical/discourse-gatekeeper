@@ -211,8 +211,9 @@ def _index_file_from_content(
         Index file document metadata.
     """
     contents_index = _migrate_navigation_table(rows=table_rows, discourse=discourse)
+    # Strip any whitespace around file contents to avoid building up more and more whitespace
     return types_.IndexDocumentMeta(
-        path=Path("index.md"), content=f"{content}\n\n{contents_index}"
+        path=Path("index.md"), content=f"{content.strip()}\n\n{contents_index}"
     )
 
 

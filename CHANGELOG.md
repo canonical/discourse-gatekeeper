@@ -8,6 +8,10 @@
 - Checks that external references on the contents index return a 2XX response to
   HEAD requests
 
+### Fixed
+
+- Whitespace buildup between generated and input content
+
 ## [v0.7.0] - 2023-10-09
 
 ### Added
