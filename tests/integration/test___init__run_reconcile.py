@@ -132,7 +132,7 @@ async def test_run(
     assert output_reconcile is not None
     assert output_reconcile.index_url == index_url
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{index_content}{constants.NAVIGATION_TABLE_START}"
+    assert index_topic == f"{index_content}\n{constants.NAVIGATION_TABLE_START}"
     assert_substrings_in_string((index_url, "Update", "'success'"), caplog.text)
 
     # 3. docs with a documentation file added in dry run mode

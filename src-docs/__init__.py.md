@@ -16,7 +16,7 @@ Library for uploading docs to charmhub.
 
 ---
 
-<a href="../src/__init__.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_reconcile`
 
@@ -34,7 +34,7 @@ Upload the documentation to charmhub.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 
@@ -45,13 +45,13 @@ Upload the documentation to charmhub.
 
 **Raises:**
  
- - <b>`InputError`</b>:  if there are any problems with executing any of the actions. 
+ - <b>`InputError`</b>:  if there are any problems with the contents index or executing any of the  actions. 
  - <b>`TaggingNotAllowedError`</b>:  if the reconcile tries to tag a branch which is not the main base  branch 
 
 
 ---
 
-<a href="../src/__init__.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_migrate`
 
@@ -66,7 +66,7 @@ Migrate existing docs from charmhub to local repository.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 
@@ -76,7 +76,7 @@ Migrate existing docs from charmhub to local repository.
 
 ---
 
-<a href="../src/__init__.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pre_flight_checks`
 
@@ -91,7 +91,7 @@ Perform checks to make sure the repository is in a consistent state.
 **Args:**
  
  - <b>`clients`</b>:  The clients to interact with things like discourse and the repository. 
- - <b>`user_inputs`</b>:  Configurable inputs for running upload-charm-docs. 
+ - <b>`user_inputs`</b>:  Configurable inputs for running discourse-gatekeeper. 
 
 
 

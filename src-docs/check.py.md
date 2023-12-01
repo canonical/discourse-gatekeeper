@@ -11,7 +11,7 @@ Module for running checks.
 
 ---
 
-<a href="../src/check.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_path_with_diffs`
 
@@ -37,7 +37,7 @@ Generate the paths that have either local or server content changes.
 
 ---
 
-<a href="../src/check.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `conflicts`
 
@@ -67,6 +67,34 @@ The second type of conflict is a logical conflict which arises out of that there
 
 **Yields:**
  A problem for each action with a conflict 
+
+
+---
+
+<a href="../src/check.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `external_refs`
+
+```python
+external_refs(
+    index_contents: Iterable[IndexContentsListItem]
+) → Iterator[Problem]
+```
+
+Check whether external references are valid. 
+
+This check sends a HEAD requests and checks for a 2XX response after any redirects. 
+
+
+
+**Args:**
+ 
+ - <b>`index_contents`</b>:  The contents list items to check. 
+
+
+
+**Yields:**
+ A problem for each list item with an invalid external reference. 
 
 
 ---

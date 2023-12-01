@@ -160,8 +160,19 @@ Attrs:  old: The previous content.  new: The new content.
 ## <kbd>class</kbd> `IndexContentsListItem`
 Represents an item in the contents table. 
 
-Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table. 
+Attrs:  hierarchy: The number of parent items to the root of the list  reference_title: The name of the reference  reference_value: The link to the referenced item  rank: The number of preceding elements in the list at any hierarchy  hidden: Whether the item should be displayed on the navigation table  table_path: The path for the item on the table.  is_external: Whether the item is an external reference. 
 
+
+---
+
+#### <kbd>property</kbd> is_external
+
+Whether the row is an external reference. 
+
+
+
+**Returns:**
+  Whether the item in the table is an external item. 
 
 ---
 
@@ -448,7 +459,7 @@ Attrs:  content_change: The change to the documentation content.
 ---
 
 ## <kbd>class</kbd> `UserInputs`
-Configurable user input values used to run upload-charm-docs. 
+Configurable user input values used to run discourse-gatekeeper. 
 
 Attrs:  discourse: The configuration for interacting with discourse.  dry_run: If enabled, only log the action that would be taken. Has no effect in migration  mode.  delete_pages: Whether to delete pages that are no longer needed. Has no effect in  migration mode.  github_access_token: A Personal Access Token(PAT) or access token with repository access.  Required in migration mode.  commit_sha: The SHA of the commit the action is running on.  base_branch: The main branch against which the syncs act on 
 
@@ -459,7 +470,7 @@ Attrs:  discourse: The configuration for interacting with discourse.  dry_run: I
 ---
 
 ## <kbd>class</kbd> `UserInputsDiscourse`
-Configurable user input values used to run upload-charm-docs. 
+Configurable user input values used to run discourse-gatekeeper. 
 
 Attrs:  hostname: The base path to the discourse server.  category_id: The category identifier to use on discourse for all topics.  api_username: The discourse API username to use for interactions with the server.  api_key: The discourse API key to use for interactions with the server. 
 

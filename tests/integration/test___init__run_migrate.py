@@ -79,22 +79,24 @@ async def test_run_migrate(
     ).removeprefix(discourse_prefix)
     index_page_content = f"""Testing index page.
 
-    Testing index page content.
+Testing index page content.
 
-    # Navigation
+# Navigation
 
-    | Level | Path | Navlink |
-    | -- | -- | -- |
-    | 1 | https-canonical-com | [Canonical](https://canonical.com) |
-    | 1 | group-1 | [Group 1]() |
-    | 1 | group-2 | [Group 2]() |
-    | 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |
-    | 2 | group-2-content-2 | [{content_page_2.content}]({content_page_2_url}) |
-    | 1 | group-3 | [Group 3]() |
-    | 2 | group-3-group-4 | [Group 4]() |
-    | 3 | group-3-group-4-content-3 | [{content_page_3.content}]({content_page_3_url}) |
-    | 2 | group-3-content-4 | [{content_page_4.content}]({content_page_4_url}) |
-    | 1 | group-5 | [Group 5]() |"""
+| Level | Path | Navlink |
+| -- | -- | -- |
+| 1 | https-canonical-com-1 | [Canonical 1](https://canonical.com/blog) |
+| 1 | group-1 | [Group 1]() |
+| 1 | group-2 | [Group 2]() |
+| 2 | group-2-content-1 | [{content_page_1.content}]({content_page_1_url}) |
+| 2 | group-2-content-2 | [{content_page_2.content}]({content_page_2_url}) |
+| 2 | https-canonical-com-2 | [Canonical 2](https://canonical.com/press-centre) |
+| 1 | group-3 | [Group 3]() |
+| 2 | group-3-group-4 | [Group 4]() |
+| 3 | group-3-group-4-content-3 | [{content_page_3.content}]({content_page_3_url}) |
+| 3 | https-canonical-com-3 | [Canonical 3](https://canonical.com/projects) |
+| 2 | group-3-content-4 | [{content_page_4.content}]({content_page_4_url}) |
+| 1 | group-5 | [Group 5]() |"""
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
         content=index_page_content,
@@ -128,6 +130,28 @@ async def test_run_migrate(
     assert output_migrate is not None
     assert output_migrate.pull_request_url == mock_pull_request.html_url
     assert output_migrate.action == PullRequestAction.OPENED
+    assert (upstream_doc_dir / "index.md").is_file()
+    assert (
+        (upstream_doc_dir / "index.md").read_text(encoding="utf-8")
+        == f"""Testing index page.
+
+Testing index page content.
+
+# Contents
+
+1. [Canonical 1](https://canonical.com/blog)
+1. [Group 1](group-1)
+1. [Group 2](group-2)
+  1. [{content_page_1.content}](group-2/content-1.md)
+  1. [{content_page_2.content}](group-2/content-2.md)
+  1. [Canonical 2](https://canonical.com/press-centre)
+1. [Group 3](group-3)
+  1. [Group 4](group-3/group-4)
+    1. [{content_page_3.content}](group-3/group-4/content-3.md)
+    1. [Canonical 3](https://canonical.com/projects)
+  1. [{content_page_4.content}](group-3/content-4.md)
+1. [Group 5](group-5)"""
+    )
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
     assert (group_2_path := upstream_doc_dir / "group-2").is_dir()
@@ -158,7 +182,7 @@ async def test_run_migrate(
     assert "test_url" in output_migrate.pull_request_url
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
-        ["upload-charm-documents pull request already open at test_url"], caplog.text
+        ["discourse-gatekeeper pull request already open at test_url"], caplog.text
     )
 
     # 3. Add modification to an existing open PR
@@ -179,7 +203,7 @@ async def test_run_migrate(
     assert output_migrate.action == PullRequestAction.UPDATED
     assert_substrings_in_string(
         [
-            "upload-charm-documents pull request already open at test_url",
+            "discourse-gatekeeper pull request already open at test_url",
             "Updating PR with new commit",
         ],
         caplog.text,

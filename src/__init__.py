@@ -3,6 +3,7 @@
 
 """Library for uploading docs to charmhub."""
 import logging
+from collections.abc import Iterable, Iterator
 from itertools import tee
 
 from src import action, check, docs_directory
@@ -17,17 +18,58 @@ from src.exceptions import InputError, TaggingNotAllowedError
 from src.repository import DEFAULT_BRANCH_NAME
 from src.types_ import (
     ActionResult,
+    AnyAction,
+    Index,
     MigrateOutputs,
     PullRequestAction,
     ReconcileOutputs,
+    TableRow,
     Url,
     UserInputs,
 )
 
 GETTING_STARTED = (
-    "To get started with upload-charm-docs, "
-    "please refer to https://github.com/canonical/upload-charm-docs#getting-started"
+    "To get started with discourse-gatekeeper, "
+    "please refer to https://github.com/canonical/discourse-gatekeeper#getting-started"
 )
+
+
+def _get_reconcile_actions(
+    index: Index, table_rows: Iterable[TableRow], clients: Clients
+) -> Iterator[AnyAction]:
+    """Get the actions to be executed for reconciliation.
+
+    Args:
+        index: Information about the index of the documentation.
+        table_rows: The rows of the navigation table.
+        clients: The clients to interact with things like discourse and the repository.
+
+    Returns:
+        The reconcile actions to execute.
+
+    Raises:
+        InputError: if there are any problems with the contents index.
+    """
+    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    path_infos = docs_directory.read(docs_path=docs_path)
+
+    index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)
+    index_contents, check_index_contents = tee(index_contents, 2)
+    problems = tuple(check.external_refs(index_contents=check_index_contents))
+    if problems:
+        raise InputError(
+            "One or more of the contents index entries are not valid, see the log for details"
+        )
+
+    sorted_path_infos = sort_module.using_contents_index(
+        path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
+    )
+    return reconcile.run(
+        sorted_path_infos=sorted_path_infos,
+        table_rows=table_rows,
+        clients=clients,
+        base_path=clients.repository.base_path,
+    )
 
 
 def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs | None:
@@ -35,13 +77,14 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         ReconcileOutputs object with the result of the action. None, if there is no reconcile.
 
     Raises:
-        InputError: if there are any problems with executing any of the actions.
+        InputError: if there are any problems with the contents index or executing any of the
+            actions.
         TaggingNotAllowedError: if the reconcile tries to tag a branch which is not the main base
             branch
     """
@@ -65,22 +108,12 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         base_path=clients.repository.base_path,
         server_client=clients.discourse,
     )
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
-    path_infos = docs_directory.read(docs_path=docs_path)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
-    index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)
-    sorted_path_infos = sort_module.using_contents_index(
-        path_infos=path_infos, index_contents=index_contents, docs_path=docs_path
-    )
-    table_rows = list(navigation_table.from_page(page=server_content, discourse=clients.discourse))
-    actions = reconcile.run(
-        sorted_path_infos=sorted_path_infos,
-        table_rows=table_rows,
-        clients=clients,
-        base_path=clients.repository.base_path,
-    )
+    table_rows = navigation_table.from_page(page=server_content, discourse=clients.discourse)
+    table_rows, action_table_rows = tee(table_rows, 2)
+    actions = _get_reconcile_actions(index=index, table_rows=action_table_rows, clients=clients)
 
     # tee creates a copy of the iterator which is needed as check.conflicts consumes the iterator
     # it is passed
@@ -164,7 +197,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         MigrateOutputs providing details on the action performed and a link to the
@@ -209,7 +242,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
             action=PullRequestAction.OPENED, pull_request_url=pull_request.html_url
         )
 
-    logging.info("upload-charm-documents pull request already open at %s", pull_request.html_url)
+    logging.info("discourse-gatekeeper pull request already open at %s", pull_request.html_url)
     clients.repository.update_pull_request(DEFAULT_BRANCH_NAME)
 
     return MigrateOutputs(action=PullRequestAction.UPDATED, pull_request_url=pull_request.html_url)
@@ -220,7 +253,7 @@ def pre_flight_checks(clients: Clients, user_inputs: UserInputs) -> bool:
 
     Args:
         clients: The clients to interact with things like discourse and the repository.
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         Boolean representing whether the checks have all been passed.
