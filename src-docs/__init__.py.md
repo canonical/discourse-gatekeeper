@@ -76,7 +76,7 @@ Migrate existing docs from charmhub to local repository.
 
 ---
 
-<a href="../src/__init__.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pre_flight_checks`
 
