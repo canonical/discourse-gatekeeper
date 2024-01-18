@@ -327,13 +327,20 @@ class Client:  # pylint: disable=too-many-public-methods
             self._git_repo.git.add(".")
             self._git_repo.git.stash()
 
+        print(f"{self.get_summary()=}")
+
         try:
+            print(f"{self.get_summary()=}")
             self._git_repo.git.fetch("--all")
+            print(f"{self.get_summary()=}")
             self._git_repo.git.checkout(branch_name, "--")
         finally:
             if is_dirty:
                 self._safe_pop_stash(branch_name)
+                print(f"{self.get_summary()=}")
                 self._git_repo.git.reset()
+                print(f"{self.get_summary()=}")
+        print(f"{self.get_summary()=}")
         return self
 
     def _safe_pop_stash(self, branch_name: str) -> None:
