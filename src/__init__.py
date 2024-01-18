@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
@@ -133,7 +133,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
             index_url=index.server.url if index.server else "",
             topics=(
                 {
-                    f"{clients.discourse.absolute_url(row.navlink.link)}": ActionResult.SKIP
+                    clients.discourse.absolute_url(row.navlink.link): ActionResult.SKIP
                     for row in table_rows
                     if row.navlink.link
                 }

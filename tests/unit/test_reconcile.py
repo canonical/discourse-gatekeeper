@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for reconcile module."""
@@ -1184,7 +1184,7 @@ def test_run(  # pylint: disable=too-many-arguments
             ),
             (),
             types_.CreateIndexAction(
-                title=local_title, content=f"{constants.NAVIGATION_TABLE_START.strip()}"
+                title=local_title, content=constants.NAVIGATION_TABLE_START.strip()
             ),
             id="empty local only empty rows",
         ),

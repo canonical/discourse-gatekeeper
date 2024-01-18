@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 # pylint: disable=too-many-lines
 """Unit tests for execution."""
@@ -82,7 +82,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
@@ -541,7 +541,7 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     assert returned_page_interactions is not None
     assert not returned_page_interactions.topics
@@ -931,7 +931,7 @@ def test_run_no_docs_empty_dir(mocked_clients):
 
     mocked_clients.discourse.create_topic.assert_called_once_with(
         title="Name 1 Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START.strip()}",
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     assert returned_page_interactions is not None
     assert returned_page_interactions.topics == {url: types_.ActionResult.SUCCESS}
