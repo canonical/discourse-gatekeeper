@@ -532,6 +532,8 @@ class Client:  # pylint: disable=too-many-public-methods
         print(f"{clients.repository.get_summary()=}")
         print(f"{clients.repository.is_dirty()=}")
         print(f"{base=}")
+        with self.with_branch(base):
+            pass
         # print(f"{self.is_dirty(base)=}")
         print(f"{self.is_dirty()=}")
         print(f"{self.get_summary()=}")
