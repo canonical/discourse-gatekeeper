@@ -517,7 +517,7 @@ class Client:  # pylint: disable=too-many-public-methods
 
         return open_pull[0]
 
-    def create_pull_request(self, base: str, clients) -> PullRequest:
+    def create_pull_request(self, base: str) -> PullRequest:
         """Create pull request for changes in given repository path.
 
         Args:
@@ -529,17 +529,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Pull request object
         """
-        print(f"{clients.repository.get_summary()=}")
-        print(f"{clients.repository.is_dirty()=}")
-        print(f"{base=}")
-        with self.with_branch(base):
-            pass
-        # print(f"{self.is_dirty(base)=}")
-        print(f"{self.is_dirty()=}")
-        print(f"{self.get_summary()=}")
-        print(f"{clients.repository.get_summary()=}")
-        print(f"{clients.repository.is_dirty()=}")
-        if not self.is_dirty(base):
+        if not self.is_dirty():
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
         with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(

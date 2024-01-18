@@ -56,7 +56,4 @@ def recreate_docs(clients: Clients, base: str) -> bool:
 
     _download_from_discourse(clients)
 
-    print(f"{clients.repository.is_dirty()=}")
-    print(f"{clients.repository.is_dirty(base)=}")
-    print(f"{clients.repository.get_summary()=}")
     return clients.repository.is_dirty()

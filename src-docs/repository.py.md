@@ -25,7 +25,7 @@ Module for handling interactions with git repository.
 
 ---
 
-<a href="../src/repository.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_repository_client`
 
@@ -152,7 +152,7 @@ repository.create_branch(branch_name).switch(branch_name)
 ### <kbd>function</kbd> `create_pull_request`
 
 ```python
-create_pull_request(base: str, clients) → PullRequest
+create_pull_request(base: str) → PullRequest
 ```
 
 Create pull request for changes in given repository path. 
@@ -176,7 +176,7 @@ Create pull request for changes in given repository path.
 
 ---
 
-<a href="../src/repository.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L616"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_file_content_from_tag`
 
@@ -290,7 +290,7 @@ Check if commit exists in a given branch.
 
 ---
 
-<a href="../src/repository.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L562"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_dirty`
 
@@ -378,7 +378,7 @@ Switch branch for the repository.
 
 ---
 
-<a href="../src/repository.py#L602"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_commit`
 
@@ -403,7 +403,7 @@ Tag a commit, if the tag already exists, it is deleted first.
 
 ---
 
-<a href="../src/repository.py#L587"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L577"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_exists`
 
@@ -463,7 +463,7 @@ Update branch with a new commit.
 
 ---
 
-<a href="../src/repository.py#L558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_pull_request`
 
