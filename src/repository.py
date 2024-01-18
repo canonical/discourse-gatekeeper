@@ -531,12 +531,12 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         print(f"{clients.repository.get_summary()=}")
         print(f"{clients.repository.is_dirty()=}")
-        print(f"{id(clients.repository)=}")
-        print(f"{id(self)=}")
         print(f"{base=}")
         print(f"{self.is_dirty(base)=}")
         print(f"{self.is_dirty()=}")
         print(f"{self.get_summary()=}")
+        print(f"{clients.repository.get_summary()=}")
+        print(f"{clients.repository.is_dirty()=}")
         if not self.is_dirty(base):
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
