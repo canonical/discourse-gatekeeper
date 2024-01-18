@@ -58,4 +58,5 @@ def recreate_docs(clients: Clients, base: str) -> bool:
 
     print(f"{clients.repository.is_dirty()=}")
     print(f"{clients.repository.is_dirty(base)=}")
+    print(f"{clients.repository.get_summary()=}")
     return clients.repository.is_dirty()
