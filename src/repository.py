@@ -354,7 +354,7 @@ class Client:  # pylint: disable=too-many-public-methods
             RepositoryClientError: if the pop encounter a critical error.
         """
         try:
-            self._git_repo.git.stash("pop")
+            print(self._git_repo.git.stash("pop"))
         except GitCommandError as exc:
             print(exc)
             if "CONFLICT" in exc.stdout:
