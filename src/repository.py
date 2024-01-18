@@ -356,6 +356,7 @@ class Client:  # pylint: disable=too-many-public-methods
         try:
             self._git_repo.git.stash("pop")
         except GitCommandError as exc:
+            print(exc)
             if "CONFLICT" in exc.stdout:
                 logging.warning(
                     "There were some conflicts when popping stashes on branch %s. "
