@@ -25,7 +25,7 @@ Module for handling interactions with git repository.
 
 ---
 
-<a href="../src/repository.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L726"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_repository_client`
 
@@ -176,7 +176,7 @@ Create pull request for changes in given repository path.
 
 ---
 
-<a href="../src/repository.py#L619"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L620"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_file_content_from_tag`
 
@@ -290,7 +290,7 @@ Check if commit exists in a given branch.
 
 ---
 
-<a href="../src/repository.py#L565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L566"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_dirty`
 
@@ -378,7 +378,7 @@ Switch branch for the repository.
 
 ---
 
-<a href="../src/repository.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L596"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_commit`
 
@@ -403,7 +403,7 @@ Tag a commit, if the tag already exists, it is deleted first.
 
 ---
 
-<a href="../src/repository.py#L580"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_exists`
 
@@ -463,7 +463,7 @@ Update branch with a new commit.
 
 ---
 
-<a href="../src/repository.py#L551"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/repository.py#L552"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_pull_request`
 
