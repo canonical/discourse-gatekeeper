@@ -531,6 +531,8 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         print(f"{clients.repository.get_summary()=}")
         print(f"{clients.repository.is_dirty()=}")
+        print(f"{id(clients.repository)=}")
+        print(f"{id(self)=}")
         print(f"{base=}")
         print(f"{self.is_dirty(base)=}")
         print(f"{self.is_dirty()=}")
