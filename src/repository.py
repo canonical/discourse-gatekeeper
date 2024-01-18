@@ -321,6 +321,7 @@ class Client:  # pylint: disable=too-many-public-methods
             Repository object with the branch switched.
         """
         is_dirty = self.is_dirty()
+        print(f"{is_dirty=}")
 
         if is_dirty:
             self._git_repo.git.add(".")
