@@ -88,6 +88,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         TaggingNotAllowedError: if the reconcile tries to tag a branch which is not the main base
             branch
     """
+    return None
     if not clients.repository.has_docs_directory:
         logging.warning(
             "Cannot run any reconcile to Discourse as there is not any docs folder "
@@ -221,6 +222,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
+    print(changes)
     if not changes:
         logging.info(
             "No community contribution found in commit %s. Discourse is inline with %s",
