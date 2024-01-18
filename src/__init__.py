@@ -219,9 +219,9 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     pull_request = clients.repository.get_pull_request(DEFAULT_BRANCH_NAME)
 
-    # Check difference with to main
+    # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
-    # Check whether there are still changes if switching to the base branch
+    # Check whether there are still changes after switching to the base branch
     if changes:
         changes = clients.repository.is_dirty(user_inputs.base_branch)
 
