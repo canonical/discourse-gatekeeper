@@ -244,7 +244,11 @@ class Client:  # pylint: disable=too-many-public-methods
         current_branch = self.current_branch
 
         try:
-            yield self.switch(branch_name)
+            print(f"{self.get_summary()=}")
+            result = self.switch(branch_name)
+            print(f"{self.get_summary()=}")
+
+            yield result
         finally:
             self.switch(current_branch)
 
@@ -529,7 +533,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Pull request object
         """
-        if not self.is_dirty():
+        if not self.is_dirty(base):
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
         with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(

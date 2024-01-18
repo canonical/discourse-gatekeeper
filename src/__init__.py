@@ -222,7 +222,6 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
-    print(changes)
     if not changes:
         logging.info(
             "No community contribution found in commit %s. Discourse is inline with %s",
