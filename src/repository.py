@@ -325,8 +325,8 @@ class Client:  # pylint: disable=too-many-public-methods
         print(f"325 {self.get_summary()=}")
 
         if is_dirty:
-            self._git_repo.git.add(".")
-            self._git_repo.git.stash()
+            print(self._git_repo.git.add("."))
+            print(self._git_repo.git.stash())
 
         print(f"331 {self.get_summary()=}")
 
