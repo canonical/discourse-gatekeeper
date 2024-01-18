@@ -529,6 +529,8 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Pull request object
         """
+        print(f"{base=}")
+        print(f"{self.is_dirty(base)=}")
         if not self.is_dirty(base):
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
