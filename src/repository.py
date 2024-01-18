@@ -531,6 +531,7 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         print(f"{base=}")
         print(f"{self.is_dirty(base)=}")
+        print(f"{self.is_dirty()=}")
         if not self.is_dirty(base):
             raise InputError("No files seem to be migrated. Please add contents upstream first.")
 
