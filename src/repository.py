@@ -244,11 +244,7 @@ class Client:  # pylint: disable=too-many-public-methods
         current_branch = self.current_branch
 
         try:
-            print("before switch")
-            result = self.switch(branch_name)
-            print("after switch")
-
-            yield result
+            yield self.switch(branch_name)
         finally:
             self.switch(current_branch)
 
@@ -322,26 +318,17 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         is_dirty = self.is_dirty()
 
-        print(f"325 {self.get_summary()=}")
-
         if is_dirty:
-            print(self._git_repo.git.add("."))
-            print(self._git_repo.git.stash())
-
-        print(f"331 {self.get_summary()=}")
+            self._git_repo.git.add(".")
+            self._git_repo.git.stash()
 
         try:
-            print(f"334 {self.get_summary()=}")
             self._git_repo.git.fetch("--all")
-            print(f"336 {self.get_summary()=}")
             self._git_repo.git.checkout(branch_name, "--")
         finally:
             if is_dirty:
                 self._safe_pop_stash(branch_name)
-                print(f"341 {self.get_summary()=}")
                 self._git_repo.git.reset()
-                print(f"343 {self.get_summary()=}")
-        print(f"344 {self.get_summary()=}")
         return self
 
     def _safe_pop_stash(self, branch_name: str) -> None:
@@ -354,9 +341,8 @@ class Client:  # pylint: disable=too-many-public-methods
             RepositoryClientError: if the pop encounter a critical error.
         """
         try:
-            print(self._git_repo.git.stash("pop"))
+            self._git_repo.git.stash("pop")
         except GitCommandError as exc:
-            print(exc)
             if "CONFLICT" in exc.stdout:
                 logging.warning(
                     "There were some conflicts when popping stashes on branch %s. "
