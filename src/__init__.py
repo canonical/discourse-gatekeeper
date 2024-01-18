@@ -240,7 +240,7 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
     print(f"{clients.repository.get_summary()=}")
     if pull_request is None:
         logging.info("PR not existing: creating a new one...")
-        pull_request = clients.repository.create_pull_request(user_inputs.base_branch)
+        pull_request = clients.repository.create_pull_request(user_inputs.base_branch, clients)
         return MigrateOutputs(
             action=PullRequestAction.OPENED, pull_request_url=pull_request.html_url
         )

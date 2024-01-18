@@ -517,7 +517,7 @@ class Client:  # pylint: disable=too-many-public-methods
 
         return open_pull[0]
 
-    def create_pull_request(self, base: str) -> PullRequest:
+    def create_pull_request(self, base: str, clients) -> PullRequest:
         """Create pull request for changes in given repository path.
 
         Args:
@@ -529,6 +529,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Pull request object
         """
+        print(f"{clients.repository.get_summary()=}")
         print(f"{base=}")
         print(f"{self.is_dirty(base)=}")
         print(f"{self.is_dirty()=}")
