@@ -530,6 +530,7 @@ class Client:  # pylint: disable=too-many-public-methods
             Pull request object
         """
         print(f"{clients.repository.get_summary()=}")
+        print(f"{clients.repository.is_dirty()=}")
         print(f"{base=}")
         print(f"{self.is_dirty(base)=}")
         print(f"{self.is_dirty()=}")
