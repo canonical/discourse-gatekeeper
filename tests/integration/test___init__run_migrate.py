@@ -247,7 +247,7 @@ Testing index page content.
     assert_substrings_in_string(
         [
             "No community contribution found",
-            f"Discourse is inline with {DOCUMENTATION_TAG}",
+            f"discourse is inline with {DOCUMENTATION_TAG}",
         ],
         caplog.text,
     )
