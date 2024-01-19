@@ -389,7 +389,7 @@ class UpdatePageAction(_UpdateActionBase):
 
     content_change: ContentChange
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a formatted representation of the dataclass.
 
         Returns:
