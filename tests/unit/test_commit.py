@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for commit module."""
@@ -6,6 +6,7 @@
 # Need access to protected functions for testing
 # pylint: disable=protected-access
 
+import typing
 from pathlib import Path
 
 from src import commit
@@ -163,9 +164,10 @@ def test_parse_git_show_copied(repository_client: Client):
     ).update_branch(commit_msg="commit-1", push=False, directory=None)
     (repository_path / file).rename(repository_path / (new_file := Path("other_file.text")))
     repository_client.update_branch(commit_msg="commit-2", push=False, directory=None)
-    show_output: str = repository_client._git_repo.git.show("--name-status")
     # Change renamed to copied, it isn't clear how to make git think a file was copied
-    show_output = show_output.replace("R100", "C100")
+    show_output = typing.cast(str, repository_client._git_repo.git.show("--name-status")).replace(
+        "R100", "C100"
+    )
 
     commit_files = tuple(commit.parse_git_show(show_output, repository_path=repository_path))
 

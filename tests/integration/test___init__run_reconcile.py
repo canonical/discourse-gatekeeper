@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the reconcile portion of the action."""
@@ -89,7 +89,7 @@ async def test_run(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
@@ -114,7 +114,7 @@ async def test_run(
     assert output_reconcile is not None
     assert output_reconcile.index_url == index_url
     index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert index_topic == f"{constants.NAVIGATION_TABLE_START}".strip()
+    assert index_topic == constants.NAVIGATION_TABLE_START.strip()
     assert_substrings_in_string((index_url, "Update", "'skip'"), caplog.text)
     mock_github_repo.create_git_ref.assert_not_called()
 
@@ -508,7 +508,7 @@ async def test_run_hidden(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
@@ -747,7 +747,7 @@ async def test_run_external(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
