@@ -246,7 +246,7 @@ Testing index page content.
     assert output_migrate.action == PullRequestAction.CLOSED
     assert_substrings_in_string(
         [
-            "No community contribution found in commit",
+            "No community contribution found",
             f"Discourse is inline with {DOCUMENTATION_TAG}",
         ],
         caplog.text,
