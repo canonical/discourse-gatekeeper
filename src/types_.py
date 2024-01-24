@@ -395,9 +395,11 @@ class UpdatePageAction(_UpdateActionBase):
         Returns:
             Formatted representation of the dataclass.
         """
-        return (f"level: {self.level}, path: {self.path}, "
-                f"navlink_change: {self.navlink_change}\n"
-                f"content_change:\n{self.content_change}")
+        return (
+            f"level: {self.level}, path: {self.path}, "
+            f"navlink_change: {self.navlink_change}\n"
+            f"content_change:\n{self.content_change}"
+        )
 
 
 @dataclasses.dataclass
