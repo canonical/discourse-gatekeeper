@@ -389,6 +389,18 @@ class UpdatePageAction(_UpdateActionBase):
 
     content_change: ContentChange
 
+    def __str__(self) -> str:
+        """Return a formatted representation of the dataclass.
+
+        Returns:
+            Formatted representation of the dataclass.
+        """
+        return (
+            f"class: {self.__class__}, level: {self.level}, path: {self.path}, "
+            f"navlink_change: {self.navlink_change}\n"
+            f"content_change:\n{self.content_change}"
+        )
+
 
 @dataclasses.dataclass
 class UpdateExternalRefAction(_UpdateActionBase):
