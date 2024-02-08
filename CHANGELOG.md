@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Added a formatted representation of the UpdatePageAction dataclass for more
+  human-readable output.
+
 ## [v0.8.1] - 2024-01-18
 
 ### Fixed
