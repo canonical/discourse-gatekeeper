@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
@@ -133,7 +133,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
             index_url=index.server.url if index.server else "",
             topics=(
                 {
-                    f"{clients.discourse.absolute_url(row.navlink.link)}": ActionResult.SKIP
+                    clients.discourse.absolute_url(row.navlink.link): ActionResult.SKIP
                     for row in table_rows
                     if row.navlink.link
                 }
@@ -221,11 +221,19 @@ def run_migrate(clients: Clients, user_inputs: UserInputs) -> MigrateOutputs | N
 
     # Check difference with main
     changes = recreate_docs(clients, DOCUMENTATION_TAG)
+    # Check whether there are still changes after switching to the base branch
+    if changes:
+        changes = clients.repository.is_dirty(user_inputs.base_branch)
+
+        # Move the tag if there are no changes
+        if not changes:
+            with clients.repository.with_branch(user_inputs.base_branch) as repo:
+                main_hash = repo.current_commit
+            clients.repository.tag_commit(DOCUMENTATION_TAG, main_hash)
+
     if not changes:
         logging.info(
-            "No community contribution found in commit %s. Discourse is inline with %s",
-            user_inputs.commit_sha,
-            DOCUMENTATION_TAG,
+            "No community contribution found, discourse is inline with %s", DOCUMENTATION_TAG
         )
         # Given there are NO diffs compared to the base, if a PR is open, it should be closed
         if pull_request is not None:

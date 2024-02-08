@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the migrate action."""
@@ -246,8 +246,8 @@ Testing index page content.
     assert output_migrate.action == PullRequestAction.CLOSED
     assert_substrings_in_string(
         [
-            "No community contribution found in commit",
-            f"Discourse is inline with {DOCUMENTATION_TAG}",
+            "No community contribution found",
+            f"discourse is inline with {DOCUMENTATION_TAG}",
         ],
         caplog.text,
     )
