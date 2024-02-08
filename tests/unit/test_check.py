@@ -332,34 +332,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),
-            False,
-            (
-                ExpectedProblem(
-                    path="/".join(action_2.path),
-                    description_contents=(
-                        "detected",
-                        "unmerged",
-                        "community contributions",
-                        constants.DISCOURSE_AHEAD_TAG,
-                        "/".join(action_1.path),
-                        "/".join(action_2.path),
-                    ),
-                ),
-            ),
-            id=(
-                "multiple actions one has base and local other has local and server diff, tag not "
-                "applied"
-            ),
-        ),
-        pytest.param(
-            (
-                action_1 := factories.UpdatePageActionFactory(
-                    content_change=types_.ContentChange(base="a", server="b", local="a")
-                ),
-                action_2 := factories.UpdatePageActionFactory(
-                    content_change=types_.ContentChange(base="x", server="x", local="y")
-                ),
-            ),
             True,
             (),
             id=(
@@ -371,7 +343,7 @@ def _test_conflicts_parameters():
 
 
 @pytest.mark.parametrize(
-    "actions, is_tagged, expected_problems",
+    "actions, expected_problems",
     _test_conflicts_parameters(),
 )
 def test_conflicts(
