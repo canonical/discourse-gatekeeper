@@ -603,9 +603,11 @@ def test_using_contents_index(
         for path_info in path_infos
     )
     expected_items = tuple(
-        change_path_info_attrs(path_info=path_info, local_path=tmp_path / path_info.local_path)
-        if isinstance(path_info, types_.PathInfo)
-        else path_info
+        (
+            change_path_info_attrs(path_info=path_info, local_path=tmp_path / path_info.local_path)
+            if isinstance(path_info, types_.PathInfo)
+            else path_info
+        )
         for path_info in expected_items
     )
 
