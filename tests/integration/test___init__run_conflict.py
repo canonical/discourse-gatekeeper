@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the action where there is a merge conflict."""
@@ -77,7 +77,7 @@ async def test_run_conflict(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",

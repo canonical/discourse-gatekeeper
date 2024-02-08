@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+- Added a formatted representation of the UpdatePageAction dataclass for more
+  human-readable output.
+
+## [v0.8.1] - 2024-01-18
+
+### Fixed
+
+- Migration error where discourse is in-line with the default branch but the
+  base content tag is behind. This no longer attempts migration and now also
+  moves the tag to the latest commit on the default branch.
+
 ## [v0.8.0] - 2023-11-30
 
 ### Added
