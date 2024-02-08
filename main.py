@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Main execution for the action."""
@@ -180,7 +180,7 @@ def main_migrate(path: Path, user_inputs: types_.UserInputs) -> types_.MigrateOu
 
     Args:
         path: path of the git repository
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         dictionary representing the output of the process
@@ -195,7 +195,7 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.Reconci
 
     Args:
         path: path of the git repository
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         dictionary representing the output of the process
@@ -208,13 +208,13 @@ def main_reconcile(path: Path, user_inputs: types_.UserInputs) -> types_.Reconci
 def main_checks(path: Path, user_inputs: types_.UserInputs) -> bool:
     """Checks to make sure that the repository is in a consistent state.
 
-    The repository is in a consistent state if there is a `upload-charm-docs/base-content` tag
+    The repository is in a consistent state if there is a `discourse-gatekeeper/base-content` tag
     exists in the `base_branch` and the commit belongs to the `base_branch`. If no tag exists,
-    the `upload-charm-docs/base-content` tag will be created for the current commit.
+    the `discourse-gatekeeper/base-content` tag will be created for the current commit.
 
     Args:
         path: path of the git repository
-        user_inputs: Configurable inputs for running upload-charm-docs.
+        user_inputs: Configurable inputs for running discourse-gatekeeper.
 
     Returns:
         dictionary representing the output of the process

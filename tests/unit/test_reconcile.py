@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for reconcile module."""
@@ -1184,7 +1184,7 @@ def test_run(  # pylint: disable=too-many-arguments
             ),
             (),
             types_.CreateIndexAction(
-                title=local_title, content=f"{constants.NAVIGATION_TABLE_START.strip()}"
+                title=local_title, content=constants.NAVIGATION_TABLE_START.strip()
             ),
             id="empty local only empty rows",
         ),
@@ -1192,7 +1192,7 @@ def test_run(  # pylint: disable=too-many-arguments
             types_.Index(
                 server=None,
                 local=types_.IndexFile(
-                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                    title=(local_title := "title 1"), content=(local_content := "content 1\n")
                 ),
                 name="name 1",
             ),
@@ -1206,7 +1206,7 @@ def test_run(  # pylint: disable=too-many-arguments
             types_.Index(
                 server=None,
                 local=types_.IndexFile(
-                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                    title=(local_title := "title 1"), content=(local_content := "content 1\n")
                 ),
                 name="name 1",
             ),
@@ -1224,7 +1224,7 @@ def test_run(  # pylint: disable=too-many-arguments
             types_.Index(
                 server=None,
                 local=types_.IndexFile(
-                    title=(local_title := "title 1"), content=(local_content := "content 1")
+                    title=(local_title := "title 1"), content=(local_content := "content 1\n")
                 ),
                 name="name 1",
             ),
@@ -1243,7 +1243,7 @@ def test_run(  # pylint: disable=too-many-arguments
         ),
         pytest.param(
             types_.Index(
-                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1\n")),
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
@@ -1258,7 +1258,7 @@ def test_run(  # pylint: disable=too-many-arguments
         ),
         pytest.param(
             types_.Index(
-                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1\n")),
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
@@ -1273,11 +1273,11 @@ def test_run(  # pylint: disable=too-many-arguments
         ),
         pytest.param(
             types_.Index(
-                local=types_.IndexFile(title="title 1", content=(local_content := " content 1")),
+                local=types_.IndexFile(title="title 1", content=(local_content := " content 1\n")),
                 server=types_.Page(
                     url=(url := "url 1"),
                     content=(
-                        server_content := f"{local_content.strip()}"
+                        server_content := f"{local_content.strip()}\n"
                         f"{constants.NAVIGATION_TABLE_START}"
                     ),
                 ),
@@ -1289,7 +1289,7 @@ def test_run(  # pylint: disable=too-many-arguments
         ),
         pytest.param(
             types_.Index(
-                local=types_.IndexFile(title="title 1", content=(local_content := "content 1")),
+                local=types_.IndexFile(title="title 1", content=(local_content := "content 1\n")),
                 server=types_.Page(url=(url := "url 1"), content=(server_content := "content 2")),
                 name="name 1",
             ),

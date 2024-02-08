@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for parsing and rendering a navigation table."""
@@ -31,7 +31,8 @@ _LEVEL_REGEX = rf"{_WHITESPACE}(\d+)?{_WHITESPACE}"
 _PATH_REGEX = rf"{_WHITESPACE}([${constants.PATH_CHARS}]+){_WHITESPACE}"
 _PUNCTUATION = string.punctuation.replace("/", "\\/")
 _NAVLINK_TITLE_REGEX = rf"[\w\- {_PUNCTUATION}]+?"
-_NAVLINK_LINK_REGEX = r"[\w\/-]*"
+# Link characters according to https://www.rfc-editor.org/rfc/rfc3986#section-2
+_NAVLINK_LINK_REGEX = r"[\w\/._~:/?#\[\]@!$&'*+,;-]*"
 _NAVLINK_REGEX = (
     rf"{_WHITESPACE}\[{_WHITESPACE}({_NAVLINK_TITLE_REGEX}){_WHITESPACE}\]{_WHITESPACE}"
     rf"\({_WHITESPACE}({_NAVLINK_LINK_REGEX}){_WHITESPACE}\){_WHITESPACE}"
@@ -106,10 +107,10 @@ def _check_table_row_write_permission(
         PagePermissionError: The user does not have write permission for the linked topic.
         ServerError: The interaction with discourse failed.
     """
-    if table_row.navlink.link is None:
+    if table_row.is_group or table_row.is_external(server_hostname=discourse.host):
         return table_row
 
-    url = table_row.navlink.link
+    url = typing.cast(str, table_row.navlink.link)
     try:
         if discourse.check_topic_write_permission(url=url):
             return table_row

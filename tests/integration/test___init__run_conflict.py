@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the action where there is a merge conflict."""
@@ -50,7 +50,7 @@ async def test_run_conflict(
         6. docs with an index and changed documentation and alternate documentation with server
             changes
         7. docs with an index and changed documentation and alternate documentation with server
-            changes with upload-charm-docs/discourse-ahead-ok applied
+            changes with discourse-gatekeeper/discourse-ahead-ok applied
     assert: then:
         1. the documentation page is created
         2. the documentation page is not updated
@@ -77,7 +77,7 @@ async def test_run_conflict(
     caplog.clear()
     index_url = discourse_api.create_topic(
         title=f"{document_name.replace('-', ' ').title()} Documentation Overview",
-        content=f"{constants.NAVIGATION_TABLE_START}".strip(),
+        content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
@@ -302,7 +302,7 @@ async def test_run_conflict(
     assert alt_doc_topic == alt_doc_topic_content_6
 
     # 7. docs with an index and changed documentation and alternate documentation with server
-    # changes with upload-charm-docs/discourse-ahead-ok applied
+    # changes with discourse-gatekeeper/discourse-ahead-ok applied
     caplog.clear()
     repository_client.tag_commit(DISCOURSE_AHEAD_TAG, repository_client.current_commit)
     mock_github_repo.get_contents.side_effect = [mock_alt_content_file, mock_content_file]

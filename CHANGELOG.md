@@ -2,21 +2,47 @@
 
 ## [Unreleased]
 
+- Added a formatted representation of the UpdatePageAction dataclass for more
+  human-readable output.
+
+## [v0.8.1] - 2024-01-18
+
+### Fixed
+
+- Migration error where discourse is in-line with the default branch but the
+  base content tag is behind. This no longer attempts migration and now also
+  moves the tag to the latest commit on the default branch.
+
+## [v0.8.0] - 2023-11-30
+
+### Added
+
+- Support for migrating the navigation table to the contents index
+- Checks that external references on the contents index return a 2XX response to
+  HEAD requests
+
+### Fixed
+
+- Whitespace buildup between generated and input content
+
+## [v0.7.0] - 2023-10-09
+
 ### Added
 
 - Support for defining a contents index in the `index.md` file.
 - Support for hidden items on the contentx index.
 - Support for external items on the contents index
+- Automatically moving the `discourse-gatekeeper/content` tag when the
+  documentation is up to date with discourse
 
 ### Fixed
 
 - Navigation table not getting removed if the contents was hidden using the
   `[details=...]...[/details]` tag.
-
-### Fixed
-
 - No longer use empty values from `INPUT_COMMIT_SHA` instead of reading the
   event/ environment
+- Removing leading and trailing whitespace in base content for comparison
+- Correct failing pre-flight checks due to shallowly checked out repos
 
 ## [v0.6.0] - 2023-07-07
 

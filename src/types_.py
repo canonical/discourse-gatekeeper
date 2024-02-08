@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Types for uploading docs to charmhub."""
@@ -17,7 +17,7 @@ Url = str
 
 
 class UserInputsDiscourse(typing.NamedTuple):
-    """Configurable user input values used to run upload-charm-docs.
+    """Configurable user input values used to run discourse-gatekeeper.
 
     Attrs:
         hostname: The base path to the discourse server.
@@ -33,7 +33,7 @@ class UserInputsDiscourse(typing.NamedTuple):
 
 
 class UserInputs(typing.NamedTuple):
-    """Configurable user input values used to run upload-charm-docs.
+    """Configurable user input values used to run discourse-gatekeeper.
 
     Attrs:
         discourse: The configuration for interacting with discourse.
@@ -389,6 +389,18 @@ class UpdatePageAction(_UpdateActionBase):
 
     content_change: ContentChange
 
+    def __str__(self) -> str:
+        """Return a formatted representation of the dataclass.
+
+        Returns:
+            Formatted representation of the dataclass.
+        """
+        return (
+            f"class: {self.__class__}, level: {self.level}, path: {self.path}, "
+            f"navlink_change: {self.navlink_change}\n"
+            f"content_change:\n{self.content_change}"
+        )
+
 
 @dataclasses.dataclass
 class UpdateExternalRefAction(_UpdateActionBase):
@@ -556,6 +568,7 @@ class IndexContentsListItem(typing.NamedTuple):
         rank: The number of preceding elements in the list at any hierarchy
         hidden: Whether the item should be displayed on the navigation table
         table_path: The path for the item on the table.
+        is_external: Whether the item is an external reference.
     """
 
     hierarchy: int
@@ -563,6 +576,15 @@ class IndexContentsListItem(typing.NamedTuple):
     reference_value: str
     rank: int
     hidden: bool
+
+    @property
+    def is_external(self) -> bool:
+        """Whether the row is an external reference.
+
+        Returns:
+            Whether the item in the table is an external item.
+        """
+        return self.reference_value.lower().startswith("http")
 
     @property
     def table_path(self) -> TablePath:
@@ -576,7 +598,7 @@ class IndexContentsListItem(typing.NamedTuple):
         Returns:
             The table path for the item.
         """
-        if self.reference_value.lower().startswith("http"):
+        if self.is_external:
             transformed_reference_value = (
                 self.reference_value.replace("//", "/")
                 .replace(".", "/")
