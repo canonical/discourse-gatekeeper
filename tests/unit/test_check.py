@@ -387,10 +387,6 @@ def test_conflicts(
     assert: then the expected problems are yielded.
     """
     caplog.set_level(logging.INFO)
-    if is_tagged:
-        repository_client.tag_commit(
-            tag_name=constants.DISCOURSE_AHEAD_TAG, commit_sha=repository_client.current_commit
-        )
 
     user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
     returned_problems = tuple(
