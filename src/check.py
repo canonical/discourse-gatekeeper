@@ -196,12 +196,6 @@ def conflicts(
     if any_page_conflicts:
         return
 
-    commit_discourse_ahead_ok_tagged = repository.is_same_commit(
-        tag=constants.DISCOURSE_AHEAD_TAG, commit=user_inputs.commit_sha
-    )
-    if commit_discourse_ahead_ok_tagged:
-        return
-
     paths_with_diff = get_path_with_diffs(actions_logical_conflicts)
     if not paths_with_diff.base_local_diffs or not paths_with_diff.base_server_diffs:
         return
