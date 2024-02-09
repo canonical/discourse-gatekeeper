@@ -348,7 +348,6 @@ def _test_conflicts_parameters():
 )
 def test_conflicts(
     actions: tuple[types_.AnyAction, ...],
-    is_tagged: bool,
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
     repository_client: repository.Client,
