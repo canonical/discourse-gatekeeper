@@ -181,14 +181,13 @@ def _test_conflicts_parameters():
         The tests.
     """
     return [
-        pytest.param((), False, (), id="empty"),
-        pytest.param((factories.CreatePageActionFactory(),), False, (), id="single create"),
-        pytest.param((factories.NoopPageActionFactory(),), False, (), id="single noop"),
-        pytest.param((factories.DeletePageActionFactory(),), False, (), id="single delete"),
-        pytest.param((factories.UpdateGroupActionFactory(),), False, (), id="single group update"),
+        pytest.param((), (), id="empty"),
+        pytest.param((factories.CreatePageActionFactory(),), (), id="single create"),
+        pytest.param((factories.NoopPageActionFactory(),), (), id="single noop"),
+        pytest.param((factories.DeletePageActionFactory(),), (), id="single delete"),
+        pytest.param((factories.UpdateGroupActionFactory(),), (), id="single group update"),
         pytest.param(
             (factories.UpdateExternalRefActionFactory(),),
-            False,
             (),
             id="single external ref update",
         ),
@@ -198,7 +197,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="a")
                 ),
             ),
-            False,
             (),
             id="single update no base content same",
         ),
@@ -208,7 +206,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="b")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -229,7 +226,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="a", local="a")
                 ),
             ),
-            False,
             (),
             id="single update no conflict",
         ),
@@ -239,7 +235,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -253,7 +248,6 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (factories.NoopPageActionFactory(), factories.NoopPageActionFactory()),
-            False,
             (),
             id="multiple actions no problems",
         ),
@@ -264,7 +258,6 @@ def _test_conflicts_parameters():
                 ),
                 factories.NoopPageActionFactory(),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -283,7 +276,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_2.path),
@@ -304,7 +296,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -332,7 +323,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),
-            True,
             (),
             id=(
                 "multiple actions one has base and local other has local and server diff, tag "
