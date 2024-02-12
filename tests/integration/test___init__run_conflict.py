@@ -20,7 +20,7 @@ import pytest
 from github.ContentFile import ContentFile
 
 from src import Clients, constants, exceptions, metadata, repository, run_reconcile
-from src.constants import DEFAULT_BRANCH, DISCOURSE_AHEAD_TAG, DOCUMENTATION_TAG
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
 from src.discourse import Discourse
 
 from .. import factories
@@ -304,7 +304,6 @@ async def test_run_conflict(
     # 7. docs with an index and changed documentation and alternate documentation with server
     # changes with discourse-gatekeeper/discourse-ahead-ok applied
     caplog.clear()
-    repository_client.tag_commit(DISCOURSE_AHEAD_TAG, repository_client.current_commit)
     mock_github_repo.get_contents.side_effect = [mock_alt_content_file, mock_content_file]
 
     reconcile_output = run_reconcile(
