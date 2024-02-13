@@ -204,9 +204,7 @@ def conflicts(
         path=paths_with_diff.base_local_diffs[0],
         description=(
             "detected unmerged community contributions, these need to be resolved "
-            "before proceeding. If the differences are not conflicting, please apply the "
-            f"{constants.DISCOURSE_AHEAD_TAG} tag to commit {user_inputs.commit_sha} to "
-            "proceed. Paths with potentially unmerged community contributions: "
+            "before proceeding.  Paths with potentially unmerged community contributions: "
             f"{set(chain(paths_with_diff.base_local_diffs, paths_with_diff.base_server_diffs))}."
         ),
     )
