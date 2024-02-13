@@ -323,7 +323,18 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),
-            (),
+            (
+                ExpectedProblem(
+                    path="/".join(action_2.path),
+                    description_contents=(
+                        "detected",
+                        "unmerged",
+                        "community contributions",
+                        "/".join(action_1.path),
+                        "/".join(action_2.path),
+                    ),
+                ),
+            ),
             id=(
                 "multiple actions one has base and local other has local and server diff, tag "
                 "applied"
