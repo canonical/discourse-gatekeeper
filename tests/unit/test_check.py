@@ -8,7 +8,7 @@ from typing import NamedTuple, cast
 
 import pytest
 
-from src import check, repository, types_
+from src import check, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
@@ -351,7 +351,6 @@ def test_conflicts(
     actions: tuple[types_.AnyAction, ...],
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
-    repository_client: repository.Client,
 ):
     """
     arrange: given actions
@@ -360,14 +359,7 @@ def test_conflicts(
     """
     caplog.set_level(logging.INFO)
 
-    user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
-    returned_problems = tuple(
-        check.conflicts(
-            actions=actions,
-            repository=repository_client,
-            user_inputs=user_inputs,
-        )
-    )
+    returned_problems = tuple(check.conflicts(actions=actions))
 
     assert len(returned_problems) == len(expected_problems)
     for returned_problem, expected_problem in zip(returned_problems, expected_problems):

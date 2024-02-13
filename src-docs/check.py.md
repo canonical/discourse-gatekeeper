@@ -11,7 +11,7 @@ Module for running checks.
 
 ---
 
-<a href="../src/check.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_path_with_diffs`
 
@@ -37,15 +37,13 @@ Generate the paths that have either local or server content changes.
 
 ---
 
-<a href="../src/check.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `conflicts`
 
 ```python
 conflicts(
-    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction],
-    repository: Client,
-    user_inputs: UserInputs
+    actions: Iterable[CreateGroupAction | CreatePageAction | CreateExternalRefAction | NoopGroupAction | NoopPageAction | NoopExternalRefAction | UpdateGroupAction | UpdatePageAction | UpdateExternalRefAction | DeleteGroupAction | DeletePageAction | DeleteExternalRefAction]
 ) → Iterator[Problem]
 ```
 
@@ -60,8 +58,6 @@ The second type of conflict is a logical conflict which arises out of that there
 **Args:**
  
  - <b>`actions`</b>:  The actions to check. 
- - <b>`repository`</b>:  Client for repository interactions. 
- - <b>`user_inputs`</b>:  Configuration from the user. 
 
 
 
@@ -71,7 +67,7 @@ The second type of conflict is a logical conflict which arises out of that there
 
 ---
 
-<a href="../src/check.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `external_refs`
 

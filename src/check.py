@@ -12,7 +12,6 @@ import requests
 
 from src import content
 from src.constants import DOCUMENTATION_TAG
-from src.repository import Client
 from src.types_ import (
     AnyAction,
     IndexContentsListItem,
@@ -20,7 +19,6 @@ from src.types_ import (
     UpdateExternalRefAction,
     UpdateGroupAction,
     UpdatePageAction,
-    UserInputs,
 )
 
 
@@ -158,9 +156,7 @@ def _update_action_problem(action: UpdateAction) -> Problem | None:
     return problem
 
 
-def conflicts(
-    actions: Iterable[AnyAction], repository: Client, user_inputs: UserInputs
-) -> Iterator[Problem]:
+def conflicts(actions: Iterable[AnyAction]) -> Iterator[Problem]:
     """Check whether actions have any content conflicts.
 
     There are two types of conflicts. The first is where the local content is different to what is
@@ -176,8 +172,6 @@ def conflicts(
 
     Args:
         actions: The actions to check.
-        repository: Client for repository interactions.
-        user_inputs: Configuration from the user.
 
     Yields:
         A problem for each action with a conflict

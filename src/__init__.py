@@ -147,11 +147,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         )
 
     actions, check_actions = tee(actions, 2)
-    problems = tuple(
-        check.conflicts(
-            actions=check_actions, repository=clients.repository, user_inputs=user_inputs
-        )
-    )
+    problems = tuple(check.conflicts(actions=check_actions))
     if problems:
         raise InputError(
             "One or more of the required actions could not be executed, see the log for details"
