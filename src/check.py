@@ -10,7 +10,7 @@ from typing import NamedTuple, TypeGuard
 
 import requests
 
-from src import constants, content
+from src import content
 from src.constants import DOCUMENTATION_TAG
 from src.repository import Client
 from src.types_ import (

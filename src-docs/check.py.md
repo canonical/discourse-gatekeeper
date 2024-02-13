@@ -71,7 +71,7 @@ The second type of conflict is a logical conflict which arises out of that there
 
 ---
 
-<a href="../src/check.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/check.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `external_refs`
 
