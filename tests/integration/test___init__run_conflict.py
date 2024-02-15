@@ -258,7 +258,7 @@ async def test_run_conflict(
     # 6. docs with an index and changed documentation and alternate documentation with server
     # changes
     caplog.clear()
-    doc_file.write_text(doc_content_6 := f"# {doc_title}\ncontent 6", encoding="utf-8")
+    doc_file.write_text(f"# {doc_title}\ncontent 6", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "# 6. docs with an index and changed documentation and alternate documentation with "
