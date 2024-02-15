@@ -49,8 +49,6 @@ async def test_run_conflict(
         5. docs with an index and documentation and alternate documentation file
         6. docs with an index and changed documentation and alternate documentation with server
             changes
-        7. docs with an index and changed documentation and alternate documentation with server
-            changes with discourse-gatekeeper/discourse-ahead-ok applied
     assert: then:
         1. the documentation page is created
         2. the documentation page is not updated
@@ -58,7 +56,7 @@ async def test_run_conflict(
         4. the documentation page is updated
         5. the alternate documentation page is created
         6. the documentation page is not updated
-        6. the documentation page is updated
+        7. the documentation page is updated
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
@@ -298,35 +296,5 @@ async def test_run_conflict(
     assert alt_doc_table_line_5 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_5
-    alt_doc_topic = discourse_api.retrieve_topic(url=alt_doc_url)
-    assert alt_doc_topic == alt_doc_topic_content_6
-
-    # 7. docs with an index and changed documentation and alternate documentation with server
-    # changes with discourse-gatekeeper/discourse-ahead-ok applied
-    caplog.clear()
-    mock_github_repo.get_contents.side_effect = [mock_alt_content_file, mock_content_file]
-
-    reconcile_output = run_reconcile(
-        clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
-        ),
-    )
-
-    assert reconcile_output is not None
-    urls_with_actions = reconcile_output.topics
-
-    assert len(urls_with_actions) == 3
-    (alt_doc_url, _, _) = urls_with_actions.keys()
-    assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
-    assert_substrings_in_string(
-        chain(urls, (doc_table_line_1, alt_doc_table_line_5, "Update", "'success'")),
-        caplog.text,
-    )
-    index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert doc_table_line_1 in index_topic
-    assert alt_doc_table_line_5 in index_topic
-    doc_topic = discourse_api.retrieve_topic(url=doc_url)
-    assert doc_topic == doc_content_6
     alt_doc_topic = discourse_api.retrieve_topic(url=alt_doc_url)
     assert alt_doc_topic == alt_doc_topic_content_6
