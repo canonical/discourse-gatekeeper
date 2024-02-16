@@ -51,7 +51,7 @@ Upload the documentation to charmhub.
 
 ---
 
-<a href="../src/__init__.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_migrate`
 
@@ -76,7 +76,7 @@ Migrate existing docs from charmhub to local repository.
 
 ---
 
-<a href="../src/__init__.py#L259"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pre_flight_checks`
 

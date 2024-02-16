@@ -8,7 +8,6 @@ another module or to resolve circular imports.
 """
 DEFAULT_BRANCH = "main"
 DOCUMENTATION_TAG = "discourse-gatekeeper/base-content"
-DISCOURSE_AHEAD_TAG = "discourse-gatekeeper/discourse-ahead-ok"
 
 DOCUMENTATION_FOLDER_NAME = "docs"
 DOC_FILE_EXTENSION = ".md"
