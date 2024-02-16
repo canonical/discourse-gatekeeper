@@ -5,6 +5,14 @@
 - Added a formatted representation of the UpdatePageAction dataclass for more
   human-readable output.
 
+## [v0.8.2] - 2024-02-16
+
+### Fixed
+
+- Removed soft-conflict ignore button. `discourse-ahead-ok` tag, which was used
+  to indicate changes between discourse and git should no longer be used. Has been
+  removed, with tests updated to reflect this.
+
 ## [v0.8.1] - 2024-01-18
 
 ### Fixed
