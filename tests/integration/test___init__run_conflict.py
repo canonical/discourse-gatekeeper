@@ -56,7 +56,7 @@ async def test_run_conflict(
         4. the documentation page is updated
         5. the alternate documentation page is created
         6. the documentation page is not updated
-        7. the documentation page is updated
+        6. the documentation page is updated
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
