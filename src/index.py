@@ -272,6 +272,7 @@ def classify_item_reference(reference: str, docs_path: Path) -> ItemReferenceTyp
     print(docs_path)
     print(reference)
     print(docs_path / Path(reference))
+    print((docs_path / Path(reference)).exists())
     print((docs_path / Path(reference)).is_file())
     if reference.lower().startswith("http"):
         return ItemReferenceType.EXTERNAL
