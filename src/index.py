@@ -269,11 +269,7 @@ def classify_item_reference(reference: str, docs_path: Path) -> ItemReferenceTyp
     Returns:
         The type of the reference.
     """
-    print(docs_path)
-    print(reference)
-    print(docs_path / Path(reference))
-    print((docs_path / Path(reference)).exists())
-    print((docs_path / Path(reference)).is_file())
+    print((docs_path / "index.md").read_text())
     if reference.lower().startswith("http"):
         return ItemReferenceType.EXTERNAL
     if (reference_path := docs_path / Path(reference)).is_dir():
