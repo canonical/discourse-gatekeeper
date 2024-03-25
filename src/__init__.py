@@ -12,7 +12,7 @@ from src import navigation_table, reconcile
 from src import sort as sort_module
 from src.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
 from src.clients import Clients
-from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from src.constants import DOCUMENTATION_TAG
 from src.download import recreate_docs
 from src.exceptions import InputError, TaggingNotAllowedError
 from src.repository import DEFAULT_BRANCH_NAME
@@ -50,7 +50,7 @@ def _get_reconcile_actions(
     Raises:
         InputError: if there are any problems with the contents index.
     """
-    docs_path = clients.repository.base_charm_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.docs_path
     path_infos = docs_directory.read(docs_path=docs_path)
 
     index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)

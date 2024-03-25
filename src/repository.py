@@ -169,6 +169,7 @@ class Client:  # pylint: disable=too-many-public-methods
     Attrs:
         base_path: The root directory of the repository.
         base_charm_path: The directory of the repository where the charm is.
+        docs_path: The directory of the repository where the documentation is.
         metadata: Metadata object of the charm
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
@@ -210,6 +211,15 @@ class Client:  # pylint: disable=too-many-public-methods
         return self.base_path / self._charm_dir
 
     @property
+    def docs_path(self) -> Path:
+        """Return the Path of the charm in the repository.
+
+        Returns:
+            Path of the repository.
+        """
+        return self.base_charm_path / DOCUMENTATION_FOLDER_NAME
+
+    @property
     def metadata(self) -> Metadata:
         """Return the Metadata object of the charm."""
         return get_metadata(self.base_charm_path)
@@ -217,7 +227,7 @@ class Client:  # pylint: disable=too-many-public-methods
     @property
     def has_docs_directory(self) -> bool:
         """Return whether the repository has a docs directory."""
-        return has_docs_directory(self.base_charm_path)
+        return has_docs_directory(self.docs_path)
 
     @property
     def current_branch(self) -> str:
@@ -262,7 +272,7 @@ class Client:  # pylint: disable=too-many-public-methods
         finally:
             self.switch(current_branch)
 
-    def get_summary(self, directory: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
+    def get_summary(self, directory: str | None = "") -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
 
         Args:
@@ -272,6 +282,8 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             DiffSummary object representing the summary of the differences.
         """
+        directory = str(self.docs_path) if directory == "" else directory
+
         self._git_repo.git.add(directory or ".")
 
         return DiffSummary.from_raw_diff(
@@ -363,7 +375,7 @@ class Client:  # pylint: disable=too-many-public-methods
                     "Using stashed version.",
                     branch_name,
                 )
-                self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
+                self._git_repo.git.checkout("--theirs", str(self.docs_path))
             else:
                 raise RepositoryClientError(
                     f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
@@ -420,8 +432,7 @@ class Client:  # pylint: disable=too-many-public-methods
         commit_msg: str,
         push: bool = True,
         force: bool = False,
-        # directory: str | None = DOCUMENTATION_FOLDER_NAME,
-        directory: str | None = None,
+        directory: str | None = "",
     ) -> "Client":
         """Update branch with a new commit.
 
@@ -438,6 +449,8 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Repository client with the updated branch
         """
+        directory = str(self.docs_path) if directory == "" else directory
+
         push_args = ["-u"]
         if force:
             push_args.append("-f")
