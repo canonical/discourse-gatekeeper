@@ -4,6 +4,7 @@
 """Module for parsing metadata.yaml file."""
 
 from pathlib import Path
+import os
 import logging
 
 import yaml
@@ -39,6 +40,9 @@ def get(path: Path) -> types_.Metadata:
 
     """
     logging.info("metadata.get, path: %s abs path: %s", path, path.absolute())
+    logging.info("metadata.get, list dir . %s", os.listdir())
+    logging.info("metadata.get, list dir ... %s", os.listdir('..'))
+
 
     metadata_yaml = path / METADATA_FILENAME
     if metadata_yaml.is_file():
