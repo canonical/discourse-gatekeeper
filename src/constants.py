@@ -9,7 +9,7 @@ another module or to resolve circular imports.
 DEFAULT_BRANCH = "main"
 DOCUMENTATION_TAG = "discourse-gatekeeper/base-content"
 
-DOCUMENTATION_FOLDER_NAME = "docs"
+DOCUMENTATION_FOLDER_NAME = "charm/docs"
 DOC_FILE_EXTENSION = ".md"
 DOCUMENTATION_INDEX_FILENAME = f"index{DOC_FILE_EXTENSION}"
 NAVIGATION_HEADING = "Navigation"
