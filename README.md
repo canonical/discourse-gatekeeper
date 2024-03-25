@@ -61,7 +61,7 @@ particular, the action should be allowed to:
    contributions to dedicated branches, e.g. `discourse-gatekeeper/migrate`, 
    as well update the position of the `discourse-gatekeeper/content` tag. 
 2. Open/amend/close pull-requests in order to raise PR with community 
-   contributions
+   contributions.
 
 Thus, when the action is embedded in an external workflow, make sure that you 
 pass credentials and permissions accordingly, e.g. 
