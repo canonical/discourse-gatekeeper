@@ -22,7 +22,7 @@ def _download_from_discourse(clients: Clients) -> None:
     docs_path = clients.repository.docs_path
     metadata = clients.repository.metadata
 
-    index = get_index(metadata=metadata, base_path=charm_path, server_client=clients.discourse)
+    index = get_index(metadata=metadata, docs_path=docs_path, server_client=clients.discourse)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )

@@ -34,7 +34,7 @@ def get(path: Path) -> types_.Metadata:
         The contents of the metadata file.
 
     Raises:
-        InputError: if the metadata file does not exist or are malformed.
+        InputError: if the metadata file does not exist or is malformed.
 
     """
     metadata_yaml = path / METADATA_FILENAME

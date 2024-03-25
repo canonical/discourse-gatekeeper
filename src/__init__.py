@@ -105,7 +105,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     index = index_module.get(
         metadata=clients.repository.metadata,
-        base_path=clients.repository.base_path,
+        docs_path=clients.repository.docs_path,
         server_client=clients.discourse,
     )
     server_content = (
