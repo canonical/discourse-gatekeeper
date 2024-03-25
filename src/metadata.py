@@ -40,9 +40,10 @@ def get(path: Path) -> types_.Metadata:
 
     """
     logging.info("metadata.get, path: %s abs path: %s", path, path.absolute())
-    logging.info("metadata.get, list dir . %s", os.listdir())
-    logging.info("metadata.get, list dir ... %s", os.listdir('..'))
-
+    logging.info("metadata.get, list dir cwd %s", os.listdir())
+    logging.info("metadata.get, list dir cwd .. %s", os.listdir('..'))
+    logging.info("metadata.get, list dir sent path. %s", os.listdir(path))
+    logging.info("metadata.get, list dir sent path .. %s", os.listdir(path / '..'))
 
     metadata_yaml = path / METADATA_FILENAME
     if metadata_yaml.is_file():
