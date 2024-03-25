@@ -4,6 +4,7 @@
 """Module for parsing metadata.yaml file."""
 
 from pathlib import Path
+import logging
 
 import yaml
 
@@ -37,6 +38,8 @@ def get(path: Path) -> types_.Metadata:
         InputError: if the metadata file does not exist or are malformed.
 
     """
+    logging.info("metadata.get, path: %s abs path: %s", path, path.absolute())
+
     metadata_yaml = path / METADATA_FILENAME
     if metadata_yaml.is_file():
         return _parse_metadata_yaml(metadata_yaml)
