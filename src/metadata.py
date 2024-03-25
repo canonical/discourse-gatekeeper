@@ -3,8 +3,6 @@
 
 """Module for parsing metadata.yaml file."""
 
-import logging
-import os
 from pathlib import Path
 
 import yaml
