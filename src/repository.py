@@ -195,7 +195,7 @@ class Client:  # pylint: disable=too-many-public-methods
         """
         return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir)
 
-    @cached_property
+    @property
     def base_charm_path(self) -> Path:
         """Return the Path of the charm in the repository.
 
