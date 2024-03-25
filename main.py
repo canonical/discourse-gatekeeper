@@ -168,9 +168,11 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
                 logging.info("execute_in_tmpdir, execute_cwd cwd %s", execute_cwd)
                 shutil.copytree(src=initial_cwd, dst=execute_cwd)
                 os.chdir(execute_cwd)
-                logging.info("execute_in_tmpdir, after listdir %s", os.listdir())
+                logging.info("execute_in_tmpdir, after listdir cwd %s", os.listdir())
+                logging.info("execute_in_tmpdir, after listdir execute_cwd %s", os.listdir(execute_cwd))
                 output = func(execute_cwd, *args, **kwargs)
         finally:
+            logging.info("execute_in_tmpdir back to %s", initial_cwd)
             os.chdir(initial_cwd)
 
         return output
