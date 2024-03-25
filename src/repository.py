@@ -193,7 +193,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Path of the repository.
         """
-        return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir)
+        return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir) / "charm"
 
     @property
     def metadata(self) -> Metadata:
