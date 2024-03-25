@@ -159,12 +159,16 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
             output of the wrapped external function
         """
         initial_cwd = Path.cwd()
+        logging.info("execute_in_tmpdir, Initial cwd %s", initial_cwd)
+        logging.info("execute_in_tmpdir, listdir %s", os.listdir())
         try:
             with tempfile.TemporaryDirectory() as tempdir_name:
                 tempdir = Path(tempdir_name)
                 execute_cwd = tempdir / "cwd"
+                logging.info("execute_in_tmpdir, execute_cwd cwd %s", execute_cwd)
                 shutil.copytree(src=initial_cwd, dst=execute_cwd)
                 os.chdir(execute_cwd)
+                logging.info("execute_in_tmpdir, after listdir %s", os.listdir())
                 output = func(execute_cwd, *args, **kwargs)
         finally:
             os.chdir(initial_cwd)
