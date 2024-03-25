@@ -1,3 +1,4 @@
+
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
@@ -19,7 +20,7 @@ def _download_from_discourse(clients: Clients) -> None:
     Args:
         clients: Clients object
     """
-    base_path = clients.repository.base_path
+    base_path = clients.repository.base_charm_path
     metadata = clients.repository.metadata
 
     index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
@@ -49,7 +50,7 @@ def recreate_docs(clients: Clients, base: str) -> bool:
     clients.repository.switch(base)
 
     # Remove docs folder and recreate content from discourse
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.base_charm_path / DOCUMENTATION_FOLDER_NAME
 
     if docs_path.exists():
         shutil.rmtree(docs_path)
