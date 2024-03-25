@@ -415,7 +415,8 @@ class Client:  # pylint: disable=too-many-public-methods
         commit_msg: str,
         push: bool = True,
         force: bool = False,
-        directory: str | None = DOCUMENTATION_FOLDER_NAME,
+        # directory: str | None = DOCUMENTATION_FOLDER_NAME,
+        directory: str | None = None,
     ) -> "Client":
         """Update branch with a new commit.
 
