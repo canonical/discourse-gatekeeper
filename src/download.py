@@ -18,7 +18,6 @@ def _download_from_discourse(clients: Clients) -> None:
     Args:
         clients: Clients object
     """
-    charm_path = clients.repository.base_charm_path
     docs_path = clients.repository.docs_path
     metadata = clients.repository.metadata
 

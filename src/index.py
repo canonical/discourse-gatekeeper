@@ -12,7 +12,6 @@ from pathlib import Path
 
 from src.constants import (
     DOC_FILE_EXTENSION,
-    DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
     NAVIGATION_HEADING,
 )
