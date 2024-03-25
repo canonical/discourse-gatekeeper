@@ -45,6 +45,7 @@ def _parse_env_vars() -> types_.UserInputs:
     github_access_token = os.getenv("INPUT_GITHUB_TOKEN")
     base_branch = os.getenv("INPUT_BASE_BRANCH", DEFAULT_BRANCH)
     commit_sha = os.getenv("INPUT_COMMIT_SHA")
+    charm_dir = os.getenv("INPUT_CHARM_DIR", "")
 
     event_path = os.getenv("GITHUB_EVENT_PATH")
     if not event_path:
@@ -79,6 +80,7 @@ def _parse_env_vars() -> types_.UserInputs:
         github_access_token=github_access_token,
         commit_sha=commit_sha,
         base_branch=base_branch,
+        charm_dir=charm_dir,
     )
 
 
@@ -169,7 +171,9 @@ def execute_in_tmpdir(func: typing.Callable[..., T]) -> typing.Callable[..., T]:
                 shutil.copytree(src=initial_cwd, dst=execute_cwd)
                 os.chdir(execute_cwd)
                 logging.info("execute_in_tmpdir, after listdir cwd %s", os.listdir())
-                logging.info("execute_in_tmpdir, after listdir execute_cwd %s", os.listdir(execute_cwd))
+                logging.info(
+                    "execute_in_tmpdir, after listdir execute_cwd %s", os.listdir(execute_cwd)
+                )
                 output = func(execute_cwd, *args, **kwargs)
         finally:
             logging.info("execute_in_tmpdir back to %s", initial_cwd)

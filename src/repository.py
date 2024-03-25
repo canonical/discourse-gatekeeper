@@ -168,6 +168,7 @@ class Client:  # pylint: disable=too-many-public-methods
 
     Attrs:
         base_path: The root directory of the repository.
+        base_charm_path: The directory of the repository where the charm is.
         metadata: Metadata object of the charm
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
@@ -175,15 +176,19 @@ class Client:  # pylint: disable=too-many-public-methods
         branches: list of all branches
     """
 
-    def __init__(self, repository: Repo, github_repository: Repository) -> None:
+    def __init__(
+        self, repository: Repo, github_repository: Repository, charm_dir: str = ""
+    ) -> None:
         """Construct.
 
         Args:
             repository: Client for interacting with local git repository.
             github_repository: Client for interacting with remote github repository.
+            charm_dir: Relative directory where charm files are located.
         """
         self._git_repo = repository
         self._github_repo = github_repository
+        self._charm_dir = charm_dir
         self._configure_git_user()
 
     @cached_property
@@ -202,7 +207,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Path of the repository.
         """
-        return self.base_path / "charm"
+        return self.base_path / self._charm_dir
 
     @property
     def metadata(self) -> Metadata:
@@ -729,12 +734,15 @@ def _get_repository_name_from_git_url(remote_url: str) -> str:
     return matched_repository.group(1)
 
 
-def create_repository_client(access_token: str | None, base_path: Path) -> Client:
+def create_repository_client(
+    access_token: str | None, base_path: Path, charm_dir: str = ""
+) -> Client:
     """Create a Github instance to handle communication with Github server.
 
     Args:
         access_token: Access token that has permissions to open a pull request.
         base_path: Path where local .git resides in.
+        charm_dir: Relative directory where the charm files are located.
 
     Raises:
         InputError: if invalid access token or invalid git remote URL is provided.
@@ -753,4 +761,4 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
     remote_url = local_repo.remote().url
     repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)
     remote_repo = github_client.get_repo(repository_fullname)
-    return Client(repository=local_repo, github_repository=remote_repo)
+    return Client(repository=local_repo, github_repository=remote_repo, charm_dir=charm_dir)
