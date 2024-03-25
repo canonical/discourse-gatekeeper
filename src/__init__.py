@@ -50,7 +50,7 @@ def _get_reconcile_actions(
     Raises:
         InputError: if there are any problems with the contents index.
     """
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.base_charm_path / DOCUMENTATION_FOLDER_NAME
     path_infos = docs_directory.read(docs_path=docs_path)
 
     index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)

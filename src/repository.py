@@ -193,17 +193,26 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Path of the repository.
         """
-        return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir) / "charm"
+        return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir)
+
+    @cached_property
+    def base_charm_path(self) -> Path:
+        """Return the Path of the charm in the repository.
+
+        Returns:
+            Path of the repository.
+        """
+        return self.base_path / "charm"
 
     @property
     def metadata(self) -> Metadata:
         """Return the Metadata object of the charm."""
-        return get_metadata(self.base_path)
+        return get_metadata(self.base_charm_path)
 
     @property
     def has_docs_directory(self) -> bool:
         """Return whether the repository has a docs directory."""
-        return has_docs_directory(self.base_path)
+        return has_docs_directory(self.base_charm_path)
 
     @property
     def current_branch(self) -> str:
