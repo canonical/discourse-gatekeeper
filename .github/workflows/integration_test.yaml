@@ -8,6 +8,7 @@ jobs:
     uses: canonical/operator-workflows/.github/workflows/integration_test.yaml@main
     secrets: inherit
     with:
+      extra-arguments: -x
       modules: '["discourse", "reconcile", "conflict", "migrate"]'
       juju-channel: 3.1/stable
       channel: 1.28-strict/stable
