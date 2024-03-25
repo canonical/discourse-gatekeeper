@@ -40,6 +40,7 @@ def get(path: Path) -> types_.Metadata:
 
     """
     logging.info("metadata.get, path: %s abs path: %s", path, path.absolute())
+    logging.info("metadata.get, cwd %s", os.getcwd())
     logging.info("metadata.get, list dir cwd %s", os.listdir())
     logging.info("metadata.get, list dir cwd .. %s", os.listdir('..'))
     logging.info("metadata.get, list dir sent path. %s", os.listdir(path))
