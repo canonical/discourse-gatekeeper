@@ -29,12 +29,20 @@ pytestmark = pytest.mark.reconcile
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("patch_create_repository_client")
+@pytest.mark.parametrize(
+    "charm_id, charm_dir",
+    [
+        ("1", ""),
+        ("2", "charm"),
+    ],
+)
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository_path: Path,
     mock_github_repo: MagicMock,
+    charm_id: str,
+    charm_dir: str,
 ):
     """
     arrange: given running discourse server
@@ -70,16 +78,17 @@ async def test_run(
         13. the documentation page is deleted
         14. an index page is not updated
     """
-    document_name = "name 1"
+    document_name = f"name {charm_id}"
     caplog.set_level(logging.INFO)
 
-    repository_client = Client(Repo(repository_path), mock_github_repo)
+    charm_path = repository_path / charm_dir
+    # exist_ok=True as it can be the base directory
+    charm_path.mkdir(exist_ok=True)
+    repository_client = Client(Repo(repository_path), mock_github_repo, charm_dir=charm_dir)
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
-    )
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=charm_path)
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "first commit of metadata", directory=None
@@ -92,10 +101,13 @@ async def test_run(
         content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repository_path,
+        content=(
+            f"{metadata.METADATA_NAME_KEY}: name {charm_id}\n"
+            f"{metadata.METADATA_DOCS_KEY}: {index_url}"
+        ),
+        path=charm_path,
     )
-    (docs_dir := repository_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_dir := charm_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(
         index_content := "index content 1", encoding="utf-8"
     )

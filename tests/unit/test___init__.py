@@ -35,8 +35,9 @@ from .helpers import assert_substrings_in_string, create_metadata_yaml
 # pylint: disable=protected-access
 
 
+@pytest.mark.parametrize("charm_dir", ["", "charm"])
 @mock.patch("github.Github.get_repo")
-def test_setup_clients(get_repo_mock, git_repo_with_remote):
+def test_setup_clients(get_repo_mock, git_repo_with_remote, charm_dir):
     """
     arrange: given a local path and user_inputs
     act: when get_clients is called
@@ -46,10 +47,12 @@ def test_setup_clients(get_repo_mock, git_repo_with_remote):
 
     path = Path(git_repo_with_remote.working_dir)
 
-    user_inputs = factories.UserInputsFactory()
+    user_inputs = factories.UserInputsFactory(charm_dir=charm_dir)
     clients = get_clients(user_inputs=user_inputs, base_path=path)
 
     assert clients.repository.base_path == path
+    assert clients.repository.base_charm_path == path / charm_dir
+    assert clients.repository.docs_path == path / charm_dir / DOCUMENTATION_FOLDER_NAME
 
     assert clients.discourse._category_id == int(user_inputs.discourse.category_id)
     assert clients.discourse.host == f"https://{user_inputs.discourse.hostname}"
