@@ -29,6 +29,7 @@ pytestmark = pytest.mark.reconcile
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("git_repo")
 @pytest.mark.parametrize(
     "charm_id, charm_dir",
     [
