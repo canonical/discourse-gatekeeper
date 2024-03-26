@@ -88,24 +88,32 @@ def test_get_invalid_metadata(
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
-# pylint currently does not understand walrus operator perfectly yet
-# pylint: disable=unused-variable,undefined-variable
-@pytest.mark.parametrize(
-    "metadata_yaml_content, expected_metadata",
-    [
+def _get_metadata_parameters():
+    """Generate parameters for the metadata_parameters test.
+
+    Returns:
+        The test parameters, the first item of each element is the metadata content,
+        the second the expected types_.Metadata and the third the test id.
+    """
+    name = "name"
+    docs = "https://discourse.charmhub.io/t/index/1"
+    return [
         pytest.param(
-            f"{metadata.METADATA_NAME_KEY}: {(name := 'name')}",
+            f"{metadata.METADATA_NAME_KEY}: {name}",
             types_.Metadata(name=name, docs=None),
             id="name only",
         ),
         pytest.param(
-            f"{metadata.METADATA_NAME_KEY}: {name}\n"
-            f"{metadata.METADATA_DOCS_KEY}: "
-            f"{(docs := 'https://discourse.charmhub.io/t/index/1')}",
+            f"{metadata.METADATA_NAME_KEY}: {name}\n" f"{metadata.METADATA_DOCS_KEY}: " f"{docs}",
             types_.Metadata(name=name, docs=docs),
             id="name and docs",
         ),
-    ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "metadata_yaml_content, expected_metadata",
+    _get_metadata_parameters(),
 )
 def test_get_metadata(
     metadata_yaml_content: str,
@@ -193,13 +201,18 @@ def test_get_invalid_charmcraft(
     assert_substrings_in_string(expected_error_msg_contents, str(exc_info.value).lower())
 
 
-# pylint currently does not understand walrus operator perfectly yet
-# pylint: disable=unused-variable,undefined-variable
-@pytest.mark.parametrize(
-    "charmcraft_yaml_content, expected_metadata",
-    [
+def _get_charmcraft_parameters():
+    """Generate parameters for the get_charmcraft test.
+
+    Returns:
+        The test parameters, the first item of each element is the charmcraft content,
+        the second the expected types_.Metadata and the third the test id.
+    """
+    name = "name"
+    docs = "https://discourse.charmhub.io/t/index/1"
+    return [
         pytest.param(
-            f"{metadata.CHARMCRAFT_NAME_KEY}: {(name := 'name')}",
+            f"{metadata.CHARMCRAFT_NAME_KEY}: {name}",
             types_.Metadata(name=name, docs=None),
             id="name only",
         ),
@@ -207,11 +220,15 @@ def test_get_invalid_charmcraft(
             f"{metadata.CHARMCRAFT_NAME_KEY}: {name}\n"
             f"{metadata.CHARMCRAFT_LINKS_KEY}:\n"
             f"  {metadata.CHARMCRAFT_LINKS_DOCS_KEY}: "
-            f"{(docs := 'https://discourse.charmhub.io/t/index/1')}",
+            f"{docs}",
             types_.Metadata(name=name, docs=docs),
             id="name and docs",
         ),
-    ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "charmcraft_yaml_content, expected_metadata", _get_charmcraft_parameters()
 )
 def test_get_charmcraft(
     charmcraft_yaml_content: str,
