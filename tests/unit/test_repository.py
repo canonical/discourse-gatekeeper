@@ -711,6 +711,33 @@ def test_create_repository_client(
     assert isinstance(returned_client, repository.Client)
 
 
+def test_create_repository_client_with_charm_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    git_repo_with_remote: Repo,
+    repository_path: Path,
+    mock_github_repo: Repository,
+):
+    """
+    arrange: given valid repository path and a valid access_token and a mocked github client
+       with a customised charm_dir
+    act: when create_repository_client is called
+    assert: RepositoryClient is returned with correct charm paths and docs paths
+    """
+    _ = git_repo_with_remote
+
+    test_token = secrets.token_hex(16)
+    mock_github_client = mock.MagicMock(spec=Github)
+    mock_github_client.get_repo.returns = mock_github_repo
+    monkeypatch.setattr(repository, "Github", mock_github_client)
+
+    returned_client = repository.create_repository_client(
+        access_token=test_token, base_path=repository_path, charm_dir="charm"
+    )
+
+    assert returned_client.base_charm_path == returned_client.base_path / "charm"
+    assert returned_client.docs_path == returned_client.base_charm_path / DOCUMENTATION_FOLDER_NAME
+
+
 @pytest.mark.parametrize(
     "folder",
     [
