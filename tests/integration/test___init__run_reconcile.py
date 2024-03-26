@@ -143,7 +143,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "3. docs with a documentation file added in dry run mode"
+        "3. docs with a documentation file added in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -190,7 +191,8 @@ async def test_run(
     mock_github_repo.get_contents.return_value = mock_content_file
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "5. docs with a documentation file updated in dry run mode"
+        "5. docs with a documentation file updated in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -239,7 +241,9 @@ async def test_run(
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
     (nested_dir / ".gitkeep").touch()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("7. docs with a nested directory added")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "7. docs with a nested directory added", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -265,7 +269,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "8. docs with a documentation file added in the nested directory"
+        "8. docs with a documentation file added in the nested directory",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -308,7 +313,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "9. docs with index file with a local contents index"
+        "9. docs with index file with a local contents index",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -353,7 +359,8 @@ async def test_run(
     nested_dir_doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "10. docs with the documentation file in the nested directory removed in dry run mode"
+        "10. docs with the documentation file in the nested directory removed in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -402,7 +409,9 @@ async def test_run(
     caplog.clear()
     shutil.rmtree(nested_dir)
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("12. with the nested directory removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "12. with the nested directory removed", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -426,7 +435,7 @@ async def test_run(
     doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "13. with the documentation file removed"
+        "13. with the documentation file removed", directory=repository_client.docs_path
     )
 
     output_reconcile = run_reconcile(
@@ -452,7 +461,9 @@ async def test_run(
     caplog.clear()
     index_file.unlink()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("14. with the index file removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "14. with the index file removed", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),

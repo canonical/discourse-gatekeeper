@@ -142,7 +142,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
         (docs_folder := repo.base_path / "docs").mkdir()
         (docs_folder / "index.md").write_text(index_content := "index content\n")
         (docs_folder / "page.md").write_text(page_content := "page content")
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -308,7 +308,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -363,7 +363,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -408,7 +408,7 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -443,7 +443,7 @@ def test__run_reconcile_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -624,7 +624,9 @@ def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content 2")
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("First commit of documentation")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "First commit of documentation", directory=repository_client.docs_path
+    )
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
     user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)

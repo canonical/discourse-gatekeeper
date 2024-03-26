@@ -272,7 +272,7 @@ class Client:  # pylint: disable=too-many-public-methods
         finally:
             self.switch(current_branch)
 
-    def get_summary(self, directory: str | None = "") -> DiffSummary:
+    def get_summary(self, directory: str | Path | None) -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
 
         Args:
@@ -282,9 +282,8 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             DiffSummary object representing the summary of the differences.
         """
-        directory = str(self.docs_path) if directory == "" else directory
-
-        self._git_repo.git.add(directory or ".")
+        directory = str(directory) if directory else "."
+        self._git_repo.git.add(directory)
 
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
@@ -430,9 +429,9 @@ class Client:  # pylint: disable=too-many-public-methods
     def update_branch(
         self,
         commit_msg: str,
+        directory: str | Path | None,
         push: bool = True,
         force: bool = False,
-        directory: str | None = "",
     ) -> "Client":
         """Update branch with a new commit.
 
@@ -449,8 +448,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Repository client with the updated branch
         """
-        directory = str(self.docs_path) if directory == "" else directory
-
+        directory = str(directory) if directory else "."
         push_args = ["-u"]
         if force:
             push_args.append("-f")
@@ -461,7 +459,7 @@ class Client:  # pylint: disable=too-many-public-methods
             if push:
                 self._git_repo.git.push(*push_args)
 
-            self._git_repo.git.add("-A", directory or ".")
+            self._git_repo.git.add("-A", directory)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
                 try:
@@ -563,9 +561,9 @@ class Client:  # pylint: disable=too-many-public-methods
         with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
             DEFAULT_BRANCH_NAME
         ) as repo:
-            msg = str(repo.get_summary())
+            msg = str(repo.get_summary(self.docs_path))
             logging.info("Creating new branch with new commit: %s", msg)
-            repo.update_branch(msg, force=True)
+            repo.update_branch(msg, directory=self.docs_path, force=True)
             pull_request = _create_github_pull_request(
                 self._github_repo, DEFAULT_BRANCH_NAME, base
             )
@@ -582,10 +580,10 @@ class Client:  # pylint: disable=too-many-public-methods
         with self.with_branch(branch) as repo:
             if repo.is_dirty():
                 repo.pull()
-                msg = str(repo.get_summary())
+                msg = str(repo.get_summary(self.docs_path))
                 logging.info("Summary: %s", msg)
                 logging.info("Updating PR with new commit: %s", msg)
-                repo.update_branch(msg)
+                repo.update_branch(msg, directory=self.docs_path)
 
     def is_dirty(self, branch_name: str | None = None) -> bool:
         """Check if repository path has any changes including new files.
