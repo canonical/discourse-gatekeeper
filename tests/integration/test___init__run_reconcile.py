@@ -30,13 +30,7 @@ pytestmark = pytest.mark.reconcile
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("git_repo")
-@pytest.mark.parametrize(
-    "charm_id, charm_dir",
-    [
-        ("1", ""),
-        ("2", "charm"),
-    ],
-)
+@pytest.mark.parametrize("charm_id, charm_dir", [("1", ""), ("2", "charm")])
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
