@@ -8,7 +8,6 @@ Execute the uploading of documentation.
 **Global Variables**
 ---------------
 - **DOC_FILE_EXTENSION**
-- **DOCUMENTATION_FOLDER_NAME**
 - **DOCUMENTATION_INDEX_FILENAME**
 - **NAVIGATION_HEADING**
 - **CONTENTS_HEADER**
@@ -16,12 +15,12 @@ Execute the uploading of documentation.
 
 ---
 
-<a href="../src/index.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get`
 
 ```python
-get(metadata: Metadata, base_path: Path, server_client: Discourse) → Index
+get(metadata: Metadata, docs_path: Path, server_client: Discourse) → Index
 ```
 
 Retrieve the local and server index information. 
@@ -31,7 +30,7 @@ Retrieve the local and server index information.
 **Args:**
  
  - <b>`metadata`</b>:  Information about the charm. 
- - <b>`base_path`</b>:  The base path to look for the metadata file in. 
+ - <b>`docs_path`</b>:  The base path to look for the documentation. 
  - <b>`server_client`</b>:  A client to the documentation server. 
 
 
@@ -48,7 +47,7 @@ Retrieve the local and server index information.
 
 ---
 
-<a href="../src/index.py#L90"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `contents_from_page`
 
@@ -72,7 +71,7 @@ Get index file contents from server page.
 
 ---
 
-<a href="../src/index.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_content_for_server`
 
@@ -96,7 +95,7 @@ Get the contents from the index file that should be passed to the server.
 
 ---
 
-<a href="../src/index.py#L262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `classify_item_reference`
 
@@ -124,7 +123,7 @@ Classify the type of a reference.
 
 ---
 
-<a href="../src/index.py#L414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/index.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_contents`
 

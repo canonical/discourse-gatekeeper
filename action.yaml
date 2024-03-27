@@ -55,6 +55,14 @@ inputs:
       variable GITHUB_SHA.
     required: false
     type: string
+  charm_dir:
+    description: |
+      Relative name of the directory where the metadata.yaml or charmcraft.yaml files are located
+      if they are not in the root directory of the repository. The docs directory is also located
+      under this directory.
+    default: ''
+    required: false
+    type: string
 outputs:
   index_url:
     description: |

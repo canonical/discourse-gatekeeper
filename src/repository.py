@@ -168,6 +168,8 @@ class Client:  # pylint: disable=too-many-public-methods
 
     Attrs:
         base_path: The root directory of the repository.
+        base_charm_path: The directory of the repository where the charm is.
+        docs_path: The directory of the repository where the documentation is.
         metadata: Metadata object of the charm
         has_docs_directory: whether the repository has a docs directory
         current_branch: current git branch used in the repository
@@ -175,15 +177,19 @@ class Client:  # pylint: disable=too-many-public-methods
         branches: list of all branches
     """
 
-    def __init__(self, repository: Repo, github_repository: Repository) -> None:
+    def __init__(
+        self, repository: Repo, github_repository: Repository, charm_dir: str = ""
+    ) -> None:
         """Construct.
 
         Args:
             repository: Client for interacting with local git repository.
             github_repository: Client for interacting with remote github repository.
+            charm_dir: Relative directory where charm files are located.
         """
         self._git_repo = repository
         self._github_repo = github_repository
+        self._charm_dir = charm_dir
         self._configure_git_user()
 
     @cached_property
@@ -196,14 +202,32 @@ class Client:  # pylint: disable=too-many-public-methods
         return Path(self._git_repo.working_tree_dir or self._git_repo.common_dir)
 
     @property
+    def base_charm_path(self) -> Path:
+        """Return the Path of the charm in the repository.
+
+        Returns:
+            Path of the repository.
+        """
+        return self.base_path / self._charm_dir
+
+    @property
+    def docs_path(self) -> Path:
+        """Return the Path of the charm in the repository.
+
+        Returns:
+            Path of the repository.
+        """
+        return self.base_charm_path / DOCUMENTATION_FOLDER_NAME
+
+    @property
     def metadata(self) -> Metadata:
         """Return the Metadata object of the charm."""
-        return get_metadata(self.base_path)
+        return get_metadata(self.base_charm_path)
 
     @property
     def has_docs_directory(self) -> bool:
         """Return whether the repository has a docs directory."""
-        return has_docs_directory(self.base_path)
+        return has_docs_directory(self.docs_path)
 
     @property
     def current_branch(self) -> str:
@@ -248,7 +272,7 @@ class Client:  # pylint: disable=too-many-public-methods
         finally:
             self.switch(current_branch)
 
-    def get_summary(self, directory: str | None = DOCUMENTATION_FOLDER_NAME) -> DiffSummary:
+    def get_summary(self, directory: str | Path | None) -> DiffSummary:
         """Return a summary of the differences against the most recent commit.
 
         Args:
@@ -258,7 +282,8 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             DiffSummary object representing the summary of the differences.
         """
-        self._git_repo.git.add(directory or ".")
+        directory = str(directory) if directory else "."
+        self._git_repo.git.add(directory)
 
         return DiffSummary.from_raw_diff(
             self._git_repo.index.diff(None)
@@ -349,7 +374,7 @@ class Client:  # pylint: disable=too-many-public-methods
                     "Using stashed version.",
                     branch_name,
                 )
-                self._git_repo.git.checkout("--theirs", DOCUMENTATION_FOLDER_NAME)
+                self._git_repo.git.checkout("--theirs", str(self.docs_path))
             else:
                 raise RepositoryClientError(
                     f"Unexpected error when switching branch to {branch_name}. {exc=!r}"
@@ -404,9 +429,9 @@ class Client:  # pylint: disable=too-many-public-methods
     def update_branch(
         self,
         commit_msg: str,
+        directory: str | Path | None,
         push: bool = True,
         force: bool = False,
-        directory: str | None = DOCUMENTATION_FOLDER_NAME,
     ) -> "Client":
         """Update branch with a new commit.
 
@@ -423,6 +448,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Returns:
             Repository client with the updated branch
         """
+        directory = str(directory) if directory else "."
         push_args = ["-u"]
         if force:
             push_args.append("-f")
@@ -433,7 +459,7 @@ class Client:  # pylint: disable=too-many-public-methods
             if push:
                 self._git_repo.git.push(*push_args)
 
-            self._git_repo.git.add("-A", directory or ".")
+            self._git_repo.git.add("-A", directory)
             self._git_repo.git.commit("-m", f"'{commit_msg}'")
             if push:
                 try:
@@ -535,9 +561,9 @@ class Client:  # pylint: disable=too-many-public-methods
         with self.create_branch(DEFAULT_BRANCH_NAME, base).with_branch(
             DEFAULT_BRANCH_NAME
         ) as repo:
-            msg = str(repo.get_summary())
+            msg = str(repo.get_summary(self.docs_path))
             logging.info("Creating new branch with new commit: %s", msg)
-            repo.update_branch(msg, force=True)
+            repo.update_branch(msg, directory=self.docs_path, force=True)
             pull_request = _create_github_pull_request(
                 self._github_repo, DEFAULT_BRANCH_NAME, base
             )
@@ -554,10 +580,10 @@ class Client:  # pylint: disable=too-many-public-methods
         with self.with_branch(branch) as repo:
             if repo.is_dirty():
                 repo.pull()
-                msg = str(repo.get_summary())
+                msg = str(repo.get_summary(self.docs_path))
                 logging.info("Summary: %s", msg)
                 logging.info("Updating PR with new commit: %s", msg)
-                repo.update_branch(msg)
+                repo.update_branch(msg, directory=self.docs_path)
 
     def is_dirty(self, branch_name: str | None = None) -> bool:
         """Check if repository path has any changes including new files.
@@ -719,12 +745,15 @@ def _get_repository_name_from_git_url(remote_url: str) -> str:
     return matched_repository.group(1)
 
 
-def create_repository_client(access_token: str | None, base_path: Path) -> Client:
+def create_repository_client(
+    access_token: str | None, base_path: Path, charm_dir: str = ""
+) -> Client:
     """Create a Github instance to handle communication with Github server.
 
     Args:
         access_token: Access token that has permissions to open a pull request.
         base_path: Path where local .git resides in.
+        charm_dir: Relative directory where the charm files are located.
 
     Raises:
         InputError: if invalid access token or invalid git remote URL is provided.
@@ -743,4 +772,4 @@ def create_repository_client(access_token: str | None, base_path: Path) -> Clien
     remote_url = local_repo.remote().url
     repository_fullname = _get_repository_name_from_git_url(remote_url=remote_url)
     remote_repo = github_client.get_repo(repository_fullname)
-    return Client(repository=local_repo, github_repository=remote_repo)
+    return Client(repository=local_repo, github_repository=remote_repo, charm_dir=charm_dir)

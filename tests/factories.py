@@ -359,6 +359,7 @@ class UserInputsFactory(
     base_branch = DEFAULT_BRANCH
     dry_run = False
     delete_pages = False
+    charm_dir = ""
 
 
 class TableRowFactory(

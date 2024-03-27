@@ -6,7 +6,6 @@
 import shutil
 
 from src.clients import Clients
-from src.constants import DOCUMENTATION_FOLDER_NAME
 from src.index import contents_from_page
 from src.index import get as get_index
 from src.migration import run as migrate_contents
@@ -19,10 +18,10 @@ def _download_from_discourse(clients: Clients) -> None:
     Args:
         clients: Clients object
     """
-    base_path = clients.repository.base_path
+    docs_path = clients.repository.docs_path
     metadata = clients.repository.metadata
 
-    index = get_index(metadata=metadata, base_path=base_path, server_client=clients.discourse)
+    index = get_index(metadata=metadata, docs_path=docs_path, server_client=clients.discourse)
     server_content = (
         index.server.content if index.server is not None and index.server.content else ""
     )
@@ -32,7 +31,7 @@ def _download_from_discourse(clients: Clients) -> None:
         table_rows=table_rows,
         index_content=index_content,
         discourse=clients.discourse,
-        docs_path=base_path / DOCUMENTATION_FOLDER_NAME,
+        docs_path=docs_path,
     )
 
 
@@ -49,7 +48,7 @@ def recreate_docs(clients: Clients, base: str) -> bool:
     clients.repository.switch(base)
 
     # Remove docs folder and recreate content from discourse
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.docs_path
 
     if docs_path.exists():
         shutil.rmtree(docs_path)

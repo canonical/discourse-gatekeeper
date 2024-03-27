@@ -8,7 +8,6 @@ Class for reading the docs directory.
 **Global Variables**
 ---------------
 - **DOC_FILE_EXTENSION**
-- **DOCUMENTATION_FOLDER_NAME**
 
 ---
 
@@ -67,7 +66,7 @@ Algorithm:  1.  Get a list of all sub directories and .md files in the docs fold
 ## <kbd>function</kbd> `has_docs_directory`
 
 ```python
-has_docs_directory(base_path: Path) → bool
+has_docs_directory(docs_path: Path) → bool
 ```
 
 Return existence of docs directory from base path. 
@@ -76,7 +75,7 @@ Return existence of docs directory from base path.
 
 **Args:**
  
- - <b>`base_path`</b>:  Base path of the repository to search the docs directory from 
+ - <b>`docs_path`</b>:  Docs path of the repository where docs are 
 
 
 
