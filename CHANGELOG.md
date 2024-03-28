@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
 - Added a formatted representation of the UpdatePageAction dataclass for more
   human-readable output.
+- To address a race condition between the conflict check and when content is
+  updated on discourse, the action now checks that the content hasn't changed
+  since the conflict check was completed, before pushing updates to discourse.
 
 ## [v0.8.2] - 2024-02-16
 
