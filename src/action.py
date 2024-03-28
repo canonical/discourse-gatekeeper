@@ -194,7 +194,7 @@ def _update(
 
     Raises:
         ActionError: if there have been changes to the content on the server
-            since the conlficty check was done.
+            since the conflict check was done.
 
     Returns:
         A report on the outcome of executing the action.
@@ -224,7 +224,7 @@ def _update(
                 if current_server_content != content_change.server:
                     raise exceptions.ActionError(
                         f"The content being updated at {topic_url} has changed since the conflict "
-                        "check was done. Please resolve for any conflicts and re-run the action."
+                        "check was done. Please resolve any conflicts and re-run the action."
                     )
 
                 # Apply the change
