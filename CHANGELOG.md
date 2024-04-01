@@ -1,9 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [v0.8.3] - 2024-03-26
 
 - Added a formatted representation of the UpdatePageAction dataclass for more
   human-readable output.
+- If metadata.yaml does not exist, read the name and doc information from the
+  charmcraft.yaml file.
+- New input environment variable INPUT_CHARM_DIR. metadata.yaml or charmcraft.yaml
+  will be read from this directory instead of the base one and the documentation
+  will also be searched under this directory.
 
 ## [v0.8.2] - 2024-02-16
 
