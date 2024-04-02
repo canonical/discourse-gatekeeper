@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## Unreleased
 
 ### Added
 
@@ -9,6 +9,12 @@
 - To address a race condition between the conflict check and when content is
   updated on discourse, the action now checks that the content hasn't changed
   since the conflict check was completed, before pushing updates to discourse.
+=======
+- If metadata.yaml does not exist, read the name and doc information from the
+  charmcraft.yaml file.
+- New input environment variable INPUT_CHARM_DIR. metadata.yaml or charmcraft.yaml
+  will be read from this directory instead of the base one and the documentation
+  will also be searched under this directory.
 
 ## [v0.8.2] - 2024-02-16
 

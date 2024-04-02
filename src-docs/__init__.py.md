@@ -9,7 +9,6 @@ Library for uploading docs to charmhub.
 ---------------
 - **DRY_RUN_NAVLINK_LINK**
 - **FAIL_NAVLINK_LINK**
-- **DOCUMENTATION_FOLDER_NAME**
 - **DOCUMENTATION_TAG**
 - **DEFAULT_BRANCH_NAME**
 - **GETTING_STARTED**

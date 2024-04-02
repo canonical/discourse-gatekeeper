@@ -11,7 +11,6 @@ from git.repo import Repo
 from github.PullRequest import PullRequest
 
 from src import (  # GETTING_STARTED,
-    DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_TAG,
     Clients,
     constants,
@@ -23,7 +22,7 @@ from src import (  # GETTING_STARTED,
     types_,
 )
 from src.clients import get_clients
-from src.constants import DEFAULT_BRANCH
+from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME
 from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 from src.repository import DEFAULT_BRANCH_NAME
 from src.repository import Client as RepositoryClient
@@ -36,8 +35,9 @@ from .helpers import assert_substrings_in_string, create_metadata_yaml
 # pylint: disable=protected-access
 
 
+@pytest.mark.parametrize("charm_dir", ["", "charm"])
 @mock.patch("github.Github.get_repo")
-def test_setup_clients(get_repo_mock, git_repo_with_remote):
+def test_setup_clients(get_repo_mock, git_repo_with_remote, charm_dir):
     """
     arrange: given a local path and user_inputs
     act: when get_clients is called
@@ -47,10 +47,12 @@ def test_setup_clients(get_repo_mock, git_repo_with_remote):
 
     path = Path(git_repo_with_remote.working_dir)
 
-    user_inputs = factories.UserInputsFactory()
+    user_inputs = factories.UserInputsFactory(charm_dir=charm_dir)
     clients = get_clients(user_inputs=user_inputs, base_path=path)
 
     assert clients.repository.base_path == path
+    assert clients.repository.base_charm_path == path / charm_dir
+    assert clients.repository.docs_path == path / charm_dir / DOCUMENTATION_FOLDER_NAME
 
     assert clients.discourse._category_id == int(user_inputs.discourse.category_id)
     assert clients.discourse.host == f"https://{user_inputs.discourse.hostname}"
@@ -143,7 +145,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
         (docs_folder := repo.base_path / "docs").mkdir()
         (docs_folder / "index.md").write_text(index_content := "index content\n")
         (docs_folder / "page.md").write_text(page_content := "page content")
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -309,7 +311,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -364,7 +366,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -409,7 +411,7 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -444,7 +446,7 @@ def test__run_reconcile_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -625,7 +627,9 @@ def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content 2")
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("First commit of documentation")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "First commit of documentation", directory=repository_client.docs_path
+    )
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
     user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
