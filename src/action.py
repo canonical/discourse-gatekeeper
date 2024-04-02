@@ -192,6 +192,10 @@ def _update(
         discourse: A client to the documentation server.
         dry_run: If enabled, only log the action that would be taken.
 
+    Raises:
+        ActionError: if there have been changes to the content on the server
+            since the conflict check was done.
+
     Returns:
         A report on the outcome of executing the action.
     """
@@ -212,15 +216,24 @@ def _update(
         case UpdateCase.CONTENT_CHANGE:
             action = typing.cast(types_.UpdatePageAction, action)
             try:
+                topic_url = typing.cast(str, action.navlink_change.new.link)
                 content_change = typing.cast(types_.ContentChange, action.content_change)
+
+                # Check that content has not changed since the conflict check was performed
+                current_server_content = discourse.retrieve_topic(url=topic_url)
+                if current_server_content != content_change.server:
+                    raise exceptions.ActionError(
+                        f"The content being updated at {topic_url} has changed since the conflict "
+                        "check was done. Please resolve any conflicts and re-run the action."
+                    )
+
+                # Apply the change
                 merged_content = content.merge(
                     base=typing.cast(str, content_change.base),
                     theirs=content_change.server,
                     ours=content_change.local,
                 )
-                discourse.update_topic(
-                    url=typing.cast(str, action.navlink_change.new.link), content=merged_content
-                )
+                discourse.update_topic(url=topic_url, content=merged_content)
                 result = types_.ActionResult.SUCCESS
                 reason = None
             except (exceptions.DiscourseError, exceptions.ContentError) as exc:
