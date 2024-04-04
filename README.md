@@ -210,11 +210,6 @@ that have not been merged into `main` and a PR proposes changes to
 `docs/architecture.md` could make changes to the documentation that mean that
 the changes to `docs/getting-started.md` are no longer accurate.
 
-If, after checking the community contributions on discourse, you determine that
-there are no logical conflicts, the `discourse-gatekeeper/discourse-ahead-ok` tag
-can be applied to the latest commit in the PR which will allow the action to
-proceed assuming there are no page-by-page conflicts.
-
 ## Contents Index
 
 The `docs/index.md` file may contain a `# contents` section which is used to

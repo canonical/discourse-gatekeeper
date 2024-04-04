@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for Client class."""
@@ -42,6 +42,8 @@ def get_clients(user_inputs: UserInputs, base_path: Path) -> Clients:
             api_key=user_inputs.discourse.api_key,
         ),
         repository=create_repository_client(
-            access_token=user_inputs.github_access_token, base_path=base_path
+            access_token=user_inputs.github_access_token,
+            base_path=base_path,
+            charm_dir=user_inputs.charm_dir,
         ),
     )

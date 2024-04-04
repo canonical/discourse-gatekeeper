@@ -9,7 +9,6 @@ Library for uploading docs to charmhub.
 ---------------
 - **DRY_RUN_NAVLINK_LINK**
 - **FAIL_NAVLINK_LINK**
-- **DOCUMENTATION_FOLDER_NAME**
 - **DOCUMENTATION_TAG**
 - **DEFAULT_BRANCH_NAME**
 - **GETTING_STARTED**
@@ -51,7 +50,7 @@ Upload the documentation to charmhub.
 
 ---
 
-<a href="../src/__init__.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_migrate`
 
@@ -76,7 +75,7 @@ Migrate existing docs from charmhub to local repository.
 
 ---
 
-<a href="../src/__init__.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/__init__.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pre_flight_checks`
 

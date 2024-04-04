@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for discourse."""
@@ -327,6 +327,6 @@ async def test_read_write_permission(
     assert alternate_user_discourse.check_topic_read_permission(
         url=url
     ), "alternate user could not read topic another user created"
-    assert (
-        alternate_user_discourse.check_topic_write_permission(url=url) is False
+    assert not alternate_user_discourse.check_topic_write_permission(
+        url=url
     ), "user could write topic another user created"

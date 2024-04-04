@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for git."""
@@ -144,7 +144,7 @@ def test_commit_in_branch_check(repository_client, docs_path):
         test_branch
     ) as repo:
         (docs_path / "placeholder.md").touch()
-        repo.update_branch("commit of placeholder")
+        repo.update_branch("commit of placeholder", directory=repository_client.docs_path)
         assert repo.is_commit_in_branch(repo.current_commit)
         assert repo.is_commit_in_branch(repo.current_commit, test_branch)
         assert not repo.is_commit_in_branch(repo.current_commit, DEFAULT_BRANCH)
@@ -233,7 +233,7 @@ def test_create_branch(
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
-    ).update_branch(commit_msg="commit-1", push=True)
+    ).update_branch(commit_msg="commit-1", push=True, directory=repository_client.docs_path)
 
     # mypy false positive in lib due to getter/setter not being next to each other.
     assert any(
@@ -268,7 +268,7 @@ def test_create_branch_checkout_clash_default(
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
-    ).update_branch(commit_msg="commit-1", push=True)
+    ).update_branch(directory=repository_client.docs_path, commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
@@ -291,7 +291,7 @@ def test_create_branch_checkout_clash_created(
 
     repository_client.switch(DEFAULT_BRANCH).create_branch(branch_name=branch_name).switch(
         branch_name
-    ).update_branch(commit_msg="commit-1", push=True)
+    ).update_branch(directory=repository_client.docs_path, commit_msg="commit-1", push=True)
 
     assert upstream_git_repo.git.ls_tree("-r", branch_name, "--name-only")
 
@@ -377,7 +377,9 @@ def test_tag_commit_tag_update(repository_client: Client, upstream_git_repo, doc
 
     (docs_path / "placeholder.md").touch()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("my new commit")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "my new commit", directory=repository_client.docs_path
+    )
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
@@ -408,7 +410,7 @@ def test_tag_other_commit(repository_client: Client, docs_path: Path):
 
         (docs_path / "placeholder.md").touch()
 
-        repo.update_branch("my new commit")
+        repo.update_branch("my new commit", directory=repository_client.docs_path)
 
         new_hash = repo.current_commit
 
@@ -711,6 +713,33 @@ def test_create_repository_client(
     assert isinstance(returned_client, repository.Client)
 
 
+def test_create_repository_client_with_charm_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    git_repo_with_remote: Repo,
+    repository_path: Path,
+    mock_github_repo: Repository,
+):
+    """
+    arrange: given valid repository path and a valid access_token and a mocked github client
+       with a customised charm_dir
+    act: when create_repository_client is called
+    assert: RepositoryClient is returned with correct charm paths and docs paths
+    """
+    _ = git_repo_with_remote
+
+    test_token = secrets.token_hex(16)
+    mock_github_client = mock.MagicMock(spec=Github)
+    mock_github_client.get_repo.returns = mock_github_repo
+    monkeypatch.setattr(repository, "Github", mock_github_client)
+
+    returned_client = repository.create_repository_client(
+        access_token=test_token, base_path=repository_path, charm_dir="charm"
+    )
+
+    assert returned_client.base_charm_path == returned_client.base_path / "charm"
+    assert returned_client.docs_path == returned_client.base_charm_path / DOCUMENTATION_FOLDER_NAME
+
+
 @pytest.mark.parametrize(
     "folder",
     [
@@ -826,7 +855,7 @@ def test_commit_file_outside_of_folder(repository_client, upstream_git_repo, doc
     assert (Path(upstream_git_repo.working_dir) / directory / file2).exists()
 
     # Locally the repository is dirty only when directory is set to None
-    assert not repository_client.get_summary().is_dirty
+    assert not repository_client.get_summary(directory=directory).is_dirty
     assert repository_client.get_summary(directory=None).is_dirty
 
 
@@ -854,7 +883,7 @@ def test_repository_pull_default_branch(
 
     (docs_path / "filler-file-1").touch()
 
-    repository_client.update_branch("commit 1")
+    repository_client.update_branch("commit 1", directory=repository_client.docs_path)
 
     upstream_git_repo.git.checkout(branch_name)
     first_hash = upstream_git_repo.head.ref.commit.hexsha
@@ -882,7 +911,7 @@ def test_repository_pull_other_branch(
 
     (docs_path / "filler-file-1").touch()
 
-    repository_client.update_branch("commit 1")
+    repository_client.update_branch("commit 1", directory=repository_client.docs_path)
 
     upstream_git_repo.git.checkout(branch_name)
     first_hash = upstream_git_repo.head.ref.commit.hexsha
@@ -1018,7 +1047,7 @@ def test_update_branch_unknown_error(monkeypatch, repository_client: Client):
     monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.update_branch("my-message")
+        repository_client.update_branch("my-message", directory=repository_client.docs_path)
 
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
 
@@ -1041,7 +1070,7 @@ def test_update_branch_github_api_git_error(monkeypatch, repository_client: Clie
     monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.update_branch("my-message")
+        repository_client.update_branch("my-message", directory=repository_client.docs_path)
 
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
 
@@ -1072,7 +1101,7 @@ def test_update_branch_github_api_github_error(
     monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
     with pytest.raises(RepositoryClientError) as exc:
-        repository_client.update_branch("my-message")
+        repository_client.update_branch("my-message", directory=repository_client.docs_path)
 
     assert_substrings_in_string(("unexpected error updating branch"), str(exc.value).lower())
 
@@ -1105,7 +1134,7 @@ def test_update_branch_github_api(
     monkeypatch.setattr(repository_client._git_repo, "git", mock_git_repository)
     monkeypatch.setattr(repository_client._git_repo, "is_dirty", lambda *_args, **_kwargs: True)
 
-    repository_client.update_branch("my-message")
+    repository_client.update_branch("my-message", directory=repository_client.docs_path)
 
     # Check that the branch.edit was called, more detailed checks are in
     # test__github_client_push_single

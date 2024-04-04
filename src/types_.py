@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Types for uploading docs to charmhub."""
@@ -44,7 +44,8 @@ class UserInputs(typing.NamedTuple):
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
         commit_sha: The SHA of the commit the action is running on.
-        base_branch: The main branch against which the syncs act on
+        base_branch: The main branch against which the syncs act on.
+        charm_dir: Directory the charm is located in.
     """
 
     discourse: UserInputsDiscourse
@@ -53,6 +54,7 @@ class UserInputs(typing.NamedTuple):
     github_access_token: str | None
     commit_sha: str
     base_branch: str
+    charm_dir: str
 
 
 class Metadata(typing.NamedTuple):
@@ -388,6 +390,18 @@ class UpdatePageAction(_UpdateActionBase):
     """
 
     content_change: ContentChange
+
+    def __str__(self) -> str:
+        """Return a formatted representation of the dataclass.
+
+        Returns:
+            Formatted representation of the dataclass.
+        """
+        return (
+            f"class: {self.__class__}, level: {self.level}, path: {self.path}, "
+            f"navlink_change: {self.navlink_change}\n"
+            f"content_change:\n{self.content_change}"
+        )
 
 
 @dataclasses.dataclass

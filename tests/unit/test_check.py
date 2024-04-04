@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for check."""
@@ -8,7 +8,7 @@ from typing import NamedTuple, cast
 
 import pytest
 
-from src import check, constants, repository, types_
+from src import check, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
@@ -181,14 +181,13 @@ def _test_conflicts_parameters():
         The tests.
     """
     return [
-        pytest.param((), False, (), id="empty"),
-        pytest.param((factories.CreatePageActionFactory(),), False, (), id="single create"),
-        pytest.param((factories.NoopPageActionFactory(),), False, (), id="single noop"),
-        pytest.param((factories.DeletePageActionFactory(),), False, (), id="single delete"),
-        pytest.param((factories.UpdateGroupActionFactory(),), False, (), id="single group update"),
+        pytest.param((), (), id="empty"),
+        pytest.param((factories.CreatePageActionFactory(),), (), id="single create"),
+        pytest.param((factories.NoopPageActionFactory(),), (), id="single noop"),
+        pytest.param((factories.DeletePageActionFactory(),), (), id="single delete"),
+        pytest.param((factories.UpdateGroupActionFactory(),), (), id="single group update"),
         pytest.param(
             (factories.UpdateExternalRefActionFactory(),),
-            False,
             (),
             id="single external ref update",
         ),
@@ -198,7 +197,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="a")
                 ),
             ),
-            False,
             (),
             id="single update no base content same",
         ),
@@ -208,7 +206,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base=None, server="a", local="b")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -229,7 +226,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="a", local="a")
                 ),
             ),
-            False,
             (),
             id="single update no conflict",
         ),
@@ -239,7 +235,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="a", server="b", local="c")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -253,7 +248,6 @@ def _test_conflicts_parameters():
         ),
         pytest.param(
             (factories.NoopPageActionFactory(), factories.NoopPageActionFactory()),
-            False,
             (),
             id="multiple actions no problems",
         ),
@@ -264,7 +258,6 @@ def _test_conflicts_parameters():
                 ),
                 factories.NoopPageActionFactory(),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -283,7 +276,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_2.path),
@@ -304,7 +296,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="y", local="z")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_1.path),
@@ -332,7 +323,6 @@ def _test_conflicts_parameters():
                     content_change=types_.ContentChange(base="x", server="x", local="y")
                 ),
             ),
-            False,
             (
                 ExpectedProblem(
                     path="/".join(action_2.path),
@@ -340,28 +330,11 @@ def _test_conflicts_parameters():
                         "detected",
                         "unmerged",
                         "community contributions",
-                        constants.DISCOURSE_AHEAD_TAG,
                         "/".join(action_1.path),
                         "/".join(action_2.path),
                     ),
                 ),
             ),
-            id=(
-                "multiple actions one has base and local other has local and server diff, tag not "
-                "applied"
-            ),
-        ),
-        pytest.param(
-            (
-                action_1 := factories.UpdatePageActionFactory(
-                    content_change=types_.ContentChange(base="a", server="b", local="a")
-                ),
-                action_2 := factories.UpdatePageActionFactory(
-                    content_change=types_.ContentChange(base="x", server="x", local="y")
-                ),
-            ),
-            True,
-            (),
             id=(
                 "multiple actions one has base and local other has local and server diff, tag "
                 "applied"
@@ -371,15 +344,13 @@ def _test_conflicts_parameters():
 
 
 @pytest.mark.parametrize(
-    "actions, is_tagged, expected_problems",
+    "actions, expected_problems",
     _test_conflicts_parameters(),
 )
 def test_conflicts(
     actions: tuple[types_.AnyAction, ...],
-    is_tagged: bool,
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
-    repository_client: repository.Client,
 ):
     """
     arrange: given actions
@@ -387,19 +358,8 @@ def test_conflicts(
     assert: then the expected problems are yielded.
     """
     caplog.set_level(logging.INFO)
-    if is_tagged:
-        repository_client.tag_commit(
-            tag_name=constants.DISCOURSE_AHEAD_TAG, commit_sha=repository_client.current_commit
-        )
 
-    user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
-    returned_problems = tuple(
-        check.conflicts(
-            actions=actions,
-            repository=repository_client,
-            user_inputs=user_inputs,
-        )
-    )
+    returned_problems = tuple(check.conflicts(actions=actions))
 
     assert len(returned_problems) == len(expected_problems)
     for returned_problem, expected_problem in zip(returned_problems, expected_problems):

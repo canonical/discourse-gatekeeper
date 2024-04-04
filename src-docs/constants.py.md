@@ -11,7 +11,6 @@ The use of this module should be limited to cases where the constant is not bett
 ---------------
 - **DEFAULT_BRANCH**
 - **DOCUMENTATION_TAG**
-- **DISCOURSE_AHEAD_TAG**
 - **DOCUMENTATION_FOLDER_NAME**
 - **DOC_FILE_EXTENSION**
 - **DOCUMENTATION_INDEX_FILENAME**

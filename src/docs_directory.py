@@ -1,4 +1,4 @@
-# Copyright 2023 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Class for reading the docs directory."""
@@ -9,7 +9,7 @@ from itertools import count
 from pathlib import Path
 
 from src import types_
-from src.constants import DOC_FILE_EXTENSION, DOCUMENTATION_FOLDER_NAME
+from src.constants import DOC_FILE_EXTENSION
 
 
 def _get_directories_files(docs_path: Path) -> list[Path]:
@@ -152,13 +152,13 @@ def read(docs_path: Path) -> typing.Iterator[types_.PathInfo]:
     )
 
 
-def has_docs_directory(base_path: Path) -> bool:
+def has_docs_directory(docs_path: Path) -> bool:
     """Return existence of docs directory from base path.
 
     Args:
-        base_path: Base path of the repository to search the docs directory from
+        docs_path: Docs path of the repository where docs are
 
     Returns:
         True if documentation folder exists, False otherwise
     """
-    return (base_path / DOCUMENTATION_FOLDER_NAME).is_dir()
+    return docs_path.is_dir()
