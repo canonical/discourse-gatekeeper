@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.9.0] - 2024-04-04
+
 ### Added
 
 - Added a formatted representation of the UpdatePageAction dataclass for more
@@ -9,7 +11,6 @@
 - To address a race condition between the conflict check and when content is
   updated on discourse, the action now checks that the content hasn't changed
   since the conflict check was completed, before pushing updates to discourse.
-=======
 - If metadata.yaml does not exist, read the name and doc information from the
   charmcraft.yaml file.
 - New input environment variable INPUT_CHARM_DIR. metadata.yaml or charmcraft.yaml
