@@ -4,7 +4,10 @@
 [project]
 name = "discourse-gatekeeper"
 version = "0.0.1"
+dynamic = ["dependencies"]
 
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.bandit]
 exclude_dirs = ["/venv/", ".tox"]
