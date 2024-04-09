@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Project prepared to be installed with `pip install`, so it can be reused in 
+  the repository https://github.com/canonical/gatekeeper-repo-test
+
 ## [v0.9.0] - 2024-04-04
 
 ### Added
