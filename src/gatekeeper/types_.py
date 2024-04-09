@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
-from src import constants
+from gatekeeper import constants
 
 Content = str
 Url = str

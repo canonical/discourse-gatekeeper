@@ -16,10 +16,17 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from src import GETTING_STARTED, exceptions, pre_flight_checks, run_migrate, run_reconcile, types_
-from src.clients import get_clients
-from src.constants import DEFAULT_BRANCH
-from src.types_ import ActionResult, PullRequestAction
+from gatekeeper import (
+    GETTING_STARTED,
+    exceptions,
+    pre_flight_checks,
+    run_migrate,
+    run_reconcile,
+    types_,
+)
+from gatekeeper.clients import get_clients
+from gatekeeper.constants import DEFAULT_BRANCH
+from gatekeeper.types_ import ActionResult, PullRequestAction
 
 GITHUB_HEAD_REF_ENV_NAME = "GITHUB_HEAD_REF"
 GITHUB_OUTPUT_ENV_NAME = "GITHUB_OUTPUT"

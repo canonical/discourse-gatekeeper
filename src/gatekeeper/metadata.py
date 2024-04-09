@@ -7,8 +7,8 @@ from pathlib import Path
 
 import yaml
 
-from src import types_
-from src.exceptions import InputError
+from gatekeeper import types_
+from gatekeeper.exceptions import InputError
 
 CHARMCRAFT_FILENAME = "charmcraft.yaml"
 CHARMCRAFT_NAME_KEY = "name"

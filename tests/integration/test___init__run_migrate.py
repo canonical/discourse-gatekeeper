@@ -14,12 +14,12 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import Clients, constants, metadata, migration, run_migrate
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
-from src.repository import DEFAULT_BRANCH_NAME
-from src.repository import Client as RepositoryClient
-from src.types_ import PullRequestAction
+from gatekeeper import Clients, constants, metadata, migration, run_migrate
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
+from gatekeeper.repository import DEFAULT_BRANCH_NAME
+from gatekeeper.repository import Client as RepositoryClient
+from gatekeeper.types_ import PullRequestAction
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH

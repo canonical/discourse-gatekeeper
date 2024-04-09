@@ -11,8 +11,8 @@ from unittest import mock
 
 import pytest
 
-from src import constants, discourse, index, types_
-from src.exceptions import DiscourseError, ServerError
+from gatekeeper import constants, discourse, index, types_
+from gatekeeper.exceptions import DiscourseError, ServerError
 
 from .helpers import assert_substrings_in_string
 

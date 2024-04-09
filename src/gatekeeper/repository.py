@@ -23,17 +23,17 @@ from github.InputGitTreeElement import InputGitTreeElement
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from src import commit as commit_module
-from src.constants import DOCUMENTATION_FOLDER_NAME
-from src.docs_directory import has_docs_directory
-from src.exceptions import (
+from gatekeeper import commit as commit_module
+from gatekeeper.constants import DOCUMENTATION_FOLDER_NAME
+from gatekeeper.docs_directory import has_docs_directory
+from gatekeeper.exceptions import (
     InputError,
     RepositoryClientError,
     RepositoryFileNotFoundError,
     RepositoryTagNotFoundError,
 )
-from src.metadata import get as get_metadata
-from src.types_ import Metadata
+from gatekeeper.metadata import get as get_metadata
+from gatekeeper.types_ import Metadata
 
 GITHUB_HOSTNAME = "github.com"
 ORIGIN_NAME = "origin"

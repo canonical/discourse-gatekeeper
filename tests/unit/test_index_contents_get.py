@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from src import index, types_
+from gatekeeper import index, types_
 
 from .. import factories
 

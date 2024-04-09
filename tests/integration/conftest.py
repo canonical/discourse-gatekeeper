@@ -20,7 +20,7 @@ from juju.model import Model
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
-from src.discourse import Discourse
+from gatekeeper.discourse import Discourse
 
 from . import types
 

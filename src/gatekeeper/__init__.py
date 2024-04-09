@@ -6,17 +6,17 @@ import logging
 from collections.abc import Iterable, Iterator
 from itertools import tee
 
-from src import action, check, docs_directory
-from src import index as index_module
-from src import navigation_table, reconcile
-from src import sort as sort_module
-from src.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
-from src.clients import Clients
-from src.constants import DOCUMENTATION_TAG
-from src.download import recreate_docs
-from src.exceptions import InputError, TaggingNotAllowedError
-from src.repository import DEFAULT_BRANCH_NAME
-from src.types_ import (
+from gatekeeper import action, check, docs_directory
+from gatekeeper import index as index_module
+from gatekeeper import navigation_table, reconcile
+from gatekeeper import sort as sort_module
+from gatekeeper.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
+from gatekeeper.clients import Clients
+from gatekeeper.constants import DOCUMENTATION_TAG
+from gatekeeper.download import recreate_docs
+from gatekeeper.exceptions import InputError, TaggingNotAllowedError
+from gatekeeper.repository import DEFAULT_BRANCH_NAME
+from gatekeeper.types_ import (
     ActionResult,
     AnyAction,
     Index,

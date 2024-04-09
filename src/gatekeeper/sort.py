@@ -9,7 +9,7 @@ from pathlib import Path
 
 from more_itertools import peekable, side_effect
 
-from src import index, types_
+from gatekeeper import index, types_
 
 
 class _SortData(typing.NamedTuple):

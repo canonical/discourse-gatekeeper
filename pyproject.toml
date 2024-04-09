@@ -1,6 +1,11 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+[project]
+name = "discourse-gatekeeper"
+version = "0.0.1"
+
+
 [tool.bandit]
 exclude_dirs = ["/venv/", ".tox"]
 [tool.bandit.assert_used]

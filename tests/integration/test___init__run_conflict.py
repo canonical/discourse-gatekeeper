@@ -19,9 +19,9 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import Clients, constants, exceptions, metadata, repository, run_reconcile
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
+from gatekeeper import Clients, constants, exceptions, metadata, repository, run_reconcile
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
