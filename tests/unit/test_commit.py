@@ -9,9 +9,9 @@
 import typing
 from pathlib import Path
 
-from src import commit
-from src.constants import DEFAULT_BRANCH
-from src.repository import Client
+from gatekeeper import commit
+from gatekeeper.constants import DEFAULT_BRANCH
+from gatekeeper.repository import Client
 
 
 def test_parse_git_show_empty():

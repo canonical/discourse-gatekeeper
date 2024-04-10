@@ -6,8 +6,8 @@
 import typing
 from pathlib import Path
 
-from src import metadata
-from src.discourse import _URL_PATH_PREFIX
+from gatekeeper import metadata
+from gatekeeper.discourse import _URL_PATH_PREFIX
 
 
 def create_metadata_yaml(content: str, path: Path) -> None:

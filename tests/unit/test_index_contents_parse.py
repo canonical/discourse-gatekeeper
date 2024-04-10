@@ -10,7 +10,7 @@ from itertools import chain
 
 import pytest
 
-from src import exceptions, index, types_
+from gatekeeper import exceptions, index, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string

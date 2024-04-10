@@ -10,10 +10,14 @@ from collections.abc import Iterable
 from enum import Enum, auto
 from pathlib import Path
 
-from src.constants import DOC_FILE_EXTENSION, DOCUMENTATION_INDEX_FILENAME, NAVIGATION_HEADING
-from src.discourse import Discourse
-from src.exceptions import DiscourseError, InputError, ServerError
-from src.types_ import Index, IndexContentsListItem, IndexFile, Metadata, Page
+from gatekeeper.constants import (
+    DOC_FILE_EXTENSION,
+    DOCUMENTATION_INDEX_FILENAME,
+    NAVIGATION_HEADING,
+)
+from gatekeeper.discourse import Discourse
+from gatekeeper.exceptions import DiscourseError, InputError, ServerError
+from gatekeeper.types_ import Index, IndexContentsListItem, IndexFile, Metadata, Page
 
 CONTENTS_HEADER = "# contents"
 CONTENTS_END_LINE_PREFIX = "#"

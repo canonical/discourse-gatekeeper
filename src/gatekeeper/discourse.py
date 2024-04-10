@@ -12,7 +12,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-from src.exceptions import DiscourseError, InputError
+from gatekeeper.exceptions import DiscourseError, InputError
 
 _URL_PATH_PREFIX = "/t/"
 _POST_SPLIT_LINE = "\n\n-------------------------\n\n"

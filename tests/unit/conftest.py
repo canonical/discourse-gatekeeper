@@ -9,8 +9,8 @@ from unittest import mock
 import pytest
 import requests
 
-from src import Clients, constants, repository
-from src.discourse import Discourse
+from gatekeeper import Clients, constants, repository
+from gatekeeper.discourse import Discourse
 
 from . import helpers
 

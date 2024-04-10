@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src import exceptions, metadata, types_
+from gatekeeper import exceptions, metadata, types_
 
 from .helpers import assert_substrings_in_string, create_charmcraft_yaml, create_metadata_yaml
 

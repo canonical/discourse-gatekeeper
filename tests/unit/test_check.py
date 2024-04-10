@@ -8,7 +8,7 @@ from typing import NamedTuple, cast
 
 import pytest
 
-from src import check, types_
+from gatekeeper import check, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string

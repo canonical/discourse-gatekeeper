@@ -5,7 +5,7 @@
 
 import pytest
 
-from src import content, exceptions
+from gatekeeper import content, exceptions
 
 from .helpers import assert_substrings_in_string
 

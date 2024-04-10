@@ -14,8 +14,8 @@ import pydiscourse.exceptions
 import pytest
 import requests
 
-from src.discourse import _URL_PATH_PREFIX, Discourse, create_discourse
-from src.exceptions import DiscourseError, InputError
+from gatekeeper.discourse import _URL_PATH_PREFIX, Discourse, create_discourse
+from gatekeeper.exceptions import DiscourseError, InputError
 
 from . import helpers
 

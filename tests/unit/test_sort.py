@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src import sort, types_
+from gatekeeper import sort, types_
 
 from .. import factories
 

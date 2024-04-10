@@ -5,7 +5,7 @@
 
 import pytest
 
-from src import types_
+from gatekeeper import types_
 
 from .. import factories
 
