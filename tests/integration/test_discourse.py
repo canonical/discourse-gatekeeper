@@ -9,8 +9,8 @@ from urllib import parse
 import pydiscourse
 import pytest
 
-from src.discourse import Discourse
-from src.exceptions import DiscourseError
+from gatekeeper.discourse import Discourse
+from gatekeeper.exceptions import DiscourseError
 
 from . import types
 

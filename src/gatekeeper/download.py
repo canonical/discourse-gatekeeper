@@ -5,11 +5,11 @@
 
 import shutil
 
-from src.clients import Clients
-from src.index import contents_from_page
-from src.index import get as get_index
-from src.migration import run as migrate_contents
-from src.navigation_table import from_page as navigation_table_from_page
+from gatekeeper.clients import Clients
+from gatekeeper.index import contents_from_page
+from gatekeeper.index import get as get_index
+from gatekeeper.migration import run as migrate_contents
+from gatekeeper.navigation_table import from_page as navigation_table_from_page
 
 
 def _download_from_discourse(clients: Clients) -> None:

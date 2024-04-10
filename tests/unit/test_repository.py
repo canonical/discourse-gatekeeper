@@ -21,15 +21,15 @@ from github.GithubException import GithubException, UnknownObjectException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from src import commit, repository
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from src.exceptions import (
+from gatekeeper import commit, repository
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+from gatekeeper.exceptions import (
     InputError,
     RepositoryClientError,
     RepositoryFileNotFoundError,
     RepositoryTagNotFoundError,
 )
-from src.repository import Client
+from gatekeeper.repository import Client
 
 from .helpers import assert_substrings_in_string
 

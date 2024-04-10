@@ -5,9 +5,9 @@
 
 import pytest
 
-from src import DOCUMENTATION_TAG, constants
-from src.download import recreate_docs
-from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
+from gatekeeper import DOCUMENTATION_TAG, constants
+from gatekeeper.download import recreate_docs
+from gatekeeper.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 
 from .helpers import create_metadata_yaml
 

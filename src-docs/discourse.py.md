@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/discourse.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `discourse.py`
 Interface for Discourse interactions. 
@@ -8,7 +8,7 @@ Interface for Discourse interactions.
 
 ---
 
-<a href="../src/discourse.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_discourse`
 
@@ -50,7 +50,7 @@ Interact with a discourse server.
 
 Attrs:  host: The host of the discourse server. 
 
-<a href="../src/discourse.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
@@ -80,7 +80,7 @@ The HTTP protocol and hostname for discourse (e.g., https://discourse).
 
 ---
 
-<a href="../src/discourse.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `absolute_url`
 
@@ -103,7 +103,7 @@ Get the URL including base path for a topic.
 
 ---
 
-<a href="../src/discourse.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `check_topic_read_permission`
 
@@ -128,7 +128,7 @@ Uses whether retrieve topic succeeds as indication whether the read permission i
 
 ---
 
-<a href="../src/discourse.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `check_topic_write_permission`
 
@@ -151,7 +151,7 @@ Check whether the credentials have write permission on a topic.
 
 ---
 
-<a href="../src/discourse.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_topic`
 
@@ -181,7 +181,7 @@ Create a new topic.
 
 ---
 
-<a href="../src/discourse.py#L439"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L439"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `delete_topic`
 
@@ -210,7 +210,7 @@ Delete a topic.
 
 ---
 
-<a href="../src/discourse.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `retrieve_topic`
 
@@ -239,7 +239,7 @@ Retrieve the topic content.
 
 ---
 
-<a href="../src/discourse.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `topic_url_valid`
 
@@ -264,7 +264,7 @@ Validations:  1. The URL must start with the base path configured during constru
 
 ---
 
-<a href="../src/discourse.py#L462"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/discourse.py#L462"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_topic`
 

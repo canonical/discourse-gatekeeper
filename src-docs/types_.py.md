@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/types_.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `types_.py`
 Types for uploading docs to charmhub. 
@@ -371,7 +371,7 @@ Whether the row is a group of pages.
 
 ---
 
-<a href="../src/types_.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_external`
 
@@ -394,7 +394,7 @@ Whether the row is an external reference.
 
 ---
 
-<a href="../src/types_.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `to_markdown`
 

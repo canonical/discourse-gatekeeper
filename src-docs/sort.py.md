@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/sort.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/sort.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `sort.py`
 Sort items for publishing. 
@@ -8,7 +8,7 @@ Sort items for publishing.
 
 ---
 
-<a href="../src/sort.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/sort.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `using_contents_index`
 

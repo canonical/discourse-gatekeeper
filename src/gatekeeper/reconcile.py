@@ -7,12 +7,12 @@ import itertools
 import typing
 from pathlib import Path
 
-from src import exceptions
-from src import index as index_module
-from src import types_
-from src.clients import Clients
-from src.constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
-from src.discourse import Discourse
+from gatekeeper import exceptions
+from gatekeeper import index as index_module
+from gatekeeper import types_
+from gatekeeper.clients import Clients
+from gatekeeper.constants import DOCUMENTATION_TAG, NAVIGATION_TABLE_START
+from gatekeeper.discourse import Discourse
 
 
 def _local_only(item_info: types_.PathInfo | types_.IndexContentsListItem) -> types_.CreateAction:

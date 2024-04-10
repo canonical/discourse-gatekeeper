@@ -17,10 +17,10 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import Clients, constants, exceptions, metadata, run_reconcile
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
-from src.repository import Client, Repo
+from gatekeeper import Clients, constants, exceptions, metadata, run_reconcile
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
+from gatekeeper.repository import Client, Repo
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml

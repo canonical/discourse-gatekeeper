@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/content.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/content.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `content.py`
 Module for checking conflicts using 3-way merge and create content based on a 3 way merge. 
@@ -8,7 +8,7 @@ Module for checking conflicts using 3-way merge and create content based on a 3 
 
 ---
 
-<a href="../src/content.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/content.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `conflicts`
 
@@ -34,7 +34,7 @@ Check for merge conflicts based on the git merge algorithm.
 
 ---
 
-<a href="../src/content.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/content.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `merge`
 
@@ -66,7 +66,7 @@ Create the merged content based on the git merge algorithm.
 
 ---
 
-<a href="../src/content.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/content.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `diff`
 

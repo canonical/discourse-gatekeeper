@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/docs_directory.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/docs_directory.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `docs_directory.py`
 Class for reading the docs directory. 
@@ -11,7 +11,7 @@ Class for reading the docs directory.
 
 ---
 
-<a href="../src/docs_directory.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/docs_directory.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `calculate_table_path`
 
@@ -35,7 +35,7 @@ Calculate the table path of a path.
 
 ---
 
-<a href="../src/docs_directory.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/docs_directory.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `read`
 
@@ -61,7 +61,7 @@ Algorithm:  1.  Get a list of all sub directories and .md files in the docs fold
 
 ---
 
-<a href="../src/docs_directory.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/docs_directory.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `has_docs_directory`
 

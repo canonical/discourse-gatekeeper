@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src import docs_directory, types_
+from gatekeeper import docs_directory, types_
 
 from .. import factories
 

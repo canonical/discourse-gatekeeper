@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/metadata.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/metadata.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `metadata.py`
 Module for parsing metadata.yaml file. 
@@ -17,7 +17,7 @@ Module for parsing metadata.yaml file.
 
 ---
 
-<a href="../src/metadata.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/metadata.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get`
 

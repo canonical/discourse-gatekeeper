@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src import constants, exceptions, index, types_
+from gatekeeper import constants, exceptions, index, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string

@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/action.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/action.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `action.py`
 Module for taking the required actions to match the server state with the local state. 
@@ -15,7 +15,7 @@ Module for taking the required actions to match the server state with the local 
 
 ---
 
-<a href="../src/action.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/action.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_all`
 

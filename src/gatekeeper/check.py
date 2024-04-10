@@ -10,9 +10,9 @@ from typing import NamedTuple, TypeGuard
 
 import requests
 
-from src import content
-from src.constants import DOCUMENTATION_TAG
-from src.types_ import (
+from gatekeeper import content
+from gatekeeper.constants import DOCUMENTATION_TAG
+from gatekeeper.types_ import (
     AnyAction,
     IndexContentsListItem,
     UpdateAction,

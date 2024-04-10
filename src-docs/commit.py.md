@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/commit.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/commit.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `commit.py`
 Module for handling interactions with git commit. 
@@ -8,7 +8,7 @@ Module for handling interactions with git commit.
 
 ---
 
-<a href="../src/commit.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/commit.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_git_show`
 

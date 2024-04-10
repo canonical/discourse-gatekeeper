@@ -8,8 +8,8 @@ from functools import partial
 from itertools import count
 from pathlib import Path
 
-from src import types_
-from src.constants import DOC_FILE_EXTENSION
+from gatekeeper import types_
+from gatekeeper.constants import DOC_FILE_EXTENSION
 
 
 def _get_directories_files(docs_path: Path) -> list[Path]:

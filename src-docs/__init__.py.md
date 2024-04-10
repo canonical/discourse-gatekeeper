@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/__init__.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/__init__.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `__init__.py`
 Library for uploading docs to charmhub. 
@@ -15,7 +15,7 @@ Library for uploading docs to charmhub.
 
 ---
 
-<a href="../src/__init__.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/__init__.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_reconcile`
 
@@ -50,7 +50,7 @@ Upload the documentation to charmhub.
 
 ---
 
-<a href="../src/__init__.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/__init__.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run_migrate`
 
@@ -75,7 +75,7 @@ Migrate existing docs from charmhub to local repository.
 
 ---
 
-<a href="../src/__init__.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/__init__.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `pre_flight_checks`
 
