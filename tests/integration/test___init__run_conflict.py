@@ -19,9 +19,9 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import Clients, constants, exceptions, metadata, repository, run_reconcile
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
+from gatekeeper import Clients, constants, exceptions, metadata, repository, run_reconcile
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -95,7 +95,9 @@ async def test_run_conflict(
     reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+            dry_run=False,
+            delete_pages=True,
+            commit_sha=repository_client.current_commit,
         ),
     )
 
@@ -129,7 +131,8 @@ async def test_run_conflict(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "2. docs with a documentation file updated and discourse updated with conflicting "
-        "content in dry run mode"
+        "content in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     with pytest.raises(exceptions.InputError) as exc_info:
@@ -193,7 +196,8 @@ async def test_run_conflict(
     discourse_api.update_topic(url=doc_url, content=doc_content_4)
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "4. docs with a documentation file and discourse updated to resolve conflict"
+        "4. docs with a documentation file and discourse updated to resolve conflict",
+        directory=repository_client.docs_path,
     )
 
     reconcile_output = run_reconcile(
@@ -222,7 +226,8 @@ async def test_run_conflict(
     doc_file.write_text(doc_content_5 := f"# {doc_title}\ncontent 5", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "5. docs with an index and documentation and alternate documentation file"
+        "5. docs with an index and documentation and alternate documentation file",
+        directory=repository_client.docs_path,
     )
     mock_content_file.content = b64encode(doc_content_4.encode(encoding="utf-8"))
 
@@ -261,7 +266,8 @@ async def test_run_conflict(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "# 6. docs with an index and changed documentation and alternate documentation with "
-        "server changes"
+        "server changes",
+        directory=repository_client.docs_path,
     )
     mock_content_file.content = b64encode(doc_content_5.encode(encoding="utf-8"))
     mock_alt_content_file = MagicMock(spec=ContentFile)

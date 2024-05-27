@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/navigation_table.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/navigation_table.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `navigation_table.py`
 Module for parsing and rendering a navigation table. 
@@ -8,7 +8,7 @@ Module for parsing and rendering a navigation table.
 
 ---
 
-<a href="../src/navigation_table.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/navigation_table.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `from_page`
 
@@ -35,7 +35,7 @@ Algorithm:  1.  Extract the table based on a regular expression looking for a 3 
 
 ---
 
-<a href="../src/navigation_table.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/navigation_table.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_table_row`
 

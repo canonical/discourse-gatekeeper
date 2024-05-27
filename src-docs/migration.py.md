@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/migration.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/migration.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `migration.py`
 Module for migrating remote documentation into local git repository. 
@@ -12,7 +12,7 @@ Module for migrating remote documentation into local git repository.
 
 ---
 
-<a href="../src/migration.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/migration.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `make_parent`
 
@@ -37,7 +37,7 @@ Construct path leading to document to be created.
 
 ---
 
-<a href="../src/migration.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/migration.py#L372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `run`
 

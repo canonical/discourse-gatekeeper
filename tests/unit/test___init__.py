@@ -10,8 +10,7 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import (  # GETTING_STARTED,
-    DOCUMENTATION_FOLDER_NAME,
+from gatekeeper import (  # GETTING_STARTED,
     DOCUMENTATION_TAG,
     Clients,
     constants,
@@ -22,11 +21,11 @@ from src import (  # GETTING_STARTED,
     run_reconcile,
     types_,
 )
-from src.clients import get_clients
-from src.constants import DEFAULT_BRANCH
-from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
-from src.repository import DEFAULT_BRANCH_NAME
-from src.repository import Client as RepositoryClient
+from gatekeeper.clients import get_clients
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME
+from gatekeeper.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
+from gatekeeper.repository import DEFAULT_BRANCH_NAME
+from gatekeeper.repository import Client as RepositoryClient
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH
@@ -36,8 +35,9 @@ from .helpers import assert_substrings_in_string, create_metadata_yaml
 # pylint: disable=protected-access
 
 
+@pytest.mark.parametrize("charm_dir", ["", "charm"])
 @mock.patch("github.Github.get_repo")
-def test_setup_clients(get_repo_mock, git_repo_with_remote):
+def test_setup_clients(get_repo_mock, git_repo_with_remote, charm_dir):
     """
     arrange: given a local path and user_inputs
     act: when get_clients is called
@@ -47,10 +47,12 @@ def test_setup_clients(get_repo_mock, git_repo_with_remote):
 
     path = Path(git_repo_with_remote.working_dir)
 
-    user_inputs = factories.UserInputsFactory()
+    user_inputs = factories.UserInputsFactory(charm_dir=charm_dir)
     clients = get_clients(user_inputs=user_inputs, base_path=path)
 
     assert clients.repository.base_path == path
+    assert clients.repository.base_charm_path == path / charm_dir
+    assert clients.repository.docs_path == path / charm_dir / DOCUMENTATION_FOLDER_NAME
 
     assert clients.discourse._category_id == int(user_inputs.discourse.category_id)
     assert clients.discourse.host == f"https://{user_inputs.discourse.hostname}"
@@ -59,7 +61,7 @@ def test_setup_clients(get_repo_mock, git_repo_with_remote):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_empty_local_server(mocked_clients):
@@ -89,7 +91,7 @@ def test__run_reconcile_empty_local_server(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_empty_local_server_from_non_base_branch(mocked_clients):
@@ -122,7 +124,7 @@ def test__run_reconcile_empty_local_server_from_non_base_branch(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_local_empty_server(mocked_clients):
@@ -143,7 +145,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
         (docs_folder := repo.base_path / "docs").mkdir()
         (docs_folder / "index.md").write_text(index_content := "index content\n")
         (docs_folder / "page.md").write_text(page_content := "page content")
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -169,7 +171,7 @@ def test__run_reconcile_local_empty_server(mocked_clients):
     }
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 @pytest.mark.parametrize(
     "branch_name",
     [pytest.param(DEFAULT_BRANCH), pytest.param("other-main")],
@@ -280,7 +282,7 @@ def test_run_reconcile_same_content_local_and_server(
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_local_contents_index(mocked_clients):
@@ -309,7 +311,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -338,7 +340,7 @@ def test__run_reconcile_local_contents_index(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_hidden_item(mocked_clients):
@@ -364,7 +366,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -388,7 +390,7 @@ def test__run_reconcile_hidden_item(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_invalid_external_item(mocked_clients):
@@ -409,7 +411,7 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -422,7 +424,7 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_external_item(mocked_clients):
@@ -444,7 +446,7 @@ def test__run_reconcile_external_item(mocked_clients):
 """,
             encoding="utf-8",
         )
-        repo.update_branch("new commit")
+        repo.update_branch("new commit", directory=repo.docs_path)
 
         user_inputs = factories.UserInputsFactory(
             dry_run=False, delete_pages=True, commit_sha=repo.current_commit
@@ -468,7 +470,7 @@ def test__run_reconcile_external_item(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
@@ -490,7 +492,7 @@ def test__run_reconcile_local_empty_server_dry_run(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients, upstream_git_repo):
@@ -516,7 +518,7 @@ def test__run_reconcile_local_empty_server_dry_run_no_tag(mocked_clients, upstre
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_reconcile_local_empty_server_error(mocked_clients):
@@ -548,10 +550,10 @@ def test__run_reconcile_local_empty_server_error(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="index-url"),
 )
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__run_reconcile_local_server_conflict(mock_tag, mocked_clients):
     """
     arrange: given metadata with name and docs and docs folder with a file and mocked discourse
@@ -589,7 +591,7 @@ def test__run_reconcile_local_server_conflict(mock_tag, mocked_clients):
     mocked_clients.discourse.retrieve_topic.assert_any_call(url=page_url)
 
 
-@mock.patch("src.repository.Client.metadata", types_.Metadata(name="name 1", docs=None))
+@mock.patch("gatekeeper.repository.Client.metadata", types_.Metadata(name="name 1", docs=None))
 def test__run_reconcile_no_docs(caplog, mocked_clients):
     """
     arrange: given metadata with name and no docs and no docs folder and mocked discourse
@@ -609,7 +611,7 @@ def test__run_reconcile_no_docs(caplog, mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
@@ -625,7 +627,9 @@ def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
     (docs_folder / "index.md").write_text("index content")
     (docs_folder / "page.md").write_text("page content 2")
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("First commit of documentation")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "First commit of documentation", directory=repository_client.docs_path
+    )
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
     user_inputs = factories.UserInputsFactory(commit_sha=repository_client.current_commit)
@@ -641,7 +645,7 @@ def test__run_reconcile_on_tag_commit(caplog, mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate_server_error_index(repository_client: RepositoryClient):
@@ -665,7 +669,7 @@ def test__run_migrate_server_error_index(repository_client: RepositoryClient):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate_server_error_topic(mocked_clients):
@@ -699,7 +703,7 @@ def test__run_migrate_server_error_topic(mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
 def test__run_migrate_no_docs_information(caplog, mocked_clients):
@@ -723,7 +727,7 @@ def test__run_migrate_no_docs_information(caplog, mocked_clients):
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
 def test__run_migrate(
@@ -777,10 +781,10 @@ def test__run_migrate(
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch("src.repository.Client.get_pull_request")
+@mock.patch("gatekeeper.repository.Client.get_pull_request")
 def test__run_migrate_with_pull_request(
     mock_get_pull_request,
     mocked_clients,
@@ -840,10 +844,10 @@ def test__run_migrate_with_pull_request(
 
 
 @mock.patch(
-    "src.repository.Client.metadata",
+    "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs="http://discourse/t/docs"),
 )
-@mock.patch("src.repository.Client.get_pull_request")
+@mock.patch("gatekeeper.repository.Client.get_pull_request")
 def test__run_migrate_with_pull_request_no_modification(
     mock_get_pull_request,
     mocked_clients,
@@ -1114,7 +1118,7 @@ def test_run_migrate_same_content_local_and_server(mock_edit_pull_request, caplo
     assert not edit_call_args
 
 
-@mock.patch("src.repository.Client.get_pull_request")
+@mock.patch("gatekeeper.repository.Client.get_pull_request")
 @mock.patch("github.PullRequest.PullRequest")
 def test_run_migrate_same_content_local_and_server_open_pr(
     mocked_get_pull_request, mock_edit_pull_request, caplog, mocked_clients, mock_pull_request

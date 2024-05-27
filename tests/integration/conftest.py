@@ -20,7 +20,7 @@ from juju.model import Model
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
-from src.discourse import Discourse
+from gatekeeper.discourse import Discourse
 
 from . import types
 
@@ -364,7 +364,6 @@ async def discourse_remove_rate_limits(
     settings = {
         "unique_posts_mins": "0",
         "rate_limit_create_post": "0",
-        "rate_limit_new_user_create_topic": "0",
         "rate_limit_new_user_create_post": "0",
         "max_topics_per_day": "1000",
         "max_edits_per_day": "1000",

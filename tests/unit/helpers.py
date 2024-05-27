@@ -6,8 +6,8 @@
 import typing
 from pathlib import Path
 
-from src import metadata
-from src.discourse import _URL_PATH_PREFIX
+from gatekeeper import metadata
+from gatekeeper.discourse import _URL_PATH_PREFIX
 
 
 def create_metadata_yaml(content: str, path: Path) -> None:
@@ -20,6 +20,18 @@ def create_metadata_yaml(content: str, path: Path) -> None:
     """
     metadata_yaml = path / metadata.METADATA_FILENAME
     metadata_yaml.write_text(content, encoding="utf-8")
+
+
+def create_charmcraft_yaml(content: str, path: Path) -> None:
+    """Create the charmcraft file.
+
+    Args:
+        content: The text to be written to the file.
+        path: The directory to create the file in.
+
+    """
+    charmcraft_yaml = path / metadata.CHARMCRAFT_FILENAME
+    charmcraft_yaml.write_text(content, encoding="utf-8")
 
 
 def assert_substrings_in_string(substrings: typing.Iterable[str], string: str) -> None:
