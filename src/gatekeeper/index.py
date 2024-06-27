@@ -370,6 +370,7 @@ def _calculate_contents_hierarchy(
             hierarchy = hierarchy - 1
             parent = parents.pop()
             aggregate_dir = Path(parent.reference_value).parent
+            continue
 
         _check_contents_item(
             item=item,
