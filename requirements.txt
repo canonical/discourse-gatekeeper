@@ -3,4 +3,4 @@ pydiscourse>=1.7,<1.8
 PyGithub>=2.3,<2.4
 PyYAML>=6.0,<6.1
 requests>=2.32,<2.33
-more-itertools>=10.3,<10.4
+more-itertools>=10.4,<10.5
