@@ -33,36 +33,43 @@ def model_fixture(ops_test: OpsTest) -> Model:
 
 
 @pytest_asyncio.fixture(scope="module")
-async def discourse(model: Model) -> Application:
+async def discourse(model: Model, ops_test: OpsTest) -> Application:
     """Deploy discourse."""
     postgres_charm_name = "postgresql-k8s"
     redis_charm_name = "redis-k8s"
     discourse_charm_name = "discourse-k8s"
-    await asyncio.gather(
-        model.deploy(
-            postgres_charm_name,
-            channel="14/edge",
-            series="jammy",
-            trust=True,
-            config={
-                "profile": "testing",
-                "plugin_hstore_enable": "true",
-                "plugin_pg_trgm_enable": "true",
-            },
-        ),
-        model.deploy(redis_charm_name, channel="latest/edge", series="jammy"),
-    )
-    await model.wait_for_idle(
-        apps=[postgres_charm_name, redis_charm_name], status="active", raise_on_error=False
-    )
 
-    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
-    await model.wait_for_idle(apps=[discourse_charm_name], status="waiting", raise_on_error=False)
+    postgres_app = await model.deploy(
+        postgres_charm_name,
+        channel="14/stable",
+        series="jammy",
+        trust=True,
+        config={"profile": "testing"},
+    )
+    async with ops_test.fast_forward():
+        await model.wait_for_idle(apps=[postgres_app.name], status="active")
 
-    await model.integrate(discourse_charm_name, f"{postgres_charm_name}:database")
+    redis_app = await model.deploy(redis_charm_name, series="jammy", channel="latest/edge")
+    await model.wait_for_idle(apps=[redis_app.name], status="active")
+
+    discourse_app: Application = await model.deploy(
+        discourse_charm_name, channel="edge", series="focal"
+    )
+    await model.wait_for_idle(apps=[discourse_app.name], status="waiting")
+
+    # configure postgres
+    await postgres_app.set_config(
+        {
+            "plugin_hstore_enable": "true",
+            "plugin_pg_trgm_enable": "true",
+        }
+    )
+    await model.wait_for_idle(apps=[postgres_app.name], status="active")
+
+    await model.integrate(discourse_charm_name, postgres_charm_name)
     await model.integrate(discourse_charm_name, redis_charm_name)
     await model.wait_for_idle(
-        apps=[discourse_charm_name], status="active", timeout=60 * 60, raise_on_error=False
+        apps=[discourse_app.name], status="active", timeout=60 * 60, raise_on_error=False
     )
 
     status: FullStatus = await model.get_status()
