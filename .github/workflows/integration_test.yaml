@@ -9,5 +9,5 @@ jobs:
     secrets: inherit
     with:
       modules: '["discourse", "reconcile", "conflict", "migrate"]'
-      juju-channel: 3.1/stable
-      channel: 1.28-strict/stable
+      juju-channel: 3.6/stable
+      channel: 1.31-strict/stable
