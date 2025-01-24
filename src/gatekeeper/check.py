@@ -168,7 +168,7 @@ def conflicts(actions: Iterable[AnyAction]) -> Iterator[Problem]:
     some changes on the server that have not been merged into git yet and the branch is proposing
     to make changes to the documentation as well. This means that there could be changes made on
     the server which logically conflict with proposed changes in the PR. These conflicts can be
-    supppressed using the discourse-ahead-ok tag on the commit that the action is running on.
+    suppressed using the discourse-ahead-ok tag on the commit that the action is running on.
 
     Args:
         actions: The actions to check.
