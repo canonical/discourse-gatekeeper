@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for discourse."""
@@ -350,7 +350,6 @@ def test_check_topic_write_permission_user_deleted(
     ],
 )
 # All arguments needed to be able to parametrize tests
-# pylint: disable=too-many-arguments
 def test_check_topic_success(
     monkeypatch: pytest.MonkeyPatch,
     function_: str,
@@ -358,7 +357,7 @@ def test_check_topic_success(
     expected_return_value,
     discourse: Discourse,
     topic_url: str,
-):
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """
     arrange: given a mocked discourse client that returns given data for a topic
     act: when given function is called
@@ -573,7 +572,7 @@ def test_function_discourse_error(
     kwargs: dict,
     expected_error_msg_contents: tuple[str, ...],
     discourse: Discourse,
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """
     arrange: given mocked discourse client that raises an error
     act: when the given function is called
