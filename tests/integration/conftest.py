@@ -104,11 +104,12 @@ async def create_discourse_admin_account(discourse: Application, email: str):
     Returns:
         The credentials of the admin user.
     """
-    password = secrets.token_urlsafe(16)
     discourse_unit: Unit = discourse.units[0]
     action: Action = await discourse_unit.run_action("create-user", admin=True, email=email)
-    await action.wait()
-    return types.Credentials(email=email, username=email.split("@")[0], password=password)
+    result = await action.wait()
+    return types.Credentials(
+        email=email, username=email.split("@")[0], password=result["password"]
+    )
 
 
 async def create_discourse_admin_api_key(

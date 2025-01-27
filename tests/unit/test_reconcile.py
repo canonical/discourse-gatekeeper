@@ -90,14 +90,14 @@ def test__local_only_external_ref(hidden: bool):
     ],
 )
 # The arguments are needed due to parametrisation and use of fixtures
-def test__local_and_server_error(  # pylint: disable=too-many-arguments
+def test__local_and_server_error(
     item_info_level: int,
     table_row_level: int,
     item_info_table_path: str,
     table_row_path: str,
     tmp_path: Path,
     mocked_clients,
-):
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """
     arrange: given path info and table row where either level or table path or both do not match
     act: when _local_and_server is called with the path info and table row
@@ -1135,7 +1135,7 @@ def test__calculate_action(
 )
 # pylint: enable=undefined-variable,unused-variable
 # The arguments are needed due to parametrisation and use of fixtures
-def test_run(  # pylint: disable=too-many-arguments
+def test_run(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     path_infos: tuple[types_.PathInfo, ...],
     table_rows: tuple[types_.TableRow, ...],
     expected_action_types: tuple[type[types_.AnyAction], ...],

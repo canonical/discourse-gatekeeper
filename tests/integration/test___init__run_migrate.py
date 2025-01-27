@@ -43,7 +43,7 @@ async def test_run_migrate(
     monkeypatch,
     charm_id: str,
     charm_dir: str,
-):
+):  # pylint: disable=too-many-positional-arguments
     """
     arrange: given running discourse server
     act: when run is called with:
