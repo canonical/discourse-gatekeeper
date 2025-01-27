@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/types_.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `types_.py`
 Types for uploading docs to charmhub. 
@@ -371,7 +371,7 @@ Whether the row is a group of pages.
 
 ---
 
-<a href="../src/types_.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_external`
 
@@ -394,7 +394,7 @@ Whether the row is an external reference.
 
 ---
 
-<a href="../src/types_.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/types_.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `to_markdown`
 
@@ -461,7 +461,7 @@ Attrs:  content_change: The change to the documentation content.
 ## <kbd>class</kbd> `UserInputs`
 Configurable user input values used to run discourse-gatekeeper. 
 
-Attrs:  discourse: The configuration for interacting with discourse.  dry_run: If enabled, only log the action that would be taken. Has no effect in migration  mode.  delete_pages: Whether to delete pages that are no longer needed. Has no effect in  migration mode.  github_access_token: A Personal Access Token(PAT) or access token with repository access.  Required in migration mode.  commit_sha: The SHA of the commit the action is running on.  base_branch: The main branch against which the syncs act on 
+Attrs:  discourse: The configuration for interacting with discourse.  dry_run: If enabled, only log the action that would be taken. Has no effect in migration  mode.  delete_pages: Whether to delete pages that are no longer needed. Has no effect in  migration mode.  github_access_token: A Personal Access Token(PAT) or access token with repository access.  Required in migration mode.  commit_sha: The SHA of the commit the action is running on.  base_branch: The main branch against which the syncs act on.  charm_dir: Directory the charm is located in. 
 
 
 

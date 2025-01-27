@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/repository.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `repository.py`
 Module for handling interactions with git repository. 
@@ -25,12 +25,16 @@ Module for handling interactions with git repository.
 
 ---
 
-<a href="../src/repository.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_repository_client`
 
 ```python
-create_repository_client(access_token: str | None, base_path: Path) → Client
+create_repository_client(
+    access_token: str | None,
+    base_path: Path,
+    charm_dir: str = ''
+) → Client
 ```
 
 Create a Github instance to handle communication with Github server. 
@@ -41,6 +45,7 @@ Create a Github instance to handle communication with Github server.
  
  - <b>`access_token`</b>:  Access token that has permissions to open a pull request. 
  - <b>`base_path`</b>:  Path where local .git resides in. 
+ - <b>`charm_dir`</b>:  Relative directory where the charm files are located. 
 
 
 
@@ -59,14 +64,18 @@ Create a Github instance to handle communication with Github server.
 ## <kbd>class</kbd> `Client`
 Wrapper for git/git-server related functionalities. 
 
-Attrs:  base_path: The root directory of the repository.  metadata: Metadata object of the charm  has_docs_directory: whether the repository has a docs directory  current_branch: current git branch used in the repository  current_commit: current commit checkout in the repository  branches: list of all branches 
+Attrs:  base_path: The root directory of the repository.  base_charm_path: The directory of the repository where the charm is.  docs_path: The directory of the repository where the documentation is.  metadata: Metadata object of the charm  has_docs_directory: whether the repository has a docs directory  current_branch: current git branch used in the repository  current_commit: current commit checkout in the repository  branches: list of all branches 
 
-<a href="../src/repository.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L180"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(repository: Repo, github_repository: Repository) → None
+__init__(
+    repository: Repo,
+    github_repository: Repository,
+    charm_dir: str = ''
+) → None
 ```
 
 Construct. 
@@ -77,7 +86,19 @@ Construct.
  
  - <b>`repository`</b>:  Client for interacting with local git repository. 
  - <b>`github_repository`</b>:  Client for interacting with remote github repository. 
+ - <b>`charm_dir`</b>:  Relative directory where charm files are located. 
 
+
+---
+
+#### <kbd>property</kbd> base_charm_path
+
+Return the Path of the charm in the repository. 
+
+
+
+**Returns:**
+  Path of the repository. 
 
 ---
 
@@ -99,6 +120,17 @@ Return the current branch.
 
 ---
 
+#### <kbd>property</kbd> docs_path
+
+Return the Path of the charm in the repository. 
+
+
+
+**Returns:**
+  Path of the repository. 
+
+---
+
 #### <kbd>property</kbd> has_docs_directory
 
 Return whether the repository has a docs directory. 
@@ -113,7 +145,7 @@ Return the Metadata object of the charm.
 
 ---
 
-<a href="../src/repository.py#L358"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_branch`
 
@@ -147,7 +179,7 @@ repository.create_branch(branch_name).switch(branch_name)
 
 ---
 
-<a href="../src/repository.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L546"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `create_pull_request`
 
@@ -176,7 +208,7 @@ Create pull request for changes in given repository path.
 
 ---
 
-<a href="../src/repository.py#L616"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L642"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_file_content_from_tag`
 
@@ -208,7 +240,7 @@ Get the content of a file for a specific tag.
 
 ---
 
-<a href="../src/repository.py#L494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_pull_request`
 
@@ -237,12 +269,12 @@ Return open pull request matching the provided branch name.
 
 ---
 
-<a href="../src/repository.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_summary`
 
 ```python
-get_summary(directory: str | None = 'docs') → DiffSummary
+get_summary(directory: str | Path | None) → DiffSummary
 ```
 
 Return a summary of the differences against the most recent commit. 
@@ -260,7 +292,7 @@ Return a summary of the differences against the most recent commit.
 
 ---
 
-<a href="../src/repository.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_commit_in_branch`
 
@@ -290,7 +322,7 @@ Check if commit exists in a given branch.
 
 ---
 
-<a href="../src/repository.py#L562"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_dirty`
 
@@ -313,7 +345,7 @@ Check if repository path has any changes including new files.
 
 ---
 
-<a href="../src/repository.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L505"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `is_same_commit`
 
@@ -337,7 +369,7 @@ Return whether tag and commit coincides.
 
 ---
 
-<a href="../src/repository.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `pull`
 
@@ -355,7 +387,7 @@ Pull content from remote for the provided branch.
 
 ---
 
-<a href="../src/repository.py#L310"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `switch`
 
@@ -378,7 +410,7 @@ Switch branch for the repository.
 
 ---
 
-<a href="../src/repository.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L618"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_commit`
 
@@ -403,7 +435,7 @@ Tag a commit, if the tag already exists, it is deleted first.
 
 ---
 
-<a href="../src/repository.py#L577"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L603"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `tag_exists`
 
@@ -426,16 +458,16 @@ Check if a given tag exists.
 
 ---
 
-<a href="../src/repository.py#L404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_branch`
 
 ```python
 update_branch(
     commit_msg: str,
+    directory: str | Path | None,
     push: bool = True,
-    force: bool = False,
-    directory: str | None = 'docs'
+    force: bool = False
 ) → Client
 ```
 
@@ -463,7 +495,7 @@ Update branch with a new commit.
 
 ---
 
-<a href="../src/repository.py#L548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L574"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `update_pull_request`
 
@@ -481,7 +513,7 @@ Update and push changes to the given branch.
 
 ---
 
-<a href="../repository/py/with_branch#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../repository/py/with_branch#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `with_branch`
 
@@ -517,7 +549,7 @@ Attrs:  is_dirty: boolean indicated whether there is any delta  new: list of fil
 
 ---
 
-<a href="../src/repository.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/repository.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `from_raw_diff`
 

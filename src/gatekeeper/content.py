@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for checking conflicts using 3-way merge and create content based on a 3 way merge."""
@@ -10,7 +10,7 @@ from pathlib import Path
 from git.exc import GitCommandError
 from git.repo import Repo
 
-from src.exceptions import ContentError
+from gatekeeper.exceptions import ContentError
 
 _BASE_BRANCH = "base"
 _THEIR_BRANCH = "theirs"

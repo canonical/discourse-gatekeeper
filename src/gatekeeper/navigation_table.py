@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for parsing and rendering a navigation table."""
@@ -7,9 +7,9 @@ import re
 import string
 import typing
 
-from src import constants, types_
-from src.discourse import Discourse
-from src.exceptions import (
+from gatekeeper import constants, types_
+from gatekeeper.discourse import Discourse
+from gatekeeper.exceptions import (
     DiscourseError,
     NavigationTableParseError,
     PagePermissionError,

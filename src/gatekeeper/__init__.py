@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
@@ -6,17 +6,17 @@ import logging
 from collections.abc import Iterable, Iterator
 from itertools import tee
 
-from src import action, check, docs_directory
-from src import index as index_module
-from src import navigation_table, reconcile
-from src import sort as sort_module
-from src.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
-from src.clients import Clients
-from src.constants import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
-from src.download import recreate_docs
-from src.exceptions import InputError, TaggingNotAllowedError
-from src.repository import DEFAULT_BRANCH_NAME
-from src.types_ import (
+from gatekeeper import action, check, docs_directory
+from gatekeeper import index as index_module
+from gatekeeper import navigation_table, reconcile
+from gatekeeper import sort as sort_module
+from gatekeeper.action import DRY_RUN_NAVLINK_LINK, FAIL_NAVLINK_LINK
+from gatekeeper.clients import Clients
+from gatekeeper.constants import DOCUMENTATION_TAG
+from gatekeeper.download import recreate_docs
+from gatekeeper.exceptions import InputError, TaggingNotAllowedError
+from gatekeeper.repository import DEFAULT_BRANCH_NAME
+from gatekeeper.types_ import (
     ActionResult,
     AnyAction,
     Index,
@@ -50,7 +50,7 @@ def _get_reconcile_actions(
     Raises:
         InputError: if there are any problems with the contents index.
     """
-    docs_path = clients.repository.base_path / DOCUMENTATION_FOLDER_NAME
+    docs_path = clients.repository.docs_path
     path_infos = docs_directory.read(docs_path=docs_path)
 
     index_contents = index_module.get_contents(index_file=index.local, docs_path=docs_path)
@@ -105,7 +105,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
 
     index = index_module.get(
         metadata=clients.repository.metadata,
-        base_path=clients.repository.base_path,
+        docs_path=clients.repository.docs_path,
         server_client=clients.discourse,
     )
     server_content = (
@@ -147,11 +147,7 @@ def run_reconcile(clients: Clients, user_inputs: UserInputs) -> ReconcileOutputs
         )
 
     actions, check_actions = tee(actions, 2)
-    problems = tuple(
-        check.conflicts(
-            actions=check_actions, repository=clients.repository, user_inputs=user_inputs
-        )
-    )
+    problems = tuple(check.conflicts(actions=check_actions))
     if problems:
         raise InputError(
             "One or more of the required actions could not be executed, see the log for details"

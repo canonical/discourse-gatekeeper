@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for navigation table module."""
@@ -8,8 +8,8 @@
 
 import pytest
 
-from src import exceptions, navigation_table, types_
-from src.exceptions import NavigationTableParseError
+from gatekeeper import exceptions, navigation_table, types_
+from gatekeeper.exceptions import NavigationTableParseError
 
 from .. import factories
 from .helpers import assert_substrings_in_string

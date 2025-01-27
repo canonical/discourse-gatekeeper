@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 name: Upload Charm Docs
 description: Upload charm documentation to charmhub
@@ -53,6 +53,14 @@ inputs:
       The SHA of the commit to be used when running the action. If not provided, it falls back to 
       the pull request head SHA or (if outside of a PR) to the value of the environment 
       variable GITHUB_SHA.
+    required: false
+    type: string
+  charm_dir:
+    description: |
+      Relative name of the directory where the metadata.yaml or charmcraft.yaml files are located
+      if they are not in the root directory of the repository. The docs directory is also located
+      under this directory.
+    default: ''
     required: false
     type: string
 outputs:

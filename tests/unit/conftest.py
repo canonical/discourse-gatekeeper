@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for all unit tests."""
@@ -9,8 +9,8 @@ from unittest import mock
 import pytest
 import requests
 
-from src import Clients, constants, repository
-from src.discourse import Discourse
+from gatekeeper import Clients, constants, repository
+from gatekeeper.discourse import Discourse
 
 from . import helpers
 

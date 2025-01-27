@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Factories for generating test data."""
@@ -11,8 +11,8 @@ from typing import Generic, TypeVar
 
 import factory
 
-from src import index, types_
-from src.constants import DEFAULT_BRANCH
+from gatekeeper import index, types_
+from gatekeeper.constants import DEFAULT_BRANCH
 
 from . import types
 
@@ -359,6 +359,7 @@ class UserInputsFactory(
     base_branch = DEFAULT_BRANCH
     dry_run = False
     delete_pages = False
+    charm_dir = ""
 
 
 class TableRowFactory(

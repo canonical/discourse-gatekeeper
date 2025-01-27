@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for public functions in migration module."""
@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from src import discourse, exceptions, migration, types_
+from gatekeeper import discourse, exceptions, migration, types_
 
 from ... import factories
 

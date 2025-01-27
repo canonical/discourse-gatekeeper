@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for index module get_contents function."""
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from src import index, types_
+from gatekeeper import index, types_
 
 from .. import factories
 

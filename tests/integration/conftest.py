@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for integration tests."""
@@ -20,7 +20,7 @@ from juju.model import Model
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 
-from src.discourse import Discourse
+from gatekeeper.discourse import Discourse
 
 from . import types
 
@@ -104,13 +104,12 @@ async def create_discourse_admin_account(discourse: Application, email: str):
     Returns:
         The credentials of the admin user.
     """
-    password = secrets.token_urlsafe(16)
     discourse_unit: Unit = discourse.units[0]
-    action: Action = await discourse_unit.run_action(
-        "add-admin-user", email=email, password=password
-    )
+    action: Action = await discourse_unit.run_action("create-user", admin=True, email=email)
     await action.wait()
-    return types.Credentials(email=email, username=email.split("@")[0], password=password)
+    return types.Credentials(
+        email=email, username=email.split("@")[0], password=action.results["password"]
+    )
 
 
 async def create_discourse_admin_api_key(
@@ -364,7 +363,6 @@ async def discourse_remove_rate_limits(
     settings = {
         "unique_posts_mins": "0",
         "rate_limit_create_post": "0",
-        "rate_limit_new_user_create_topic": "0",
         "rate_limit_new_user_create_post": "0",
         "max_topics_per_day": "1000",
         "max_edits_per_day": "1000",

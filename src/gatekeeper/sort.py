@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Sort items for publishing."""
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from more_itertools import peekable, side_effect
 
-from src import index, types_
+from gatekeeper import index, types_
 
 
 class _SortData(typing.NamedTuple):

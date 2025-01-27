@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Fixtures for all tests."""
@@ -13,9 +13,9 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 from github.Requester import Requester
 
-import src
-from src import repository
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
+import gatekeeper
+from gatekeeper import repository
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG
 
 # This is a fake branch to be used in the remote repository to prevent conflicts when
 # pushing main. Another option would be to use remote bare repository, but this would
@@ -169,4 +169,6 @@ def fixture_patch_create_repository_client(
         """Mock create_repository_client patch function."""  # noqa: DCO020
         return repository_client  # noqa: DCO030
 
-    monkeypatch.setattr(src.clients, "create_repository_client", mock_create_repository_client)
+    monkeypatch.setattr(
+        gatekeeper.clients, "create_repository_client", mock_create_repository_client
+    )

@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Execute the uploading of documentation."""
@@ -10,15 +10,14 @@ from collections.abc import Iterable
 from enum import Enum, auto
 from pathlib import Path
 
-from src.constants import (
+from gatekeeper.constants import (
     DOC_FILE_EXTENSION,
-    DOCUMENTATION_FOLDER_NAME,
     DOCUMENTATION_INDEX_FILENAME,
     NAVIGATION_HEADING,
 )
-from src.discourse import Discourse
-from src.exceptions import DiscourseError, InputError, ServerError
-from src.types_ import Index, IndexContentsListItem, IndexFile, Metadata, Page
+from gatekeeper.discourse import Discourse
+from gatekeeper.exceptions import DiscourseError, InputError, ServerError
+from gatekeeper.types_ import Index, IndexContentsListItem, IndexFile, Metadata, Page
 
 CONTENTS_HEADER = "# contents"
 CONTENTS_END_LINE_PREFIX = "#"
@@ -34,30 +33,30 @@ _HIDDEN_ITEM = _ITEM.replace(r"^", r"^<!-- ").replace(r"$", r" -->$")
 _HIDDEN_ITEM_PATTERN = re.compile(_HIDDEN_ITEM)
 
 
-def _read_docs_index(base_path: Path) -> str | None:
+def _read_docs_index(docs_path: Path) -> str | None:
     """Read the content of the index file.
 
     Args:
-        base_path: The starting path to look for the index content.
+        docs_path: The path to look for the index content.
 
     Returns:
         The content of the index file if it exists, otherwise return None.
 
     """
-    if not (docs_directory := base_path / DOCUMENTATION_FOLDER_NAME).is_dir():
+    if not docs_path.is_dir():
         return None
-    if not (index_file := docs_directory / DOCUMENTATION_INDEX_FILENAME).is_file():
+    if not (index_file := docs_path / DOCUMENTATION_INDEX_FILENAME).is_file():
         return None
 
     return index_file.read_text()
 
 
-def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
+def get(metadata: Metadata, docs_path: Path, server_client: Discourse) -> Index:
     """Retrieve the local and server index information.
 
     Args:
         metadata: Information about the charm.
-        base_path: The base path to look for the metadata file in.
+        docs_path: The base path to look for the documentation.
         server_client: A client to the documentation server.
 
     Returns:
@@ -78,7 +77,7 @@ def get(metadata: Metadata, base_path: Path, server_client: Discourse) -> Index:
         server = None
 
     name_value = metadata.name
-    local_content = _read_docs_index(base_path=base_path)
+    local_content = _read_docs_index(docs_path=docs_path)
     local = IndexFile(
         title=f"{name_value.replace('-', ' ').title()} Documentation Overview",
         content=local_content,

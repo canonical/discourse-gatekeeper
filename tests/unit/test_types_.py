@@ -1,11 +1,11 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for types module."""
 
 import pytest
 
-from src import types_
+from gatekeeper import types_
 
 from .. import factories
 

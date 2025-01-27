@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for sort module."""
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src import sort, types_
+from gatekeeper import sort, types_
 
 from .. import factories
 

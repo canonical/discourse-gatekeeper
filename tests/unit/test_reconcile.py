@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for reconcile module."""
@@ -13,7 +13,7 @@ from unittest import mock
 
 import pytest
 
-from src import constants, exceptions, reconcile, types_
+from gatekeeper import constants, exceptions, reconcile, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string
@@ -90,14 +90,14 @@ def test__local_only_external_ref(hidden: bool):
     ],
 )
 # The arguments are needed due to parametrisation and use of fixtures
-def test__local_and_server_error(  # pylint: disable=too-many-arguments
+def test__local_and_server_error(
     item_info_level: int,
     table_row_level: int,
     item_info_table_path: str,
     table_row_path: str,
     tmp_path: Path,
     mocked_clients,
-):
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """
     arrange: given path info and table row where either level or table path or both do not match
     act: when _local_and_server is called with the path info and table row
@@ -213,7 +213,7 @@ def test__local_and_server_file_same(local_content: str, server_content: str, mo
     mocked_clients.discourse.retrieve_topic.assert_called_once_with(url=navlink_link)
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -254,7 +254,7 @@ def test__local_and_server_file_content_change_repo_error(mock_get_file, mocked_
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -295,7 +295,7 @@ def test__local_and_server_file_content_change_repo_tag_not_found(mock_get_file,
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -340,7 +340,7 @@ def test__local_and_server_file_content_change_file_not_in_repo(mock_get_file, m
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -386,7 +386,7 @@ def test__local_and_server_file_content_change(mock_get_file, mocked_clients):
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_content_change_base_content_ws(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with no changes and discourse client that
@@ -435,7 +435,7 @@ def test__local_and_server_file_content_change_base_content_ws(mock_get_file, mo
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with different navlink title and discourse
@@ -479,7 +479,7 @@ def test__local_and_server_file_navlink_title_change(mock_get_file, mocked_clien
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clients):
     """
     arrange: given path info with a file and table row with different navlink hidden and discourse
@@ -525,7 +525,7 @@ def test__local_and_server_file_navlink_hidden_change(mock_get_file, mocked_clie
     )
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_directory_same(mock_get_file, mocked_clients):
     """
     arrange: given path info with a directory and table row with no changes
@@ -590,7 +590,7 @@ def test__local_and_server_directory_navlink_title_changed(mocked_clients):
     mocked_clients.discourse.retrieve_topic.assert_not_called()
 
 
-@mock.patch("src.repository.Client.get_file_content_from_tag")
+@mock.patch("gatekeeper.repository.Client.get_file_content_from_tag")
 def test__local_and_server_external_ref_same(mock_get_file, mocked_clients):
     """
     arrange: given item info with a external ref and table row with no changes
@@ -1135,7 +1135,7 @@ def test__calculate_action(
 )
 # pylint: enable=undefined-variable,unused-variable
 # The arguments are needed due to parametrisation and use of fixtures
-def test_run(  # pylint: disable=too-many-arguments
+def test_run(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     path_infos: tuple[types_.PathInfo, ...],
     table_rows: tuple[types_.TableRow, ...],
     expected_action_types: tuple[type[types_.AnyAction], ...],

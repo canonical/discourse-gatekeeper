@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for docs directory module."""
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src import docs_directory, types_
+from gatekeeper import docs_directory, types_
 
 from .. import factories
 

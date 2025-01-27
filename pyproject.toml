@@ -1,5 +1,13 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+[project]
+name = "discourse-gatekeeper"
+version = "0.9.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.bandit]
 exclude_dirs = ["/venv/", ".tox"]

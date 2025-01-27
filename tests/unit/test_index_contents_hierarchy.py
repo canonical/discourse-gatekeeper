@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for index module _calculate_contents_hierarchy function."""
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from src import constants, exceptions, index, types_
+from gatekeeper import constants, exceptions, index, types_
 
 from .. import factories
 from .helpers import assert_substrings_in_string

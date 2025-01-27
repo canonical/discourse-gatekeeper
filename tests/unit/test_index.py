@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for index module."""
@@ -11,8 +11,8 @@ from unittest import mock
 
 import pytest
 
-from src import constants, discourse, index, types_
-from src.exceptions import DiscourseError, ServerError
+from gatekeeper import constants, discourse, index, types_
+from gatekeeper.exceptions import DiscourseError, ServerError
 
 from .helpers import assert_substrings_in_string
 
@@ -23,7 +23,7 @@ def test__read_docs_index_docs_directory_missing(tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then None is returned.
     """
-    returned_content = index._read_docs_index(base_path=tmp_path)
+    returned_content = index._read_docs_index(docs_path=tmp_path)
 
     assert returned_content is None
 
@@ -37,7 +37,7 @@ def test__read_docs_index_index_file_missing(tmp_path: Path):
     docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
     docs_directory.mkdir()
 
-    returned_content = index._read_docs_index(base_path=tmp_path)
+    returned_content = index._read_docs_index(docs_path=docs_directory)
 
     assert returned_content is None
 
@@ -48,7 +48,8 @@ def test__read_docs_index_index_file(index_file_content: str, tmp_path: Path):
     act: when _read_docs_index is called with the directory
     assert: then the index file content is returned.
     """
-    returned_content = index._read_docs_index(base_path=tmp_path)
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
+    returned_content = index._read_docs_index(docs_path=docs_directory)
 
     assert returned_content == index_file_content
 
@@ -63,9 +64,10 @@ def test_get_metadata_yaml_retrieve_discourse_error(tmp_path: Path):
     meta = types_.Metadata(name="name", docs="http://server/index-page")
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.side_effect = DiscourseError
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
 
     with pytest.raises(ServerError) as exc_info:
-        index.get(metadata=meta, base_path=tmp_path, server_client=mocked_server_client)
+        index.get(metadata=meta, docs_path=docs_directory, server_client=mocked_server_client)
 
     assert_substrings_in_string(("index page", "retrieval", "failed"), str(exc_info.value).lower())
 
@@ -83,9 +85,10 @@ def test_get_metadata_yaml_retrieve_local_and_server(tmp_path: Path, index_file_
     meta = types_.Metadata(name=name, docs=url)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
     mocked_server_client.retrieve_topic.return_value = (content := "content 2")
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
 
     returned_index = index.get(
-        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+        metadata=meta, docs_path=docs_directory, server_client=mocked_server_client
     )
 
     assert returned_index.server is not None
@@ -106,9 +109,10 @@ def test_get_metadata_yaml_retrieve_empty(tmp_path: Path):
     name = "name 1"
     meta = types_.Metadata(name=name, docs=None)
     mocked_server_client = mock.MagicMock(spec=discourse.Discourse)
+    docs_directory = tmp_path / constants.DOCUMENTATION_FOLDER_NAME
 
     returned_index = index.get(
-        metadata=meta, base_path=tmp_path, server_client=mocked_server_client
+        metadata=meta, docs_path=docs_directory, server_client=mocked_server_client
     )
 
     assert returned_index.server is None

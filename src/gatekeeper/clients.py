@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for Client class."""
@@ -6,10 +6,10 @@
 import typing
 from pathlib import Path
 
-from src.discourse import Discourse, create_discourse
-from src.repository import Client as RepositoryClient
-from src.repository import create_repository_client
-from src.types_ import UserInputs
+from gatekeeper.discourse import Discourse, create_discourse
+from gatekeeper.repository import Client as RepositoryClient
+from gatekeeper.repository import create_repository_client
+from gatekeeper.types_ import UserInputs
 
 
 class Clients(typing.NamedTuple):
@@ -42,6 +42,8 @@ def get_clients(user_inputs: UserInputs, base_path: Path) -> Clients:
             api_key=user_inputs.discourse.api_key,
         ),
         repository=create_repository_client(
-            access_token=user_inputs.github_access_token, base_path=base_path
+            access_token=user_inputs.github_access_token,
+            base_path=base_path,
+            charm_dir=user_inputs.charm_dir,
         ),
     )

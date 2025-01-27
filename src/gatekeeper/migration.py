@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Module for migrating remote documentation into local git repository."""
@@ -8,8 +8,8 @@ import logging
 import typing
 from pathlib import Path
 
-from src import exceptions, types_
-from src.discourse import Discourse
+from gatekeeper import exceptions, types_
+from gatekeeper.discourse import Discourse
 
 EMPTY_DIR_REASON = "<created due to empty directory>"
 GITKEEP_FILENAME = ".gitkeep"

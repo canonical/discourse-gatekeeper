@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the migrate action."""
@@ -14,12 +14,12 @@ import pytest
 from git.repo import Repo
 from github.PullRequest import PullRequest
 
-from src import Clients, constants, metadata, migration, run_migrate
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
-from src.repository import DEFAULT_BRANCH_NAME
-from src.repository import Client as RepositoryClient
-from src.types_ import PullRequestAction
+from gatekeeper import Clients, constants, metadata, migration, run_migrate
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
+from gatekeeper.repository import DEFAULT_BRANCH_NAME
+from gatekeeper.repository import Client as RepositoryClient
+from gatekeeper.types_ import PullRequestAction
 
 from .. import factories
 from ..conftest import BASE_REMOTE_BRANCH
@@ -29,7 +29,8 @@ pytestmark = pytest.mark.migrate
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("patch_create_repository_client")
+@pytest.mark.usefixtures("git_repo")
+@pytest.mark.parametrize("charm_id, charm_dir", [("1", ""), ("2", "charm")])
 async def test_run_migrate(
     discourse_address: str,
     discourse_api: Discourse,
@@ -40,7 +41,9 @@ async def test_run_migrate(
     mock_pull_request: PullRequest,
     mock_github_repo: MagicMock,
     monkeypatch,
-):
+    charm_id: str,
+    charm_dir: str,
+):  # pylint: disable=too-many-positional-arguments
     """
     arrange: given running discourse server
     act: when run is called with:
@@ -55,7 +58,7 @@ async def test_run_migrate(
         4. no operation are done
     """
     caplog.set_level(logging.INFO)
-    document_name = "migration name 1"
+    document_name = f"migration name {charm_id}"
     discourse_prefix = discourse_address
     content_page_1 = factories.ContentPageFactory()
     content_page_1_url = discourse_api.create_topic(
@@ -102,14 +105,20 @@ Testing index page content.
         content=index_page_content,
     )
 
-    repository_client = RepositoryClient(Repo(repository_path), mock_github_repo)
+    charm_path = repository_path / charm_dir
+    # exist_ok=True as it can be the base directory
+    charm_path.mkdir(exist_ok=True)
+
+    repository_client = RepositoryClient(
+        Repo(repository_path), mock_github_repo, charm_dir=charm_dir
+    )
 
     # 1. with no docs dir and a metadata.yaml with docs key
     caplog.clear()
 
     create_metadata_yaml(
         content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repository_path,
+        path=charm_path,
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
@@ -126,7 +135,7 @@ Testing index page content.
     )
 
     upstream_git_repo.git.checkout(DEFAULT_BRANCH_NAME)
-    upstream_doc_dir = upstream_repository_path / constants.DOCUMENTATION_FOLDER_NAME
+    upstream_doc_dir = upstream_repository_path / charm_dir / constants.DOCUMENTATION_FOLDER_NAME
     assert output_migrate is not None
     assert output_migrate.pull_request_url == mock_pull_request.html_url
     assert output_migrate.action == PullRequestAction.OPENED
@@ -173,7 +182,9 @@ Testing index page content.
     output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
-            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+            repository=RepositoryClient(
+                Repo(repository_path), mock_github_repo, charm_dir=charm_dir
+            ),
         ),
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
@@ -193,7 +204,9 @@ Testing index page content.
     output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
-            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+            repository=RepositoryClient(
+                Repo(repository_path), mock_github_repo, charm_dir=charm_dir
+            ),
         ),
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )
@@ -237,7 +250,9 @@ Testing index page content.
     output_migrate = run_migrate(
         Clients(
             discourse=discourse_api,
-            repository=RepositoryClient(Repo(repository_path), mock_github_repo),
+            repository=RepositoryClient(
+                Repo(repository_path), mock_github_repo, charm_dir=charm_dir
+            ),
         ),
         user_inputs=factories.UserInputsFactory(commit_sha=repository_client.current_commit),
     )

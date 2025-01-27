@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for action."""
@@ -12,8 +12,8 @@ from unittest import mock
 
 import pytest
 
-from src import action, discourse, exceptions
-from src import types_ as src_types
+from gatekeeper import action, discourse, exceptions
+from gatekeeper import types_ as src_types
 
 from ... import factories
 from ..helpers import assert_substrings_in_string
@@ -232,8 +232,9 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
+    server_content = "content 1"
+    mocked_discourse.retrieve_topic.return_value = server_content
     mocked_discourse.update_topic.side_effect = (error := exceptions.DiscourseError("failed"))
-    server_content: str
     update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
@@ -242,7 +243,7 @@ def test__update_file_navlink_content_change_discourse_error(caplog: pytest.LogC
             new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            server=(server_content := "content 1"),
+            server=server_content,
             local=(local_content := "content 2"),
             base=server_content,
         ),
@@ -308,6 +309,7 @@ def test__update_file_navlink_content_change_conflict(
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
+    mocked_discourse.retrieve_topic.return_value = content_change.server
     update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
@@ -346,6 +348,55 @@ def test__update_file_navlink_content_change_conflict(
     assert_substrings_in_string(expected_reason_contents, returned_report.reason)
 
 
+def test__update_file_navlink_content_change_post_check_conflict(caplog: pytest.LogCaptureFixture):
+    """
+    arrange: given update action for a file where content has changed and mocked discourse where
+        the server content has changed since the conflict check was done
+    act: when action is passed to _update with dry_run False
+    assert: then an ActionError is raised.
+    """
+    caplog.set_level(logging.INFO)
+    mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
+    url = "url 1"
+    mocked_discourse.absolute_url.return_value = url
+    server_content_1 = "line 1a\nline 2\nline 3\n"
+    server_content_2 = "line 1b\nline 2\nline 3\n"
+    mocked_discourse.retrieve_topic.return_value = server_content_1
+    update_action = factories.UpdatePageActionFactory(
+        navlink_change=factories.NavlinkChangeFactory(
+            old=factories.NavlinkFactory(title="title 1", link=(link := "link 1")),
+            new=factories.NavlinkFactory(title="title 2", link=link),
+        ),
+        content_change=src_types.ContentChange(
+            server=server_content_2,
+            local=(local_content := "line 1\nline 2\nline 3a\n"),
+            base=(base_content := "line 1\nline 2\nline 3\n"),
+        ),
+    )
+    dry_run = False
+
+    with pytest.raises(exceptions.ActionError) as exc:
+        action._update(action=update_action, discourse=mocked_discourse, dry_run=dry_run)
+
+    assert_substrings_in_string(
+        (link, "has changed", "conflict check"),
+        str(exc),
+    )
+    assert_substrings_in_string(
+        (
+            f"action: {update_action}",
+            f"dry run: {dry_run}",
+            repr(base_content),
+            repr(server_content_2),
+            repr(local_content),
+            "content change:\n  line 1\n  line 2\n- line 3\n+ line 3a\n?       +\n",
+        ),
+        caplog.text,
+    )
+    assert update_action.content_change is not None
+    mocked_discourse.update_topic.assert_not_called()
+
+
 def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     """
     arrange: given update action for a file where content has changed and mocked discourse
@@ -357,7 +408,8 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
     mocked_discourse = mock.MagicMock(spec=discourse.Discourse)
     url = "url 1"
     mocked_discourse.absolute_url.return_value = url
-    server_content: str
+    server_content = "line 1a\nline 2\nline 3\n"
+    mocked_discourse.retrieve_topic.return_value = server_content
     update_action = factories.UpdatePageActionFactory(
         level=(level := 1),
         path=(path := ("path 1",)),
@@ -366,7 +418,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
             new=factories.NavlinkFactory(title="title 2", link=link),
         ),
         content_change=src_types.ContentChange(
-            server=(server_content := "line 1a\nline 2\nline 3\n"),
+            server=server_content,
             local=(local_content := "line 1\nline 2\nline 3a\n"),
             base=(base_content := "line 1\nline 2\nline 3\n"),
         ),
@@ -389,6 +441,7 @@ def test__update_file_navlink_content_change(caplog: pytest.LogCaptureFixture):
         caplog.text,
     )
     assert update_action.content_change is not None
+    mocked_discourse.retrieve_topic.assert_called_once_with(url=link)
     mocked_discourse.update_topic.assert_called_once_with(
         url=link, content="line 1a\nline 2\nline 3a\n"
     )

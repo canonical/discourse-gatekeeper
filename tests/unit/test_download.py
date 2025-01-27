@@ -1,13 +1,13 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for download."""
 
 import pytest
 
-from src import DOCUMENTATION_FOLDER_NAME, DOCUMENTATION_TAG, constants
-from src.download import recreate_docs
-from src.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
+from gatekeeper import DOCUMENTATION_TAG, constants
+from gatekeeper.download import recreate_docs
+from gatekeeper.metadata import METADATA_DOCS_KEY, METADATA_NAME_KEY
 
 from .helpers import create_metadata_yaml
 
@@ -40,9 +40,14 @@ def test_recreate_docs(
 
     recreate_docs(mocked_clients, DOCUMENTATION_TAG)
 
-    assert (index_file := repository_path / DOCUMENTATION_FOLDER_NAME / "index.md").is_file()
     assert (
-        path_file := repository_path / DOCUMENTATION_FOLDER_NAME / "page-path-1" / "page-file-1.md"
+        index_file := repository_path / constants.DOCUMENTATION_FOLDER_NAME / "index.md"
+    ).is_file()
+    assert (
+        path_file := repository_path
+        / constants.DOCUMENTATION_FOLDER_NAME
+        / "page-path-1"
+        / "page-file-1.md"
     ).is_file()
     assert index_file.read_text(encoding="utf-8") == (
         f"{index_content}\n"

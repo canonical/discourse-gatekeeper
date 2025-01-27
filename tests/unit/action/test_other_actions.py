@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for action."""
@@ -12,8 +12,8 @@ from unittest import mock
 
 import pytest
 
-from src import action, discourse, exceptions
-from src import types_ as src_types
+from gatekeeper import action, discourse, exceptions
+from gatekeeper import types_ as src_types
 
 from ... import factories
 from ..helpers import assert_substrings_in_string

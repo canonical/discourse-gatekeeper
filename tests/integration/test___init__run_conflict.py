@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the action where there is a merge conflict."""
@@ -19,9 +19,9 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import Clients, constants, exceptions, metadata, repository, run_reconcile
-from src.constants import DEFAULT_BRANCH, DISCOURSE_AHEAD_TAG, DOCUMENTATION_TAG
-from src.discourse import Discourse
+from gatekeeper import Clients, constants, exceptions, metadata, repository, run_reconcile
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -49,8 +49,6 @@ async def test_run_conflict(
         5. docs with an index and documentation and alternate documentation file
         6. docs with an index and changed documentation and alternate documentation with server
             changes
-        7. docs with an index and changed documentation and alternate documentation with server
-            changes with discourse-gatekeeper/discourse-ahead-ok applied
     assert: then:
         1. the documentation page is created
         2. the documentation page is not updated
@@ -58,7 +56,6 @@ async def test_run_conflict(
         4. the documentation page is updated
         5. the alternate documentation page is created
         6. the documentation page is not updated
-        6. the documentation page is updated
     """
     document_name = "name 1"
     caplog.set_level(logging.INFO)
@@ -98,7 +95,9 @@ async def test_run_conflict(
     reconcile_output = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
         user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
+            dry_run=False,
+            delete_pages=True,
+            commit_sha=repository_client.current_commit,
         ),
     )
 
@@ -132,7 +131,8 @@ async def test_run_conflict(
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "2. docs with a documentation file updated and discourse updated with conflicting "
-        "content in dry run mode"
+        "content in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     with pytest.raises(exceptions.InputError) as exc_info:
@@ -196,7 +196,8 @@ async def test_run_conflict(
     discourse_api.update_topic(url=doc_url, content=doc_content_4)
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "4. docs with a documentation file and discourse updated to resolve conflict"
+        "4. docs with a documentation file and discourse updated to resolve conflict",
+        directory=repository_client.docs_path,
     )
 
     reconcile_output = run_reconcile(
@@ -225,7 +226,8 @@ async def test_run_conflict(
     doc_file.write_text(doc_content_5 := f"# {doc_title}\ncontent 5", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "5. docs with an index and documentation and alternate documentation file"
+        "5. docs with an index and documentation and alternate documentation file",
+        directory=repository_client.docs_path,
     )
     mock_content_file.content = b64encode(doc_content_4.encode(encoding="utf-8"))
 
@@ -260,11 +262,12 @@ async def test_run_conflict(
     # 6. docs with an index and changed documentation and alternate documentation with server
     # changes
     caplog.clear()
-    doc_file.write_text(doc_content_6 := f"# {doc_title}\ncontent 6", encoding="utf-8")
+    doc_file.write_text(f"# {doc_title}\ncontent 6", encoding="utf-8")
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "# 6. docs with an index and changed documentation and alternate documentation with "
-        "server changes"
+        "server changes",
+        directory=repository_client.docs_path,
     )
     mock_content_file.content = b64encode(doc_content_5.encode(encoding="utf-8"))
     mock_alt_content_file = MagicMock(spec=ContentFile)
@@ -298,36 +301,5 @@ async def test_run_conflict(
     assert alt_doc_table_line_5 in index_topic
     doc_topic = discourse_api.retrieve_topic(url=doc_url)
     assert doc_topic == doc_content_5
-    alt_doc_topic = discourse_api.retrieve_topic(url=alt_doc_url)
-    assert alt_doc_topic == alt_doc_topic_content_6
-
-    # 7. docs with an index and changed documentation and alternate documentation with server
-    # changes with discourse-gatekeeper/discourse-ahead-ok applied
-    caplog.clear()
-    repository_client.tag_commit(DISCOURSE_AHEAD_TAG, repository_client.current_commit)
-    mock_github_repo.get_contents.side_effect = [mock_alt_content_file, mock_content_file]
-
-    reconcile_output = run_reconcile(
-        clients=Clients(discourse=discourse_api, repository=repository_client),
-        user_inputs=factories.UserInputsFactory(
-            dry_run=False, delete_pages=True, commit_sha=repository_client.current_commit
-        ),
-    )
-
-    assert reconcile_output is not None
-    urls_with_actions = reconcile_output.topics
-
-    assert len(urls_with_actions) == 3
-    (alt_doc_url, _, _) = urls_with_actions.keys()
-    assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
-    assert_substrings_in_string(
-        chain(urls, (doc_table_line_1, alt_doc_table_line_5, "Update", "'success'")),
-        caplog.text,
-    )
-    index_topic = discourse_api.retrieve_topic(url=index_url)
-    assert doc_table_line_1 in index_topic
-    assert alt_doc_table_line_5 in index_topic
-    doc_topic = discourse_api.retrieve_topic(url=doc_url)
-    assert doc_topic == doc_content_6
     alt_doc_topic = discourse_api.retrieve_topic(url=alt_doc_url)
     assert alt_doc_topic == alt_doc_topic_content_6

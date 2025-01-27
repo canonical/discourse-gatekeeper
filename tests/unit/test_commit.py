@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for commit module."""
@@ -9,9 +9,9 @@
 import typing
 from pathlib import Path
 
-from src import commit
-from src.constants import DEFAULT_BRANCH
-from src.repository import Client
+from gatekeeper import commit
+from gatekeeper.constants import DEFAULT_BRANCH
+from gatekeeper.repository import Client
 
 
 def test_parse_git_show_empty():

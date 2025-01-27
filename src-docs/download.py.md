@@ -1,17 +1,14 @@
 <!-- markdownlint-disable -->
 
-<a href="../src/download.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/download.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `download.py`
 Library for downloading docs folder from charmhub. 
 
-**Global Variables**
----------------
-- **DOCUMENTATION_FOLDER_NAME**
 
 ---
 
-<a href="../src/download.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../src/gatekeeper/download.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `recreate_docs`
 

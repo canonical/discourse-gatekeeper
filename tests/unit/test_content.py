@@ -1,11 +1,11 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Unit tests for content."""
 
 import pytest
 
-from src import content, exceptions
+from gatekeeper import content, exceptions
 
 from .helpers import assert_substrings_in_string
 

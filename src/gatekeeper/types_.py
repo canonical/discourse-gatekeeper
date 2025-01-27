@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Types for uploading docs to charmhub."""
@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
-from src import constants
+from gatekeeper import constants
 
 Content = str
 Url = str
@@ -44,7 +44,8 @@ class UserInputs(typing.NamedTuple):
         github_access_token: A Personal Access Token(PAT) or access token with repository access.
             Required in migration mode.
         commit_sha: The SHA of the commit the action is running on.
-        base_branch: The main branch against which the syncs act on
+        base_branch: The main branch against which the syncs act on.
+        charm_dir: Directory the charm is located in.
     """
 
     discourse: UserInputsDiscourse
@@ -53,6 +54,7 @@ class UserInputs(typing.NamedTuple):
     github_access_token: str | None
     commit_sha: str
     base_branch: str
+    charm_dir: str
 
 
 class Metadata(typing.NamedTuple):

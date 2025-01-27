@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the reconcile portion of the action."""
@@ -17,10 +17,10 @@ from urllib.parse import urlparse
 import pytest
 from github.ContentFile import ContentFile
 
-from src import Clients, constants, exceptions, metadata, run_reconcile
-from src.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
-from src.discourse import Discourse
-from src.repository import Client, Repo
+from gatekeeper import Clients, constants, exceptions, metadata, run_reconcile
+from gatekeeper.constants import DEFAULT_BRANCH, DOCUMENTATION_TAG
+from gatekeeper.discourse import Discourse
+from gatekeeper.repository import Client, Repo
 
 from .. import factories
 from ..unit.helpers import assert_substrings_in_string, create_metadata_yaml
@@ -29,13 +29,16 @@ pytestmark = pytest.mark.reconcile
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("patch_create_repository_client")
+@pytest.mark.usefixtures("git_repo")
+@pytest.mark.parametrize("charm_id, charm_dir", [("1", ""), ("2", "charm")])
 async def test_run(
     discourse_api: Discourse,
     caplog: pytest.LogCaptureFixture,
     repository_path: Path,
     mock_github_repo: MagicMock,
-):
+    charm_id: str,
+    charm_dir: str,
+):  # pylint: disable=too-many-positional-arguments
     """
     arrange: given running discourse server
     act: when run is called with:
@@ -70,16 +73,17 @@ async def test_run(
         13. the documentation page is deleted
         14. an index page is not updated
     """
-    document_name = "name 1"
+    document_name = f"name {charm_id}"
     caplog.set_level(logging.INFO)
 
-    repository_client = Client(Repo(repository_path), mock_github_repo)
+    charm_path = repository_path / charm_dir
+    # exist_ok=True as it can be the base directory
+    charm_path.mkdir(exist_ok=True)
+    repository_client = Client(Repo(repository_path), mock_github_repo, charm_dir=charm_dir)
 
     repository_client.tag_commit(DOCUMENTATION_TAG, repository_client.current_commit)
 
-    create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=repository_path
-    )
+    create_metadata_yaml(content=f"{metadata.METADATA_NAME_KEY}: {document_name}", path=charm_path)
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
         "first commit of metadata", directory=None
@@ -92,10 +96,13 @@ async def test_run(
         content=constants.NAVIGATION_TABLE_START.strip(),
     )
     create_metadata_yaml(
-        content=f"{metadata.METADATA_NAME_KEY}: name 1\n{metadata.METADATA_DOCS_KEY}: {index_url}",
-        path=repository_path,
+        content=(
+            f"{metadata.METADATA_NAME_KEY}: name {charm_id}\n"
+            f"{metadata.METADATA_DOCS_KEY}: {index_url}"
+        ),
+        path=charm_path,
     )
-    (docs_dir := repository_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
+    (docs_dir := charm_path / constants.DOCUMENTATION_FOLDER_NAME).mkdir()
     (index_file := docs_dir / "index.md").write_text(
         index_content := "index content 1", encoding="utf-8"
     )
@@ -143,7 +150,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "3. docs with a documentation file added in dry run mode"
+        "3. docs with a documentation file added in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -190,7 +198,8 @@ async def test_run(
     mock_github_repo.get_contents.return_value = mock_content_file
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "5. docs with a documentation file updated in dry run mode"
+        "5. docs with a documentation file updated in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -239,7 +248,9 @@ async def test_run(
     (nested_dir := docs_dir / nested_dir_table_key).mkdir()
     (nested_dir / ".gitkeep").touch()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("7. docs with a nested directory added")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "7. docs with a nested directory added", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -265,7 +276,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "8. docs with a documentation file added in the nested directory"
+        "8. docs with a documentation file added in the nested directory",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -308,7 +320,8 @@ async def test_run(
     )
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "9. docs with index file with a local contents index"
+        "9. docs with index file with a local contents index",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -353,7 +366,8 @@ async def test_run(
     nested_dir_doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "10. docs with the documentation file in the nested directory removed in dry run mode"
+        "10. docs with the documentation file in the nested directory removed in dry run mode",
+        directory=repository_client.docs_path,
     )
 
     output_reconcile = run_reconcile(
@@ -402,7 +416,9 @@ async def test_run(
     caplog.clear()
     shutil.rmtree(nested_dir)
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("12. with the nested directory removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "12. with the nested directory removed", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
@@ -426,7 +442,7 @@ async def test_run(
     doc_file.unlink()
 
     repository_client.switch(DEFAULT_BRANCH).update_branch(
-        "13. with the documentation file removed"
+        "13. with the documentation file removed", directory=repository_client.docs_path
     )
 
     output_reconcile = run_reconcile(
@@ -452,7 +468,9 @@ async def test_run(
     caplog.clear()
     index_file.unlink()
 
-    repository_client.switch(DEFAULT_BRANCH).update_branch("14. with the index file removed")
+    repository_client.switch(DEFAULT_BRANCH).update_branch(
+        "14. with the index file removed", directory=repository_client.docs_path
+    )
 
     output_reconcile = run_reconcile(
         clients=Clients(discourse=discourse_api, repository=repository_client),
