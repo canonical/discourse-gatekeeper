@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """Integration tests for running the reconcile portion of the action."""
@@ -38,7 +38,7 @@ async def test_run(
     mock_github_repo: MagicMock,
     charm_id: str,
     charm_dir: str,
-):
+):  # pylint: disable=too-many-positional-arguments
     """
     arrange: given running discourse server
     act: when run is called with:
