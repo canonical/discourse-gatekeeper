@@ -266,6 +266,50 @@ def _test__calculate_contents_hierarchy_invalid_parameters():
             ("not immediately within", "directory", value_1, repr(item)),
             id="directory in wrong directory",
         ),
+        pytest.param(
+            (
+                item_1 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_1 := "dir1")
+                ),
+                item_2 := factories.IndexParsedListItemFactory(
+                    whitespace_count=1, reference_value=(value_2 := f"{value_1}/dir2")
+                ),
+                item_3 := factories.IndexParsedListItemFactory(
+                    whitespace_count=2, reference_value=(value_3 := f"{value_2}/file3.md")
+                ),
+                item_4 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_4 := "dir4")
+                ),   
+            ),
+            ("dir", "dir", "file", "dir"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_1.reference_title,
+                    reference_value=value_1,
+                    rank=item_1.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=2,
+                    reference_title=item_2.reference_title,
+                    reference_value=value_2,
+                    rank=item_2.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=3,
+                    reference_title=item_3.reference_title,
+                    reference_value=value_3,
+                    rank=item_3.rank,
+                ),
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_4.reference_title,
+                    reference_value=value_4,
+                    rank=item_4.rank,
+                ),
+            ),
+            id="dir following an item nested more than once",
+        )
     ]
 
 
