@@ -147,7 +147,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
 
     whitespace_count = len(match.group(1))
 
-    if whitespace_count != 0 and rank == 0:
+    if not hidden and whitespace_count != 0 and rank == 0:
         raise InputError(
             f"An item in the contents of the index file at {DOCUMENTATION_INDEX_FILENAME} is "
             f"invalid, {line=!r}, expecting the first line not to have any leading whitespace"
