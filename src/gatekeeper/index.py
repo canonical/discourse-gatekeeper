@@ -112,6 +112,7 @@ class _ParsedListItem(typing.NamedTuple):
         reference_value: The link to the referenced item
         rank: The number of preceding elements in the list
         hidden: Whether the item should be displayed on the navigation table
+        comment: Whether the item is a comment
     """
 
     whitespace_count: int
@@ -119,6 +120,7 @@ class _ParsedListItem(typing.NamedTuple):
     reference_value: str
     rank: int
     hidden: bool
+    comment: bool
 
 
 def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
@@ -158,6 +160,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             reference_value=comment_content,
             rank=rank,
             hidden=hidden,
+            comment=True,
         )
 
     whitespace_count = len(match.group(1))
@@ -177,6 +180,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
         reference_value=reference_value,
         rank=rank,
         hidden=hidden,
+        comment=False,
     )
 
 
@@ -379,6 +383,11 @@ def _calculate_contents_hierarchy(
     parsed_items = iter(parsed_items)
     item = next(parsed_items, None)
     while item:
+        # Skip comment lines
+        if item.comment:
+            item = next(parsed_items, None)
+            continue
+
         # All items in the current directory have been processed
         if item.whitespace_count < whitespace_expectation_per_level[hierarchy]:
             hierarchy = hierarchy - 1
