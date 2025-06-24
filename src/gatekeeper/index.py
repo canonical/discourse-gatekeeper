@@ -29,8 +29,7 @@ _REFERENCE_VALUE = r"\((.*)\)"
 _REFERENCE = rf"({_REFERENCE_TITLE}{_REFERENCE_VALUE})"
 _ITEM = rf"^{_WHITESPACE}{_LEADER}\s*{_REFERENCE}\s*$"
 _ITEM_PATTERN = re.compile(_ITEM)
-_HIDDEN_ITEM = _ITEM.replace(r"^", r"^<!-- ").replace(r"$", r" -->$")
-_HIDDEN_ITEM_PATTERN = re.compile(_HIDDEN_ITEM)
+_HIDDEN_ITEM_PATTERN = re.compile(r"^<!-- (.+?) -->$")
 
 
 def _read_docs_index(docs_path: Path) -> str | None:
