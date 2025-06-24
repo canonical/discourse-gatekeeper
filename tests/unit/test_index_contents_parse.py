@@ -196,7 +196,7 @@ def _test__get_contents_parsed_items_parameters():
                     reference_value=comment_content,
                     rank=0,
                     hidden=True,
-                    comment=True
+                    comment=True,
                 ),
             ),
             id="single comment item",

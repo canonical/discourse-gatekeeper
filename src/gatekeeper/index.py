@@ -160,7 +160,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
             reference_value=comment_content,
             rank=rank,
             hidden=hidden,
-            comment=True
+            comment=True,
         )
 
     whitespace_count = len(match.group(1))
@@ -180,7 +180,7 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
         reference_value=reference_value,
         rank=rank,
         hidden=hidden,
-        comment=False
+        comment=False,
     )
 
 
