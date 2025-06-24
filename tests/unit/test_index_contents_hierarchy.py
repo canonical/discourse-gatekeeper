@@ -642,6 +642,26 @@ def _test__calculate_contents_hierarchy_parameters():
                     whitespace_count=0, reference_value=(value_1 := "dir_1")
                 ),
                 item_2 := factories.IndexParsedListItemFactory(
+                    whitespace_count=1, reference_value="", comment=True
+                ),
+            ),
+            ("dir", "skip"),
+            (
+                factories.IndexContentsListItemFactory(
+                    hierarchy=1,
+                    reference_title=item_1.reference_title,
+                    reference_value=value_1,
+                    rank=item_1.rank,
+                ),
+            ),
+            id="single directory single comment",
+        ),
+        pytest.param(
+            (
+                item_1 := factories.IndexParsedListItemFactory(
+                    whitespace_count=0, reference_value=(value_1 := "dir_1")
+                ),
+                item_2 := factories.IndexParsedListItemFactory(
                     whitespace_count=2, reference_value=(value_2 := f"{value_1}/file_2.md")
                 ),
             ),

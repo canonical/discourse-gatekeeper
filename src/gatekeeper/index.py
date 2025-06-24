@@ -385,7 +385,7 @@ def _calculate_contents_hierarchy(
     while item:
         # Skip comment lines
         if item.comment:
-            item = next(item)
+            item = next(parsed_items, None)
             continue
 
         # All items in the current directory have been processed
