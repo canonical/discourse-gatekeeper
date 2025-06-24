@@ -188,6 +188,20 @@ def _test__get_contents_parsed_items_parameters():
         ),
         pytest.param(
             f"""# Contents
+<!-- {(comment_content := 'vale Canonical.004-Canonical-product-names = NO')} -->""",
+            (
+                factories.IndexParsedListItemFactory(
+                    whitespace_count=0,
+                    reference_title=comment_content,
+                    reference_value=comment_content,
+                    rank=0,
+                    hidden=True,
+                ),
+            ),
+            id="single comment item",
+        ),
+        pytest.param(
+            f"""# Contents
 
 - [{(title_1 := 'title 1')}]({(value_1 := 'value 1')})""",
             (

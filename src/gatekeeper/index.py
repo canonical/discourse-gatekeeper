@@ -31,6 +31,7 @@ _ITEM = rf"^{_WHITESPACE}{_LEADER}\s*{_REFERENCE}\s*$"
 _ITEM_PATTERN = re.compile(_ITEM)
 _HIDDEN_ITEM = _ITEM.replace(r"^", r"^<!-- ").replace(r"$", r" -->$")
 _HIDDEN_ITEM_PATTERN = re.compile(_HIDDEN_ITEM)
+_COMMENT_ITEM = re.compile(rf"^{_WHITESPACE}<!-- (.+?) -->$")
 
 
 def _read_docs_index(docs_path: Path) -> str | None:
@@ -141,14 +142,27 @@ def _parse_item_from_line(line: str, rank: int) -> _ParsedListItem:
         hidden = True
 
     if match is None:
-        raise InputError(
-            f"An item in the contents of the index file at {DOCUMENTATION_INDEX_FILENAME} is "
-            f"invalid, {line=!r}, expecting regex: {_ITEM}"
+        comment_match = _COMMENT_ITEM.match(line)
+        if not comment_match:
+            raise InputError(
+                f"An item in the contents of the index file at {DOCUMENTATION_INDEX_FILENAME} is "
+                f"invalid, {line=!r}, expecting regex: {_ITEM}"
+            )
+        # Some comments are not part of the indexing and are used for skipping lint checks such as
+        # vale checks. e.g. <!-- vale Canonical.004-Canonical-product-names = NO -->
+        whitespace_count = len(comment_match.group(1))
+        comment_content = comment_match.group(2)
+        return _ParsedListItem(
+            whitespace_count=whitespace_count,
+            reference_title=comment_content,
+            reference_value=comment_content,
+            rank=rank,
+            hidden=hidden,
         )
 
     whitespace_count = len(match.group(1))
 
-    if whitespace_count != 0 and rank == 0:
+    if not hidden and whitespace_count != 0 and rank == 0:
         raise InputError(
             f"An item in the contents of the index file at {DOCUMENTATION_INDEX_FILENAME} is "
             f"invalid, {line=!r}, expecting the first line not to have any leading whitespace"
