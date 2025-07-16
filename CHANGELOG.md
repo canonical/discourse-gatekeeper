@@ -4,6 +4,7 @@
 
 - Project prepared to be installed with `pip install`, so it can be reused in 
   the repository https://github.com/canonical/gatekeeper-repo-test
+- Added support for navigation table with hierarchy jumps of more than 1 level
 
 ## [v0.10.0] - 2025-06-24
 
