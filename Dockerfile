@@ -3,7 +3,7 @@
 FROM python:3.12-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git=1:2.39.* && \
+    apt-get install -y --no-install-recommends git=1:2.47.* && \
     rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /usr/src/app
