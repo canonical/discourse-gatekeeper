@@ -435,7 +435,7 @@ def test__run_reconcile_external_item(mocked_clients):
     assert: then a documentation page is created and an index page is created with a navigation
         page with the external item.
     """
-    mocked_clients.discourse.create_topic.side_effect = [(index_url := "url 1")]
+    mocked_clients.discourse.create_topic.side_effect = [index_url := "url 1"]
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:
         (docs_dir := repo.base_path / "docs").mkdir()
