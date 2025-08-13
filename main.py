@@ -85,7 +85,7 @@ def _parse_env_vars() -> types_.UserInputs:
 
 
 def _serialize_for_github(
-    urls_with_actions_dict: str | dict[str, ActionResult] | PullRequestAction | typing.Any
+    urls_with_actions_dict: str | dict[str, ActionResult] | PullRequestAction | typing.Any,
 ) -> str:
     """Serialize dictionary output into a string to be outputted to GitHub.
 
