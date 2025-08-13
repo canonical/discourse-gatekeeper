@@ -56,7 +56,9 @@ async def discourse(model: Model) -> Application:
         apps=[postgres_charm_name, redis_charm_name], status="active", raise_on_error=False
     )
 
-    discourse_app: Application = await model.deploy(discourse_charm_name, channel="edge")
+    discourse_app: Application = await model.deploy(
+        discourse_charm_name, channel="edge", revision=144
+    )
     await model.wait_for_idle(apps=[discourse_charm_name], status="waiting", raise_on_error=False)
 
     await model.integrate(discourse_charm_name, f"{postgres_charm_name}:database")
