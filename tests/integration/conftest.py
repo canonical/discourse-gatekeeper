@@ -57,7 +57,7 @@ async def discourse(model: Model) -> Application:
     )
 
     discourse_app: Application = await model.deploy(
-        discourse_charm_name, channel="edge", revision=144
+        discourse_charm_name, channel="edge", revision=206
     )
     await model.wait_for_idle(apps=[discourse_charm_name], status="waiting", raise_on_error=False)
 
