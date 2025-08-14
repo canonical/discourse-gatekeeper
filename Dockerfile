@@ -1,6 +1,6 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-FROM python:3.13-slim
+FROM python:3.13-slim-bookworm
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git=1:2.39.* && \
