@@ -15,7 +15,6 @@ Applicable spec: <link>
 ### Checklist
 
 - [ ] The [contributing guide](https://github.com/canonical/is-charms-contributing-guide) was applied
-- [ ] The documentation is generated using `src-docs`
 - [ ] The PR is tagged with appropriate label (`urgent`, `trivial`, `complex`)
 - [ ] Changelog has been updated
 - [ ] Version has been incremented
