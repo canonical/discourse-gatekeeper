@@ -31,7 +31,7 @@ markers = ["reconcile", "conflict", "migrate", "discourse"]
 # Formatting tools configuration
 [tool.black]
 line-length = 99
-target-version = ["py310"]
+target-version = ["py312"]
 
 [tool.isort]
 line_length = 99

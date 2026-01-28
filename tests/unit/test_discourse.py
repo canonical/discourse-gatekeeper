@@ -595,22 +595,19 @@ def test_function_discourse_error(
     [
         pytest.param("test content", "test content", id="version 2.6.0 response"),
         pytest.param(
-            textwrap.dedent(
-                """\
+            textwrap.dedent("""\
         test-username | timestamp | # 23
 
         test content
 
         -------------------------
 
-        """
-            ),
+        """),
             "test content",
             id="version 2.8.14 response",
         ),
         pytest.param(
-            textwrap.dedent(
-                """\
+            textwrap.dedent("""\
         test-username | timestamp | # 23
 
         test content
@@ -623,8 +620,7 @@ def test_function_discourse_error(
 
         -------------------------
 
-        """
-            ),
+        """),
             "test content",
             id="version 2.8.14 response with post replies",
         ),

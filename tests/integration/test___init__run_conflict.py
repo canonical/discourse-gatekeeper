@@ -105,7 +105,7 @@ async def test_run_conflict(
     urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 2
-    (doc_url, _) = urls_with_actions.keys()
+    doc_url, _ = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_title}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
@@ -242,7 +242,7 @@ async def test_run_conflict(
     urls_with_actions = reconcile_output.topics
 
     assert len(urls_with_actions) == 3
-    (alt_doc_url, _, _) = urls_with_actions.keys()
+    alt_doc_url, _, _ = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (alt_doc_url, doc_url, index_url)
     alt_doc_table_line_5 = (
         f"| 1 | {alt_doc_table_key} | [{alt_doc_title}]({urlparse(alt_doc_url).path}) |"

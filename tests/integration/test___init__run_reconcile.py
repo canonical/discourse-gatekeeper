@@ -179,7 +179,7 @@ async def test_run(
 
     assert output_reconcile is not None
     assert len(output_reconcile.topics) == 2
-    (doc_url, _) = output_reconcile.topics.keys()
+    doc_url, _ = output_reconcile.topics.keys()
     assert (urls := tuple(output_reconcile.topics)) == (doc_url, index_url)
     doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_content_1}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
@@ -292,7 +292,7 @@ async def test_run(
 
     assert urls_with_actions is not None
     assert len(urls_with_actions) == 3
-    (_, nested_dir_doc_url, _) = urls_with_actions.keys()
+    _, nested_dir_doc_url, _ = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, nested_dir_doc_url, index_url)
     nested_dir_doc_table_line_1 = (
         f"| 2 | {nested_dir_doc_table_key} |"
@@ -560,7 +560,7 @@ async def test_run_hidden(
     urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 2
-    (doc_url, index_url) = urls_with_actions.keys()
+    doc_url, index_url = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, index_url)
     doc_table_line_1 = f"| 1 | {doc_table_key} | [{doc_title}]({urlparse(doc_url).path}) |"
     assert_substrings_in_string(
@@ -673,7 +673,7 @@ async def test_run_hidden(
     urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 3
-    (_, alt_doc_url, _) = urls_with_actions.keys()
+    _, alt_doc_url, _ = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (doc_url, alt_doc_url, index_url)
     alt_doc_table_line_4 = (
         f"| | {alt_doc_table_key} | [{alt_doc_title}]({urlparse(alt_doc_url).path}) |"
@@ -795,7 +795,7 @@ async def test_run_external(
     urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 2
-    (external_url, index_url) = urls_with_actions.keys()
+    external_url, index_url = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (external_url, index_url)
     item_table_line_1 = f"| 1 | https-canonical-com | [{item_title_1}]({item_url_1}) |"
     assert_substrings_in_string(
@@ -843,7 +843,7 @@ async def test_run_external(
     urls_with_actions = output_reconcile.topics
 
     assert len(urls_with_actions) == 2
-    (external_url, index_url) = urls_with_actions.keys()
+    external_url, index_url = urls_with_actions.keys()
     assert (urls := tuple(urls_with_actions)) == (external_url, index_url)
     item_table_line_3 = f"| 1 | https-canonical-com | [{item_title_3}]({external_url}) |"
     assert_substrings_in_string(

@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Class for reading the docs directory."""
+
 import itertools
 import typing
 from functools import partial

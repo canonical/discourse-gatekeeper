@@ -140,9 +140,7 @@ Testing index page content.
     assert output_migrate.pull_request_url == mock_pull_request.html_url
     assert output_migrate.action == PullRequestAction.OPENED
     assert (upstream_doc_dir / "index.md").is_file()
-    assert (
-        (upstream_doc_dir / "index.md").read_text(encoding="utf-8")
-        == f"""Testing index page.
+    assert (upstream_doc_dir / "index.md").read_text(encoding="utf-8") == f"""Testing index page.
 
 Testing index page content.
 
@@ -160,7 +158,6 @@ Testing index page content.
     1. [Canonical 3](https://canonical.com/projects)
   1. [{content_page_4.content}](group-3/content-4.md)
 1. [Group 5](group-5)"""
-    )
     assert (group_1_path := upstream_doc_dir / "group-1").is_dir()
     assert (group_1_path / migration.GITKEEP_FILENAME).is_file()
     assert (group_2_path := upstream_doc_dir / "group-2").is_dir()

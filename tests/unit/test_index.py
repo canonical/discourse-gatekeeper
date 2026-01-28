@@ -221,22 +221,16 @@ contents line 2""",
         ),
         # Can't use f-string due to needing new line
         pytest.param(
-            "# contents\n"
-            + (
-                other_content := """#
-line 1"""
-            ),
+            "# contents\n" + (other_content := """#
+line 1"""),
             other_content,
             id="contents followed by header with single line",
         ),
         # Can't use f-string due to needing new line
         pytest.param(
-            "# contents\n"
-            + (
-                other_content := """#
+            "# contents\n" + (other_content := """#
 line 1
-line 2"""
-            ),
+line 2"""),
             other_content,
             id="contents followed by header with multiple lines",
         ),
@@ -250,11 +244,8 @@ contents line 2
         ),
         # Can't use f-string due to needing new line
         pytest.param(
-            "# contents\n"
-            + (
-                other_content := """#
-# contents"""
-            ),
+            "# contents\n" + (other_content := """#
+# contents"""),
             other_content,
             id="contents followed by header followed by another contents",
         ),

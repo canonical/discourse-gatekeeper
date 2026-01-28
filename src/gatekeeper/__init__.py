@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Library for uploading docs to charmhub."""
+
 import logging
 from collections.abc import Iterable, Iterator
 from itertools import tee
