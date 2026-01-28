@@ -515,7 +515,7 @@ def test_external_refs(
             A mock response object.
 
         Raises:
-            requests.ConnectionError: If the URL simulates a connection error.
+            ConnectionError: If the URL simulates a connection error.
         """
         response = mock.MagicMock(spec=requests.Response)
 
