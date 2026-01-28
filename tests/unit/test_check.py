@@ -504,12 +504,11 @@ def test_external_refs(
     caplog.set_level(logging.INFO)
 
     # Mock requests.head to avoid actual network calls
-    def mock_head(url: str, timeout: int = 60):
+    def mock_head(url: str):
         """Mock HEAD request.
 
         Args:
             url: The URL to check.
-            timeout: The timeout for the request.
 
         Returns:
             A mock response object.
