@@ -428,7 +428,8 @@ def test__run_reconcile_invalid_external_item(mocked_clients):
     "gatekeeper.repository.Client.metadata",
     types_.Metadata(name="name 1", docs=None),
 )
-def test__run_reconcile_external_item(mocked_clients):
+@mock.patch("requests.head")
+def test__run_reconcile_external_item(mock_requests_head, mocked_clients):
     """
     arrange: given metadata with name but not docs and docs folder with an external item on the
         index
@@ -436,6 +437,11 @@ def test__run_reconcile_external_item(mocked_clients):
     assert: then a documentation page is created and an index page is created with a navigation
         page with the external item.
     """
+    # Mock HTTP HEAD request to avoid network calls
+    mock_response = mock.MagicMock()
+    mock_response.status_code = 200
+    mock_requests_head.return_value = mock_response
+
     mocked_clients.discourse.create_topic.side_effect = [index_url := "url 1"]
 
     with mocked_clients.repository.with_branch(DEFAULT_BRANCH) as repo:

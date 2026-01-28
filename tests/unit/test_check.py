@@ -5,8 +5,10 @@
 
 import logging
 from typing import NamedTuple, cast
+from unittest import mock
 
 import pytest
+import requests
 
 from gatekeeper import check, types_
 
@@ -492,6 +494,7 @@ def test_external_refs(
     index_contents: tuple[types_.IndexContentsListItem, ...],
     expected_problems: tuple[ExpectedProblem],
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     """
     arrange: given index_contents
@@ -499,6 +502,38 @@ def test_external_refs(
     assert: then the expected problems are yielded.
     """
     caplog.set_level(logging.INFO)
+
+    # Mock requests.head to avoid actual network calls
+    def mock_head(url: str, timeout: int = 60):
+        """Mock HEAD request.
+
+        Args:
+            url: The URL to check.
+            timeout: The timeout for the request.
+
+        Returns:
+            A mock response object.
+
+        Raises:
+            requests.ConnectionError: If the URL simulates a connection error.
+        """
+        response = mock.MagicMock(spec=requests.Response)
+
+        # Simulate valid responses for canonical.com URLs
+        if "canonical.com" in url and "invalid" not in url:
+            response.status_code = 200
+        # Simulate 404 for canonica.com (typo) or invalid paths
+        elif "canonica.com" in url or "invalid-page" in url:
+            response.status_code = 404
+        # Simulate connection errors for invalid domains
+        elif "invalid.link.com" in url or "invalid.url.com" in url:
+            raise requests.ConnectionError(f"Connection error for {url}")
+        else:
+            response.status_code = 200
+
+        return response
+
+    monkeypatch.setattr("requests.head", mock_head)
 
     returned_problems = tuple(check.external_refs(index_contents=index_contents))
 

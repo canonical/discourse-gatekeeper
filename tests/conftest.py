@@ -69,6 +69,11 @@ def fixture_git_repo(
     """Create repository with mocked upstream."""
     repo = Repo.clone_from(url=upstream_git_repo.working_dir, to_path=repository_path)
 
+    # Disable GPG signing for tags in test environment
+    writer = repo.config_writer()
+    writer.set_value("tag", "gpgSign", "false")
+    writer.release()
+
     repo.git.checkout("-b", default_branch)
 
     # Go into detached head mode to reflect how GitHub performs the checkout
@@ -98,6 +103,8 @@ def fixture_upstream_git_repo(upstream_repository_path: Path, default_branch: st
     writer = upstream_repository.config_writer()
     writer.set_value("user", "name", "upstream_user")
     writer.set_value("user", "email", "upstream_email")
+    # Disable GPG signing for tags in test environment
+    writer.set_value("tag", "gpgSign", "false")
     writer.release()
 
     upstream_repository.git.checkout("-b", default_branch)
@@ -106,6 +113,7 @@ def fixture_upstream_git_repo(upstream_repository_path: Path, default_branch: st
     upstream_repository.git.commit("-m", "'initial commit'")
 
     upstream_repository.git.checkout("-b", BASE_REMOTE_BRANCH)
+    # Create lightweight tag
     upstream_repository.git.tag(DOCUMENTATION_TAG)
 
     return upstream_repository
