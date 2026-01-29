@@ -344,12 +344,12 @@ def discourse_enable_tags(
     headers = {
         "Api-Key": discourse_admin_api_credentials.key,
         "Api-Username": discourse_admin_api_credentials.username,
+        "Content-Type": "application/json",
     }
-    data = {"tagging_enabled": "true"}
     response = requests.put(
         f"{discourse_address}/admin/site_settings/tagging_enabled.json",
         headers=headers,
-        data=data,
+        json={"tagging_enabled": "true"},
         timeout=60,
     )
     assert response.status_code == 200, f"Enabling tagging failed, {response.content=}"
@@ -360,6 +360,10 @@ async def discourse_remove_rate_limits(
     discourse_admin_api_headers: dict[str, str], discourse_address: str
 ):
     """Disables rate limits on discourse."""
+    headers_with_content_type = {
+        **discourse_admin_api_headers,
+        "Content-Type": "application/json",
+    }
     settings = {
         "unique_posts_mins": "0",
         "rate_limit_create_post": "0",
@@ -382,8 +386,8 @@ async def discourse_remove_rate_limits(
     for setting, value in settings.items():
         response = requests.put(
             f"{discourse_address}/admin/site_settings/{setting}.json",
-            headers=discourse_admin_api_headers,
-            data={setting: value},
+            headers=headers_with_content_type,
+            json={setting: value},
             timeout=60,
         )
         assert (
