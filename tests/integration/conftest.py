@@ -347,7 +347,7 @@ def discourse_enable_tags(
     }
     data = {"tagging_enabled": "true"}
     response = requests.put(
-        f"{discourse_address}/admin/site_settings/tagging_enabled",
+        f"{discourse_address}/admin/site_settings/tagging_enabled.json",
         headers=headers,
         data=data,
         timeout=60,
@@ -381,7 +381,7 @@ async def discourse_remove_rate_limits(
     }
     for setting, value in settings.items():
         response = requests.put(
-            f"{discourse_address}/admin/site_settings/{setting}",
+            f"{discourse_address}/admin/site_settings/{setting}.json",
             headers=discourse_admin_api_headers,
             data={setting: value},
             timeout=60,
