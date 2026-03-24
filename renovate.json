@@ -3,5 +3,11 @@
   "automerge": true,
   "extends": [
     "config:base"
-  ]
+  ],
+  "schedule": [
+    "* * * * 0,6"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
 }
